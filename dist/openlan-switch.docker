@@ -1,0 +1,21 @@
+
+FROM centos:7
+
+ARG VERSION
+
+WORKDIR /root
+
+ADD build/openlan-switch-${VERSION}-1.el7.x86_64.rpm /tmp
+
+RUN yum install -y epel-release \
+  && yum install -y iptables bridge-utils \
+  && yum install -y /tmp/openlan-switch-${VERSION}-1.el7.x86_64.rpm
+
+LABEL application="OpenLAN Switch Application"
+LABEL maintainer="luscis@163.com"
+
+EXPOSE 10000/tcp
+EXPOSE 10002/tcp
+EXPOSE 10002/udp
+
+CMD ["/usr/bin/openlan-switch", "-conf:dir", "/etc/openlan/switch", "-log:level", "20"]

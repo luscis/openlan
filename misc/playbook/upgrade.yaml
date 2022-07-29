@@ -1,0 +1,21 @@
+---
+- hosts: openlan
+  remote_user: root
+  vars:
+    version: 0.8.20
+
+  tasks:
+  - name: download openlan-{{ version }}
+    copy: src=/root/rpmbuild/RPMS/x86_64/openlan-{{ version }}-1.el7.x86_64.rpm dest=/tmp
+
+  - name: upgrade openlan
+    yum: state=present name=/tmp/openlan-{{ version }}-1.el7.x86_64.rpm
+    notify:
+      - restart openlan-confd
+      - restart openlan-switch
+
+  handlers:
+    - name: restart openlan-confd
+      service: name=openlan-confd enabled=yes state=restarted
+    - name: restart openlan-switch
+      service: name=openlan-switch enabled=yes state=restarted

@@ -1,0 +1,67 @@
+#!/bin/bash
+
+## Load configuration.
+cfg="eth0.cfg"
+if [ $# -ge 1 ]; then
+  cfg="$1"
+  shift
+fi
+if [ -e "$cfg" ]; then
+  . $cfg
+fi
+
+## Check enviroment.
+if [ -z "$PHY" ] || [ -z "$ADDR" ] || [ -z "$PREFIX" ]; then
+  echo "Variable(PHY|ADDR|PREFIX) is NULL"
+  exit
+fi
+
+yum install bridge-utils -y
+
+## Set variable
+phy="$PHY"
+addr="$ADDR"
+prefix="$PREFIX"
+br=br-"$PHY"
+gw="$GATEWAY"
+dns1="$DNS1"
+
+## Configure script
+brCfg=/etc/sysconfig/network-scripts/ifcfg-"$br"
+phyCfg=/etc/sysconfig/network-scripts/ifcfg-"$phy"
+
+## Generate bridge configure
+echo "## Generate by OpenLAN project" > $brCfg
+echo "STP=\"yes\"" >> $brCfg
+echo "DELAY=\"2\"" >> $brCfg
+echo "TYPE=\"Bridge\"" >> $brCfg
+echo "NAME=\"$br\"" >> $brCfg
+echo "DEVICE=\"$br\"" >> $brCfg
+echo "BOOTPROTO=\"none\"" >> $brCfg
+if [ -n "$addr" ]; then
+  echo "IPADDR=\"$addr\"" >> $brCfg
+fi
+if [ -n "$prefix" ]; then
+  echo "PREFIX=\"$prefix\"" >> $brCfg
+fi
+if [ -n "$gw" ]; then
+  echo "GATEWAY=\"$gw\"" >> $brCfg
+fi
+if [ -n "$dns1" ]; then
+  echo "DNS1=\"$dns1\"" >> $brCfg
+fi
+echo "ONBOOT=\"yes\"" >> $brCfg
+echo "NM_CONTROLLED=\"no\"" >> $brCfg
+
+## Generate physical configure
+echo "## Generate by OpenLAN project" > $phyCfg
+echo "TYPE=\"Ethernet\"" >> $phyCfg
+echo "NAME=\"$phy\"" >> $phyCfg
+echo "DEVICE=\"$phy\"" >> $phyCfg
+echo "BOOTPROTO=\"none\"" >> $phyCfg
+echo "ONBOOT=\"yes\"" >> $phyCfg
+echo "NM_CONTROLLED=\"no\"" >> $phyCfg
+echo "BRIDGE=\"$br\"" >> $phyCfg
+echo "BRIDGING_OPTS=\"path_cost=4\"" >> $phyCfg # 4: 1G, 2: 10G, 19: 100Mb and 100: 1Mb.
+
+ifdown "$br"; ifdown "$phy"; ifup "$br"; ifup "$phy";

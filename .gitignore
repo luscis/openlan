@@ -1,0 +1,26 @@
+# Binaries for programs and plugins
+*.exe~
+*.dll
+*.so
+*.dylib
+
+*.exe
+*.x86_64
+*.rpm
+*.zip
+# Test binary, build with `go test -c`
+*.test
+*.idea
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+/build/
+/py/build/
+/py/dist/
+/core/build/
+/core/cmake-build-debug/
+
+confd-idl.h
+confd-idl.c
+confd-idl.ovsidl

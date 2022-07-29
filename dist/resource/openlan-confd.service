@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenLAN Switch Database Unit
+After=syslog.target network-pre.target
+Before=network.target network.service
+
+[Service]
+Type=forking
+PIDFile=/var/openlan/confd.pid
+Restart=on-failure
+EnvironmentFile=-/etc/sysconfig/openlan/confd
+
+ExecStart=/var/openlan/script/confd start
+ExecStop=/var/openlan/script/confd stop
+
+[Install]
+WantedBy=multi-user.target

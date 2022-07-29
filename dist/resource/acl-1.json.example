@@ -1,0 +1,21 @@
+{
+  "name": "acl-1",
+  "rules": [
+    {
+      "dst": "192.168.77.121",
+      "proto": "tcp",
+      "dport": 443,
+      "action": "drop"
+    },
+    {
+      "dst": "192.168.10.0/24",
+      "action": "drop"
+    },
+    {
+      "src": "192.168.100.0/24",
+      "proto": "udp",
+      "sport": 68,
+      "action": "drop"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Derived from initscripts-macvlan
+# Copyright (C) 2014 Lars Kellogg-Stedman
+#
+# Adopted for veth by Oleksandr Natalenko <o.natalenko@lanet.ua>
+# Copyright (C) 2015 Lanet Network
+#
+# Based on Network Interface Configuration System
+# Copyright (c) 1996-2009 Red Hat, Inc. all rights reserved.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+. /etc/init.d/functions
+
+cd /etc/sysconfig/network-scripts
+. ./network-functions
+
+[ -f ../network ] && . ../network
+
+CONFIG=${1}
+
+need_config ${CONFIG}
+
+source_config
+
+OTHERSCRIPT="/etc/sysconfig/network-scripts/ifdown-${REAL_DEVICETYPE}"
+
+if [ ! -x ${OTHERSCRIPT} ]; then
+	OTHERSCRIPT="/etc/sysconfig/network-scripts/ifdown-eth"
+fi
+
+${OTHERSCRIPT} ${CONFIG}
+
+if [ -n "${VETH_PARENT}" ] && [ -x /usr/sbin/brctl ]; then
+	ip link set \
+		dev ${DEVICE}-bp down
+	brctl delif -- \
+		${VETH_PARENT} ${DEVICE}-bp
+	[ -r /var/run/radvd/radvd.pid ] && kill -HUP $(cat /var/run/radvd/radvd.pid)
+	if [ -d /sys/class/net/${VETH_PARENT}/brif ] && [ $(ls -1 /sys/class/net/${VETH_PARENT}/brif | wc -l) -eq 0 ]; then
+		ip link set \
+			dev ${VETH_PARENT} down
+		brctl delbr -- ${VETH_PARENT}
+	fi
+fi
+
+ip link del ${DEVICE}
+

@@ -1,0 +1,26 @@
+{
+    "name": "v1024",
+    "provider": "vxlan",
+    "specifies": {
+        "vni": 1024,
+        "fabric": "fabric"
+    },
+    "bridge": {
+        "address": "192.168.55.1/24"
+    },
+    "subnet": {
+        "start": "192.168.55.100",
+        "end": "192.168.55.130"
+    },
+    "dhcp": "enable",
+    "outputs": [
+        {
+            "vlan": 100,
+            "interface": "vxlan:3.3.3.5:43"
+        },
+        {
+            "vlan": 0,
+            "interface": "gre:3.3.3.3"
+        }
+    ]
+}

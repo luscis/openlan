@@ -1,0 +1,41 @@
+{
+    "name": "ipsec",
+    "provider": "esp",
+    "specifies": {
+        "address": "100.64.0.10",
+        "members": [
+            {
+                "spi": 300,
+                "peer": "100.64.0.30",
+                "state": {
+                    "auth": "a263d01a96db11eb9",
+                    "crypt": "9b73bc48e3864b3ebc"
+                }
+            },
+            {
+                "spi": 100,
+                "peer": "100.64.0.20",
+                "state": {
+                    "remote": "2.16.1.2"
+                }
+            },
+            {
+                "spi": 200,
+                "address": "100.64.0.11",
+                "peer": "100.64.0.30",
+                "state": {
+                    "local": "192.168.1.10",
+                    "remote": "2.16.1.2",
+                    "auth": "a263d01a96db11eb9",
+                    "crypt": "9b73bc48e3864b3ebc"
+                },
+                "policy": [
+                    {
+                        "source": "192.168.1.0/24",
+                        "destination": "192.168.2.0/24"
+                    }
+                ]
+            }
+        ]
+    }
+}

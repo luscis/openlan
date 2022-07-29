@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+command=$1
+
+OVSDB_SERVER_BIN="/usr/bin/env ovsdb-server"
+[ "$OVSDB_DATABASE" == "" ] && OVSDB_DATABASE="/etc/openlan/switch/confd.db"
+[ "$OVSDB_LOG_FILE" == "" ] && OVSDB_LOG_FILE="/var/openlan/confd.log"
+[ "$OVSDB_SOCK" == "" ] && OVSDB_SOCK="/var/openlan/confd.sock"
+[ "$OVSDB_PID_FILE" == "" ] && OVSDB_PID_FILE="/var/openlan/confd.pid"
+
+function stop() {
+    [ -e "$OVSDB_PID_FILE" ] && kill "$(cat $OVSDB_PID_FILE)"
+}
+
+function start() {
+    set $OVSDB_SERVER_BIN $OVSDB_DATABASE
+    set "$@" -vconsole:emer -vsyslog:err -vfile:info
+    set "$@" --remote=punix:"$OVSDB_SOCK"
+    set "$@" --log-file="$OVSDB_LOG_FILE"
+    set "$@" --pidfile="$OVSDB_PID_FILE"
+    [ "$OVSDB_OPTIONS" != "" ] && set "$@" $OVSDB_OPTIONS
+    set "$@" --detach
+    OVS_RUNDIR="/var/openlan" "$@"
+}
+
+case $command in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    *)
+        echo >&2 "$0: unknown command \"$command\" (start/stop/restart)"
+        exit 1
+        ;;
+esac

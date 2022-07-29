@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenLAN Point daemon for %I
+After=network.target
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/sysconfig/openlan/point.cfg
+ExecStart=/usr/bin/openlan-point $OPTIONS -conf /etc/openlan/%i.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

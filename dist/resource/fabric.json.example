@@ -1,0 +1,62 @@
+{
+    "name": "fabric",
+    "provider": "fabric",
+    "bridge": {
+        "name": "br-tun"
+    },
+    "specifies": {
+        "tcpMss": 1332,
+        "tunnels": [
+            {
+                "remote": "100.64.0.20"
+            },
+            {
+                "remote": "100.64.0.21"
+            },
+            {
+                "remote": "100.64.0.33"
+            }
+        ],
+        "networks": [
+            {
+                "vni": 2077,
+                "outputs": [
+                    {
+                        "interface": "vxlan:10.10.1.7:3303"
+                    },
+                    {
+                        "vlan": 60,
+                        "interface": "gre:10.10.1.8"
+                    }
+                ]
+            },
+            {
+                "vni": 2088,
+                "outputs": [
+                    {
+                        "vlan": 99,
+                        "interface": "gre:10.10.1.10"
+                    }
+                ]
+            },
+            {
+                "vni": 2099,
+                "bridge": {
+                    "address": "172.16.100.1/24"
+                }
+                "outputs": [
+                    {
+                        "vlan": 100,
+                        "interface": "eth1"
+                    }
+                ],
+                "subnet": {
+                    "start": "172.32.100.250",
+                    "end": "172.32.100.254",
+                    "dns": "8.8.8.8,8.8.4.4",
+                },
+                "dhcp": "enable"
+            }
+        ]
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "cert": {
+        "dir": "/var/openlan/cert"
+    },
+    "http": {
+        "public": "/var/openlan/public"
+    },
+    "crypt": {
+        "secret": "cb2ff088a34d"
+    }
+}

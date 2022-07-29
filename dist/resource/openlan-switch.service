@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenLAN Virtual Switch daemon
+After=network.target openlan-confd.service
+Requires=openlan-confd.service
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/sysconfig/openlan/switch.cfg
+ExecStartPre=-/var/openlan/script/setup.sh
+ExecStart=/usr/bin/openlan-switch $OPTIONS
+LimitNOFILE=102400
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

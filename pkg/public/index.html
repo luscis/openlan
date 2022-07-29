@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .Worker.Alias }} - OpenLAN</title>
+    <style type="text/css">
+        @media
+        (max-device-width : 1024px) {
+            .container {
+                width: 100%;
+                margin: 0 auto;
+            }
+        }
+        @media
+        (min-device-width : 1280px) {
+            .container {
+                width: 95%;
+            }
+        }
+        @media
+        (min-device-width : 1480px) {
+            .container {
+                width: 80%;
+            }
+        }
+        body {
+            font-family: monospace;
+            background: #fdfcf8;
+        }
+        .container {
+            margin: 0 auto;
+        }
+        .container a {
+            text-decoration: none;
+        }
+        .worker, .point, .link, .neighbor, .online {
+            width: 100%;
+            border: 1px solid #acacac;
+            border-radius: 4px;
+            padding: 0 6px;
+            margin: 8px 2px;
+        }
+        .panel-header {
+            margin: 8px 0;
+            width: 100%;
+        }
+        .panel-header p {
+            margin: 0;
+        }
+        .panel-body {
+            margin: 8px 0;
+            width: 100%;
+        }
+        .table-display {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-display tr:nth-child(even)
+        {
+            background: #f1f1f1;
+        }
+        .table-display tr:nth-child(odd)
+        {
+            background: inherit;
+        }
+        .table-display th {
+            font-weight: normal;
+            font-size: small;
+        }
+        .table-display td, th {
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+        .table-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-list td:first-child {
+            font-size: small;
+        }
+        .authenticated, .success {
+            color: darkgreen;
+        }
+        .unauthenticated, .terminal, .closed {
+            color: chocolate;
+        }
+        .initialized, .connected, .connecting {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="worker">
+        <div class="panel-body">
+            <table class="table-list">
+                <tbody>
+                    <tr>
+                        <td>Project:</td>
+                        <td>
+                            <a href="https://github.com/luscis/openlan">openlan</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>UUID:</td>
+                        <td>{{ .Worker.UUID }}</td>
+                    </tr>
+                    <tr>
+                        <td>UpTime:</td>
+                        <td>{{ prettyTime .Worker.Uptime }}</td>
+                    </tr>
+                    <tr>
+                        <td>Protocol:</td>
+                        <td>{{ .Worker.Protocol }}</td>
+                    </tr>
+                    <tr>
+                        <td>Alias:</td>
+                        <td>{{ .Worker.Alias }}</td>
+                    </tr>
+                    <tr>
+                        <td>Version:</td>
+                        <td>{{ .Version.Version }}</td>
+                    </tr>
+                    <tr>
+                        <td>Built on:</td>
+                        <td>{{ .Version.Date }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="link">
+        <div class="panel-header">
+            <div>
+                <span>The link which connect to other, and total </span><span>{{ len .States }}+{{ len .Links }}</span>.
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>UUID</th>
+                    <th>Alive</th>
+                    <th>Device</th>
+                    <th>User</th>
+                    <th>Protocol</th>
+                    <th>Connection</th>
+                    <th>r/t|Traffic</th>
+                    <th>State</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .States }}
+                    <tr>
+                        <td>{{ .Name }}</td>
+                        <td>{{ prettyTime .AliveTime }}</td>
+                        <td>spi:{{ .Spi }}</td>
+                        <td>{{ .Local }}</td>
+                        <td>esp</td>
+                        <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td>
+                            {{ if .RxBytes }}<span class="success">success</span>
+                            {{ else }}<span class="unknown">unknown</span>
+                            {{ end}}
+                        </td>
+                    </tr>
+                {{ end }}
+                {{ range .Links }}
+                    <tr>
+                        <td>{{ .UUID }}</td>
+                        <td>{{ prettyTime .AliveTime }}</td>
+                        <td>{{ .Device }}</td>
+                        <td>{{ .User }}@{{ .Network }}</td>
+                        <td>{{ .Protocol }}</td>
+                        <td><a href="https://{{ getIpAddr .Server }}:10000">{{ getIpAddr .Server }}</a></td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td><span class="{{ .State }}">{{ .State }}</span></td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="point">
+        <div class="panel-header">
+            <p>
+                <span>The point accessed to, and total </span><span>{{ len .Clients }}+{{ len .Points }}</span>.
+            </p>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>UUID</th>
+                    <th>Alive</th>
+                    <th>Device</th>
+                    <th>Alias</th>
+                    <th>Connection</th>
+                    <th>User</th>
+                    <th>r/t|Traffic</th>
+                    <th>State</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .Clients }}
+                    <tr>
+                        <td>openvpn</td>
+                        <td>{{ prettyTime .AliveTime }}</td>
+                        <td>{{ .Device }}</td>
+                        <td>{{ .Address }}</td>
+                        <td>{{ .Remote }}</td>
+                        <td>{{ .Name }}</td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td><span class="{{ .State }}">{{ .State }}</span></td>
+                    </tr>
+                {{ end }}
+                {{ range .Points }}
+                    <tr>
+                        <td>{{ .UUID }}</td>
+                        <td>{{ prettyTime .AliveTime }}</td>
+                        <td>{{ .Device }}</td>
+                        <td>{{ .Alias }}</td>
+                        <td>{{ .Remote }}</td>
+                        <td>{{ .User }}@{{ .Network }}</td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td><span class="{{ .State }}">{{ .State }}</span></td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="neighbor">
+        <div class="panel-header">
+            <div>
+                <span>The neighbor we discovered on, and total </span><span>{{ len .Neighbors }}</span>.
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>UpTime</th>
+                    <th>Ethernet</th>
+                    <th>IP Address</th>
+                    <th>Network</th>
+                    <th>Connection</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .Neighbors }}
+                    <tr>
+                        <td>{{ prettyTime .Uptime }}</td>
+                        <td>{{ .HwAddr }}</td>
+                        <td>{{ .IpAddr }}</td>
+                        <td>{{ .Device }}@{{ .Network }}</td>
+                        <td>{{ .Client }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="online">
+        <div class="panel-header">
+            <div>
+                <span>The flow traced from point, and total </span><span>{{ len .OnLines }}</span>.
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>LastTime</th>
+                    <th>Source</th>
+                    <th>Destination Address</th>
+                    <th>Protocol</th>
+                    <th>Source</th>
+                    <th>Destination Port</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .OnLines }}
+                    <tr>
+                        <td>{{ prettyTime .HitTime }}</td>
+                        <td>{{ .IpSource }}</td>
+                        <td>{{ .IpDest }}</td>
+                        <td>{{ .IpProto }}</td>
+                        <td>{{ .PortSource }}</td>
+                        <td>{{ .PortDest }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+    "protocol": "tls",
+    "cert": {
+        "dir": "/var/openlan/cert"
+    },
+    "http": {
+        "public": "/var/openlan/public"
+    },
+    "crypt": {
+        "algo": "aes-128",
+        "secret": "cb2ff088a34d"
+    },
+    "inspect": [
+        "neighbor",
+        "online"
+    ],
+    "firewall": [
+       {
+          "table": "nat",
+          "chain": "PREROUTING",
+          "protocol": "tcp",
+          "match": "tcp",
+          "destination": "0.0.0.0/0",
+          "dport": 80,
+          "jump": "DNAT",
+          "to-destination": "100.44.85.6:80"
+       }
+    ],
+    "ldap": {
+        "server": "ldap-server.net:389",
+        "bindDN": "cn=admin,dc=openlan,dc=com",
+        "password": "your-passowrd",
+        "baseDN": "dc=openlan,dc=com",
+        "attribute": "cn",
+        "filter": "(cn=%s)"
+    }
+}

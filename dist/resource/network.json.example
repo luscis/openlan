@@ -1,0 +1,55 @@
+{
+    "name": "example",
+    "bridge": {
+        "name": "br-eth0",
+        "address": "172.32.100.40/24"
+    },
+    "subnet": {
+        "start": "172.32.100.250",
+        "end": "172.32.100.254",
+        "netmask": "255.255.255.0",
+        "dns": "8.8.8.8,8.8.4.4",
+    },
+    "hosts": [
+        {
+            "hostname": "pc-99",
+            "address": "172.32.100.99"
+        }
+    ],
+    "routes": [
+        {
+            "prefix": "172.32.10.0/24"
+        }
+    ],
+    "password": [
+        {
+            "username": "hi",
+            "password": "1f4ee82b5eb6"
+        }
+    ],
+    "links": [
+        {
+            "protocol": "tls",
+            "connection": "hi.openlan.net",
+            "username": "hi",
+            "password": "1f4ee82b5eb6"
+        }
+    ],
+    "openvpn": {
+        "protocol": "tcp",
+        "listen": "0.0.0.0:3295",
+        "subnet": "172.32.195.0/24",
+        "push": [
+            "dhcp-option DNS 8.8.8.8"
+        ],
+        "clients": [
+            {
+                "name": "hi",
+                "address": "172.32.195.233",
+                "netmask": "172.32.195.234"
+            }
+        ]
+    },
+    "acl": "acl-100",
+    "dhcp": "enable",
+}
