@@ -1,7 +1,7 @@
 [submodule "3rd/openvpn"]
 	path = 3rd/openvpn
 	url = https://github.com/OpenVPN/openvpn
-	branch = release/2.4
+	branch = release/2.5
 [submodule "dist/resource/cert"]
 	path = dist/resource/cert
 	url = https://github.com/danieldin95/freecert.git

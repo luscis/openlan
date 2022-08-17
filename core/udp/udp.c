@@ -122,20 +122,7 @@ int
 configure_socket(struct udp_server *srv)
 {
     int encap = UDP_ENCAP_ESPINUDP;
-    struct xfrm_userpolicy_info pol;
 
-    memset(&pol, 0, sizeof(pol));
-    pol.action = XFRM_POLICY_ALLOW;
-    pol.sel.family = AF_INET;
-
-    pol.dir = XFRM_POLICY_OUT;
-    if (setsockopt(srv->socket, IPPROTO_IP, IP_XFRM_POLICY, &pol, sizeof pol) < 0) {
-        return -1;
-    }
-    pol.dir = XFRM_POLICY_IN;
-    if (setsockopt(srv->socket, IPPROTO_IP, IP_XFRM_POLICY, &pol, sizeof pol) < 0) {
-        return -1;
-    }
     if (setsockopt(srv->socket, IPPROTO_UDP, UDP_ENCAP, &encap, sizeof encap) < 0) {
         return -1;
     }

@@ -5,5 +5,5 @@ If you want to build OpenVPN and OpenvSwitch, the following SHOULD be installing
   yum install -y lzo-devel pam-devel
 
 [Ubuntu]
-  apt-get install -y liblzo2-dev libpam-dev
+  apt-get install -y liblzo2-dev libpam-dev cmake libtool libunbound-dev
 ```
