@@ -10,7 +10,7 @@ build_openvswitch() {
   obj_dir=$(pwd)/../build/obj
   cd ovs && {
     [ -e './configure' ] || ./boot.sh
-    [ -e './Makefile' ] || ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-libcapng
+    [ -e './Makefile' ] || ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-libcapng --disable-ssl
     make -j4 && make install DESTDIR=$obj_dir
     cd -
   }
