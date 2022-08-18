@@ -20,3 +20,7 @@ func GetNetwork(name string) *Network {
 	}
 	return nil
 }
+
+func Reload() {
+	Manager.Switch.Reload()
+}

@@ -136,3 +136,13 @@ func (n *Network) SaveLink() {
 		libol.Error("Network.SaveLink %s %s", n.Name, err)
 	}
 }
+
+func (n *Network) Reload() {
+	switch n.Provider {
+	case "esp":
+		spec := n.Specifies
+		if obj, ok := spec.(*ESPSpecifies); ok {
+			obj.Correct()
+		}
+	}
+}

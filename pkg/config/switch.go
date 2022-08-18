@@ -280,3 +280,9 @@ func (s *Switch) SaveNets() {
 		obj.Save()
 	}
 }
+
+func (s *Switch) Reload() {
+	for _, obj := range s.Network {
+		obj.Reload()
+	}
+}

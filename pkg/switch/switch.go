@@ -758,6 +758,7 @@ func (v *Switch) Firewall() *network.FireWall {
 }
 
 func (v *Switch) Reload() {
+	co.Reload()
 	cache.Reload()
 	for _, w := range v.worker {
 		w.Reload(v)
