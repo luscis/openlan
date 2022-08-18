@@ -27,12 +27,13 @@ type EspState struct {
 }
 
 type EspPolicy struct {
-	Name   string `json:"name"`
-	Spi    int    `json:"spi"`
-	Local  net.IP `json:"local"`
-	Remote net.IP `json:"remote"`
-	Source string `json:"source"`
-	Dest   string `json:"destination"`
+	Name     string `json:"name"`
+	Spi      int    `json:"spi"`
+	Local    net.IP `json:"local"`
+	Remote   net.IP `json:"remote"`
+	Source   string `json:"source"`
+	Dest     string `json:"destination"`
+	Priority int    `json:"priority"`
 }
 
 type EspMember struct {

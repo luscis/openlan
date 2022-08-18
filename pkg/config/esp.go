@@ -89,8 +89,16 @@ func (s *EspState) Correct(obj *EspState) {
 }
 
 type ESPPolicy struct {
-	Source string `json:"source,omitempty"`
-	Dest   string `json:"destination,omitempty"`
+	Source   string `json:"source,omitempty"`
+	Dest     string `json:"destination,omitempty"`
+	Priority int    `json:"priority"`
+}
+
+func (p *ESPPolicy) Correct() {
+	if p.Source == "" {
+		p.Source = "0.0.0.0/0"
+	}
+	p.Priority = 128 - libol.GetPrefixLen(p.Dest)
 }
 
 type ESPMember struct {
@@ -120,19 +128,18 @@ func (m *ESPMember) Correct(state *EspState) {
 	}
 	found := -1
 	for index, pol := range m.Policies {
-		if pol.Source == "" {
-			pol.Source = "0.0.0.0/0"
-		}
+		pol.Correct()
 		if pol.Dest != m.Peer {
 			continue
 		}
 		found = index
 	}
 	if found < 0 {
-		m.Policies = append(m.Policies, &ESPPolicy{
-			Source: "0.0.0.0/0",
-			Dest:   m.Peer,
-		})
+		pol := &ESPPolicy{
+			Dest: m.Peer,
+		}
+		pol.Correct()
+		m.Policies = append(m.Policies, pol)
 	}
 }
 
@@ -147,6 +154,7 @@ func (m *ESPMember) AddPolicy(obj *ESPPolicy) {
 		break
 	}
 	if found < 0 {
+		obj.Correct()
 		m.Policies = append(m.Policies, obj)
 	}
 }

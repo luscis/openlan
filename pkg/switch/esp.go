@@ -78,13 +78,15 @@ type PolicyParameter struct {
 	local, remote net.IP
 	src, dst      *net.IPNet
 	dir           nl.Dir
+	pri           int
 }
 
 func (w *EspWorker) newPolicy(args PolicyParameter) *nl.XfrmPolicy {
 	policy := &nl.XfrmPolicy{
-		Src: args.src,
-		Dst: args.dst,
-		Dir: args.dir,
+		Src:      args.src,
+		Dst:      args.dst,
+		Dir:      args.dir,
+		Priority: args.pri,
 	}
 	tmpl := nl.XfrmPolicyTmpl{
 		Src:   args.local,
@@ -139,21 +141,21 @@ func (w *EspWorker) addPolicy(mp *models.EspPolicy) {
 	}
 	w.out.Info("EspWorker.addPolicy %s-%s", mp.Source, mp.Dest)
 	if po := w.newPolicy(PolicyParameter{
-		spi, mp.Local, mp.Remote, src, dst, nl.XFRM_DIR_OUT,
+		spi, mp.Local, mp.Remote, src, dst, nl.XFRM_DIR_OUT, mp.Priority,
 	}); po != nil {
 		mp.Out = po
 	} else {
 		return
 	}
 	if po := w.newPolicy(PolicyParameter{
-		spi, mp.Remote, mp.Local, dst, src, nl.XFRM_DIR_FWD,
+		spi, mp.Remote, mp.Local, dst, src, nl.XFRM_DIR_FWD, mp.Priority,
 	}); po != nil {
 		mp.Fwd = po
 	} else {
 		return
 	}
 	if po := w.newPolicy(PolicyParameter{
-		spi, mp.Remote, mp.Local, dst, src, nl.XFRM_DIR_IN,
+		spi, mp.Remote, mp.Local, dst, src, nl.XFRM_DIR_IN, mp.Priority,
 	}); po != nil {
 		mp.In = po
 	} else {
@@ -199,12 +201,13 @@ func (w *EspWorker) updateXfrm() {
 			}
 			mp := &models.EspPolicy{
 				EspPolicy: &schema.EspPolicy{
-					Name:   w.spec.Name,
-					Spi:    mem.Spi,
-					Local:  state.LocalIp,
-					Remote: state.RemoteIp,
-					Source: pol.Source,
-					Dest:   pol.Dest,
+					Name:     w.spec.Name,
+					Spi:      mem.Spi,
+					Local:    state.LocalIp,
+					Remote:   state.RemoteIp,
+					Source:   pol.Source,
+					Dest:     pol.Dest,
+					Priority: pol.Priority,
 				},
 			}
 			w.addPolicy(mp)

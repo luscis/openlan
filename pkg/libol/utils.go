@@ -257,6 +257,15 @@ func ParseAddr(addr string) net.IP {
 	return net.ParseIP(ip)
 }
 
+func GetPrefixLen(addr string) int {
+	values := strings.SplitN(addr, "/", 2)
+	if len(values) == 2 {
+		size, _ := strconv.Atoi(values[1])
+		return size
+	}
+	return 32
+}
+
 func ParseNet(addr string) (*net.IPNet, error) {
 	if _, ipNet, err := net.ParseCIDR(addr); err != nil {
 		return nil, err
