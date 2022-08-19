@@ -55,6 +55,7 @@ func DefaultPoint() *Point {
 			IPMtu:    1500,
 			Provider: "kernel",
 			Name:     "",
+			Cost:     1000,
 		},
 		SaveFile:    "./point.json",
 		RequestAddr: true,
@@ -72,13 +73,11 @@ func NewPoint() *Point {
 		RequestAddr: true,
 		Crypt:       obj.Crypt,
 		Cert:        obj.Cert,
+		Interface:   obj.Interface,
 	}
 	p.Flags()
 	p.Parse()
 	p.Initialize()
-	if Manager.Point == nil {
-		Manager.Point = p
-	}
 	return p
 }
 
@@ -87,22 +86,11 @@ func (ap *Point) Flags() {
 	flag.StringVar(&ap.Alias, "alias", obj.Alias, "Alias for this point")
 	flag.StringVar(&ap.Terminal, "terminal", obj.Terminal, "Run interactive terminal")
 	flag.StringVar(&ap.Connection, "conn", obj.Connection, "Connection access to")
-	flag.StringVar(&ap.Username, "user", obj.Username, "User access to by <username>@<network>")
-	flag.StringVar(&ap.Password, "pass", obj.Password, "Password for authentication")
-	flag.StringVar(&ap.Protocol, "proto", obj.Protocol, "IP Protocol for connection")
 	flag.StringVar(&ap.Log.File, "log:file", obj.Log.File, "File log saved to")
-	flag.StringVar(&ap.Interface.Name, "if:name", obj.Interface.Name, "Configure interface name")
-	flag.StringVar(&ap.Interface.Address, "if:addr", obj.Interface.Address, "Configure interface address")
-	flag.StringVar(&ap.Interface.Bridge, "if:br", obj.Interface.Bridge, "Configure bridge name")
-	flag.StringVar(&ap.Interface.Provider, "if:provider", obj.Interface.Provider, "Specifies provider")
+	flag.IntVar(&ap.Log.Verbose, "log:level", obj.Log.Verbose, "Log level value")
 	flag.StringVar(&ap.SaveFile, "conf", obj.SaveFile, "The configuration file")
-	flag.StringVar(&ap.Crypt.Secret, "crypt:secret", obj.Crypt.Secret, "Crypt secret key")
-	flag.StringVar(&ap.Crypt.Algo, "crypt:algo", obj.Crypt.Algo, "Crypt algorithm, such as: aes-256")
 	flag.StringVar(&ap.PProf, "pprof", obj.PProf, "Http listen for pprof debug")
 	flag.StringVar(&ap.Cert.CaFile, "cacert", obj.Cert.CaFile, "CA certificate file")
-	flag.IntVar(&ap.Timeout, "timeout", obj.Timeout, "Timeout(s) for socket write/read")
-	flag.IntVar(&ap.Log.Verbose, "log:level", obj.Log.Verbose, "Log level value")
-	flag.StringVar(&ap.StatusFile, "status", obj.StatusFile, "File status saved to")
 	flag.StringVar(&ap.PidFile, "pid", obj.PidFile, "Write pid to file")
 }
 
@@ -142,14 +130,23 @@ func (ap *Point) Correct(obj *Point) {
 			ap.Cert = obj.Cert
 		}
 	}
+	if ap.Protocol == "" {
+		ap.Protocol = obj.Protocol
+	}
 	if ap.Cert != nil {
 		if ap.Cert.Dir == "" {
 			ap.Cert.Dir = "."
 		}
 		ap.Cert.Correct()
 	}
-	if ap.Protocol == "" {
-		ap.Protocol = "tcp"
+	if ap.Timeout == 0 {
+		ap.Timeout = obj.Timeout
+	}
+	if ap.Interface.Cost == 0 {
+		ap.Interface.Cost = obj.Interface.Cost
+	}
+	if ap.Interface.IPMtu == 0 {
+		ap.Interface.IPMtu = obj.Interface.IPMtu
 	}
 }
 
@@ -161,15 +158,6 @@ func (ap *Point) Default() {
 	}
 	ap.Queue.Default()
 	//reset zero value to default
-	if ap.Connection == "" {
-		ap.Connection = obj.Connection
-	}
-	if ap.Interface.IPMtu == 0 {
-		ap.Interface.IPMtu = obj.Interface.IPMtu
-	}
-	if ap.Timeout == 0 {
-		ap.Timeout = obj.Timeout
-	}
 	if ap.Crypt != nil {
 		ap.Crypt.Default()
 	}

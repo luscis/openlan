@@ -57,9 +57,6 @@ func NewProxy() *Proxy {
 	p.Flags()
 	p.Parse()
 	p.Initialize()
-	if Manager.Proxy == nil {
-		Manager.Proxy = p
-	}
 	return p
 }
 

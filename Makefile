@@ -67,7 +67,7 @@ env:
 	@gofmt -w -s ./pkg ./cmd ./misc
 
 ## linux platform
-linux: linux-proxy linux-point linux-switch
+linux: linux-proxy linux-point linux-switch core
 
 core: env
 	./3rd/auto.sh build
@@ -90,7 +90,7 @@ linux: linux-point linux-switch linux-proxy ## build all linux binary
 linux-point: env
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
 
-linux-switch: env cmd core
+linux-switch: env cmd
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-proxy: env
@@ -109,45 +109,45 @@ linux-bin: linux-gz ## build linux install binary
 	cat $(BD)/$(LINUX_DIR).tar.gz >> $(BD)/$(LINUX_DIR).bin && \
 	chmod +x $(BD)/$(LINUX_DIR).bin
 
-install: env linux-point linux-switch linux-proxy ## install packages
+install: env linux ## install packages
 	@mkdir -p $(LINUX_DIR)/etc/sysctl.d
-	@cp -rvf $(SD)/dist/resource/90-openlan.conf $(LINUX_DIR)/etc/sysctl.d
+	@cp -rf $(SD)/dist/resource/90-openlan.conf $(LINUX_DIR)/etc/sysctl.d
 	@mkdir -p $(LINUX_DIR)/etc/openlan
-	@cp -rvf $(SD)/dist/resource/point.json.example $(LINUX_DIR)/etc/openlan
-	@cp -rvf $(SD)/dist/resource/proxy.json.example $(LINUX_DIR)/etc/openlan
+	@cp -rf $(SD)/dist/resource/point.json.example $(LINUX_DIR)/etc/openlan
+	@cp -rf $(SD)/dist/resource/proxy.json.example $(LINUX_DIR)/etc/openlan
 	@mkdir -p $(LINUX_DIR)/etc/openlan/switch
-	@cp -rvf $(SD)/dist/resource/confd.schema.json $(LINUX_DIR)/etc/openlan/switch
-	@cp -rvf $(SD)/dist/resource/switch.json.example $(LINUX_DIR)/etc/openlan/switch
+	@cp -rf $(SD)/dist/resource/confd.schema.json $(LINUX_DIR)/etc/openlan/switch
+	@cp -rf $(SD)/dist/resource/switch.json.example $(LINUX_DIR)/etc/openlan/switch
 	@mkdir -p $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/acl-1.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/default.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/network.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/ipsec.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/v1024.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rvf $(SD)/dist/resource/fabric.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/acl-1.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/default.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/network.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/ipsec.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/v1024.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@cp -rf $(SD)/dist/resource/fabric.json.example $(LINUX_DIR)/etc/openlan/switch/network
 	@mkdir -p $(LINUX_DIR)/usr/bin
-	@cp -rvf $(BD)/openudp $(LINUX_DIR)/usr/bin
-	@cp -rvf $(BD)/openlan $(LINUX_DIR)/usr/bin
-	@cp -rvf $(BD)/openlan-proxy $(LINUX_DIR)/usr/bin
-	@cp -rvf $(BD)/openlan-point $(LINUX_DIR)/usr/bin
-	@cp -rvf $(BD)/openlan-switch $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/openudp $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/openlan $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/openlan-proxy $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/openlan-point $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/openlan-switch $(LINUX_DIR)/usr/bin
 	@mkdir -p $(LINUX_DIR)/var/openlan
-	@cp -rvf $(SD)/dist/resource/cert/openlan/cert $(LINUX_DIR)/var/openlan
-	@cp -rvf $(SD)/dist/script $(LINUX_DIR)/var/openlan
-	@cp -rvf $(SD)/pkg/public $(LINUX_DIR)/var/openlan
-	@cp -rvf $(SD)/dist/resource/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
+	@cp -rf $(SD)/dist/resource/cert/openlan/cert $(LINUX_DIR)/var/openlan
+	@cp -rf $(SD)/dist/script $(LINUX_DIR)/var/openlan
+	@cp -rf $(SD)/pkg/public $(LINUX_DIR)/var/openlan
+	@cp -rf $(SD)/dist/resource/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
 	@mkdir -p $(LINUX_DIR)/var/openlan/point
 	@mkdir -p $(LINUX_DIR)/var/openlan/openvpn
 	@mkdir -p $(LINUX_DIR)/var/openlan/dhcp
 	@mkdir -p $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rvf $(SD)/dist/resource/point.cfg $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rvf $(SD)/dist/resource/proxy.cfg $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rvf $(SD)/dist/resource/switch.cfg $(LINUX_DIR)/etc/sysconfig/openlan
+	@cp -rf $(SD)/dist/resource/point.cfg $(LINUX_DIR)/etc/sysconfig/openlan
+	@cp -rf $(SD)/dist/resource/proxy.cfg $(LINUX_DIR)/etc/sysconfig/openlan
+	@cp -rf $(SD)/dist/resource/switch.cfg $(LINUX_DIR)/etc/sysconfig/openlan
 	@mkdir -p $(LINUX_DIR)//usr/lib/systemd/system
-	@cp -rvf $(SD)/dist/resource/openlan-point@.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rvf $(SD)/dist/resource/openlan-proxy.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rvf $(SD)/dist/resource/openlan-confd.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rvf $(SD)/dist/resource/openlan-switch.service $(LINUX_DIR)/usr/lib/systemd/system
+	@cp -rf $(SD)/dist/resource/openlan-point@.service $(LINUX_DIR)/usr/lib/systemd/system
+	@cp -rf $(SD)/dist/resource/openlan-proxy.service $(LINUX_DIR)/usr/lib/systemd/system
+	@cp -rf $(SD)/dist/resource/openlan-confd.service $(LINUX_DIR)/usr/lib/systemd/system
+	@cp -rf $(SD)/dist/resource/openlan-switch.service $(LINUX_DIR)/usr/lib/systemd/system
 
 ## cross build for windows
 windows: windows-point ## build windows binary
@@ -159,8 +159,8 @@ windows-gz: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
 	@rm -rf $(WIN_DIR).tar.gz
 
-	@cp -rvf $(SD)/dist/resource/point.json.example $(WIN_DIR)/point.json
-	@cp -rvf $(BD)/openlan-point.exe $(WIN_DIR)
+	@cp -rf $(SD)/dist/resource/point.json.example $(WIN_DIR)/point.json
+	@cp -rf $(BD)/openlan-point.exe $(WIN_DIR)
 
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
 	@rm -rf $(WIN_DIR)
@@ -179,8 +179,8 @@ darwin-gz: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@rm -rf $(MAC_DIR).tar.gz
 
-	@cp -rvf $(SD)/dist/resource/point.json.example $(MAC_DIR)/point.json
-	@cp -rvf $(BD)/openlan-point.darwin $(MAC_DIR)
+	@cp -rf $(SD)/dist/resource/point.json.example $(MAC_DIR)/point.json
+	@cp -rf $(BD)/openlan-point.darwin $(MAC_DIR)
 
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	@rm -rf $(MAC_DIR)
