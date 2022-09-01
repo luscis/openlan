@@ -12,12 +12,12 @@ type Queue struct {
 }
 
 var (
-	QdSwr = 1024 * 4
-	QdSrd = 1024 * 4
-	QdTwr = 1024 * 2
+	QdSwr = 32 * 4
+	QdSrd = 32 * 4
+	QdTwr = 32 * 2
 	QdTrd = 2
-	QdVsd = 1024 * 8
-	QdVWr = 1024 * 4
+	QdVsd = 32 * 8
+	QdVWr = 32 * 4
 )
 
 func (q *Queue) Default() {

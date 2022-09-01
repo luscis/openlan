@@ -8,15 +8,15 @@ import (
 
 func DefaultPerf() *Perf {
 	return &Perf{
-		Point:    1024,
-		Neighbor: 1024,
+		Point:    64,
+		Neighbor: 64,
 		OnLine:   64,
-		Link:     1024,
+		Link:     64,
 		User:     1024,
-		Esp:      1024,
-		State:    1024 * 10,
-		Policy:   1024 * 10,
-		VxLAN:    1024,
+		Esp:      64,
+		State:    64 * 4,
+		Policy:   64 * 8,
+		VxLAN:    64,
 	}
 }
 
