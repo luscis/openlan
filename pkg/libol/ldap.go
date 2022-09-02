@@ -56,8 +56,8 @@ func (l *LDAPService) Login(userName, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if len(result.Entries) != 1 {
-		return false, fmt.Errorf("invalid users")
+	if len(result.Entries) < 0 {
+		return false, fmt.Errorf("user not found")
 	}
 	obj := result.Entries[0]
 	Debug("LDAPService.Login %v", obj)
