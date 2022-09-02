@@ -14,7 +14,11 @@ type Bridge struct {
 
 func (br *Bridge) Correct() {
 	if br.Name == "" {
-		br.Name = "br-" + br.Network
+		if len(br.Network) > 12 {
+			br.Name = "br-" + br.Network[:12]
+		} else {
+			br.Name = "br-" + br.Network
+		}
 	}
 	if br.Provider == "" {
 		br.Provider = "linux"

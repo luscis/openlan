@@ -59,12 +59,10 @@ func (l *LDAPService) Login(userName, password string) (bool, error) {
 	if len(result.Entries) != 1 {
 		return false, fmt.Errorf("invalid users")
 	}
-	userDN := result.Entries[0].DN
-	if err = l.Conn.Bind(userDN, password); err != nil {
+	obj := result.Entries[0]
+	Debug("LDAPService.Login %v", obj)
+	if err = l.Conn.Bind(obj.DN, password); err != nil {
 		return false, err
-	}
-	if err = l.Conn.Bind(l.Cfg.BindDN, l.Cfg.Password); err != nil {
-		return false, nil
 	}
 	return true, nil
 }
