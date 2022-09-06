@@ -3,7 +3,7 @@ package config
 type LDAP struct {
 	Server    string `json:"server"`
 	BindDN    string `json:"bindDN"`
-	Password  string `json:"password"`
+	BindPass  string `json:"bindPass"`
 	BaseDN    string `json:"baseDN"`
 	Attribute string `json:"attribute"`
 	Filter    string `json:"filter"`

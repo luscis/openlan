@@ -8,8 +8,8 @@ import (
 
 type LDAPConfig struct {
 	Server    string
-	BindDN    string
-	Password  string
+	BindUser  string
+	BindPass  string
 	BaseDN    string
 	Attr      string
 	Filter    string
@@ -33,7 +33,7 @@ func NewLDAPService(cfg LDAPConfig) (*LDAPService, error) {
 			return nil, err
 		}
 	}
-	if err = conn.Bind(cfg.BindDN, cfg.Password); err != nil {
+	if err = conn.Bind(cfg.BindUser, cfg.BindPass); err != nil {
 		return nil, err
 	}
 	if cfg.Timeout == 0 {
@@ -56,13 +56,16 @@ func (l *LDAPService) Login(userName, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if len(result.Entries) < 0 {
+	if len(result.Entries) <= 0 {
 		return false, fmt.Errorf("user not found")
 	}
 	obj := result.Entries[0]
 	Debug("LDAPService.Login %v", obj)
 	if err = l.Conn.Bind(obj.DN, password); err != nil {
 		return false, err
+	}
+	if err = l.Conn.Bind(l.Cfg.BindUser, l.Cfg.BindPass); err != nil {
+		return false, nil
 	}
 	return true, nil
 }

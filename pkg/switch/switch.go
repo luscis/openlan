@@ -411,8 +411,8 @@ func (v *Switch) SetLdap(ldap *co.LDAP) {
 	}
 	cfg := libol.LDAPConfig{
 		Server:    ldap.Server,
-		BindDN:    ldap.BindDN,
-		Password:  ldap.Password,
+		BindUser:  ldap.BindDN,
+		BindPass:  ldap.BindPass,
 		BaseDN:    ldap.BaseDN,
 		Attr:      ldap.Attribute,
 		Filter:    ldap.Filter,
