@@ -107,10 +107,6 @@ func (w *OpenLANWorker) LoadRoutes() {
 	cfg := w.cfg
 	w.out.Debug("OpenLANWorker.LoadRoute: %v", cfg.Routes)
 	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
-	link, err := netlink.LinkByName(w.bridge.Name())
-	if err != nil {
-		return
-	}
 	for _, rt := range cfg.Routes {
 		_, dst, err := net.ParseCIDR(rt.Prefix)
 		if err != nil {
@@ -129,7 +125,6 @@ func (w *OpenLANWorker) LoadRoutes() {
 			nlrt.MultiPath = append(nlrt.MultiPath, nxhe)
 		}
 		if rt.MultiPath == nil {
-			nlrt.LinkIndex = link.Attrs().Index
 			nlrt.Gw = net.ParseIP(rt.NextHop)
 			nlrt.Priority = rt.Metric
 		}
@@ -140,7 +135,7 @@ func (w *OpenLANWorker) LoadRoutes() {
 			MinInt: time.Second * 10,
 		}
 		promise.Go(func() error {
-			if err := netlink.RouteAdd(&nlrt); err != nil {
+			if err := netlink.RouteReplace(&nlrt); err != nil {
 				w.out.Warn("OpenLANWorker.LoadRoute: %s", err)
 				return err
 			}
@@ -152,10 +147,6 @@ func (w *OpenLANWorker) LoadRoutes() {
 
 func (w *OpenLANWorker) UnLoadRoutes() {
 	cfg := w.cfg
-	link, err := netlink.LinkByName(w.bridge.Name())
-	if err != nil {
-		return
-	}
 	for _, rt := range cfg.Routes {
 		_, dst, err := net.ParseCIDR(rt.Prefix)
 		if err != nil {
@@ -163,7 +154,6 @@ func (w *OpenLANWorker) UnLoadRoutes() {
 		}
 		nlRt := netlink.Route{Dst: dst}
 		if rt.MultiPath == nil {
-			nlRt.LinkIndex = link.Attrs().Index
 			nlRt.Gw = net.ParseIP(rt.NextHop)
 			nlRt.Priority = rt.Metric
 		}
