@@ -11,6 +11,7 @@ ARCH = $(shell uname -m)
 ## declare directory
 SD = $(shell pwd)
 BD = "$(SD)/build"
+CD = "$(SD)/build/coverage"
 LINUX_DIR ?= "openlan-linux-$(VER).$(ARCH)"
 WIN_DIR ?= "openlan-windows-$(VER).$(ARCH)"
 MAC_DIR ?= "openlan-darwin-$(VER).$(ARCH)"
@@ -63,6 +64,7 @@ vendor: update
 
 env:
 	@mkdir -p $(BD)
+	@mkdir -p $(CD)
 	@go version
 	@gofmt -w -s ./pkg ./cmd ./misc
 
@@ -191,3 +193,10 @@ test: ## execute unit test
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/models
+
+
+## coverage
+cover: env ## execute unit test and output coverage
+	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/access.txt -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/libol.txt -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/models.txt -race -covermode=atomic
