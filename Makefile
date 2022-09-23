@@ -200,3 +200,6 @@ cover: env ## execute unit test and output coverage
 	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/access.txt -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/libol.txt -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/models.txt -race -covermode=atomic
+
+	echo 'mode: atomic' > $(BD)/coverage.txt
+	tail -q -n +2 $(CD)/*.txt >> $(BD)/coverage.txt
