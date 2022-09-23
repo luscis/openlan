@@ -2,9 +2,9 @@ name: Coverage CI
 
 on:
   push:
-    branches: [ "master", "formaster" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "formaster" ]
+    branches: [ "master" ]
 
 jobs:
   build:
