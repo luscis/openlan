@@ -2,29 +2,34 @@ name: Ubuntu CI
 
 on:
   push:
-    branches: [ "master", "formaster" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "formaster" ]
+    branches: [ "master" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup Go
+    - name: Setup golang
       uses: actions/setup-go@v3
       with:
         go-version: '1.16.x'
 
-    - name: Require Packages
-      run: sudo apt update; sudo apt install -y liblzo2-dev libpam-dev; sudo apt install -y graphviz autoconf automake bzip2 debhelper dh-autoreconf libssl-dev libtool openssl procps python-all python-six libunbound-dev
+    - name: Require packages
+      run: |
+        sudo apt update
+        sudo apt install -y liblzo2-dev libpam-dev
+        sudo apt install -y graphviz autoconf automake bzip2 debhelper dh-autoreconf libssl-dev libtool openssl procps python-all python-six libunbound-dev
  
-    - name: Update Source
+    - name: Update source code
       run: make update
   
-    - name: Test and Build
-      run: make test && make gz
+    - name: Running unit tests
+      run: make test
+
+    - name: Building linux package
+      run: make gz
 

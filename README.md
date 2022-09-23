@@ -2,7 +2,7 @@
 简体中文 | [English](./README.en.md)
 
 # 概述 
-[![Build Status](https://app.travis-ci.com/luscis/openlan.svg?token=3tnnPDv6XvR5zsJsD4kC&branch=master)](https://app.travis-ci.com/github/luscis/openlan)
+[![codecov](https://codecov.io/gh/luscis/openlan/branch/master/graph/badge.svg)](https://codecov.io/gh/luscis/openlan)
 [![Go Report Card](https://goreportcard.com/badge/github.com/luscis/openlan)](https://goreportcard.com/report/luscis/openlan-go)
 [![GPL 3.0 License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 
