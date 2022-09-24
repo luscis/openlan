@@ -14,14 +14,14 @@ function download() {
 function requires() {
   local os=$(cat /etc/os-release | grep ^ID= | sed 's/"//g')
   if echo $os | grep -q -e centos -e redhat; then
-    yum install -y net-tools iptables iputils openvpn openssl openvswitch dnsmasq
+    yum install -y net-tools iptables iputils openvpn openssl11 openvswitch dnsmasq
   elif echo $os | grep -q -e debian -e ubuntu; then
     apt-get install -y net-tools iptables iproute2 openvpn openssl openvswitch-switch dnsmasq
   fi
 }
 
 function install() {
-  local source=$(find $tmp -name 'openlan-linux-*')
+  local source=$(find $tmp -name 'openlan-*')
   cd $source && {
     /usr/bin/env \cp -rf ./{etc,usr,var} /
     /usr/bin/env find ./ -type f > /usr/share/openlan.db

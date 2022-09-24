@@ -32,6 +32,7 @@ clean_openvswitch() {
     if [ -e Makefile ]; then
       make clean
       rm ./Makefile
+      rm ./configure
     fi
     cd -
   }
@@ -42,6 +43,7 @@ clean_openvpn() {
     if [ -e Makefile ]; then
       make clean
       rm ./Makefile
+      rm ./configure
     fi
     cd -
   }

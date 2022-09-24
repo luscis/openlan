@@ -12,7 +12,7 @@ ARCH = $(shell uname -m)
 SD = $(shell pwd)
 BD = "$(SD)/build"
 CD = "$(SD)/build/coverage"
-LINUX_DIR ?= "openlan-linux-$(VER).$(ARCH)"
+LINUX_DIR ?= "openlan-$(LSB)-$(VER).$(ARCH)"
 WIN_DIR ?= "openlan-windows-$(VER).$(ARCH)"
 MAC_DIR ?= "openlan-darwin-$(VER).$(ARCH)"
 

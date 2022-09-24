@@ -134,12 +134,12 @@ func (w *OpenLANWorker) LoadRoutes() {
 			MaxInt: time.Minute,
 			MinInt: time.Second * 10,
 		}
+		w.out.Info("OpenLANWorker.LoadRoute: %v", rt)
 		promise.Go(func() error {
 			if err := netlink.RouteReplace(&nlrt); err != nil {
 				w.out.Warn("OpenLANWorker.LoadRoute: %s", err)
 				return err
 			}
-			w.out.Info("OpenLANWorker.LoadRoute: %v", rt)
 			return nil
 		})
 	}
