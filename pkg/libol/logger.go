@@ -67,8 +67,9 @@ func (l *logger) Write(level int, format string, v ...interface{}) {
 
 func (l *logger) Save(level string, format string, v ...interface{}) {
 	m := fmt.Sprintf(format, v...)
+	now := time.Now()
 	if l.FileLog != nil {
-		l.FileLog.Println(level + "|" + m)
+		l.FileLog.Printf("%s %s|%s\n", now.Format(time.RFC3339), level, m)
 	}
 	l.Lock.Lock()
 	defer l.Lock.Unlock()
@@ -77,11 +78,9 @@ func (l *logger) Save(level string, format string, v ...interface{}) {
 			l.Errors.Remove(e)
 		}
 	}
-	yy, mm, dd := time.Now().Date()
-	hh, mn, se := time.Now().Clock()
 	ele := &Message{
 		Level:   level,
-		Date:    fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d", yy, mm, dd, hh, mn, se),
+		Date:    now.Format(time.RFC3339),
 		Message: m,
 	}
 	l.Errors.PushBack(ele)

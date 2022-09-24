@@ -2,8 +2,11 @@ package cache
 
 import (
 	"bufio"
+	"crypto/x509"
+	"encoding/pem"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
+	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
@@ -12,6 +15,7 @@ import (
 type user struct {
 	Lock    sync.RWMutex
 	File    string
+	Cert    string
 	Users   *libol.SafeStrMap
 	LdapCfg *libol.LDAPConfig
 	LdapSvc *libol.LDAPService
@@ -168,6 +172,26 @@ func (w *user) Timeout(user *models.User) bool {
 }
 
 func (w *user) Check(obj *models.User) (*models.User, error) {
+	if w.Cert != "" {
+		pemData, err := ioutil.ReadFile(w.Cert)
+		if err != nil {
+			return nil, err
+		}
+		block, rest := pem.Decode(pemData)
+		if block == nil || len(rest) > 0 {
+			return nil, libol.NewErr("certificate decoding error")
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		now := time.Now()
+		if now.Before(cert.NotBefore) {
+			return nil, libol.NewErr("certificate isn't yet valid")
+		} else if now.After(cert.NotAfter) {
+			return nil, libol.NewErr("certificate has expired")
+		}
+	}
 	if u := w.Get(obj.Id()); u != nil {
 		if u.Role == "" || u.Role == "admin" || u.Role == "guest" {
 			if u.Password == obj.Password {
@@ -183,7 +207,7 @@ func (w *user) Check(obj *models.User) (*models.User, error) {
 	if u := w.CheckLdap(obj); u != nil {
 		return u, nil
 	}
-	return nil, libol.NewErr("wrong user or password")
+	return nil, libol.NewErr("wrong password")
 }
 
 func (w *user) GetLdap() *libol.LDAPService {
@@ -215,6 +239,12 @@ func (w *user) SetLdap(cfg *libol.LDAPConfig) {
 		libol.Info("user.SetLdap %s", w.LdapCfg.Server)
 		w.LdapSvc = l
 	}
+}
+
+func (w *user) SetCert(cfg *libol.CertConfig) {
+	w.Lock.Lock()
+	defer w.Lock.Unlock()
+	w.Cert = cfg.Crt
 }
 
 var User = user{

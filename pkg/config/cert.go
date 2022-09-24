@@ -34,7 +34,7 @@ type Cert struct {
 
 func (c *Cert) Correct() {
 	if c.Dir == "" {
-		return
+		c.Dir = VarDir("cert")
 	}
 	if c.CrtFile == "" {
 		c.CrtFile = fmt.Sprintf("%s/crt", c.Dir)

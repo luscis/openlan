@@ -27,7 +27,7 @@ func (ws *wsConn) RemoteAddr() net.Addr {
 	return nil
 }
 
-type WebCert struct {
+type CertConfig struct {
 	Key      string
 	Crt      string
 	RootCa   string
@@ -35,7 +35,7 @@ type WebCert struct {
 }
 
 type WebConfig struct {
-	Cert    *WebCert
+	Cert    *CertConfig
 	Block   kcp.BlockCrypt
 	Timeout time.Duration // ns
 	RdQus   int           // per frames

@@ -51,7 +51,7 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 			WrQus:   s.Queue.SockWr,
 		}
 		if s.Cert != nil {
-			c.Cert = &libol.WebCert{
+			c.Cert = &libol.CertConfig{
 				Crt: s.Cert.CrtFile,
 				Key: s.Cert.KeyFile,
 			}
@@ -405,22 +405,6 @@ func (v *Switch) preAllow() {
 	}
 }
 
-func (v *Switch) SetLdap(ldap *co.LDAP) {
-	if ldap == nil || ldap.Server == "" {
-		return
-	}
-	cfg := libol.LDAPConfig{
-		Server:    ldap.Server,
-		BindUser:  ldap.BindDN,
-		BindPass:  ldap.BindPass,
-		BaseDN:    ldap.BaseDN,
-		Attr:      ldap.Attribute,
-		Filter:    ldap.Filter,
-		EnableTls: ldap.EnableTls,
-	}
-	cache.User.SetLdap(&cfg)
-}
-
 func (v *Switch) SetPass(file string) {
 	cache.User.SetFile(file)
 }
@@ -451,7 +435,26 @@ func (v *Switch) Initialize() {
 	// Load password for guest access
 	v.SetPass(v.cfg.PassFile)
 	v.LoadPass()
-	v.SetLdap(v.cfg.Ldap)
+
+	ldap := v.cfg.Ldap
+	if ldap != nil {
+		cache.User.SetLdap(&libol.LDAPConfig{
+			Server:    ldap.Server,
+			BindUser:  ldap.BindDN,
+			BindPass:  ldap.BindPass,
+			BaseDN:    ldap.BaseDN,
+			Attr:      ldap.Attribute,
+			Filter:    ldap.Filter,
+			EnableTls: ldap.EnableTls,
+		})
+	}
+	// Enable cert verify for access
+	cert := v.cfg.Cert
+	if cert != nil {
+		cache.User.SetCert(&libol.CertConfig{
+			Crt: cert.CrtFile,
+		})
+	}
 	// Start confd monitor
 	v.confd.Initialize()
 }
