@@ -65,7 +65,7 @@ func (p *Access) handleLogin(client libol.SocketClient, data []byte) error {
 	}
 	user.Update()
 	out.Info("Access.handleLogin: %s on %s", user.Id(), user.Alias)
-	if now, _ := cache.User.Check(user); now != nil {
+	if now, err := cache.User.Check(user); now != nil {
 		if now.Role != "admin" && now.Last != nil {
 			// To offline lastly client if guest.
 			p.master.OffClient(now.Last)
@@ -76,10 +76,11 @@ func (p *Access) handleLogin(client libol.SocketClient, data []byte) error {
 		out.Info("Access.handleLogin: success")
 		_ = p.onAuth(client, user)
 		return nil
+	} else {
+		p.failed++
+		client.SetStatus(libol.ClUnAuth)
+		return err
 	}
-	p.failed++
-	client.SetStatus(libol.ClUnAuth)
-	return libol.NewErr("Auth failed.")
 }
 
 func (p *Access) onAuth(client libol.SocketClient, user *models.User) error {
