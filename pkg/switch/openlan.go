@@ -25,7 +25,7 @@ type OpenLANWorker struct {
 	startTime int64
 	links     *Links
 	bridge    network.Bridger
-	openVPN   []*OpenVPN
+	vpn       *OpenVPN
 }
 
 func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
@@ -69,18 +69,10 @@ func (w *OpenLANWorker) Initialize() {
 	}
 	w.bridge = network.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
 	vCfg := w.cfg.OpenVPN
-	if vCfg != nil {
+	if !(vCfg == nil) {
 		obj := NewOpenVPN(vCfg)
 		obj.Initialize()
-		w.openVPN = append(w.openVPN, obj)
-		for _, _vCfg := range vCfg.Breed {
-			if _vCfg == nil {
-				continue
-			}
-			obj := NewOpenVPN(_vCfg)
-			obj.Initialize()
-			w.openVPN = append(w.openVPN, obj)
-		}
+		w.vpn = obj
 	}
 	w.WorkerImpl.Initialize()
 }
@@ -230,15 +222,15 @@ func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
 }
 
 func (w *OpenLANWorker) Start(v api.Switcher) {
+	w.uuid = v.UUID()
+	w.startTime = time.Now().Unix()
 	w.out.Info("OpenLANWorker.Start")
 	w.UpBridge(w.cfg.Bridge)
-	w.uuid = v.UUID()
 	w.LoadLinks()
 	w.LoadRoutes()
-	for _, vpn := range w.openVPN {
-		vpn.Start()
+	if !(w.vpn == nil) {
+		w.vpn.Start()
 	}
-	w.startTime = time.Now().Unix()
 	w.WorkerImpl.Start(v)
 }
 
@@ -266,8 +258,8 @@ func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
 func (w *OpenLANWorker) Stop() {
 	w.out.Info("OpenLANWorker.Close")
 	w.WorkerImpl.Stop()
-	for _, vpn := range w.openVPN {
-		vpn.Stop()
+	if !(w.vpn == nil) {
+		w.vpn.Stop()
 	}
 	w.UnLoadRoutes()
 	w.UnLoadLinks()

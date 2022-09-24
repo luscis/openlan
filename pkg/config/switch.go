@@ -73,14 +73,14 @@ type Switch struct {
 	Log       Log        `json:"log"`
 	Cert      *Cert      `json:"cert,omitempty"`
 	Crypt     *Crypt     `json:"crypt,omitempty"`
-	Network   []*Network `json:"network,omitempty" yaml:"networks"`
+	Network   []*Network `json:"network,omitempty" yaml:"network"`
 	Acl       []*ACL     `json:"acl,omitempty" yaml:"acl,omitempty"`
 	FireWall  []FlowRule `json:"firewall,omitempty" yaml:"firewall,omitempty"`
 	Inspect   []string   `json:"inspect,omitempty" yaml:"inspect,omitempty"`
 	Queue     Queue      `json:"queue" yaml:"queue"`
-	PassFile  string     `json:"password" yaml:"passwordFile"`
+	PassFile  string     `json:"password" yaml:"password"`
 	Ldap      *LDAP      `json:"ldap,omitempty" yaml:"ldap,omitempty"`
-	AddrPool  string     `json:"pool,omitempty"`
+	AddrPool  string     `json:"pool,omitempty" yaml:"pool,omitempty"`
 	ConfDir   string     `json:"-" yaml:"-"`
 	TokenFile string     `json:"-" yaml:"-"`
 }
@@ -164,6 +164,29 @@ func (s *Switch) Dir(elem ...string) string {
 	return filepath.Join(args...)
 }
 
+func (s *Switch) Format() {
+	for _, obj := range s.Network {
+		libol.Debug("Switch.Format %s", obj)
+		context := obj.Specifies
+		switch obj.Provider {
+		case "esp":
+			obj.Specifies = &ESPSpecifies{}
+		case "vxlan":
+			obj.Specifies = &VxLANSpecifies{}
+		case "fabric":
+			obj.Specifies = &FabricSpecifies{}
+		default:
+			obj.Specifies = nil
+			continue
+		}
+		if data, err := libol.Marshal(context, true); err == nil {
+			if err := libol.Unmarshal(obj.Specifies, data); err != nil {
+				libol.Warn("Switch.Format %s", err)
+			}
+		}
+	}
+}
+
 func (s *Switch) LoadNetwork() {
 	files, err := filepath.Glob(s.Dir("network", "*.json"))
 	if err != nil {
@@ -181,22 +204,9 @@ func (s *Switch) LoadNetwork() {
 		}
 		obj.LoadLink()
 		obj.LoadRoute()
-		switch obj.Provider {
-		case "esp":
-			obj.Specifies = &ESPSpecifies{}
-		case "vxlan":
-			obj.Specifies = &VxLANSpecifies{}
-		case "fabric":
-			obj.Specifies = &FabricSpecifies{}
-		}
-		if obj.Specifies != nil {
-			if err := libol.UnmarshalLoad(obj, k); err != nil {
-				libol.Error("Switch.LoadNetwork %s", err)
-				continue
-			}
-		}
 		s.Network = append(s.Network, obj)
 	}
+	s.Format()
 	for _, obj := range s.Network {
 		for _, link := range obj.Links {
 			link.Default()

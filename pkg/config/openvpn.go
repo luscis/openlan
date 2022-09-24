@@ -16,18 +16,17 @@ type OpenVPN struct {
 	Device    string           `json:"device"`
 	Version   int              `json:"version"`
 	Auth      string           `json:"auth"` // xauth or cert.
-	DhPem     string           `json:"dhPem"`
+	DhPem     string           `json:"dhPem" yaml:"dhPem"`
 	RootCa    string           `json:"rootCa"`
-	ServerCrt string           `json:"cert"`
-	ServerKey string           `json:"key"`
-	TlsAuth   string           `json:"tlsAuth"`
+	ServerCrt string           `json:"cert" yaml:"cert"`
+	ServerKey string           `json:"key" yaml:"key"`
+	TlsAuth   string           `json:"tlsAuth" yaml:"tlsAuth"`
 	Cipher    string           `json:"cipher"`
-	Routes    []string         `json:"-"`
-	Renego    int              `json:"renego,omitempty"`
-	Script    string           `json:"-"`
-	Breed     []*OpenVPN       `json:"breed,omitempty"`
-	Push      []string         `json:"push,omitempty"`
-	Clients   []*OpenVPNClient `json:"clients,omitempty"`
+	Routes    []string         `json:"-" yaml:"-"`
+	Renego    int              `json:"renego,omitempty" yaml:"renego,omitempty"`
+	Script    string           `json:"-" yaml:"-"`
+	Push      []string         `json:"push,omitempty" yaml:"push,omitempty"`
+	Clients   []*OpenVPNClient `json:"clients,omitempty" yaml:"clients,omitempty"`
 }
 
 type OpenVPNClient struct {
@@ -108,8 +107,5 @@ func (o *OpenVPN) Correct(obj *OpenVPN) {
 		_, port := libol.GetHostPort(o.Listen)
 		value, _ := strconv.Atoi(port)
 		o.Subnet = fmt.Sprintf("%s.%d.0/24", pool, value&0xff)
-	}
-	for _, ch := range o.Breed {
-		ch.Correct(o)
 	}
 }

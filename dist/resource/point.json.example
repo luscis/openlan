@@ -3,5 +3,7 @@
     "connection": "who.openlan.net",
     "username": "hi@default",
     "password": "cb2ff088a34d",
-    "cert": { "insecure": true }
+    "cert": {
+        "insecure": true
+    }
 }

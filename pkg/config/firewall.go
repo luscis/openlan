@@ -12,7 +12,7 @@ type FlowRule struct {
 	Comment  string `json:"comment,omitempty" yaml:"comment,omitempty"`
 	Proto    string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 	Match    string `json:"match,omitempty" yaml:"match,omitempty"`
-	DstPort  string `json:"dport,omitempty" yaml:"dstPort,omitempty"`
-	SrcPort  string `json:"sport,omitempty" yaml:"srcPort,omitempty"`
+	DstPort  string `json:"dport,omitempty" yaml:"destPort,omitempty"`
+	SrcPort  string `json:"sport,omitempty" yaml:"sourcePort,omitempty"`
 	Jump     string `json:"jump,omitempty" yaml:"jump,omitempty"` // SNAT/RETURN/MASQUERADE
 }

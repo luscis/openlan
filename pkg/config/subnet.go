@@ -1,7 +1,7 @@
 package config
 
 type IpSubnet struct {
-	Network string `json:"network,omitempty"`
+	Network string `json:"network,omitempty" yaml:"network,omitempty"`
 	Start   string `json:"start,omitempty"`
 	End     string `json:"end,omitempty"`
 	Netmask string `json:"netmask,omitempty"`
@@ -13,17 +13,17 @@ type MultiPath struct {
 }
 
 type PrefixRoute struct {
-	File      string      `json:"file,omitempty"`
-	Network   string      `json:"network,omitempty"`
+	File      string      `json:"-" yaml:"-"`
+	Network   string      `json:"network,omitempty" yaml:"network,omitempty"`
 	Prefix    string      `json:"prefix"`
 	NextHop   string      `json:"nexthop"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 	Metric    int         `json:"metric"`
-	Mode      string      `json:"mode" yaml:"forwardMode"` // route or snat
+	Mode      string      `json:"forward,omitempty" yaml:"forward,omitempty"` // route or snat
 }
 
 type HostLease struct {
-	Network  string `json:"network"`
+	Network  string `json:"network,omitempty" yaml:"network,omitempty"`
 	Hostname string `json:"hostname"`
 	Address  string `json:"address"`
 }

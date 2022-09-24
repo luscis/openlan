@@ -10,7 +10,7 @@ import (
 
 type Interface struct {
 	Name     string `json:"name,omitempty"`
-	IPMtu    int    `json:"mtu"`
+	IPMtu    int    `json:"mtu" yaml:"mtu"`
 	Address  string `json:"address,omitempty"`
 	Bridge   string `json:"bridge,omitempty"`
 	Provider string `json:"provider,omitempty"`
@@ -31,14 +31,14 @@ type Point struct {
 	Http        *Http     `json:"http,omitempty"`
 	Crypt       *Crypt    `json:"crypt,omitempty"`
 	PProf       string    `json:"pprof,omitempty"`
-	RequestAddr bool      `json:"requestAddr,omitempty"`
+	RequestAddr bool      `json:"requestAddr,omitempty" yaml:"requestAddr,omitempty"`
 	ByPass      bool      `json:"bypass,omitempty"`
-	SaveFile    string    `json:"-"`
+	SaveFile    string    `json:"-" yaml:"-"`
 	Queue       *Queue    `json:"queue,omitempty"`
-	Terminal    string    `json:"-"`
+	Terminal    string    `json:"-" yaml:"-"`
 	Cert        *Cert     `json:"cert,omitempty"`
-	StatusFile  string    `json:"status,omitempty"`
-	PidFile     string    `json:"pid,omitempty"`
+	StatusFile  string    `json:"status,omitempty" yaml:"status"`
+	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
 }
 
 func DefaultPoint() *Point {

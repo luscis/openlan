@@ -29,7 +29,7 @@
     "ldap": {
         "server": "ldap-server.net:389",
         "bindDN": "cn=admin,dc=openlan,dc=com",
-        "password": "your-passowrd",
+        "bindPass": "your-passowrd",
         "baseDN": "dc=openlan,dc=com",
         "attribute": "cn",
         "filter": "(cn=%s)"

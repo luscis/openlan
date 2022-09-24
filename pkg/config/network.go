@@ -7,11 +7,11 @@ import (
 )
 
 type Network struct {
-	ConfDir   string        `json:"-"`
+	ConfDir   string        `json:"-" yaml:"-"`
 	File      string        `json:"file"`
 	Alias     string        `json:"-" yaml:"-"`
-	Name      string        `json:"name,omitempty" yaml:"name"`
-	Provider  string        `json:"provider,omitempty" yaml:"provider"`
+	Name      string        `json:"name" yaml:"name"`
+	Provider  string        `json:"provider,omitempty" yaml:"provider,omitempty"`
 	Bridge    *Bridge       `json:"bridge,omitempty" yaml:"bridge,omitempty"`
 	Subnet    *IpSubnet     `json:"subnet,omitempty" yaml:"subnet,omitempty"`
 	OpenVPN   *OpenVPN      `json:"openvpn,omitempty" yaml:"openvpn,omitempty"`
@@ -21,7 +21,7 @@ type Network struct {
 	Acl       string        `json:"acl,omitempty" yaml:"acl,omitempty"`
 	Specifies interface{}   `json:"specifies,omitempty" yaml:"specifies,omitempty"`
 	Dhcp      string        `json:"dhcp,omitempty" yaml:"dhcp,omitempty"`
-	Outputs   []Output      `json:"outputs" yaml:"output,omitempty"`
+	Outputs   []Output      `json:"outputs" yaml:"outputs"`
 }
 
 func (n *Network) Correct() {

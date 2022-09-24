@@ -7,7 +7,6 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v2"
 	"path/filepath"
 )
 
@@ -27,14 +26,13 @@ func (u Config) List(c *cli.Context) error {
 	clt := u.NewHttp(c.String("token"))
 	cfg := &config.Switch{}
 	if err := clt.GetJSON(url, cfg); err == nil {
-		var data []byte
-		if c.String("format") == "yaml" {
-			data, _ = yaml.Marshal(cfg)
+		format := c.String("format")
+		if format == "yaml" {
+			cfg.Format()
 		} else {
-			data, _ = libol.Marshal(cfg, true)
+			format = "json"
 		}
-		fmt.Println(string(data))
-		return nil
+		return u.Out(cfg, format, "")
 	} else {
 		return err
 	}
@@ -165,10 +163,7 @@ func (u Config) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all configuration",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "format", Value: "json"},
-				},
-				Action: u.List,
+				Action:  u.List,
 			},
 			{
 				Name:    "check",

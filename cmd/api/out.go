@@ -73,6 +73,7 @@ func OutTable(data interface{}, tmpl string) error {
 }
 
 func Out(data interface{}, format string, tmpl string) error {
+	libol.Debug("Out %s %s", format, tmpl)
 	switch format {
 	case "json":
 		return OutJson(data)

@@ -29,7 +29,7 @@
                     "auth": "a263d01a96db11eb9",
                     "crypt": "9b73bc48e3864b3ebc"
                 },
-                "policy": [
+                "policies": [
                     {
                         "source": "192.168.1.0/24",
                         "destination": "192.168.2.0/24"

@@ -30,11 +30,11 @@ func SetLocalUdp(port string) {
 
 type EspState struct {
 	Local      string `json:"local,omitempty" yaml:"local,omitempty"`
-	LocalIp    net.IP `json:"local_addr"  yaml:"local_addr"`
+	LocalIp    net.IP `json:"local_addr"  yaml:"localAddr"`
 	Remote     string `json:"remote,omitempty" yaml:"remote,omitempty"`
-	RemotePort int    `json:"remote_port" yaml:"remote_port"`
-	RemoteIp   net.IP `json:"remote_addr"  yaml:"remote_addr"`
-	Encap      string `json:"encap,omitempty" yaml:"encapsulation,omitempty"`
+	RemotePort int    `json:"remote_port" yaml:"remotePort"`
+	RemoteIp   net.IP `json:"remote_addr"  yaml:"remoteAddr"`
+	Encap      string `json:"encapsulation" yaml:"encapsulation"`
 	Auth       string `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Crypt      string `json:"crypt,omitempty" yaml:"crypt,omitempty"`
 }
@@ -90,7 +90,7 @@ func (s *EspState) Correct(obj *EspState) {
 
 type ESPPolicy struct {
 	Source   string `json:"source,omitempty"`
-	Dest     string `json:"destination,omitempty"`
+	Dest     string `json:"destination,omitempty" yaml:"destination"`
 	Priority int    `json:"priority"`
 }
 
@@ -107,7 +107,7 @@ type ESPMember struct {
 	Peer     string       `json:"peer"`
 	Spi      int          `json:"spi"`
 	State    EspState     `json:"state"`
-	Policies []*ESPPolicy `json:"policies" yaml:"policies,omitempty"`
+	Policies []*ESPPolicy `json:"policies" yaml:"policies"`
 }
 
 func (m *ESPMember) Correct(state *EspState) {
@@ -178,9 +178,9 @@ func (m *ESPMember) RemovePolicy(dest string) bool {
 type ESPSpecifies struct {
 	Name    string       `json:"name"`
 	Address string       `json:"address,omitempty"`
-	State   EspState     `json:"state" yaml:"state,omitempty"`
+	State   EspState     `json:"state,omitempty" yaml:"state,omitempty"`
 	Members []*ESPMember `json:"members"`
-	Listen  string       `json:"listen,omitempty"`
+	Listen  string       `json:"listen,omitempty" yaml:"listen,omitempty"`
 }
 
 func (n *ESPSpecifies) Correct() {

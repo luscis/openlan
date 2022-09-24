@@ -7,8 +7,8 @@ type Bridge struct {
 	IPMtu    int    `json:"mtu,omitempty" yaml:"mtu,omitempty"`
 	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
 	Provider string `json:"provider,omitempty" yaml:"provider,omitempty"`
-	Stp      string `json:"stp,omitempty" yaml:"stpState,omitempty"`
-	Delay    int    `json:"delay,omitempty" yaml:"forwardDelay,omitempty"`
+	Stp      string `json:"stp,omitempty" yaml:"stp,omitempty"`
+	Delay    int    `json:"delay,omitempty" yaml:"delay,omitempty"`
 	Mss      int    `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
 }
 

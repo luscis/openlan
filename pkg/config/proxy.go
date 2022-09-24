@@ -11,7 +11,7 @@ type ShadowProxy struct {
 	Cipher     string `json:"cipher,omitempty"`
 	Password   string `json:"password,omitempty"`
 	Plugin     string `json:"plugin,omitempty"`
-	PluginOpts string `json:"pluginOpts,omitempty"`
+	PluginOpts string `json:"pluginOpts,omitempty" yaml:"pluginOpts,omitempty"`
 	Protocol   string `json:"protocol,omitempty"`
 }
 

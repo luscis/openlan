@@ -212,9 +212,6 @@ func (v *Switch) preWorkerVPN(w Networker, vCfg *co.OpenVPN) {
 		}
 	}
 	vCfg.Routes = routes
-	for _, _vCfg := range vCfg.Breed {
-		v.preWorkerVPN(w, _vCfg)
-	}
 }
 
 func (v *Switch) preWorker(w Networker) {
@@ -261,9 +258,6 @@ func (v *Switch) preNetVPN0(nCfg *co.Network, vCfg *co.OpenVPN) {
 		v.enableFwd(devName, "", vCfg.Subnet, rt)
 		v.enableMasq(devName, "", vCfg.Subnet, rt)
 	}
-	for _, _vCfg := range vCfg.Breed {
-		v.preNetVPN0(nCfg, _vCfg)
-	}
 }
 
 func (v *Switch) preNetVPN1(bridge, prefix string, vCfg *co.OpenVPN) {
@@ -273,9 +267,6 @@ func (v *Switch) preNetVPN1(bridge, prefix string, vCfg *co.OpenVPN) {
 	// Enable MASQUERADE, and allowed forward.
 	v.enableFwd("", bridge, vCfg.Subnet, prefix)
 	v.enableMasq("", bridge, vCfg.Subnet, prefix)
-	for _, _vCfg := range vCfg.Breed {
-		v.preNetVPN1(bridge, prefix, _vCfg)
-	}
 }
 
 func (v *Switch) preNets() {
@@ -383,9 +374,6 @@ func (v *Switch) preAllowVPN(cfg *co.OpenVPN) {
 	} else {
 		v.enablePort("tcp", port)
 	}
-	for _, _cfg := range cfg.Breed {
-		v.preAllowVPN(_cfg)
-	}
 }
 
 func (v *Switch) preAllow() {
@@ -445,7 +433,7 @@ func (v *Switch) Initialize() {
 			BaseDN:    ldap.BaseDN,
 			Attr:      ldap.Attribute,
 			Filter:    ldap.Filter,
-			EnableTls: ldap.EnableTls,
+			EnableTls: ldap.Tls,
 		})
 	}
 	// Enable cert verify for access
