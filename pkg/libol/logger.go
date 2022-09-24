@@ -234,7 +234,3 @@ func (s *SubLogger) Error(format string, v ...interface{}) {
 func (s *SubLogger) Fatal(format string, v ...interface{}) {
 	s.logger.Write(FATAL, s.Fmt(format), v...)
 }
-
-func init() {
-	log.SetFlags(0)
-}
