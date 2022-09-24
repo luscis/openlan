@@ -64,7 +64,6 @@ vendor: update
 
 env:
 	@mkdir -p $(BD)
-	@mkdir -p $(CD)
 	@go version
 	@gofmt -w -s ./pkg ./cmd ./misc
 
@@ -197,9 +196,12 @@ test: ## execute unit test
 
 ## coverage
 cover: env ## execute unit test and output coverage
-	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/access.txt -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/libol.txt -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/models.txt -race -covermode=atomic
+	@rm -rvf $(CD)
+	@mkdir -p $(CD)
+	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/access.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/libol.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/models.out -race -covermode=atomic
 
-	echo 'mode: atomic' > $(SD)/coverage.cov
-	tail -q -n +2 $(CD)/*.txt >> $(SD)/coverage.cov
+	echo 'mode: atomic' > $(SD)/coverage.out
+	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
+	go tool cover -html=coverage.out -o coverage.html
