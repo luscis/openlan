@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"github.com/luscis/openlan/pkg/libol"
+	"log"
 	"runtime"
 	"strings"
 )
@@ -77,6 +78,9 @@ func NewPoint() *Point {
 	}
 	p.Flags()
 	p.Parse()
+	if p.Terminal == "off" {
+		log.SetFlags(0)
+	}
 	p.Initialize()
 	return p
 }
