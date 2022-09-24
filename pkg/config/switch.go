@@ -96,6 +96,7 @@ func DefaultSwitch() *Switch {
 			Listen: "0.0.0.0:10000",
 		},
 		Listen: "0.0.0.0:10002",
+		Cert:   &Cert{},
 	}
 	obj.Correct(nil)
 	return obj
@@ -142,6 +143,8 @@ func (s *Switch) Correct(obj *Switch) {
 	s.File = filepath.Join(s.ConfDir, "switch.json")
 	if s.Cert != nil {
 		s.Cert.Correct()
+	} else {
+		s.Cert = obj.Cert
 	}
 	perf := &s.Perf
 	perf.Correct(DefaultPerf())

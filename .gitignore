@@ -3,7 +3,7 @@
 *.dll
 *.so
 *.dylib
-
+*.patch
 *.exe
 *.x86_64
 *.rpm

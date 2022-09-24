@@ -116,7 +116,7 @@ func GetSocketClient(p *config.Point) libol.SocketClient {
 			WrQus: p.Queue.SockWr,
 		}
 		if p.Cert != nil {
-			c.Cert = &libol.WebCert{
+			c.Cert = &libol.CertConfig{
 				Insecure: p.Cert.Insecure,
 				RootCa:   p.Cert.CaFile,
 			}
