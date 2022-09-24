@@ -24,6 +24,6 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
-        files: ./coverage.cov
+        files: ./coverage.out
         name: codecov
         verbose: true
