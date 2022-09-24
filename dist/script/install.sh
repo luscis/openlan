@@ -21,7 +21,7 @@ function requires() {
 }
 
 function install() {
-  local source=$(find $tmp -name 'openlan-*')
+  local source=$(find $tmp -maxdepth 1 -name 'openlan-*')
   cd $source && {
     /usr/bin/env \cp -rf ./{etc,usr,var} /
     /usr/bin/env find ./ -type f > /usr/share/openlan.db

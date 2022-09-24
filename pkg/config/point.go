@@ -9,28 +9,28 @@ import (
 )
 
 type Interface struct {
-	Name     string `json:"name,omitempty"`
+	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
 	IPMtu    int    `json:"mtu" yaml:"mtu"`
-	Address  string `json:"address,omitempty"`
-	Bridge   string `json:"bridge,omitempty"`
-	Provider string `json:"provider,omitempty"`
-	Cost     int    `json:"cost,omitempty"`
+	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
+	Bridge   string `json:"bridge,omitempty" yaml:"bridge,omitempty"`
+	Provider string `json:"provider,omitempty" yaml:"provider,omitempty"`
+	Cost     int    `json:"cost,omitempty" yaml:"cost,omitempty"`
 }
 
 type Point struct {
-	File        string    `json:"file,omitempty"`
-	Alias       string    `json:"alias,omitempty"`
+	File        string    `json:"file,omitempty" yaml:"file,omitempty"`
+	Alias       string    `json:"alias,omitempty" yaml:"alias,omitempty"`
 	Connection  string    `json:"connection"`
 	Timeout     int       `json:"timeout"`
 	Username    string    `json:"username,omitempty"`
-	Network     string    `json:"network"`
+	Network     string    `json:"network,omitempty" yaml:"network,omitempty"`
 	Password    string    `json:"password,omitempty"`
 	Protocol    string    `json:"protocol,omitempty"`
 	Interface   Interface `json:"interface"`
 	Log         Log       `json:"log"`
 	Http        *Http     `json:"http,omitempty"`
 	Crypt       *Crypt    `json:"crypt,omitempty"`
-	PProf       string    `json:"pprof,omitempty"`
+	PProf       string    `json:"pprof,omitempty" yaml:"pprof,omitempty"`
 	RequestAddr bool      `json:"requestAddr,omitempty" yaml:"requestAddr,omitempty"`
 	ByPass      bool      `json:"bypass,omitempty"`
 	SaveFile    string    `json:"-" yaml:"-"`

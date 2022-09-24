@@ -2,9 +2,9 @@ package config
 
 type IpSubnet struct {
 	Network string `json:"network,omitempty" yaml:"network,omitempty"`
-	Start   string `json:"start,omitempty"`
-	End     string `json:"end,omitempty"`
-	Netmask string `json:"netmask,omitempty"`
+	Start   string `json:"start,omitempty" yaml:"start,omitempty"`
+	End     string `json:"end,omitempty" yaml:"end,omitempty"`
+	Netmask string `json:"netmask,omitempty" yaml:"netmask,omitempty"`
 }
 
 type MultiPath struct {
