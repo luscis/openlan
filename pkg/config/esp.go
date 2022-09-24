@@ -102,7 +102,7 @@ func (p *ESPPolicy) Correct() {
 }
 
 type ESPMember struct {
-	Name     string       `json:"name"`
+	Name     string       `json:"name,omitempty" yaml:"name,omitempty"`
 	Address  string       `json:"address,omitempty"`
 	Peer     string       `json:"peer"`
 	Spi      int          `json:"spi"`

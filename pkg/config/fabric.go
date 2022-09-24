@@ -4,7 +4,7 @@ type FabricSpecifies struct {
 	Mss      int             `json:"tcpMss,omitempty"`
 	Fragment bool            `json:"fragment"`
 	Driver   string          `json:"driver,omitempty" yaml:"driver,omitempty"`
-	Name     string          `json:"name"`
+	Name     string          `json:"name,omitempty" yaml:"name,omitempty"`
 	Tunnels  []*FabricTunnel `json:"tunnels" yaml:"tunnels"`
 }
 

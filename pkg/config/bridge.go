@@ -30,6 +30,6 @@ func (br *Bridge) Correct() {
 		br.Delay = 2
 	}
 	if br.Stp == "" {
-		br.Stp = "on"
+		br.Stp = "enable"
 	}
 }

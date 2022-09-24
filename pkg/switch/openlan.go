@@ -163,7 +163,7 @@ func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 	// new it and configure address
 	master.Open(cfg.Address)
 	// configure stp
-	if cfg.Stp == "on" {
+	if cfg.Stp == "enable" {
 		if err := master.Stp(true); err != nil {
 			w.out.Warn("OpenLANWorker.UpBridge: Stp %s", err)
 		}
