@@ -7,13 +7,13 @@ type ACL struct {
 }
 
 type ACLRule struct {
-	Name    string `json:"name,omitempty" yaml:"name,omitempty"`
-	SrcIp   string `json:"src,omitempty" yaml:"source,omitempty"`
-	DstIp   string `json:"dst,omitempty" yaml:"destination,omitempty"`
-	Proto   string `json:"proto,omitempty" yaml:"protocol,omitempty"`
-	SrcPort string `json:"sport,omitempty" yaml:"destPort,omitempty"`
-	DstPort string `json:"dport,omitempty" yaml:"sourcePort,omitempty"`
-	Action  string `json:"action,omitempty" yaml:"action,omitempty"`
+	Name    string `json:"name,omitempty"`
+	SrcIp   string `json:"source,omitempty"`
+	DstIp   string `json:"destination,omitempty"`
+	Proto   string `json:"protocol,omitempty"`
+	SrcPort string `json:"sourcePort,omitempty"`
+	DstPort string `json:"destPort,omitempty"`
+	Action  string `json:"action,omitempty"`
 }
 
 func (ru *ACLRule) Correct() {

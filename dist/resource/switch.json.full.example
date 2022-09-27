@@ -1,13 +1,13 @@
 {
     "protocol": "tls",
     "cert": {
-        "dir": "/var/openlan/cert"
+        "directory": "/var/openlan/cert"
     },
     "http": {
         "public": "/var/openlan/public"
     },
     "crypt": {
-        "algo": "aes-128",
+        "algorithm": "aes-128",
         "secret": "cb2ff088a34d"
     },
     "inspect": [
@@ -21,9 +21,9 @@
           "protocol": "tcp",
           "match": "tcp",
           "destination": "0.0.0.0/0",
-          "dport": 80,
+          "destPort": 80,
           "jump": "DNAT",
-          "to-destination": "100.44.85.6:80"
+          "toDestination": "100.44.85.6:80"
        }
     ],
     "ldap": {

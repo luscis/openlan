@@ -10,7 +10,7 @@ import (
 )
 
 type Crypt struct {
-	Algo   string `json:"algo,omitempty" yaml:"algorithm"`
+	Algo   string `json:"algorithm,omitempty"`
 	Secret string `json:"secret,omitempty"`
 }
 
@@ -25,10 +25,10 @@ func (c *Crypt) Default() {
 }
 
 type Cert struct {
-	Dir      string `json:"dir" yaml:"directory"`
-	CrtFile  string `json:"crt" yaml:"cert"`
-	KeyFile  string `json:"key" yaml:"key"`
-	CaFile   string `json:"ca" yaml:"rootCa"`
+	Dir      string `json:"directory"`
+	CrtFile  string `json:"cert"`
+	KeyFile  string `json:"key"`
+	CaFile   string `json:"rootCa"`
 	Insecure bool   `json:"insecure"`
 }
 

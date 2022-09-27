@@ -12,7 +12,7 @@
         "insecure": true
     },
     "crypt": {
-        "algo": "aes-256",
+        "algorithm": "aes-256",
         "secret": "1f4ee82b5eb6"
     }
 }

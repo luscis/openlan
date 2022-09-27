@@ -119,8 +119,9 @@ install: env linux ## install packages
 	@mkdir -p $(LINUX_DIR)/etc/openlan/switch
 	@cp -rf $(SD)/dist/resource/confd.schema.json $(LINUX_DIR)/etc/openlan/switch
 	@cp -rf $(SD)/dist/resource/switch.json.example $(LINUX_DIR)/etc/openlan/switch
+	@mkdir -p $(LINUX_DIR)/etc/openlan/switch/acl
+	@cp -rf $(SD)/dist/resource/acl-1.json.example $(LINUX_DIR)/etc/openlan/switch/acl
 	@mkdir -p $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/acl-1.json.example $(LINUX_DIR)/etc/openlan/switch/network
 	@cp -rf $(SD)/dist/resource/default.json.example $(LINUX_DIR)/etc/openlan/switch/network
 	@cp -rf $(SD)/dist/resource/network.json.example $(LINUX_DIR)/etc/openlan/switch/network
 	@cp -rf $(SD)/dist/resource/ipsec.json.example $(LINUX_DIR)/etc/openlan/switch/network

@@ -2,8 +2,8 @@ package api
 
 import (
 	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/luscis/openlan/pkg/libol"
-	"gopkg.in/yaml.v2"
 	"os"
 	"strconv"
 	"text/template"

@@ -1,12 +1,12 @@
 package schema
 
 type OnLine struct {
-	HitTime    int64  `json:"hittime"`
+	HitTime    int64  `json:"aliveTime"`
 	UpTime     int64  `json:"uptime"`
 	EthType    uint16 `json:"ethType"`
-	IpSource   string `json:"ipSource"`
-	IpDest     string `json:"ipDestination"`
-	IpProto    string `json:"ipProtocol"`
-	PortSource uint16 `json:"portSource"`
-	PortDest   uint16 `json:"portDestination"`
+	IpSource   string `json:"sourceAddr"`
+	IpDest     string `json:"destAddr"`
+	IpProto    string `json:"protocol"`
+	PortSource uint16 `json:"sourcePort"`
+	PortDest   uint16 `json:"destPort"`
 }

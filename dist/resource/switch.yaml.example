@@ -1,0 +1,5 @@
+protocol: tcp
+listen: :10002
+crypt:
+  algorithm: xor
+  secret: cb2ff088a34d

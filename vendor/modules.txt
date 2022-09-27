@@ -34,6 +34,9 @@ github.com/danieldin95/go-openvswitch/ovs
 github.com/davecgh/go-spew/spew
 # github.com/docker/libnetwork v0.5.6
 ## explicit
+# github.com/ghodss/yaml v1.0.0
+## explicit
+github.com/ghodss/yaml
 # github.com/go-ldap/ldap v3.0.3+incompatible
 ## explicit
 github.com/go-ldap/ldap

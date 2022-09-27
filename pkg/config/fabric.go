@@ -3,9 +3,9 @@ package config
 type FabricSpecifies struct {
 	Mss      int             `json:"tcpMss,omitempty"`
 	Fragment bool            `json:"fragment"`
-	Driver   string          `json:"driver,omitempty" yaml:"driver,omitempty"`
-	Name     string          `json:"name,omitempty" yaml:"name,omitempty"`
-	Tunnels  []*FabricTunnel `json:"tunnels" yaml:"tunnels"`
+	Driver   string          `json:"driver,omitempty"`
+	Name     string          `json:"name,omitempty"`
+	Tunnels  []*FabricTunnel `json:"tunnels"`
 }
 
 func (n *FabricSpecifies) Correct() {
@@ -53,10 +53,10 @@ func (n *FabricSpecifies) DelTunnel(remote string) bool {
 }
 
 type FabricTunnel struct {
-	DstPort uint32 `json:"dport" yaml:"destPort"`
+	DstPort uint32 `json:"destPort"`
 	Remote  string `json:"remote"`
-	Local   string `json:"local,omitempty" yaml:"local,omitempty"`
-	Mode    string `json:"mode,omitempty" yaml:"mode,omitempty"`
+	Local   string `json:"local,omitempty"`
+	Mode    string `json:"mode,omitempty"`
 }
 
 func (c *FabricTunnel) Correct() {

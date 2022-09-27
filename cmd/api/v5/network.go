@@ -1,8 +1,8 @@
 package v5
 
 import (
-	"fmt"
 	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,11 +16,10 @@ func (u Network) Url(prefix, name string) string {
 
 func (u Network) List(c *cli.Context) error {
 	url := u.Url(c.String("url"), "")
-	url += "?format=" + c.String("format")
 	clt := u.NewHttp(c.String("token"))
-	if data, err := clt.GetBody(url); err == nil {
-		fmt.Println(string(data))
-		return nil
+	var items []schema.Network
+	if err := clt.GetJSON(url, &items); err == nil {
+		return u.Out(items, c.String("format"), "")
 	} else {
 		return err
 	}

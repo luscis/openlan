@@ -26,13 +26,17 @@ func (u Config) List(c *cli.Context) error {
 	clt := u.NewHttp(c.String("token"))
 	cfg := &config.Switch{}
 	if err := clt.GetJSON(url, cfg); err == nil {
+		name := c.String("network")
 		format := c.String("format")
 		if format == "yaml" {
 			cfg.Format()
-		} else {
-			format = "json"
 		}
-		return u.Out(cfg, format, "")
+		if len(name) > 0 {
+			obj := cfg.GetNetwork(name)
+			return u.Out(obj, format, "")
+		} else {
+			return u.Out(cfg, format, "")
+		}
 	} else {
 		return err
 	}
@@ -163,7 +167,10 @@ func (u Config) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all configuration",
 				Aliases: []string{"ls"},
-				Action:  u.List,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "network", Value: ""},
+				},
+				Action: u.List,
 			},
 			{
 				Name:    "check",

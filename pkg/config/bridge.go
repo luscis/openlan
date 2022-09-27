@@ -2,14 +2,14 @@ package config
 
 type Bridge struct {
 	Network  string `json:"network"`
-	Peer     string `json:"peer,omitempty" yaml:"peer,omitempty"`
-	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
-	IPMtu    int    `json:"mtu,omitempty" yaml:"mtu,omitempty"`
-	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
-	Provider string `json:"provider,omitempty" yaml:"provider,omitempty"`
-	Stp      string `json:"stp,omitempty" yaml:"stp,omitempty"`
-	Delay    int    `json:"delay,omitempty" yaml:"delay,omitempty"`
-	Mss      int    `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
+	Peer     string `json:"peer,omitempty"`
+	Name     string `json:"name,omitempty"`
+	IPMtu    int    `json:"mtu,omitempty"`
+	Address  string `json:"address,omitempty"`
+	Provider string `json:"provider,omitempty"`
+	Stp      string `json:"stp,omitempty"`
+	Delay    int    `json:"delay,omitempty"`
+	Mss      int    `json:"tcpMss,omitempty"`
 }
 
 func (br *Bridge) Correct() {

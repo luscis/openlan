@@ -26,7 +26,7 @@
                 "password": "cb2ff088a34d"
             },
             "cert": {
-                "dir": "/var/openlan/cert"
+                "directory": "/var/openlan/cert"
             }
         }
     ],

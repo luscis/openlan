@@ -7,21 +7,21 @@ import (
 )
 
 type Network struct {
-	ConfDir   string        `json:"-" yaml:"-"`
+	ConfDir   string        `json:"-"`
 	File      string        `json:"file"`
-	Alias     string        `json:"-" yaml:"-"`
-	Name      string        `json:"name" yaml:"name"`
-	Provider  string        `json:"provider,omitempty" yaml:"provider,omitempty"`
-	Bridge    *Bridge       `json:"bridge,omitempty" yaml:"bridge,omitempty"`
-	Subnet    *IpSubnet     `json:"subnet,omitempty" yaml:"subnet,omitempty"`
-	OpenVPN   *OpenVPN      `json:"openvpn,omitempty" yaml:"openvpn,omitempty"`
-	Links     []Point       `json:"links,omitempty" yaml:"links,omitempty"`
-	Hosts     []HostLease   `json:"hosts,omitempty" yaml:"hosts,omitempty"`
-	Routes    []PrefixRoute `json:"routes,omitempty" yaml:"routes,omitempty"`
-	Acl       string        `json:"acl,omitempty" yaml:"acl,omitempty"`
-	Specifies interface{}   `json:"specifies,omitempty" yaml:"specifies,omitempty"`
-	Dhcp      string        `json:"dhcp,omitempty" yaml:"dhcp,omitempty"`
-	Outputs   []Output      `json:"outputs" yaml:"outputs"`
+	Alias     string        `json:"-"`
+	Name      string        `json:"name"`
+	Provider  string        `json:"provider,omitempty"`
+	Bridge    *Bridge       `json:"bridge,omitempty"`
+	Subnet    *Subnet       `json:"subnet,omitempty"`
+	OpenVPN   *OpenVPN      `json:"openvpn,omitempty"`
+	Links     []Point       `json:"links,omitempty"`
+	Hosts     []HostLease   `json:"hosts,omitempty"`
+	Routes    []PrefixRoute `json:"routes,omitempty"`
+	Acl       string        `json:"acl,omitempty"`
+	Specifies interface{}   `json:"specifies,omitempty"`
+	Dhcp      string        `json:"dhcp,omitempty"`
+	Outputs   []Output      `json:"outputs"`
 }
 
 func (n *Network) Correct() {
@@ -53,7 +53,7 @@ func (n *Network) Correct() {
 		}
 	default:
 		if n.Subnet == nil {
-			n.Subnet = &IpSubnet{}
+			n.Subnet = &Subnet{}
 		}
 		ipAddr := ""
 		ipMask := ""

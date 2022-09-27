@@ -29,14 +29,14 @@ func SetLocalUdp(port string) {
 }
 
 type EspState struct {
-	Local      string `json:"local,omitempty" yaml:"local,omitempty"`
-	LocalIp    net.IP `json:"local_addr"  yaml:"localAddr"`
-	Remote     string `json:"remote,omitempty" yaml:"remote,omitempty"`
-	RemotePort int    `json:"remote_port" yaml:"remotePort"`
-	RemoteIp   net.IP `json:"remote_addr"  yaml:"remoteAddr"`
-	Encap      string `json:"encapsulation" yaml:"encapsulation"`
-	Auth       string `json:"auth,omitempty" yaml:"auth,omitempty"`
-	Crypt      string `json:"crypt,omitempty" yaml:"crypt,omitempty"`
+	Local      string `json:"local,omitempty"`
+	LocalIp    net.IP `json:"localAddr,omitempty"`
+	Remote     string `json:"remote,omitempty"`
+	RemotePort int    `json:"remotePort,omitempty"`
+	RemoteIp   net.IP `json:"remoteAddr,omitempty"`
+	Encap      string `json:"encapsulation,omitempty"`
+	Auth       string `json:"auth,omitempty"`
+	Crypt      string `json:"crypt,omitempty"`
 }
 
 func (s *EspState) Padding(value string, size int) string {
@@ -90,8 +90,8 @@ func (s *EspState) Correct(obj *EspState) {
 
 type ESPPolicy struct {
 	Source   string `json:"source,omitempty"`
-	Dest     string `json:"destination,omitempty" yaml:"destination"`
-	Priority int    `json:"priority"`
+	Dest     string `json:"destination,omitempty"`
+	Priority int    `json:"priority,omitempty"`
 }
 
 func (p *ESPPolicy) Correct() {
@@ -102,12 +102,12 @@ func (p *ESPPolicy) Correct() {
 }
 
 type ESPMember struct {
-	Name     string       `json:"name,omitempty" yaml:"name,omitempty"`
+	Name     string       `json:"name,omitempty"`
 	Address  string       `json:"address,omitempty"`
 	Peer     string       `json:"peer"`
 	Spi      int          `json:"spi"`
 	State    EspState     `json:"state"`
-	Policies []*ESPPolicy `json:"policies" yaml:"policies"`
+	Policies []*ESPPolicy `json:"policies"`
 }
 
 func (m *ESPMember) Correct(state *EspState) {
@@ -178,9 +178,9 @@ func (m *ESPMember) RemovePolicy(dest string) bool {
 type ESPSpecifies struct {
 	Name    string       `json:"name"`
 	Address string       `json:"address,omitempty"`
-	State   EspState     `json:"state,omitempty" yaml:"state,omitempty"`
+	State   EspState     `json:"state,omitempty"`
 	Members []*ESPMember `json:"members"`
-	Listen  string       `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Listen  string       `json:"listen,omitempty"`
 }
 
 func (n *ESPSpecifies) Correct() {

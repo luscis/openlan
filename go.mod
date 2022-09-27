@@ -21,6 +21,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/danieldin95/go-openvswitch v0.0.5
 	github.com/docker/libnetwork v0.5.6 // indirect
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-ldap/ldap v3.0.3+incompatible
 	github.com/go-logr/logr v1.1.0
 	github.com/go-logr/stdr v1.1.0

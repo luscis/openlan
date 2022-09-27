@@ -16,11 +16,15 @@ type PrefixRoute struct {
 	Mode    string `json:"mode"`
 }
 
+type Subnet struct {
+	IfAddr  string `json:"address,omitempty"`
+	IpStart string `json:"startAt,omitempty"`
+	IpEnd   string `json:"endAt,omitempty"`
+	Netmask string `json:"netmask"`
+}
+
 type Network struct {
-	Name    string        `json:"name"`
-	IfAddr  string        `json:"ifAddr,omitempty"`
-	IpStart string        `json:"ipStart,omitempty"`
-	IpEnd   string        `json:"ipEnd,omitempty"`
-	Netmask string        `json:"netmask"`
-	Routes  []PrefixRoute `json:"routes"`
+	Name   string        `json:"name"`
+	Subnet Subnet        `json:"subnet"`
+	Routes []PrefixRoute `json:"routes"`
 }
