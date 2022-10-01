@@ -9,6 +9,7 @@ func InArray(data []int) {
 	data[0] = 0x04
 	fmt.Println(data)
 }
+
 func main() {
 	var a = []int{1, 2, 3}
 

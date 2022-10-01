@@ -4,6 +4,8 @@
 *.so
 *.dylib
 *.patch
+*.rej
+*.orig
 *.exe
 *.x86_64
 *.rpm
@@ -23,6 +25,7 @@ coverage.html
 /core/build/
 /core/cmake-build-debug/
 
+# Temporary files
 confd-idl.h
 confd-idl.c
 confd-idl.ovsidl

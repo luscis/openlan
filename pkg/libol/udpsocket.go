@@ -1,13 +1,12 @@
 package libol
 
 import (
-	"github.com/xtaci/kcp-go/v5"
 	"net"
 	"time"
 )
 
 type UdpConfig struct {
-	Block   kcp.BlockCrypt
+	Block   *BlockCrypt
 	Timeout time.Duration // ns
 	Clients int
 	RdQus   int // per frames
@@ -97,9 +96,11 @@ func NewUdpClient(addr string, cfg *UdpConfig) *UdpClient {
 	}
 	c := &UdpClient{
 		udpCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &PacketMessagerImpl{
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
-			block:   cfg.Block,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
 	}
@@ -112,13 +113,15 @@ func NewUdpClientFromConn(conn net.Conn, cfg *UdpConfig) *UdpClient {
 	}
 	addr := conn.RemoteAddr().String()
 	c := &UdpClient{
-		SocketClientImpl: NewSocketClient(addr, &PacketMessagerImpl{
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
-			block:   cfg.Block,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
 	}
-	c.updateConn(conn)
+	c.update(conn)
 	return c
 }
 
@@ -131,7 +134,7 @@ func (c *UdpClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	c.SetConnection(conn)
+	c.Reset(conn)
 	if c.listener.OnConnected != nil {
 		_ = c.listener.OnConnected(c)
 	}
@@ -146,7 +149,7 @@ func (c *UdpClient) Close() {
 			c.status = ClClosed
 		}
 		c.out.Info("UdpClient.Close")
-		c.updateConn(nil)
+		c.update(nil)
 		c.private = nil
 		c.lock.Unlock()
 		if c.listener.OnClose != nil {

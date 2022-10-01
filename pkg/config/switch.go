@@ -97,6 +97,7 @@ func DefaultSwitch() *Switch {
 		},
 		Listen: "0.0.0.0:10002",
 		Cert:   &Cert{},
+		Crypt:  &Crypt{},
 	}
 	obj.Correct(nil)
 	return obj
@@ -141,16 +142,17 @@ func (s *Switch) Correct(obj *Switch) {
 	libol.Debug("Proxy.Correct Http %v", s.Http)
 	s.TokenFile = filepath.Join(s.ConfDir, "token")
 	s.File = filepath.Join(s.ConfDir, "switch.json")
-	if s.Cert != nil {
-		s.Cert.Correct()
-	} else {
+	if s.Cert == nil {
 		s.Cert = obj.Cert
+	} else {
+		s.Cert.Correct()
+	}
+	if s.Crypt == nil {
+		s.Crypt = obj.Crypt
 	}
 	perf := &s.Perf
 	perf.Correct(DefaultPerf())
-	if s.PassFile == "" {
-		s.PassFile = filepath.Join(s.ConfDir, "password")
-	}
+	s.PassFile = filepath.Join(s.ConfDir, "password")
 	if s.Protocol == "" {
 		s.Protocol = "tcp"
 	}

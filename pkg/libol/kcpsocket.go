@@ -7,7 +7,7 @@ import (
 )
 
 type KcpConfig struct {
-	Block        kcp.BlockCrypt
+	Block        *BlockCrypt
 	WinSize      int           // default 1024
 	DataShards   int           // default 10
 	ParityShards int           // default 3
@@ -62,7 +62,7 @@ func NewKcpServer(listen string, cfg *KcpConfig) *KcpServer {
 func (k *KcpServer) Listen() (err error) {
 	k.listener, err = kcp.ListenWithOptions(
 		k.address,
-		k.kcpCfg.Block,
+		nil,
 		k.kcpCfg.DataShards,
 		k.kcpCfg.ParityShards)
 	if err != nil {
@@ -125,7 +125,10 @@ func NewKcpClient(addr string, cfg *KcpConfig) *KcpClient {
 	}
 	c := &KcpClient{
 		kcpCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
@@ -139,12 +142,15 @@ func NewKcpClientFromConn(conn net.Conn, cfg *KcpConfig) *KcpClient {
 	}
 	addr := conn.RemoteAddr().String()
 	c := &KcpClient{
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
 	}
-	c.updateConn(conn)
+	c.update(conn)
 	return c
 }
 
@@ -155,7 +161,7 @@ func (c *KcpClient) Connect() error {
 	c.out.Info("KcpClient.Connect: kcp://%s", c.address)
 	conn, err := kcp.DialWithOptions(
 		c.address,
-		c.kcpCfg.Block,
+		nil,
 		c.kcpCfg.DataShards,
 		c.kcpCfg.DataShards)
 	if err != nil {
@@ -165,7 +171,7 @@ func (c *KcpClient) Connect() error {
 		c.out.Warn("KcpClient.SetDSCP: ", err)
 	}
 	setConn(conn, c.kcpCfg)
-	c.SetConnection(conn)
+	c.Reset(conn)
 	if c.listener.OnConnected != nil {
 		_ = c.listener.OnConnected(c)
 	}
@@ -180,7 +186,7 @@ func (c *KcpClient) Close() {
 			c.status = ClClosed
 		}
 		c.out.Debug("KcpClient.Close")
-		c.updateConn(nil)
+		c.update(nil)
 		c.private = nil
 		c.lock.Unlock()
 		if c.listener.OnClose != nil {

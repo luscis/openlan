@@ -134,22 +134,19 @@ func (ap *Point) Correct(obj *Point) {
 			ap.Cert = obj.Cert
 		}
 	}
-	if ap.Protocol == "" {
+	if ap.Protocol == "" && obj != nil {
 		ap.Protocol = obj.Protocol
 	}
 	if ap.Cert != nil {
-		if ap.Cert.Dir == "" {
-			ap.Cert.Dir = "."
-		}
 		ap.Cert.Correct()
 	}
-	if ap.Timeout == 0 {
+	if ap.Timeout == 0 && obj != nil {
 		ap.Timeout = obj.Timeout
 	}
-	if ap.Interface.Cost == 0 {
+	if ap.Interface.Cost == 0 && obj != nil {
 		ap.Interface.Cost = obj.Interface.Cost
 	}
-	if ap.Interface.IPMtu == 0 {
+	if ap.Interface.IPMtu == 0 && obj != nil {
 		ap.Interface.IPMtu = obj.Interface.IPMtu
 	}
 }

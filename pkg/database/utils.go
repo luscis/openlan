@@ -15,5 +15,5 @@ func PrintError(result []ovsdb.OperationResult) {
 }
 
 func GenUUID() string {
-	return libol.GenRandom(32)
+	return libol.GenString(32)
 }

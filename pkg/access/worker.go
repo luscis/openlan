@@ -80,23 +80,25 @@ type PrefixRule struct {
 }
 
 func GetSocketClient(p *config.Point) libol.SocketClient {
+	crypt := p.Crypt
+	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
 	switch p.Protocol {
 	case "kcp":
 		c := libol.NewKcpConfig()
-		c.Block = config.GetBlock(p.Crypt)
+		c.Block = block
 		c.RdQus = p.Queue.SockRd
 		c.WrQus = p.Queue.SockWr
 		return libol.NewKcpClient(p.Connection, c)
 	case "tcp":
 		c := &libol.TcpConfig{
-			Block: config.GetBlock(p.Crypt),
+			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
 		return libol.NewTcpClient(p.Connection, c)
 	case "udp":
 		c := &libol.UdpConfig{
-			Block:   config.GetBlock(p.Crypt),
+			Block:   block,
 			Timeout: time.Duration(p.Timeout) * time.Second,
 			RdQus:   p.Queue.SockRd,
 			WrQus:   p.Queue.SockWr,
@@ -104,14 +106,13 @@ func GetSocketClient(p *config.Point) libol.SocketClient {
 		return libol.NewUdpClient(p.Connection, c)
 	case "ws":
 		c := &libol.WebConfig{
-			Block: config.GetBlock(p.Crypt),
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
 		return libol.NewWebClient(p.Connection, c)
 	case "wss":
 		c := &libol.WebConfig{
-			Block: config.GetBlock(p.Crypt),
+			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
@@ -124,7 +125,7 @@ func GetSocketClient(p *config.Point) libol.SocketClient {
 		return libol.NewWebClient(p.Connection, c)
 	default:
 		c := &libol.TcpConfig{
-			Block: config.GetBlock(p.Crypt),
+			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
@@ -387,7 +388,7 @@ func (w *Worker) OnSuccess(s *SocketWorker) error {
 
 func (w *Worker) UUID() string {
 	if w.uuid == "" {
-		w.uuid = libol.GenRandom(13)
+		w.uuid = libol.GenString(13)
 	}
 	return w.uuid
 }

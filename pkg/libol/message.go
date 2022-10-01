@@ -32,6 +32,8 @@ const (
 	SignReq      = "sign= "
 	PingReq      = "ping= "
 	PongResp     = "pong: "
+	NegoReq      = "nego= "
+	NegoResp     = "nego: "
 )
 
 func isControl(data []byte) bool {
@@ -129,11 +131,14 @@ func NewFrameMessageFromBytes(buffer []byte) *FrameMessage {
 	m.frame = m.buffer[HlSize:]
 	m.total = len(m.frame)
 	m.size = len(m.frame)
+	m.control = isControl(m.frame)
+	if m.control {
+		m.Decode()
+	}
 	return &m
 }
 
 func (m *FrameMessage) Decode() bool {
-	m.control = isControl(m.frame)
 	if m.control {
 		if len(m.frame) < 2*EthDI {
 			Warn("FrameMessage.Decode: too small message")
@@ -233,6 +238,8 @@ func (c *ControlMessage) Encode() *FrameMessage {
 }
 
 type Messager interface {
+	Crypt() *BlockCrypt
+	SetCrypt(*BlockCrypt)
 	Send(conn net.Conn, frame *FrameMessage) (int, error)
 	Receive(conn net.Conn, max, min int) (*FrameMessage, error)
 	Flush()
@@ -240,9 +247,17 @@ type Messager interface {
 
 type StreamMessagerImpl struct {
 	timeout time.Duration // ns for read and write deadline.
-	block   kcp.BlockCrypt
+	block   *BlockCrypt
 	buffer  []byte
 	bufSize int // default is (1518 + 20+20+14) * 8
+}
+
+func (s *StreamMessagerImpl) SetCrypt(block *BlockCrypt) {
+	s.block = CopyBlockCrypt(block)
+}
+
+func (s *StreamMessagerImpl) Crypt() *BlockCrypt {
+	return s.block
 }
 
 func (s *StreamMessagerImpl) Flush() {
@@ -410,8 +425,16 @@ func (s *StreamMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 
 type PacketMessagerImpl struct {
 	timeout time.Duration // ns for read and write deadline
-	block   kcp.BlockCrypt
+	block   *BlockCrypt
 	bufSize int // default is (1518 + 20+20+14) * 8
+}
+
+func (s *PacketMessagerImpl) SetCrypt(block *BlockCrypt) {
+	s.block = CopyBlockCrypt(block)
+}
+
+func (s *PacketMessagerImpl) Crypt() *BlockCrypt {
+	return s.block
 }
 
 func (s *PacketMessagerImpl) Flush() {
@@ -478,4 +501,61 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 	frame.size = size
 	frame.frame = tmp
 	return frame, nil
+}
+
+type BlockCrypt struct {
+	kcp.BlockCrypt
+	algorithm string
+	key       string
+}
+
+func GetKcpBlock(algo string, key string) kcp.BlockCrypt {
+	var block kcp.BlockCrypt
+
+	pass := make([]byte, 64)
+	if len(key) <= 64 {
+		copy(pass, key)
+	} else {
+		copy(pass, key[:64])
+	}
+
+	switch algo {
+	case "aes-128":
+		block, _ = kcp.NewAESBlockCrypt(pass[:16])
+	case "aes-256":
+		block, _ = kcp.NewAESBlockCrypt(pass[:32])
+	case "xor":
+		block, _ = kcp.NewSimpleXORBlockCrypt(pass)
+	default:
+		block, _ = kcp.NewNoneBlockCrypt(pass)
+	}
+
+	return block
+}
+
+func NewBlockCrypt(algo string, key string) *BlockCrypt {
+	if key == "" {
+		return nil
+	}
+	return &BlockCrypt{
+		BlockCrypt: GetKcpBlock(algo, key),
+		algorithm:  algo,
+		key:        key,
+	}
+}
+
+func CopyBlockCrypt(crypt *BlockCrypt) *BlockCrypt {
+	if crypt == nil {
+		return nil
+	}
+	return &BlockCrypt{
+		BlockCrypt: GetKcpBlock(crypt.algorithm, crypt.key),
+		algorithm:  crypt.algorithm,
+		key:        crypt.key,
+	}
+}
+
+func (b *BlockCrypt) Update(key string) {
+	b.key = key
+	b.BlockCrypt = GetKcpBlock(b.algorithm, b.key)
 }

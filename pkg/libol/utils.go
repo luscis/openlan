@@ -23,15 +23,26 @@ import (
 const LeaseTime = "2006-01-02T15"
 const SimpleTime = "2006-01-02 15:04:05"
 
-func GenRandom(n int) string {
-	letters := []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+
+func GenString(n int) string {
 	buffer := make([]byte, n)
 	rand.Seed(time.Now().UnixNano())
 	for i := range buffer {
-		buffer[i] = letters[rand.Int63()%int64(len(letters))]
+		buffer[i] = Letters[rand.Int63()%int64(len(Letters))]
 	}
-	buffer[0] = letters[rand.Int63()%26+10]
+	buffer[0] = Letters[rand.Int63()%26+10]
 	return string(buffer)
+}
+
+func GenLetters(n int) []byte {
+	buffer := make([]byte, n)
+	rand.Seed(time.Now().UnixNano())
+	for i := range buffer {
+		buffer[i] = Letters[rand.Int63()%int64(len(Letters))]
+	}
+	buffer[0] = Letters[rand.Int63()%26+10]
+	return buffer
 }
 
 func GenEthAddr(n int) []byte {

@@ -39,7 +39,7 @@ func (h *Http) Initialize() {
 			Handler: r,
 		}
 	}
-	h.token = libol.GenRandom(32)
+	h.token = libol.GenString(32)
 	libol.Info("Http.Initialize: AdminToken: %s", h.token)
 	h.LoadRouter()
 }

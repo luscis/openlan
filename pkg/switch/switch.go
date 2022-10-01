@@ -15,15 +15,17 @@ import (
 )
 
 func GetSocketServer(s *co.Switch) libol.SocketServer {
+	crypt := s.Crypt
+	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
 	switch s.Protocol {
 	case "kcp":
 		c := libol.NewKcpConfig()
-		c.Block = co.GetBlock(s.Crypt)
+		c.Block = block
 		c.Timeout = time.Duration(s.Timeout) * time.Second
 		return libol.NewKcpServer(s.Listen, c)
 	case "tcp":
 		c := &libol.TcpConfig{
-			Block:   co.GetBlock(s.Crypt),
+			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
@@ -31,13 +33,13 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 		return libol.NewTcpServer(s.Listen, c)
 	case "udp":
 		c := &libol.UdpConfig{
-			Block:   co.GetBlock(s.Crypt),
+			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 		}
 		return libol.NewUdpServer(s.Listen, c)
 	case "ws":
 		c := &libol.WebConfig{
-			Block:   co.GetBlock(s.Crypt),
+			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
@@ -45,7 +47,7 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 		return libol.NewWebServer(s.Listen, c)
 	case "wss":
 		c := &libol.WebConfig{
-			Block:   co.GetBlock(s.Crypt),
+			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
@@ -59,7 +61,7 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 		return libol.NewWebServer(s.Listen, c)
 	default:
 		c := &libol.TcpConfig{
-			Block:   co.GetBlock(s.Crypt),
+			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
@@ -662,7 +664,7 @@ func (v *Switch) FreeTap(dev network.Taper) error {
 
 func (v *Switch) UUID() string {
 	if v.uuid == "" {
-		v.uuid = libol.GenRandom(13)
+		v.uuid = libol.GenString(13)
 	}
 	return v.uuid
 }

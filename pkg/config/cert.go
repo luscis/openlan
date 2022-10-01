@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/xtaci/kcp-go/v5"
 	"io/ioutil"
 )
 
@@ -78,32 +77,4 @@ func (c *Cert) GetCertPool() *x509.CertPool {
 		libol.Warn("Cert.GetTlsCertPool: invalid cert")
 	}
 	return pool
-}
-
-func GetBlock(cfg *Crypt) kcp.BlockCrypt {
-	if cfg == nil || cfg.IsZero() {
-		return nil
-	}
-	var block kcp.BlockCrypt
-	pass := make([]byte, 64)
-	if len(cfg.Secret) <= 64 {
-		copy(pass, cfg.Secret)
-	} else {
-		copy(pass, []byte(cfg.Secret)[:64])
-	}
-	switch cfg.Algo {
-	case "aes-128":
-		block, _ = kcp.NewAESBlockCrypt(pass[:16])
-	case "aes-192":
-		block, _ = kcp.NewAESBlockCrypt(pass[:24])
-	case "aes-256":
-		block, _ = kcp.NewAESBlockCrypt(pass[:32])
-	case "tea":
-		block, _ = kcp.NewTEABlockCrypt(pass[:16])
-	case "xtea":
-		block, _ = kcp.NewXTEABlockCrypt(pass[:16])
-	default:
-		block, _ = kcp.NewSimpleXORBlockCrypt(pass)
-	}
-	return block
 }

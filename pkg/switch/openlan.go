@@ -276,7 +276,7 @@ func (w *OpenLANWorker) UpTime() int64 {
 
 func (w *OpenLANWorker) AddLink(c *co.Point) {
 	br := w.cfg.Bridge
-	uuid := libol.GenRandom(13)
+	uuid := libol.GenString(13)
 
 	c.Alias = w.alias
 	c.Network = w.cfg.Name

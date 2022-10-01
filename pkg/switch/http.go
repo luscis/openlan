@@ -135,7 +135,7 @@ func (h *Http) LoadToken() {
 		}
 	}
 	if token == "" {
-		token = libol.GenRandom(32)
+		token = libol.GenString(32)
 	}
 	h.SetToken(token)
 }

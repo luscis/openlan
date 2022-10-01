@@ -71,7 +71,7 @@ func (p *MixPoint) Stop() {
 
 func (p *MixPoint) UUID() string {
 	if p.uuid == "" {
-		p.uuid = libol.GenRandom(13)
+		p.uuid = libol.GenString(13)
 	}
 	return p.uuid
 }

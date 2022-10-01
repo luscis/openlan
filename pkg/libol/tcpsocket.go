@@ -2,14 +2,13 @@ package libol
 
 import (
 	"crypto/tls"
-	"github.com/xtaci/kcp-go/v5"
 	"net"
 	"time"
 )
 
 type TcpConfig struct {
 	Tls     *tls.Config
-	Block   kcp.BlockCrypt
+	Block   *BlockCrypt
 	Timeout time.Duration // ns
 	RdQus   int           // per frames
 	WrQus   int           // per frames
@@ -97,8 +96,10 @@ type TcpClient struct {
 func NewTcpClient(addr string, cfg *TcpConfig) *TcpClient {
 	t := &TcpClient{
 		tcpCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
-			block:   cfg.Block,
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
@@ -110,13 +111,15 @@ func NewTcpClientFromConn(conn net.Conn, cfg *TcpConfig) *TcpClient {
 	addr := conn.RemoteAddr().String()
 	t := &TcpClient{
 		tcpCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
-			block:   cfg.Block,
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
 	}
-	t.updateConn(conn)
+	t.update(conn)
 	return t
 }
 
@@ -136,7 +139,7 @@ func (t *TcpClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	t.SetConnection(conn)
+	t.Reset(conn)
 	if t.listener.OnConnected != nil {
 		_ = t.listener.OnConnected(t)
 	}
@@ -150,7 +153,7 @@ func (t *TcpClient) Close() {
 		if t.status != ClTerminal {
 			t.status = ClClosed
 		}
-		t.updateConn(nil)
+		t.update(nil)
 		t.private = nil
 		t.lock.Unlock()
 		if t.listener.OnClose != nil {

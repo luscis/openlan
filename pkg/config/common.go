@@ -47,5 +47,5 @@ func GetAlias() string {
 	if hostname, err := os.Hostname(); err == nil {
 		return strings.ToLower(hostname)
 	}
-	return libol.GenRandom(13)
+	return libol.GenString(13)
 }

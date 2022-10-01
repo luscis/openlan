@@ -5,7 +5,7 @@ type manager struct {
 }
 
 var Manager = manager{
-	Switch: &Switch{},
+	Switch: DefaultSwitch(),
 }
 
 func Reload() {

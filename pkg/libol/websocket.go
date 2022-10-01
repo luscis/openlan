@@ -3,7 +3,6 @@ package libol
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/xtaci/kcp-go/v5"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
 	"net"
@@ -36,7 +35,7 @@ type CertConfig struct {
 
 type WebConfig struct {
 	Cert    *CertConfig
-	Block   kcp.BlockCrypt
+	Block   *BlockCrypt
 	Timeout time.Duration // ns
 	RdQus   int           // per frames
 	WrQus   int           // per frames
@@ -132,8 +131,10 @@ type WebClient struct {
 func NewWebClient(addr string, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
-			block:   cfg.Block,
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
@@ -146,14 +147,16 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 	addr := conn.RemoteAddr().String()
 	t := &WebClient{
 		webCfg: cfg,
-		SocketClientImpl: NewSocketClient(addr, &StreamMessagerImpl{
-			block:   cfg.Block,
+		SocketClientImpl: NewSocketClient(SocketConfig{
+			Address: addr,
+			Block:   cfg.Block,
+		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
 		}),
 		done: make(chan bool, 2),
 	}
-	t.updateConn(conn)
+	t.update(conn)
 	return t
 }
 
@@ -197,7 +200,7 @@ func (t *WebClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	t.SetConnection(conn)
+	t.Reset(conn)
 	if t.listener.OnConnected != nil {
 		_ = t.listener.OnConnected(t)
 	}
@@ -211,7 +214,7 @@ func (t *WebClient) Close() {
 		if t.status != ClTerminal {
 			t.status = ClClosed
 		}
-		t.updateConn(nil)
+		t.update(nil)
 		t.done <- true
 		t.private = nil
 		t.lock.Unlock()

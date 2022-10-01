@@ -139,7 +139,7 @@ func (u User) Commands(app *api.App) {
 				Usage: "Add a new user",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "name"},
-					&cli.StringFlag{Name: "password", Value: libol.GenRandom(24)},
+					&cli.StringFlag{Name: "password", Value: libol.GenString(24)},
 					&cli.StringFlag{Name: "role", Value: "guest"},
 					&cli.StringFlag{Name: "lease", Value: lease.Format(libol.LeaseTime)},
 				},
