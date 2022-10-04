@@ -11,7 +11,8 @@ set -ex
 # [root@centos ~]#
 
 ## Update your DDNS
-names=$(VERSION=v6 openlan na ls | grep -w 'name:' | sed 's/name://g')
+export VERSION=v6
+names=$(openlan na ls | grep -w 'Name:' | sed 's/Name://g')
 for name in $names; do
-  VERSION=v6 openlan name add --name $name
+  openlan name add --name $name
 done
