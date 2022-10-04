@@ -12,7 +12,7 @@ set -ex
 
 ## Update your DDNS
 export VERSION=v6
-names=$(openlan na ls | grep -w 'Name:' | sed 's/Name://g')
+names=$(openlan na ls | grep -w 'name:' | sed 's/name://g')
 for name in $names; do
   openlan name add --name $name
 done
