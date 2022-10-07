@@ -1,6 +1,7 @@
 package libol
 
 import (
+	"net"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -200,4 +201,11 @@ func IpMetricSet(name, metric string, opts ...string) ([]byte, error) {
 	default:
 		return nil, NewErr("IpAddrAdd %s notSupport", runtime.GOOS)
 	}
+}
+
+func LookupIP(name string) string {
+	if addr, _ := net.LookupIP(name); len(addr) > 0 {
+		return addr[0].String()
+	}
+	return ""
 }

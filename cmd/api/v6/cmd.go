@@ -7,7 +7,7 @@ import (
 )
 
 func Before(c *cli.Context) error {
-	if _, err := database.NewDBClient(nil); err == nil {
+	if _, err := database.NewConfClient(nil); err == nil {
 		return nil
 	} else {
 		return err

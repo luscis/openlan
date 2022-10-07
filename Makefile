@@ -68,7 +68,7 @@ env:
 	@gofmt -w -s ./pkg ./cmd ./misc
 
 ## linux platform
-linux: linux-proxy linux-point linux-switch core
+linux: linux-proxy linux-point linux-switch
 
 core: env
 	./3rd/auto.sh build
@@ -86,12 +86,15 @@ rpm: env ## build rpm packages
 cmd: env
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 
+openudp: env
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
+
 linux: linux-point linux-switch linux-proxy ## build all linux binary
 
 linux-point: env
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
 
-linux-switch: env cmd
+linux-switch: env cmd openudp
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-proxy: env
@@ -155,7 +158,7 @@ install: env linux ## install packages
 windows: windows-point ## build windows binary
 
 windows-point: env
-	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
 
 windows-gz: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -175,7 +178,7 @@ windows-syso: ## build windows syso
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.darwin ./cmd/point_darwin
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.darwin ./cmd/point_darwin
 
 darwin-gz: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)

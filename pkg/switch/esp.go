@@ -395,13 +395,11 @@ func (w *EspWorker) downMember() {
 func OpenUDP() {
 	libol.Go(func() {
 		args := []string{
-			"-p", strconv.Itoa(co.EspLocalUdp),
-			"-vconsole:emer",
-			"--log-file=/var/openlan/openudp.log",
+			"-port", strconv.Itoa(co.EspLocalUdp),
 		}
 		cmd := exec.Command(UDPBin, args...)
 		if err := cmd.Run(); err != nil {
-			libol.Error("esp.init %s", err)
+			libol.Error("OpenUDP %s", err)
 		}
 	})
 }

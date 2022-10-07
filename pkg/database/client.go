@@ -1,5 +1,6 @@
 package database
 
+import "C"
 import (
 	"context"
 	"github.com/go-logr/logr"
@@ -60,8 +61,6 @@ func (o *OvSDB) WhereList(predict interface{}, result interface{}) error {
 	return o.Client.WhereCache(predict).List(o.Context(), result)
 }
 
-var Client *OvSDB
-
 type DBClient struct {
 	Server   string
 	Database string
@@ -103,8 +102,7 @@ func (c *DBClient) Open(handler *cache.EventHandlerFuncs) error {
 	if err := ovs.Connect(c.Context()); err != nil {
 		return err
 	}
-	Client = &OvSDB{Client: ovs}
-	c.Client = Client
+	c.Client = &OvSDB{Client: ovs}
 	if handler != nil {
 		processor := ovs.Cache()
 		if processor == nil {
@@ -119,16 +117,31 @@ func (c *DBClient) Open(handler *cache.EventHandlerFuncs) error {
 }
 
 var Conf *DBClient
+var Client *OvSDB
 
-func NewDBClient(handler *cache.EventHandlerFuncs) (*DBClient, error) {
+func NewConfClient(handler *cache.EventHandlerFuncs) (*DBClient, error) {
 	var err error
 	if Conf == nil {
-		Conf = &DBClient{
+		obj := &DBClient{
 			Server:   api.Server,
 			Database: api.Database,
 			Verbose:  api.Verbose,
 		}
-		err = Conf.Open(handler)
+		err = obj.Open(handler)
+		if err == nil {
+			Conf = obj
+			Client = obj.Client
+		}
 	}
 	return Conf, err
+}
+
+func NewClient(handler *cache.EventHandlerFuncs) (*DBClient, error) {
+	obj := &DBClient{
+		Server:   api.Server,
+		Database: api.Database,
+		Verbose:  api.Verbose,
+	}
+	err := obj.Open(handler)
+	return obj, err
 }

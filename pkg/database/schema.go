@@ -1,5 +1,9 @@
 package database
 
+import (
+	"strconv"
+)
+
 type Switch struct {
 	UUID            string            `ovsdb:"_uuid" json:"uuid"`
 	Protocol        string            `ovsdb:"protocol" json:"protocol"`
@@ -30,6 +34,19 @@ type VirtualLink struct {
 	Authentication map[string]string `ovsdb:"authentication" json:"authentication"`
 	LinkState      string            `ovsdb:"link_state" json:"link_state"`
 	Status         map[string]string `ovsdb:"status" json:"status"`
+}
+
+func (l *VirtualLink) IsUdpIn() bool {
+	if HasPrefix(l.Device, 4, "spi:") &&
+		HasPrefix(l.Connection, 4, "udp:") {
+		return true
+	}
+	return false
+}
+
+func (l *VirtualLink) Spi() uint32 {
+	spi, _ := strconv.Atoi(l.Device[4:])
+	return uint32(spi)
 }
 
 type OpenVPN struct {

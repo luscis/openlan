@@ -20,12 +20,12 @@ typedef struct {
     u_int32_t padding[2];
     u_int32_t spi;
     u_int32_t seqno;
-} udp_message;
+} udpin_message;
 
 typedef struct {
     u_int16_t port;
     int32_t socket;
-} udp_server;
+} udpin_server;
 
 typedef struct {
     int32_t socket;
@@ -33,11 +33,11 @@ typedef struct {
     const char *remote_addr;
     u_int32_t spi;
     u_int32_t seqno;
-} udp_connection;
+} udpin_connection;
 
 int seqno = 0;
 
-int send_ping_once(udp_connection *conn) {
+int send_ping_once(udpin_connection *conn) {
     int retval = 0;
     struct sockaddr_in dstaddr = {
         .sin_family = AF_INET,
@@ -46,34 +46,29 @@ int send_ping_once(udp_connection *conn) {
             .s_addr = inet_addr(conn->remote_addr),
         },
     };
-    udp_message data = {
+    udpin_message data = {
         .padding = {0, 0},
         .spi = htonl(conn->spi),
     };
-    data.seqno = htonl(conn->seqno++);
+    data.seqno = htonl(conn->seqno);
 
     retval = sendto(conn->socket, &data, sizeof data, 0, (struct sockaddr *)&dstaddr, sizeof dstaddr);
-    if (retval <= 0) {
-        printf("%s: could not send data\n", conn->remote_addr);
-    }
-
     return retval;
 }
 
-int recv_ping_once(udp_connection *conn,  udp_connection *from) {
+int recv_ping_once(udpin_server *srv,  udpin_connection *from) {
     struct sockaddr_in addr;
     int addrlen = sizeof addr;
-    udp_message data;
+    udpin_message data;
     int datalen = sizeof data;
     int retval = 0;
 
     memset(&data, 0, sizeof data);
-    retval = recvfrom(conn->socket, &data, datalen, 0, (struct sockaddr *)&addr, &addrlen);
+    retval = recvfrom(srv->socket, &data, datalen, 0, (struct sockaddr *)&addr, &addrlen);
     if ( retval <= 0 ) {
         if (errno == EAGAIN) {
             return 0;
         }
-        printf("recvfrom: %s\n", strerror(errno));
         return retval;
     }
 
@@ -84,7 +79,7 @@ int recv_ping_once(udp_connection *conn,  udp_connection *from) {
     return retval;
 }
 
-int open_socket(udp_server *srv) {
+int open_socket(udpin_server *srv) {
     int op = 1;
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
@@ -102,75 +97,91 @@ int open_socket(udp_server *srv) {
 
 	retval = setsockopt(srv->socket, SOL_SOCKET, SO_REUSEADDR, &op, sizeof op);
     if (retval < 0) {
-        return -1;
+        return retval;
     }
 	retval = bind(srv->socket, (struct sockaddr *)&addr, sizeof addr);
     if ( retval == -1) {
-        return -1;
+        return retval;
     }
 
     return 0;
 }
 
-int configure_socket(udp_server *srv) {
+int configure_socket(udpin_server *srv) {
     int encap = UDP_ENCAP_ESPINUDP;
 
-    if (setsockopt(srv->socket, IPPROTO_UDP, UDP_ENCAP, &encap, sizeof encap) < 0) {
-        return -1;
-    }
-    return 0;
+	return setsockopt(srv->socket, IPPROTO_UDP, UDP_ENCAP, &encap, sizeof encap);
 }
 */
 import "C"
 import (
 	"fmt"
-	"sync"
-	"time"
 	"unsafe"
 )
 
-func StartUDP(spi uint32, port uint16, remote string) {
-	server := &C.udp_server{
-		port: C.ushort(port),
-		socket : -1,
-	}
-	_ = C.open_socket(server)
-	C.configure_socket(server)
+type UdpInServer struct {
+	Port   uint16
+	Socket int
+	server *C.udpin_server
+	SeqNo  uint32
+}
 
-	addr := C.CString(remote)
+type UdpInConnection struct {
+	Socket     int
+	RemotePort uint16
+	RemoteAddr string
+	Spi        uint32
+}
+
+func (c *UdpInConnection) Connection() string {
+	return fmt.Sprintf("%s:%d", c.RemoteAddr, c.RemotePort)
+}
+
+func (c *UdpInConnection) String() string {
+	return fmt.Sprintf("%d on %s:%d", c.Spi, c.RemoteAddr, c.RemotePort)
+}
+
+func (u *UdpInServer) Open() error {
+	server := &C.udpin_server{
+		port:   C.ushort(u.Port),
+		socket: -1,
+	}
+	if ret := C.open_socket(server); ret < 0 {
+		return NewErr("UdpInServer.Open errno:%d", ret)
+	}
+	if ret := C.configure_socket(server); ret < 0 {
+		return NewErr("UdpInServer.Open errno:%d", ret)
+	}
+	u.server = server
+	u.Socket = int(server.socket)
+	return nil
+}
+
+func (u *UdpInServer) Send(to *UdpInConnection) error {
+	u.SeqNo += 1
+	addr := C.CString(LookupIP(to.RemoteAddr))
 	defer C.free(unsafe.Pointer(addr))
-	conn := &C.udp_connection {
-		socket: server.socket,
-		spi: C.uint(spi),
-		remote_port: C.ushort(port),
+	conn := &C.udpin_connection{
+		socket:      u.server.socket,
+		spi:         C.uint(to.Spi),
+		remote_port: C.ushort(to.RemotePort),
 		remote_addr: addr,
+		seqno:       C.uint(u.SeqNo),
 	}
+	if ret := C.send_ping_once(conn); ret < 0 {
+		return NewErr("UdpInServer.Ping errno:%d", ret)
+	}
+	return nil
+}
 
-	C.send_ping_once(conn)
-
-	w := sync.WaitGroup{}
-	w.Add(2)
-	Go(func() {
-		defer w.Done()
-		for i := 0; i < 100; i++ {
-			time.Sleep(time.Second)
-			C.send_ping_once(conn)
-		}
-	})
-
-	Go(func() {
-		from := &C.udp_connection{}
-		C.recv_ping_once(conn, from)
-		addr := C.GoString(from.remote_addr)
-		fmt.Printf("receive from %s:%d spi %d\n", addr, from.remote_port, from.spi)
-		w.Done()
-		for {
-			from := &C.udp_connection{}
-			C.recv_ping_once(conn, from)
-			addr := C.GoString(from.remote_addr)
-			fmt.Printf("receive from %s:%d spi %d\n", addr, from.remote_port, from.spi)
-		}
-	})
-
-	w.Wait()
+func (u *UdpInServer) Recv() (*UdpInConnection, error) {
+	from := &C.udpin_connection{}
+	if ret := C.recv_ping_once(u.server, from); ret < 0 {
+		return nil, NewErr("UdpInServer.Pong errno:%d", ret)
+	}
+	return &UdpInConnection{
+		RemotePort: uint16(from.remote_port),
+		RemoteAddr: C.GoString(from.remote_addr),
+		Spi:        uint32(from.spi),
+	}, nil
 }

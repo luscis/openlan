@@ -7,8 +7,6 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/ovn-org/libovsdb/cache"
 	"github.com/ovn-org/libovsdb/model"
-	"strconv"
-	"strings"
 )
 
 type ConfD struct {
@@ -35,7 +33,7 @@ func (c *ConfD) Start() {
 		DeleteFunc: c.Delete,
 		UpdateFunc: c.Update,
 	}
-	if _, err := database.NewDBClient(handler); err != nil {
+	if _, err := database.NewConfClient(handler); err != nil {
 		c.out.Error("Confd.Start open db with %s", err)
 		return
 	}
@@ -102,15 +100,6 @@ func (c *ConfD) Update(table string, old model.Model, new model.Model) {
 		c.out.Info("ConfD.Update name cache %s", obj.Name)
 		c.UpdateName(obj)
 	}
-}
-
-func GetAddrPort(conn string) (string, int) {
-	values := strings.SplitN(conn, ":", 2)
-	if len(values) == 2 {
-		port, _ := strconv.Atoi(values[1])
-		return values[0], port
-	}
-	return values[0], 0
 }
 
 func GetRoutes(result *[]database.PrefixRoute, device string) error {
@@ -301,14 +290,14 @@ func (l *MemberLink) Add(obj *database.VirtualLink) {
 	if conn == "any" {
 		remoteConn := obj.Status["remote_connection"]
 		if libol.GetPrefix(remoteConn, 4) == "udp:" {
-			remote, port = GetAddrPort(remoteConn[4:])
+			remote, port = database.GetAddrPort(remoteConn[4:])
 		} else {
 			l.out.Warn("MemberLink.Add %s remote not found.", conn)
 			return
 		}
 	} else if libol.GetPrefix(conn, 4) == "udp:" {
 		remoteConn := obj.Connection
-		remote, port = GetAddrPort(remoteConn[4:])
+		remote, port = database.GetAddrPort(remoteConn[4:])
 	} else {
 		return
 	}
