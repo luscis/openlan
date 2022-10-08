@@ -6,13 +6,10 @@ Summary: OpenLAN's Project Software
 Group: Applications/Communications
 License: GPL-3.0
 URL: https://github.com/luscis/openlan
-BuildRequires: unbound-devel openssl-devel libcap-ng-devel
-Requires: net-tools, iptables, iputils, openvpn, openssl, openvswitch, dnsmasq
+Requires: net-tools, iptables, iputils, openvpn, openvswitch, dnsmasq
 
 # binary no-debug by go build
-%define __debug_install_post \
-%{_rpmconfigdir}/find-debuginfo.sh %{?_find_debuginfo_opts} "%{_builddir}/%{?buildsubdir}"\
-%{nil}
+%global debug_package %{nil}
 
 %description
 OpenLAN's Project Software

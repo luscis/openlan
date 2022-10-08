@@ -16,8 +16,6 @@ jobs:
 
     - name: Building packages
       run: |
-        sudo apt update
-        sudo apt install -y liblzo2-dev libpam-dev
-        sudo apt install -y graphviz autoconf automake bzip2 debhelper dh-autoreconf libssl-dev libtool openssl procps python-all python-six libunbound-dev
-        make update && make test && make linux-bin
+        make test
+        make linux-bin
 

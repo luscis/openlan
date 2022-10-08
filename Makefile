@@ -41,23 +41,15 @@ bin: linux windows darwin ## build all platform binary
 docker: pkg
 	docker build -t openlan-switch:$(VER) --build-arg VERSION=$(VER) -f ./dist/openlan-switch.docker  .
 
-## upgrade
-upgrade:
-	ansible-playbook ./misc/playbook/upgrade.yaml -e "version=$(VER)"
-
 clean: ## clean cache
 	rm -rvf ./build
-	rm -rvf ./core/build
-	rm -rvf ./core/cmake-build-debug
-	./core/auto.sh clean
-	./3rd/auto.sh clean
 
 ## prepare environment
 update:
 	git submodule init
 	git submodule update
 
-vendor: update
+vendor:
 	go clean -modcache
 	go mod tidy
 	go mod vendor -v
@@ -65,15 +57,10 @@ vendor: update
 env:
 	@mkdir -p $(BD)
 	@go version
-	@gofmt -w -s ./pkg ./cmd ./misc
+	@gofmt -w -s ./pkg ./cmd
 
 ## linux platform
 linux: linux-proxy linux-point linux-switch
-
-core: env
-	./3rd/auto.sh build
-	./core/auto.sh build
-	cd $(BD) && cmake $(SD)/core && make
 
 rpm: env ## build rpm packages
 	mkdir -p ~/rpmbuild/SPECS
