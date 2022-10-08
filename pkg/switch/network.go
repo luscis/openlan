@@ -188,10 +188,22 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		Output: cfg.Bridge.Name,
 	})
 	if cfg.Bridge.Mss > 0 {
+		// forward to remote
 		fire.AddRule(cn.IpRule{
 			Table:   cn.TMangle,
 			Chain:   cn.OLCPost,
 			Output:  cfg.Bridge.Name,
+			Proto:   "tcp",
+			Match:   "tcp",
+			TcpFlag: []string{"SYN,RST", "SYN"},
+			Jump:    "TCPMSS",
+			SetMss:  cfg.Bridge.Mss,
+		})
+		// connect from local
+		fire.AddRule(cn.IpRule{
+			Table:   cn.TMangle,
+			Chain:   cn.OLCInput,
+			Input:   cfg.Bridge.Name,
 			Proto:   "tcp",
 			Match:   "tcp",
 			TcpFlag: []string{"SYN,RST", "SYN"},
