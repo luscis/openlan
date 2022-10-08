@@ -46,6 +46,7 @@ func (u *UdpServer) Initialize() {
 }
 
 func (u *UdpServer) Start() {
+	u.out.Info("UdpServer.Start on %d", u.server.Port)
 	if err := u.server.Open(); err != nil {
 		u.out.Error("UdpServer.Start open socket %s", err)
 		return
@@ -53,6 +54,7 @@ func (u *UdpServer) Start() {
 }
 
 func (u *UdpServer) Stop() {
+	u.out.Info("UdpServer.Stop on %d", u.server.Port)
 }
 
 func (u *UdpServer) Device2UUID(value string) string {

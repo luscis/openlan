@@ -17,98 +17,98 @@ package libol
 #include <arpa/inet.h>
 
 typedef struct {
-    u_int32_t padding[2];
-    u_int32_t spi;
-    u_int32_t seqno;
+	u_int32_t padding[2];
+	u_int32_t spi;
+	u_int32_t seqno;
 } udpin_message;
 
 typedef struct {
-    u_int16_t port;
-    int32_t socket;
+	u_int16_t port;
+	int32_t socket;
 } udpin_server;
 
 typedef struct {
-    int32_t socket;
-    uint16_t remote_port;
-    const char *remote_addr;
-    u_int32_t spi;
-    u_int32_t seqno;
+	int32_t socket;
+	uint16_t remote_port;
+	const char *remote_addr;
+	u_int32_t spi;
+	u_int32_t seqno;
 } udpin_connection;
 
 int seqno = 0;
 
 int send_ping_once(udpin_connection *conn) {
-    int retval = 0;
-    struct sockaddr_in dstaddr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(conn->remote_port),
-        .sin_addr = {
-            .s_addr = inet_addr(conn->remote_addr),
-        },
-    };
-    udpin_message data = {
-        .padding = {0, 0},
-        .spi = htonl(conn->spi),
-    };
-    data.seqno = htonl(conn->seqno);
+	int retval = 0;
+	struct sockaddr_in dstaddr = {
+		.sin_family = AF_INET,
+		.sin_port = htons(conn->remote_port),
+		.sin_addr = {
+			.s_addr = inet_addr(conn->remote_addr),
+		},
+	};
+	udpin_message data = {
+		.padding = {0, 0},
+		.spi = htonl(conn->spi),
+	};
+	data.seqno = htonl(conn->seqno);
 
-    retval = sendto(conn->socket, &data, sizeof data, 0, (struct sockaddr *)&dstaddr, sizeof dstaddr);
-    return retval;
+	retval = sendto(conn->socket, &data, sizeof data, 0, (struct sockaddr *)&dstaddr, sizeof dstaddr);
+	return retval;
 }
 
 int recv_ping_once(udpin_server *srv,  udpin_connection *from) {
-    struct sockaddr_in addr;
-    int addrlen = sizeof addr;
-    udpin_message data;
-    int datalen = sizeof data;
-    int retval = 0;
+	struct sockaddr_in addr;
+	int addrlen = sizeof addr;
+	udpin_message data;
+	int datalen = sizeof data;
+	int retval = 0;
 
-    memset(&data, 0, sizeof data);
-    retval = recvfrom(srv->socket, &data, datalen, 0, (struct sockaddr *)&addr, &addrlen);
-    if ( retval <= 0 ) {
-        if (errno == EAGAIN) {
-            return 0;
-        }
-        return retval;
-    }
+	memset(&data, 0, sizeof data);
+	retval = recvfrom(srv->socket, &data, datalen, 0, (struct sockaddr *)&addr, &addrlen);
+	if ( retval <= 0 ) {
+		if (errno == EAGAIN) {
+			return 0;
+		}
+		return retval;
+	}
 
-    from->spi = ntohl(data.spi);
+	from->spi = ntohl(data.spi);
 	from->remote_addr = inet_ntoa(addr.sin_addr);
 	from->remote_port = ntohs(addr.sin_port);
 
-    return retval;
+	return retval;
 }
 
 int open_socket(udpin_server *srv) {
-    int op = 1;
-    struct sockaddr_in addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(srv->port),
-        .sin_addr = {
-            .s_addr = INADDR_ANY,
-        },
-    };
+	int op = 1;
+	struct sockaddr_in addr = {
+		.sin_family = AF_INET,
+		.sin_port = htons(srv->port),
+		.sin_addr = {
+			.s_addr = INADDR_ANY,
+		},
+	};
 	int retval = 0;
 
-    srv->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (srv->socket == -1) {
-        return -1;
-    }
+	srv->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (srv->socket == -1) {
+		return -1;
+	}
 
 	retval = setsockopt(srv->socket, SOL_SOCKET, SO_REUSEADDR, &op, sizeof op);
-    if (retval < 0) {
-        return retval;
-    }
+	if (retval < 0) {
+		return retval;
+	}
 	retval = bind(srv->socket, (struct sockaddr *)&addr, sizeof addr);
-    if ( retval == -1) {
-        return retval;
-    }
+	if ( retval == -1) {
+		return retval;
+	}
 
-    return 0;
+	return 0;
 }
 
 int configure_socket(udpin_server *srv) {
-    int encap = UDP_ENCAP_ESPINUDP;
+	int encap = UDP_ENCAP_ESPINUDP;
 
 	return setsockopt(srv->socket, IPPROTO_UDP, UDP_ENCAP, &encap, sizeof encap);
 }
