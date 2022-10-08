@@ -396,6 +396,7 @@ func OpenUDP() {
 	libol.Go(func() {
 		args := []string{
 			"-port", strconv.Itoa(co.EspLocalUdp),
+			"-log:file", "/var/openlan/openudp.log",
 		}
 		cmd := exec.Command(UDPBin, args...)
 		if err := cmd.Run(); err != nil {

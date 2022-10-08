@@ -95,7 +95,7 @@ linux-gz: install ## build linux packages
 	gzip -f $(BD)/$(LINUX_DIR).tar
 
 linux-bin: linux-gz ## build linux install binary
-	cat $(SD)/dist/script/install.sh > $(BD)/$(LINUX_DIR).bin && \
+	@cat $(SD)/dist/script/install.sh > $(BD)/$(LINUX_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LINUX_DIR).bin && \
 	cat $(BD)/$(LINUX_DIR).tar.gz >> $(BD)/$(LINUX_DIR).bin && \
 	chmod +x $(BD)/$(LINUX_DIR).bin

@@ -1,6 +1,5 @@
 package database
 
-import "C"
 import (
 	"context"
 	"github.com/go-logr/logr"
