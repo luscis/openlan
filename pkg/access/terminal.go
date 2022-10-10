@@ -5,7 +5,11 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/luscis/openlan/pkg/libol"
 	"io"
+	"os"
+	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 type Terminal struct {
@@ -50,16 +54,23 @@ func NewTerminal(pointer Pointer) *Terminal {
 
 func (t *Terminal) Prompt() string {
 	user := t.Pointer.User()
-	alias := t.Pointer.Alias()
-	tenant := t.Pointer.Tenant()
-	return fmt.Sprintf("[%s@%s %s]# ", user, alias, tenant)
+	cur := os.Getenv("PWD")
+	home := os.Getenv("HOME")
+	if strings.HasPrefix(cur, home) {
+		cur = strings.Replace(cur, home, "~", 1)
+	}
+	return fmt.Sprintf("[%s:%s]> ", user, cur)
 }
 
-func (t *Terminal) CmdEdit(args string) {
+func (t *Terminal) CmdEdit(args []string) {
 }
 
-func (t *Terminal) CmdShow(args string) {
-	switch args {
+func (t *Terminal) CmdShow(args []string) {
+	action := ""
+	if len(args) > 1 {
+		action = args[1]
+	}
+	switch action {
 	case "record":
 		v := t.Pointer.Record()
 		if out, err := libol.Marshal(v, true); err == nil {
@@ -104,11 +115,14 @@ func (t *Terminal) Trim(v string) string {
 	return strings.TrimSpace(v)
 }
 
-func (t *Terminal) CmdBye() {
+func (t *Terminal) CmdBye(args []string) {
 }
 
-func (t *Terminal) CmdMode(args string) {
-	switch args {
+func (t *Terminal) CmdMode(args []string) {
+	if len(args) < 2 {
+		return
+	}
+	switch args[1] {
 	case "vi":
 		t.Console.SetVimMode(true)
 	case "emacs":
@@ -116,37 +130,79 @@ func (t *Terminal) CmdMode(args string) {
 	}
 }
 
+func (t *Terminal) CmdShell(args []string) {
+	cmd := args[0]
+	var c2 *exec.Cmd
+	if _, err := exec.LookPath(cmd); err == nil {
+		c2 = exec.Command(cmd, args[1:]...)
+	} else {
+		params := append([]string{
+			"-c",
+		}, args...)
+		c2 = exec.Command("/bin/bash", params...)
+	}
+	c2.Stdin = os.Stdin
+	c2.Stdout = os.Stdout
+	c2.Stderr = os.Stderr
+	if err := c2.Run(); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (t *Terminal) CmdHelp(args []string) {
+	fmt.Printf("Usage: COMMAND ARGS...\n")
+	fmt.Printf("  show\t Display configuration\n")
+	fmt.Printf("  quit\t Exit\n")
+	fmt.Printf("  edit\t Edit configuration\n")
+}
+
+func (t *Terminal) signal() {
+	x := make(chan os.Signal)
+	signal.Notify(x, os.Interrupt, syscall.SIGQUIT) //CTL+/
+	signal.Notify(x, os.Interrupt, syscall.SIGINT)  //CTL+C
+}
+
+func (t *Terminal) loop() {
+	for {
+		line, err := t.Console.Readline()
+		if err == readline.ErrInterrupt {
+			continue
+		} else if err == io.EOF {
+			break
+		}
+		args := strings.Fields(line)
+		if len(args) == 0 {
+			continue
+		}
+		cmd := args[0]
+		switch {
+		case cmd == "":
+			break
+		case cmd == "?":
+			t.CmdHelp(args)
+		case cmd == "mode":
+			t.CmdMode(args)
+		case cmd == "show":
+			t.CmdShow(args)
+		case cmd == "edit":
+			t.CmdEdit(args)
+		case cmd == "exit" || cmd == "quit":
+			t.CmdBye(args)
+			goto quit
+		default:
+			t.CmdShell(args)
+		}
+	}
+quit:
+	fmt.Printf("Terminal.Start quit")
+}
+
 func (t *Terminal) Start() {
 	if t.Console == nil {
 		return
 	}
 	defer t.Console.Close()
-	for {
-		line, err := t.Console.Readline()
-		if err == readline.ErrInterrupt {
-			if len(line) == 0 {
-				break
-			} else {
-				continue
-			}
-		} else if err == io.EOF {
-			break
-		}
-		line = t.Trim(line)
-		switch {
-		case strings.HasPrefix(line, "mode "):
-			t.CmdMode(t.Trim(line[5:]))
-		case line == "show":
-			t.CmdShow("")
-		case line == "quit" || line == "exit":
-			t.CmdBye()
-			goto quit
-		case strings.HasPrefix(line, "show "):
-			t.CmdShow(t.Trim(line[5:]))
-		case strings.HasPrefix(line, "edit "):
-			t.CmdEdit(t.Trim(line[5:]))
-		}
-	}
-quit:
-	fmt.Printf("Terminal.Start quit")
+
+	t.signal()
+	t.loop()
 }
