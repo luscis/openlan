@@ -184,16 +184,20 @@ test: ## execute unit test
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/models
-
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/cache
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/config
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/network
 
 ## coverage
 cover: env ## execute unit test and output coverage
-	@rm -rvf $(CD)
-	@mkdir -p $(CD)
-	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/access.out -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/libol.out -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/models.out -race -covermode=atomic
+	@rm -rvf $(CD) && mkdir -p $(CD)
+	@go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
+	@go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic
+	@go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
+	@go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
+	@go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
+	@go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
 
-	echo 'mode: atomic' > $(SD)/coverage.out
+	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
 	go tool cover -html=coverage.out -o coverage.html

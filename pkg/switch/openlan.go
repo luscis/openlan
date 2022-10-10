@@ -61,7 +61,7 @@ func (w *OpenLANWorker) Initialize() {
 	}
 	cache.Network.Add(&n)
 	for _, ht := range w.cfg.Hosts {
-		lease := cache.Network.AddLease(ht.Hostname, ht.Address)
+		lease := cache.Network.AddLease(ht.Hostname, ht.Address, n.Name)
 		if lease != nil {
 			lease.Type = "static"
 			lease.Network = w.cfg.Name

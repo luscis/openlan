@@ -492,6 +492,19 @@ func (v *Switch) SignIn(client libol.SocketClient) error {
 	return nil
 }
 
+func client2Point(client libol.SocketClient) (*models.Point, error) {
+	addr := client.RemoteAddr()
+	if private := client.Private(); private == nil {
+		return nil, libol.NewErr("point %s notFound.", addr)
+	} else {
+		obj, ok := private.(*models.Point)
+		if !ok {
+			return nil, libol.NewErr("point %s notRight.", addr)
+		}
+		return obj, nil
+	}
+}
+
 func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage) error {
 	addr := client.RemoteAddr()
 	if v.out.Has(libol.LOG) {
@@ -510,16 +523,12 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 		return nil
 	}
 	// process ethernet frame message.
-	private := client.Private()
-	if private == nil {
-		return libol.NewErr("point %s notFound.", addr)
+	obj, err := client2Point(client)
+	if err != nil {
+		return err
 	}
-	point, ok := private.(*models.Point)
-	if !ok {
-		return libol.NewErr("point %s notRight.", addr)
-	}
-	device := point.Device
-	if point == nil || device == nil {
+	device := obj.Device
+	if device == nil {
 		return libol.NewErr("Tap devices is nil")
 	}
 	if _, err := device.Write(frame.Frame()); err != nil {
@@ -532,10 +541,8 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 func (v *Switch) OnClose(client libol.SocketClient) error {
 	addr := client.RemoteAddr()
 	v.out.Info("Switch.OnClose: %s", addr)
-	// already not need support free list for device.
-	uuid := cache.Point.GetUUID(addr)
-	if cache.Point.GetAddr(uuid) == addr { // not has newer
-		cache.Network.DelLease(uuid)
+	if obj, err := client2Point(client); err == nil {
+		cache.Network.DelLease(obj.Alias, obj.Network)
 	}
 	cache.Point.Del(addr)
 	return nil

@@ -12,14 +12,10 @@ func TestTapWrite(t *testing.T) {
 		t.Errorf("Tap.open %s", err)
 		return
 	}
-
-	//t.Logf("Tap.write: %s\n", dev.Name())
-
 	frame := make([]byte, 65)
 	for i := 0; i < 64; i++ {
 		frame[i] = uint8(i)
 	}
-	//t.Logf("Tap.write: %x", frame)
 	n, err := dev.Write(frame)
 	if err != nil {
 		t.Errorf("Tap.write: %s", err)

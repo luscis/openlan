@@ -65,35 +65,24 @@ func (r *Request) onNeighbor(client libol.SocketClient, data []byte) {
 	}
 }
 
-func (r *Request) getLease(ifAddr string, p *models.Point, n *models.Network) *schema.Lease {
+func (r *Request) findLease(ifAddr string, p *models.Point, n *models.Network) *schema.Lease {
 	if n == nil {
 		return nil
 	}
-	uuid := p.UUID
 	alias := p.Alias
 	network := n.Name
-	lease := cache.Network.GetLeaseByAlias(alias) // try by alias firstly
+	lease := cache.Network.GetLease(alias, network) // try by alias firstly
 	if ifAddr == "" {
 		if lease == nil { // now to alloc it.
-			lease = cache.Network.NewLease(uuid, network)
-			if lease != nil {
-				lease.Alias = alias
-			}
-		} else {
-			lease.UUID = uuid
+			lease = cache.Network.NewLease(alias, network)
 		}
 	} else {
 		ipAddr := strings.SplitN(ifAddr, "/", 2)[0]
-		if lease != nil && lease.Address == ipAddr {
-			lease.UUID = uuid
-		}
 		if lease == nil || lease.Address != ipAddr {
-			lease = cache.Network.AddLease(uuid, ipAddr)
-			lease.Alias = alias
+			lease = cache.Network.AddLease(alias, ipAddr, network)
 		}
 	}
 	if lease != nil {
-		lease.Network = network
 		lease.Client = p.Client.String()
 	}
 	return lease
@@ -129,20 +118,18 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 		Netmask: recv.Netmask,
 		Routes:  n.Routes,
 	}
-	if recv.IfAddr == "" { // not interface address, and try to alloc it.
-		lease := r.getLease(recv.IfAddr, p, n)
-		if lease != nil {
-			resp.IfAddr = lease.Address
-			resp.Netmask = n.Netmask
-			resp.Routes = n.Routes
-		} else {
-			resp.IfAddr = "169.254.0.0"
-			resp.Netmask = n.Netmask
-			if resp.Netmask == "" {
-				resp.Netmask = "255.255.0.0"
-			}
-			resp.Routes = n.Routes
+	lease := r.findLease(recv.IfAddr, p, n)
+	if lease != nil {
+		resp.IfAddr = lease.Address
+		resp.Netmask = n.Netmask
+		resp.Routes = n.Routes
+	} else {
+		resp.IfAddr = "169.254.0.0"
+		resp.Netmask = n.Netmask
+		if resp.Netmask == "" {
+			resp.Netmask = "255.255.0.0"
 		}
+		resp.Routes = n.Routes
 	}
 	out.Cmd("Request.onIpAddr: resp %s", resp)
 	if respStr, err := json.Marshal(resp); err == nil {

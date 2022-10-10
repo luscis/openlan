@@ -10,8 +10,8 @@ import (
 
 type network struct {
 	Networks *libol.SafeStrMap
-	UUID     *libol.SafeStrMap // TODO with network
-	Addr     *libol.SafeStrMap // TODO with network
+	UUID     *libol.SafeStrMap
+	Addr     *libol.SafeStrMap
 }
 
 func (w *network) Add(n *models.Network) {
@@ -57,7 +57,7 @@ func (w *network) ListLease() <-chan *schema.Lease {
 	return c
 }
 
-func (w *network) allocLease(sAddr, eAddr string) string {
+func (w *network) allocLease(sAddr, eAddr, network string) string {
 	sIp := net.ParseIP(sAddr)
 	eIp := net.ParseIP(eAddr)
 	if sIp == nil || eIp == nil {
@@ -69,62 +69,67 @@ func (w *network) allocLease(sAddr, eAddr string) string {
 		tmp := make([]byte, 4)
 		binary.BigEndian.PutUint32(tmp[:4], i)
 		tmpStr := net.IP(tmp).String()
-		if _, ok := w.Addr.GetEx(tmpStr); !ok {
+		if ok := w.GetLeaseByAddr(tmpStr, network); ok == nil {
 			return tmpStr
 		}
 	}
 	return ""
 }
 
-func (w *network) NewLease(uuid, network string) *schema.Lease {
+func (w *network) NewLease(alias, network string) *schema.Lease {
 	n := w.Get(network)
-	if n == nil || uuid == "" {
+	if n == nil || alias == "" {
 		return nil
 	}
+	uuid := alias + "@" + network
 	if obj, ok := w.UUID.GetEx(uuid); ok {
 		l := obj.(*schema.Lease)
 		return l // how to resolve conflict with new point?.
 	}
-	ipStr := w.allocLease(n.IpStart, n.IpEnd)
+	ipStr := w.allocLease(n.IpStart, n.IpEnd, network)
 	if ipStr == "" {
 		return nil
 	}
-	w.AddLease(uuid, ipStr)
-	return w.GetLease(uuid)
+	w.AddLease(alias, ipStr, network)
+	return w.GetLease(alias, network)
 }
 
-func (w *network) GetLease(uuid string) *schema.Lease {
+func (w *network) GetLease(alias string, network string) *schema.Lease {
+	uuid := alias + "@" + network
 	if obj, ok := w.UUID.GetEx(uuid); ok {
 		return obj.(*schema.Lease)
 	}
 	return nil
 }
 
-func (w *network) GetLeaseByAlias(name string) *schema.Lease {
-	if obj, ok := w.UUID.GetEx(name); ok {
+func (w *network) GetLeaseByAddr(addr string, network string) *schema.Lease {
+	ruid := addr + "@" + network
+	if obj, ok := w.Addr.GetEx(ruid); ok {
 		return obj.(*schema.Lease)
 	}
 	return nil
 }
 
-func (w *network) AddLease(uuid, ipStr string) *schema.Lease {
-	libol.Info("network.AddLease %s %s", uuid, ipStr)
-	if ipStr != "" {
-		l := &schema.Lease{
-			UUID:    uuid,
-			Alias:   uuid,
-			Address: ipStr,
-		}
-		_ = w.UUID.Set(uuid, l)
-		_ = w.Addr.Set(ipStr, l)
-		return l
+func (w *network) AddLease(alias, ipStr, network string) *schema.Lease {
+	if ipStr == "" || alias == "" {
+		return nil
 	}
-	return nil
+	uuid := alias + "@" + network
+	libol.Info("network.AddLease %s %s", uuid, ipStr)
+	obj := &schema.Lease{
+		Alias:   alias,
+		Address: ipStr,
+		Network: network,
+	}
+	_ = w.UUID.Set(uuid, obj)
+	ruid := ipStr + "@" + network
+	_ = w.Addr.Set(ruid, obj)
+	return obj
 }
 
-func (w *network) DelLease(uuid string) {
+func (w *network) DelLease(alias string, network string) {
+	uuid := alias + "@" + network
 	libol.Debug("network.DelLease %s", uuid)
-	// TODO record free address for alias and wait timeout to release.
 	addr := ""
 	if obj, ok := w.UUID.GetEx(uuid); ok {
 		lease := obj.(*schema.Lease)
@@ -134,19 +139,18 @@ func (w *network) DelLease(uuid string) {
 			w.UUID.Del(uuid)
 		}
 	}
-	if obj, ok := w.Addr.GetEx(addr); ok {
+	ruid := addr + "@" + network
+	if obj, ok := w.Addr.GetEx(ruid); ok {
 		lease := obj.(*schema.Lease)
-		if lease.UUID == uuid { // avoid address conflict by different points.
-			libol.Info("network.DelLease (%s, %s) by Addr", uuid, addr)
-			if lease.Type != "static" {
-				w.Addr.Del(addr)
-			}
+		libol.Info("network.DelLease (%s, %s) by Addr", ruid, alias)
+		if lease.Type != "static" {
+			w.Addr.Del(ruid)
 		}
 	}
 }
 
 var Network = network{
-	Networks: libol.NewSafeStrMap(1024),
+	Networks: libol.NewSafeStrMap(128),
 	UUID:     libol.NewSafeStrMap(1024),
 	Addr:     libol.NewSafeStrMap(1024),
 }

@@ -15,7 +15,7 @@ func TestBridgeWriteAndReadByTap(t *testing.T) {
 	//open tap kernel
 	dev01, err := NewKernelTap("true", TapConfig{Type: TAP})
 	if err != nil {
-		t.Errorf("Tap.Open %s", err)
+		t.Skipf("Tap.Open %s", err)
 		return
 	}
 	dev02, err := NewKernelTap("true", TapConfig{Type: TAP})

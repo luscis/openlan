@@ -2,7 +2,6 @@ package schema
 
 type Lease struct {
 	Address string `json:"address"`
-	UUID    string `json:"uuid"`
 	Alias   string `json:"alias"`
 	Client  string `json:"client"`
 	Type    string `json:"type"`
