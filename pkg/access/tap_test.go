@@ -1,6 +1,7 @@
 package access
 
 import (
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/songgao/water"
 	"testing"
 )
@@ -9,7 +10,11 @@ func TestTapWrite(t *testing.T) {
 	cfg := water.Config{DeviceType: water.TAP}
 	dev, err := water.New(cfg)
 	if err != nil {
-		t.Errorf("Tap.open %s", err)
+		t.Skipf("Tap.open %s", err)
+		return
+	}
+	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+		libol.Warn("KernelTap.Up %s: %s", dev, err)
 		return
 	}
 	frame := make([]byte, 65)
@@ -29,10 +34,13 @@ func BenchmarkTapWrite64(b *testing.B) {
 	cfg := water.Config{DeviceType: water.TAP}
 	dev, err := water.New(cfg)
 	if err != nil {
-		b.Errorf("Tap.open %s", err)
+		b.Skipf("Tap.open %s", err)
 		return
 	}
-
+	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+		libol.Warn("KernelTap.Up %s: %s", dev, err)
+		return
+	}
 	//b.Logf("Tap.write: to %s", dev.Name())
 	for i := 0; i < b.N; i++ {
 		frame := make([]byte, 64)
@@ -55,10 +63,13 @@ func BenchmarkTapWrite1500(b *testing.B) {
 	cfg := water.Config{DeviceType: water.TAP}
 	dev, err := water.New(cfg)
 	if err != nil {
-		b.Errorf("Tap.open %s", err)
+		b.Skipf("Tap.open %s", err)
 		return
 	}
-
+	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+		libol.Warn("KernelTap.Up %s: %s", dev, err)
+		return
+	}
 	//b.Logf("Tap.write: to %s", dev.Name())
 	for i := 0; i < b.N; i++ {
 		frame := make([]byte, 1500)
