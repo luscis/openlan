@@ -121,6 +121,11 @@ func (w *network) AddLease(alias, ipStr, network string) *schema.Lease {
 		Address: ipStr,
 		Network: network,
 	}
+	if obj := w.UUID.Get(uuid); obj != nil {
+		lease := obj.(*schema.Lease)
+		ruid := lease.Address + "@" + network
+		w.Addr.Del(ruid)
+	}
 	_ = w.UUID.Set(uuid, obj)
 	ruid := ipStr + "@" + network
 	_ = w.Addr.Set(ruid, obj)

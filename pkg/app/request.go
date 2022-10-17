@@ -65,28 +65,33 @@ func (r *Request) onNeighbor(client libol.SocketClient, data []byte) {
 	}
 }
 
-func (r *Request) findLease(ifAddr string, p *models.Point, n *models.Network) *schema.Lease {
-	if n == nil {
-		return nil
-	}
+func findLease(ifAddr string, p *models.Point) *schema.Lease {
 	alias := p.Alias
-	network := n.Name
+	network := p.Network
 	lease := cache.Network.GetLease(alias, network) // try by alias firstly
 	if ifAddr == "" {
 		if lease == nil { // now to alloc it.
 			lease = cache.Network.NewLease(alias, network)
 		}
-	} else {
-		ipAddr := strings.SplitN(ifAddr, "/", 2)[0]
-		if lease == nil || lease.Address != ipAddr {
-			lease = cache.Network.AddLease(alias, ipAddr, network)
-		}
-	}
-	if lease != nil {
+		// has static address.
 		lease.Client = p.Client.String()
+		return lease
 	}
+	ipAddr := strings.SplitN(ifAddr, "/", 2)[0]
+	if lease == nil { //renew it.
+		has := cache.Network.GetLeaseByAddr(ipAddr, network)
+		if has == nil {
+			lease = cache.Network.AddLease(alias, ipAddr, network)
+		} else {
+			lease = cache.Network.NewLease(alias, network)
+		}
+	} else if lease.Address != ipAddr { // update
+		lease = cache.Network.AddLease(alias, ipAddr, network)
+	}
+	lease.Client = p.Client.String()
 	return lease
 }
+
 func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 	out := client.Out()
 	out.Info("Request.onIpAddr: %s", data)
@@ -118,7 +123,7 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 		Netmask: recv.Netmask,
 		Routes:  n.Routes,
 	}
-	lease := r.findLease(recv.IfAddr, p, n)
+	lease := findLease(recv.IfAddr, p)
 	if lease != nil {
 		resp.IfAddr = lease.Address
 		resp.Netmask = n.Netmask
