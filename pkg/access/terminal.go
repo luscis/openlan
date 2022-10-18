@@ -37,7 +37,6 @@ func NewTerminal(pointer Pointer) *Terminal {
 			readline.PcItem("connection"),
 		),
 	)
-
 	config := &readline.Config{
 		Prompt:            t.Prompt(),
 		HistoryFile:       ".history",
@@ -149,6 +148,30 @@ func (t *Terminal) CmdShell(args []string) {
 	}
 }
 
+func (t *Terminal) CmdCd(args []string) {
+	path := "~"
+	if len(args) >= 2 {
+		path = args[1]
+	}
+	if strings.HasPrefix(path, "~") {
+		home := os.Getenv("HOME")
+		path = strings.Replace(path, "~", home, 1)
+	}
+	if err := os.Chdir(path); err == nil {
+		dir, _ := os.Getwd()
+		if err := os.Setenv("PWD", dir); err != nil {
+			fmt.Println(err)
+		}
+		t.Console.SetPrompt(t.Prompt())
+	} else {
+		fmt.Println(err)
+	}
+}
+
+func (t *Terminal) CmdPwd(args []string) {
+	fmt.Println(os.Getenv("PWD"))
+}
+
 func (t *Terminal) CmdHelp(args []string) {
 	fmt.Printf("Usage: COMMAND ARGS...\n")
 	fmt.Printf("  show\t Display configuration\n")
@@ -180,6 +203,10 @@ func (t *Terminal) loop() {
 			break
 		case cmd == "?":
 			t.CmdHelp(args)
+		case cmd == "cd":
+			t.CmdCd(args)
+		case cmd == "pwd":
+			t.CmdPwd(args)
 		case cmd == "mode":
 			t.CmdMode(args)
 		case cmd == "show":
