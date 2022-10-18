@@ -34,6 +34,16 @@ func (u VPNClient) List(c *cli.Context) error {
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
+	name := c.String("network")
+	if len(name) > 0 {
+		tmp := items[:0]
+		for _, obj := range items {
+			if obj.Network == name {
+				tmp = append(tmp, obj)
+			}
+		}
+		items = tmp
+	}
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
@@ -47,7 +57,10 @@ func (u VPNClient) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all clients",
 				Aliases: []string{"ls"},
-				Action:  u.List,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "network"},
+				},
+				Action: u.List,
 			},
 		},
 	})
