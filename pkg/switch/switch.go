@@ -297,9 +297,6 @@ func (v *Switch) preNets() {
 		// Enable MASQUERADE, and allowed forward.
 		for _, rt := range nCfg.Routes {
 			v.preNetVPN1(brName, rt.Prefix, vCfg)
-			if rt.NextHop != ifAddr {
-				continue
-			}
 			v.enableFwd(brName, "", subnet, rt.Prefix)
 			if rt.MultiPath != nil {
 				v.enableSnat(brName, "", ifAddr, rt.Prefix)

@@ -53,7 +53,7 @@ func (w *OpenLANWorker) Initialize() {
 			w.out.Warn("OpenLANWorker.Initialize: %s noNextHop", rt.Prefix)
 			continue
 		}
-		rte := models.NewRoute(rt.Prefix, rt.NextHop, rt.Mode)
+		rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
 		if rt.Metric > 0 {
 			rte.Metric = rt.Metric
 		}
@@ -98,7 +98,7 @@ func (w *OpenLANWorker) LoadRoutes() {
 	// install routes
 	cfg := w.cfg
 	w.out.Debug("OpenLANWorker.LoadRoute: %v", cfg.Routes)
-	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
+	ifAddr := w.IfAddr()
 	for _, rt := range cfg.Routes {
 		_, dst, err := net.ParseCIDR(rt.Prefix)
 		if err != nil {
@@ -324,4 +324,8 @@ func (w *OpenLANWorker) Subnet() string {
 
 func (w *OpenLANWorker) Bridge() network.Bridger {
 	return w.bridge
+}
+
+func (w *OpenLANWorker) IfAddr() string {
+	return strings.SplitN(w.cfg.Bridge.Address, "/", 2)[0]
 }
