@@ -62,8 +62,7 @@ Data Center Interconnect with Subnet 192.168.30-40.0/24 Over IPSec network: 100.
 [root@dev-117 network]# yum install -y centos-release-openstack-train
 [root@dev-117 network]# yum install -y libibverbs bridge-utils iproute openvswitch
 [root@dev-117 network]# 
-[root@dev-117 network]# systemctl enable openvswitch
-[root@dev-117 network]# systemctl start openvswitch
+[root@dev-117 network]# systemctl enable --now openvswitch
 [root@dev-117 network]# ovs-vsctl show
 6bea41ef-b177-4e5c-81b4-fe1f8b90cbac
     Bridge br-tun

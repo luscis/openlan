@@ -24,8 +24,7 @@ openlan软件包含下面部分：
    ```
 3. 配置openlan switch服务自启动；
    ```
-   systemctl enable openlan-switch
-   systemctl start  openlan-switch
+   systemctl enable --now openlan-switch
    ```
 4. 配置预共享密钥以及加密算法；
    ```
@@ -129,8 +128,7 @@ openlan软件包含下面部分：
    ```
 3. 配置openlan point服务自启动；
    ```
-   systemctl enable openlan-point@example
-   systemctl start  openlan-point@example
+   systemctl enable --now openlan-point@example
    journalctl -u openlan-point@example        ## 查看日志信息
    ```
 4. 检测网络是否可达；

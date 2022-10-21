@@ -116,8 +116,7 @@ EOF
 配置网络服务：
 
 ```
-systemctl enable openlan-point@central
-systemctl start  openlan-point@central
+systemctl enable --now openlan-point@central
 ```
 
 检查启动日志：
