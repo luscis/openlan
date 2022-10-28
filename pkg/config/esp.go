@@ -43,21 +43,25 @@ func (s *EspState) Padding(value string, size int) string {
 	return strings.Repeat(value, 64/len(value))[:size]
 }
 
-func (s *EspState) Correct(obj *EspState) {
-	if obj != nil {
-		if s.Local == "" {
-			s.Local = obj.Local
-		}
-		if s.Auth == "" {
-			s.Auth = obj.Auth
-		}
-		if s.Crypt == "" {
-			s.Crypt = obj.Crypt
-		}
-		if s.RemotePort == 0 {
-			s.RemotePort = obj.RemotePort
-		}
+func (s *EspState) Merge(obj *EspState) {
+	if obj == nil {
+		return
 	}
+	if s.Local == "" {
+		s.Local = obj.Local
+	}
+	if s.Auth == "" {
+		s.Auth = obj.Auth
+	}
+	if s.Crypt == "" {
+		s.Crypt = obj.Crypt
+	}
+	if s.RemotePort == 0 {
+		s.RemotePort = obj.RemotePort
+	}
+}
+
+func (s *EspState) Correct() {
 	if addr, _ := net.LookupIP(s.Local); len(addr) > 0 {
 		s.LocalIp = addr[0]
 	}
@@ -122,7 +126,8 @@ func (m *ESPMember) Correct(state *EspState) {
 	m.Peer = Addr2Cidr(m.Peer)
 	m.Address = Addr2Cidr(m.Address)
 	ptr := &m.State
-	ptr.Correct(state)
+	ptr.Merge(state)
+	ptr.Correct()
 	if m.Policies == nil {
 		m.Policies = make([]*ESPPolicy, 0, 2)
 	}

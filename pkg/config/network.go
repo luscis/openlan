@@ -78,7 +78,8 @@ func (n *Network) Correct() {
 		if n.OpenVPN != nil {
 			n.OpenVPN.Network = n.Name
 			obj := DefaultOpenVPN()
-			n.OpenVPN.Correct(obj)
+			n.OpenVPN.Merge(obj)
+			n.OpenVPN.Correct()
 		}
 	}
 }

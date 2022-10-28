@@ -50,49 +50,54 @@ func DefaultOpenVPN() *OpenVPN {
 	}
 }
 
-func (o *OpenVPN) Correct(obj *OpenVPN) {
-	if obj != nil {
-		if o.Network == "" {
-			o.Network = obj.Network
-		}
-		if o.Auth == "" {
-			o.Auth = obj.Auth
-		}
-		if o.Protocol == "" {
-			o.Protocol = obj.Protocol
-		}
-		if o.DhPem == "" {
-			o.DhPem = obj.DhPem
-		}
-		if o.RootCa == "" {
-			o.RootCa = obj.RootCa
-		}
-		if o.ServerCrt == "" {
-			o.ServerCrt = obj.ServerCrt
-		}
-		if o.ServerKey == "" {
-			o.ServerKey = obj.ServerKey
-		}
-		if o.TlsAuth == "" {
-			o.TlsAuth = obj.TlsAuth
-		}
-		if o.Cipher == "" {
-			o.Cipher = obj.Cipher
-		}
-		if o.Routes == nil || len(o.Routes) == 0 {
-			o.Routes = append(o.Routes, obj.Routes...)
-		}
-		if o.Push == nil || len(o.Push) == 0 {
-			o.Push = append(o.Push, obj.Push...)
-		}
-		if o.Script == "" {
-			bin := obj.Script + " user check --network " + o.Network
-			o.Script = bin
-		}
-		if o.Clients == nil || len(o.Clients) == 0 {
-			o.Clients = append(o.Clients, obj.Clients...)
-		}
+func (o *OpenVPN) Merge(obj *OpenVPN) {
+	if obj == nil {
+		return
 	}
+	if o.Network == "" {
+		o.Network = obj.Network
+	}
+	if o.Auth == "" {
+		o.Auth = obj.Auth
+	}
+	if o.Protocol == "" {
+		o.Protocol = obj.Protocol
+	}
+	if o.DhPem == "" {
+		o.DhPem = obj.DhPem
+	}
+	if o.RootCa == "" {
+		o.RootCa = obj.RootCa
+	}
+	if o.ServerCrt == "" {
+		o.ServerCrt = obj.ServerCrt
+	}
+	if o.ServerKey == "" {
+		o.ServerKey = obj.ServerKey
+	}
+	if o.TlsAuth == "" {
+		o.TlsAuth = obj.TlsAuth
+	}
+	if o.Cipher == "" {
+		o.Cipher = obj.Cipher
+	}
+	if o.Routes == nil || len(o.Routes) == 0 {
+		o.Routes = append(o.Routes, obj.Routes...)
+	}
+	if o.Push == nil || len(o.Push) == 0 {
+		o.Push = append(o.Push, obj.Push...)
+	}
+	if o.Script == "" {
+		bin := obj.Script + " user check --network " + o.Network
+		o.Script = bin
+	}
+	if o.Clients == nil || len(o.Clients) == 0 {
+		o.Clients = append(o.Clients, obj.Clients...)
+	}
+
+}
+
+func (o *OpenVPN) Correct() {
 	if o.Directory == "" {
 		o.Directory = VarDir("openvpn", o.Network)
 	}
