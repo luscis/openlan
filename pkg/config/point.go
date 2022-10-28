@@ -45,9 +45,6 @@ func (i *Interface) Correct() {
 	if i.Provider == "" {
 		i.Provider = "kernel"
 	}
-	if i.Cost == 0 {
-		i.Cost = 666
-	}
 	if i.IPMtu == 0 {
 		i.IPMtu = 1500
 	}

@@ -81,7 +81,7 @@ func (w *OpenLANWorker) LoadLinks() {
 	if w.cfg.Links != nil {
 		for _, link := range w.cfg.Links {
 			link.Correct()
-			w.AddLink(&link)
+			w.AddLink(link)
 		}
 	}
 }
@@ -274,7 +274,7 @@ func (w *OpenLANWorker) UpTime() int64 {
 	return 0
 }
 
-func (w *OpenLANWorker) AddLink(c *co.Point) {
+func (w *OpenLANWorker) AddLink(c co.Point) {
 	br := w.cfg.Bridge
 	uuid := libol.GenString(13)
 
@@ -287,7 +287,7 @@ func (w *OpenLANWorker) AddLink(c *co.Point) {
 	c.Interface.IPMtu = br.IPMtu
 	c.Log.File = "/dev/null"
 
-	l := NewLink(uuid, c)
+	l := NewLink(uuid, &c)
 	l.Initialize()
 	cache.Link.Add(uuid, l.Model())
 	w.links.Add(l)
