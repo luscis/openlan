@@ -41,34 +41,18 @@ type Proxy struct {
 	PProf  string         `json:"pprof"`
 }
 
-func DefaultProxy() *Proxy {
-	obj := &Proxy{
-		Log: Log{
-			File:    LogFile("openlan-proxy.log"),
-			Verbose: libol.INFO,
-		},
-	}
-	obj.Correct(nil)
-	return obj
-}
-
 func NewProxy() *Proxy {
 	p := &Proxy{}
-	p.Flags()
 	p.Parse()
 	p.Initialize()
 	return p
 }
 
-func (p *Proxy) Flags() {
-	obj := DefaultProxy()
-	flag.StringVar(&p.Log.File, "log:file", obj.Log.File, "Configure log file")
-	flag.StringVar(&p.Conf, "conf", obj.Conf, "The configure file")
-	flag.StringVar(&p.PProf, "prof", obj.PProf, "Http listen for CPU prof")
-	flag.IntVar(&p.Log.Verbose, "log:level", obj.Log.Verbose, "Configure log level")
-}
-
 func (p *Proxy) Parse() {
+	flag.StringVar(&p.Log.File, "log:file", "", "Configure log file")
+	flag.StringVar(&p.Conf, "conf", "", "The configure file")
+	flag.StringVar(&p.PProf, "prof", "", "Http listen for CPU prof")
+	flag.IntVar(&p.Log.Verbose, "log:level", 20, "Configure log level")
 	flag.Parse()
 }
 
@@ -80,16 +64,17 @@ func (p *Proxy) Initialize() {
 	libol.Debug("Proxy.Initialize %v", p)
 }
 
-func (p *Proxy) Correct(obj *Proxy) {
+func (p *Proxy) Correct() {
 	for _, h := range p.Http {
 		if h.Cert != nil {
 			h.Cert.Correct()
 		}
 	}
+	p.Log.Correct()
 }
 
 func (p *Proxy) Default() {
-	p.Correct(nil)
+	p.Correct()
 }
 
 func (p *Proxy) Load() error {

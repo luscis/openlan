@@ -79,9 +79,9 @@ func (w *OpenLANWorker) Initialize() {
 
 func (w *OpenLANWorker) LoadLinks() {
 	if w.cfg.Links != nil {
-		for _, lin := range w.cfg.Links {
-			lin.Default()
-			w.AddLink(&lin)
+		for _, link := range w.cfg.Links {
+			link.Correct()
+			w.AddLink(&link)
 		}
 	}
 }

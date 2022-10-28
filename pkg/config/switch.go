@@ -6,20 +6,6 @@ import (
 	"path/filepath"
 )
 
-func DefaultPerf() *Perf {
-	return &Perf{
-		Point:    64,
-		Neighbor: 64,
-		OnLine:   64,
-		Link:     64,
-		User:     1024,
-		Esp:      64,
-		State:    64 * 4,
-		Policy:   64 * 8,
-		VxLAN:    64,
-	}
-}
-
 type Perf struct {
 	Point    int `json:"point"`
 	Neighbor int `json:"neighbor"`
@@ -32,33 +18,33 @@ type Perf struct {
 	VxLAN    int `json:"vxlan"`
 }
 
-func (p *Perf) Correct(obj *Perf) {
-	if p.Point == 0 && obj != nil {
-		p.Point = obj.Point
+func (p *Perf) Correct() {
+	if p.Point == 0 {
+		p.Point = 64
 	}
-	if p.Neighbor == 0 && obj != nil {
-		p.Neighbor = obj.Neighbor
+	if p.Neighbor == 0 {
+		p.Neighbor = 64
 	}
-	if p.OnLine == 0 && obj != nil {
-		p.OnLine = obj.OnLine
+	if p.OnLine == 0 {
+		p.OnLine = 64
 	}
-	if p.Link == 0 && obj != nil {
-		p.Link = obj.Link
+	if p.Link == 0 {
+		p.Link = 64
 	}
-	if p.User == 0 && obj != nil {
-		p.User = obj.User
+	if p.User == 0 {
+		p.User = 1024
 	}
-	if p.Esp == 0 && obj != nil {
-		p.Esp = obj.Esp
+	if p.Esp == 0 {
+		p.Esp = 64
 	}
-	if p.State == 0 && obj != nil {
-		p.State = obj.State
+	if p.State == 0 {
+		p.State = 64 * 4
 	}
-	if p.Policy == 0 && obj != nil {
-		p.Policy = obj.Policy
+	if p.Policy == 0 {
+		p.Policy = 64 * 8
 	}
-	if p.VxLAN == 0 && obj != nil {
-		p.VxLAN = obj.VxLAN
+	if p.VxLAN == 0 {
+		p.VxLAN = 64
 	}
 }
 
@@ -85,40 +71,17 @@ type Switch struct {
 	TokenFile string     `json:"-"`
 }
 
-func DefaultSwitch() *Switch {
-	obj := &Switch{
-		Timeout: 120,
-		Log: Log{
-			File:    LogFile("openlan-switch.log"),
-			Verbose: libol.INFO,
-		},
-		Http: &Http{
-			Listen: "0.0.0.0:10000",
-		},
-		Listen: "0.0.0.0:10002",
-		Cert:   &Cert{},
-		Crypt:  &Crypt{},
-	}
-	obj.Correct(nil)
-	return obj
-}
-
 func NewSwitch() *Switch {
 	s := Manager.Switch
-	s.Flags()
 	s.Parse()
 	s.Initialize()
 	return s
 }
 
-func (s *Switch) Flags() {
-	obj := DefaultSwitch()
-	flag.StringVar(&s.Log.File, "log:file", obj.Log.File, "Configure log file")
-	flag.StringVar(&s.ConfDir, "conf:dir", obj.ConfDir, "Configure switch's directory")
-	flag.IntVar(&s.Log.Verbose, "log:level", obj.Log.Verbose, "Configure log level")
-}
-
 func (s *Switch) Parse() {
+	flag.StringVar(&s.Log.File, "log:file", "", "Configure log file")
+	flag.StringVar(&s.ConfDir, "conf:dir", "", "Configure switch's directory")
+	flag.IntVar(&s.Log.Verbose, "log:level", 20, "Configure log level")
 	flag.Parse()
 }
 
@@ -127,31 +90,48 @@ func (s *Switch) Initialize() {
 	if err := s.Load(); err != nil {
 		libol.Error("Switch.Initialize %s", err)
 	}
-	s.Default()
+	s.Correct()
+	s.LoadExt()
 	libol.Debug("Switch.Initialize %v", s)
 }
 
-func (s *Switch) Correct(obj *Switch) {
+func (s *Switch) LoadExt() {
+	s.LoadAcl()
+	s.LoadNetwork()
+}
+
+func (s *Switch) Correct() {
 	if s.Alias == "" {
 		s.Alias = GetAlias()
 	}
+	if s.Listen == "" {
+		s.Listen = "0.0.0.0:10002"
+	}
 	CorrectAddr(&s.Listen, 10002)
+	if s.Http == nil {
+		s.Http = &Http{
+			Listen: "0.0.0.0:10000",
+		}
+	}
 	if s.Http != nil {
 		CorrectAddr(&s.Http.Listen, 10000)
+	}
+	if s.Timeout == 0 {
+		s.Timeout = 120
 	}
 	libol.Debug("Proxy.Correct Http %v", s.Http)
 	s.TokenFile = filepath.Join(s.ConfDir, "token")
 	s.File = filepath.Join(s.ConfDir, "switch.json")
 	if s.Cert == nil {
-		s.Cert = obj.Cert
-	} else {
-		s.Cert.Correct()
+		s.Cert = &Cert{}
 	}
+	s.Cert.Correct()
 	if s.Crypt == nil {
-		s.Crypt = obj.Crypt
+		s.Crypt = &Crypt{}
 	}
-	perf := &s.Perf
-	perf.Correct(DefaultPerf())
+	s.Log.Correct()
+	s.Crypt.Correct()
+	s.Perf.Correct()
 	s.PassFile = filepath.Join(s.ConfDir, "password")
 	if s.Protocol == "" {
 		s.Protocol = "tcp"
@@ -159,6 +139,7 @@ func (s *Switch) Correct(obj *Switch) {
 	if s.AddrPool == "" {
 		s.AddrPool = "100.44"
 	}
+	s.Queue.Correct()
 }
 
 func (s *Switch) Dir(elem ...string) string {
@@ -211,7 +192,7 @@ func (s *Switch) LoadNetwork() {
 	s.Format()
 	for _, obj := range s.Network {
 		for _, link := range obj.Links {
-			link.Default()
+			link.Correct()
 		}
 		obj.Correct()
 		obj.Alias = s.Alias
@@ -244,21 +225,6 @@ func (s *Switch) LoadAcl() {
 			obj.File = s.Dir("acl", obj.Name+".json")
 		}
 	}
-}
-
-func (s *Switch) Default() {
-	obj := DefaultSwitch()
-	s.Correct(obj)
-	if s.Timeout == 0 {
-		s.Timeout = obj.Timeout
-	}
-	if s.Crypt != nil {
-		s.Crypt.Default()
-	}
-	queue := &s.Queue
-	queue.Default()
-	s.LoadAcl()
-	s.LoadNetwork()
 }
 
 func (s *Switch) Load() error {

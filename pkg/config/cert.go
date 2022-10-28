@@ -17,7 +17,7 @@ func (c *Crypt) IsZero() bool {
 	return c.Algo == "" && c.Secret == ""
 }
 
-func (c *Crypt) Default() {
+func (c *Crypt) Correct() {
 	if c.Secret != "" && c.Algo == "" {
 		c.Algo = "xor"
 	}

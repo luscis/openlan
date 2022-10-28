@@ -20,7 +20,7 @@ var (
 	QdVWr = 32 * 4
 )
 
-func (q *Queue) Default() {
+func (q *Queue) Correct() {
 	if q.SockWr == 0 {
 		q.SockWr = QdSwr
 	}
@@ -39,5 +39,5 @@ func (q *Queue) Default() {
 	if q.VirWrt == 0 {
 		q.VirWrt = QdVWr
 	}
-	libol.Debug("Queue.Default %v", q)
+	libol.Debug("Queue.Correct %v", q)
 }

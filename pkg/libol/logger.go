@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	PRINT = 00
+	PRINT = 01
 	LOG   = 05
 	STACK = 06
 	DEBUG = 10

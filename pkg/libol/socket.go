@@ -2,6 +2,7 @@ package libol
 
 import (
 	"bytes"
+	"crypto/md5"
 	"net"
 	"sync"
 	"time"
@@ -214,27 +215,28 @@ func (s *SocketClientImpl) negotiate() error {
 		return err
 	}
 	s.status = ClNegotiating
-	if reply, err := s.ReadMsg(); err == nil {
-		if reply.IsControl() {
-			action, params := reply.CmdAndParams()
-			if action != NegoResp {
-				return NewErr("wrong message type: %s", action)
-			}
-			if bytes.Compare(key, params) != 0 {
-				return NewErr("negotiate key failed: %s != %s", key, params)
-			}
-			if block := s.message.Crypt(); block != nil {
-				block.Update(string(key))
-			}
-			s.status = ClNegotiated
-			return nil
-		} else {
-			Info("SocketClientImpl.negotiate %s", reply.String())
-		}
-		return NewErr("wrong message type")
-	} else {
+	reply, err := s.ReadMsg()
+	if err != nil {
 		return err
 	}
+	if !reply.IsControl() {
+		Info("SocketClientImpl.negotiate %s", reply.String())
+		return NewErr("wrong message type")
+	}
+	action, params := reply.CmdAndParams()
+	if action != NegoResp {
+		return NewErr("wrong message type: %s", action)
+	}
+	Cmd("SocketClientImpl.negotiate %s %x", action, params)
+	sum := md5.Sum(key)
+	if bytes.Compare(sum[:md5.Size], params) != 0 {
+		return NewErr("negotiate key failed: %x != %x", key, params)
+	}
+	if block := s.message.Crypt(); block != nil {
+		block.Update(string(key))
+	}
+	s.status = ClNegotiated
+	return nil
 }
 
 // MUST IMPLEMENT
@@ -454,27 +456,28 @@ func (t *SocketServerImpl) negotiate(client SocketClient) error {
 	if client.Key() == "" {
 		return nil
 	}
-	if request, err := client.ReadMsg(); err == nil {
-		if request.IsControl() {
-			client.SetStatus(ClNegotiated)
-			action, params := request.CmdAndParams()
-			if action == NegoReq {
-				Info("SocketServerImpl.negotiate %s", params)
-				reply := NewControlFrame(NegoResp, params)
-				if err := client.WriteMsg(reply); err != nil {
-					return err
-				}
-				client.SetKey(string(params))
-				return nil
-			}
-			return NewErr("wrong message type: %s", action)
-		} else {
-			Info("SocketServerImpl.negotiate %s", request.String())
-		}
-		return NewErr("wrong message type")
-	} else {
+	request, err := client.ReadMsg()
+	if err != nil {
 		return err
 	}
+	if !request.IsControl() {
+		Info("SocketServerImpl.negotiate %s", request.String())
+		return NewErr("wrong message type")
+	}
+	client.SetStatus(ClNegotiated)
+	action, params := request.CmdAndParams()
+	if action == NegoReq {
+		Cmd("SocketServerImpl.negotiate %s", params)
+		sum := md5.Sum(params)
+		reply := NewControlFrame(NegoResp, sum[:md5.Size])
+		if err := client.WriteMsg(reply); err != nil {
+			return err
+		}
+		client.SetKey(string(params))
+		return nil
+	}
+	return NewErr("wrong message type: %s", action)
+
 }
 
 func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) {

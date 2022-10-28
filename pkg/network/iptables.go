@@ -238,7 +238,13 @@ func (chains IpChains) Pop(obj IpChain) IpChains {
 	return news[:index]
 }
 
+var __iptablesInit__ = false
+
 func IpInit() {
+	if __iptablesInit__ {
+		return
+	}
+	__iptablesInit__ = true
 	if err := iptables.FirewalldInit(); err != nil {
 		libol.Error("IpInit %s", err)
 	}

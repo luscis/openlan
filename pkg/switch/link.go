@@ -87,8 +87,7 @@ func (l *Link) Start() {
 	}
 	libol.Go(func() {
 		args := []string{
-			"-alias", l.cfg.Network,
-			"-conn", l.cfg.Connection,
+			"-alias", l.cfg.Connection + "@" + l.cfg.Network,
 			"-conf", file,
 			"-terminal", "ww",
 		}
