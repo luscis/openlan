@@ -114,7 +114,7 @@ type ESPMember struct {
 	Policies []*ESPPolicy `json:"policies"`
 }
 
-func (m *ESPMember) Correct(state *EspState) {
+func (m *ESPMember) Correct() {
 	if m.Name == "" {
 		m.Name = fmt.Sprintf("spi:%d", m.Spi)
 	} else if m.Spi == 0 {
@@ -125,9 +125,7 @@ func (m *ESPMember) Correct(state *EspState) {
 	}
 	m.Peer = Addr2Cidr(m.Peer)
 	m.Address = Addr2Cidr(m.Address)
-	ptr := &m.State
-	ptr.Merge(state)
-	ptr.Correct()
+	m.State.Correct()
 	if m.Policies == nil {
 		m.Policies = make([]*ESPPolicy, 0, 2)
 	}
@@ -198,11 +196,13 @@ func (n *ESPSpecifies) Correct() {
 			SetLocalUdp(port)
 		}
 	}
+	n.State.Correct()
 	for _, m := range n.Members {
 		if m.Address == "" {
 			m.Address = n.Address
 		}
-		m.Correct(&n.State)
+		m.State.Merge(&n.State)
+		m.Correct()
 	}
 }
 
