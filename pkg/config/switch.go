@@ -239,7 +239,7 @@ func (s *Switch) Save() {
 		libol.Error("Switch.Save %s", err)
 	}
 	s.SaveAcl()
-	s.SaveNets()
+	s.SaveNetwork()
 }
 
 func (s *Switch) SaveAcl() {
@@ -253,7 +253,7 @@ func (s *Switch) SaveAcl() {
 	}
 }
 
-func (s *Switch) SaveNets() {
+func (s *Switch) SaveNetwork() {
 	if s.Network == nil {
 		return
 	}

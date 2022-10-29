@@ -60,7 +60,7 @@ func (p *Proxy) Initialize() {
 	if err := p.Load(); err != nil {
 		libol.Error("Proxy.Initialize %s", err)
 	}
-	p.Default()
+	p.Correct()
 	libol.Debug("Proxy.Initialize %v", p)
 }
 
@@ -71,10 +71,6 @@ func (p *Proxy) Correct() {
 		}
 	}
 	p.Log.Correct()
-}
-
-func (p *Proxy) Default() {
-	p.Correct()
 }
 
 func (p *Proxy) Load() error {
