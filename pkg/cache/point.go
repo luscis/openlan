@@ -13,6 +13,8 @@ type point struct {
 
 func (p *point) Init(size int) {
 	p.Clients = libol.NewSafeStrMap(size)
+	p.UUIDAddr = libol.NewSafeStrStr(size)
+	p.AddrUUID = libol.NewSafeStrStr(size)
 }
 
 func (p *point) Add(m *models.Point) {
