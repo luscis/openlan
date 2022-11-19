@@ -9,8 +9,10 @@ import (
 
 func TestSwitch_LoadPass(t *testing.T) {
 	sw := &Switch{}
-	sw.LoadPass("../../.password.no")
-	sw.LoadPass("../../packaging/resource/password.example")
+	cache.User.SetFile("../../.password.no")
+	sw.LoadPass()
+	cache.User.SetFile("../../packaging/resource/password.example")
+	sw.LoadPass()
 	for user := range cache.User.List() {
 		if user == nil {
 			break

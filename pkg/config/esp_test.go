@@ -10,15 +10,15 @@ func TestESPSpecifies(t *testing.T) {
 		State: EspState{
 			Local: "3.3.3.1",
 			Crypt: "fake-crypt",
-			Auth: "fake-auth",
+			Auth:  "fake-auth",
 		},
 		Members: []*ESPMember{
 			{
-				Peer: "1.1.1.0",
+				Peer:    "1.1.1.0",
 				Address: "1.1.1.1",
 				Spi:     0x01,
-				State:EspState{
-					Remote:     "3.3.3.3",
+				State: EspState{
+					Remote: "3.3.3.3",
 				},
 			},
 		},
@@ -34,30 +34,30 @@ func TestESPSpecifies_GetMember(t *testing.T) {
 		State: EspState{
 			Local: "3.3.3.1",
 			Crypt: "fake-crypt",
-			Auth: "fake-auth",
+			Auth:  "fake-auth",
 		},
 		Members: []*ESPMember{
 			{
-				Peer: "1.1.1.0",
+				Peer:    "1.1.1.0",
 				Address: "1.1.1.1",
 				Spi:     123,
-				State:EspState{
-					Remote:     "3.3.3.3",
+				State: EspState{
+					Remote: "3.3.3.3",
 				},
 			},
 		},
 	}
 	spec.Correct()
 	obj := spec.GetMember("spi:123")
-	assert.Equal(t,  spec.Members[0], obj, "be the same.")
+	assert.Equal(t, spec.Members[0], obj, "be the same.")
 	// Add
 	{
 		mem1 := &ESPMember{
-			Peer: "1.1.1.0",
+			Peer:    "1.1.1.0",
 			Address: "1.1.1.2",
 			Spi:     124,
-			State:EspState{
-				Remote:     "3.3.3.4",
+			State: EspState{
+				Remote: "3.3.3.4",
 			},
 		}
 		spec.AddMember(mem1)
@@ -79,12 +79,12 @@ func TestESPSpecifies_GetMember(t *testing.T) {
 
 func TestESPSpecifies_AddPolicy(t *testing.T) {
 	mem := &ESPMember{
-		Peer: "1.1.1.0",
+		Peer:    "1.1.1.0",
 		Address: "1.1.1.2",
 		Spi:     124,
-		State:EspState{
-			Local: "3.3.3.1",
-			Remote:     "3.3.3.3",
+		State: EspState{
+			Local:  "3.3.3.1",
+			Remote: "3.3.3.3",
 		},
 	}
 	mem.Correct()

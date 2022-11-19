@@ -12,11 +12,12 @@ function download() {
 }
 
 function requires() {
-  local os=$(cat /etc/os-release | grep ^ID= | sed 's/"//g')
-  if echo $os | grep -q -e centos -e redhat; then
-    yum install -y net-tools iptables iputils openvpn openssl11 openvswitch dnsmasq
-  elif echo $os | grep -q -e debian -e ubuntu; then
-    apt-get install -y net-tools iptables iproute2 openvpn openssl openvswitch-switch dnsmasq
+  if type yum > /dev/null; then
+    yum install -y net-tools iptables iputils openvpn openvswitch dnsmasq
+  elif type apt > /dev/null; then
+    apt-get install -y net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq
+  else
+    echo "We didn't find yum and apt."
   fi
 }
 
