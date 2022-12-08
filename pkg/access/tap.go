@@ -73,7 +73,7 @@ func (a *TapWorker) Initialize() {
 	}
 	if a.IsTun() {
 		addr := a.pinCfg.Interface.Address
-		a.setEther(addr, libol.GenEthAddr(6))
+		a.setAddr(addr, libol.GenEthAddr(6))
 		a.out.Info("TapWorker.Initialize: src %x", a.ether.HwAddr)
 	}
 	if err := a.open(); err != nil {
@@ -85,29 +85,33 @@ func (a *TapWorker) IsTun() bool {
 	return a.devCfg.Type == network.TUN
 }
 
-func (a *TapWorker) setEther(ipAddr string, hwAddr []byte) {
-	a.neighbor.Clear()
+func (a *TapWorker) setIpAddr(ipaddr string) {
 	// format ip address.
-	ipAddr, err := libol.IPNetmask(ipAddr)
-	if err != nil {
-		a.out.Warn("TapWorker.setEther: %s: %s", ipAddr, err)
-		return
+	if addr, err := libol.IPNetmask(ipaddr); err == nil {
+		ifAddr := strings.SplitN(addr, "/", 2)[0]
+		a.ether.IpAddr = net.ParseIP(ifAddr).To4()
+		if a.ether.IpAddr == nil {
+			a.ether.IpAddr = []byte{0x00, 0x00, 0x00, 0x00}
+		}
+		a.out.Info("TapWorker.setEther: srcIp % x", a.ether.IpAddr)
+		// changed address need open device again.
+		if a.ifAddr != "" && a.ifAddr != addr {
+			a.out.Warn("TapWorker.setEther changed %s->%s", a.ifAddr, addr)
+			a.eventQueue <- NewEvent(EvTapReset, "ifAddr changed")
+		}
+		a.ifAddr = addr
+	} else {
+		a.out.Warn("TapWorker.setEther: %s: %s", addr, err)
 	}
-	ifAddr := strings.SplitN(ipAddr, "/", 2)[0]
-	a.ether.IpAddr = net.ParseIP(ifAddr).To4()
-	if a.ether.IpAddr == nil {
-		a.ether.IpAddr = []byte{0x00, 0x00, 0x00, 0x00}
-	}
-	a.out.Info("TapWorker.setEther: srcIp % x", a.ether.IpAddr)
+}
+func (a *TapWorker) setAddr(ipAddr string, hwAddr []byte) {
+	a.neighbor.Clear()
 	if hwAddr != nil {
 		a.ether.HwAddr = hwAddr
 	}
-	// changed address need open device again.
-	if a.ifAddr != "" && a.ifAddr != ipAddr {
-		a.out.Warn("TapWorker.setEther changed %s->%s", a.ifAddr, ipAddr)
-		a.eventQueue <- NewEvent(EvTapReset, "ifAddr changed")
+	if ipAddr != "" {
+		a.setIpAddr(ipAddr)
 	}
-	a.ifAddr = ipAddr
 }
 
 func (a *TapWorker) OnIpAddr(addr string) {
@@ -228,7 +232,7 @@ func (a *TapWorker) dispatch(ev *WorkerEvent) {
 			a.eventQueue <- NewEvent(EvTapOpenErr, err.Error())
 		}
 	case EvTapIpAddr:
-		a.setEther(ev.Reason, nil)
+		a.setAddr(ev.Reason, nil)
 	}
 }
 
