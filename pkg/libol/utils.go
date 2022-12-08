@@ -22,6 +22,7 @@ import (
 
 const LeaseTime = "2006-01-02T15"
 const SimpleTime = "2006-01-02 15:04:05"
+const MacBase = 0x00
 
 var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
 
@@ -54,7 +55,7 @@ func GenEthAddr(n int) []byte {
 	for i := range data {
 		data[i] = byte(rand.Uint32() & 0xFF)
 	}
-	data[0] &= 0xfe
+	data[0] = MacBase
 	return data
 }
 
