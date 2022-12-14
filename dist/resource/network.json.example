@@ -50,5 +50,5 @@
         ]
     },
     "acl": "acl-100",
-    "dhcp": "enable",
+    "dhcp": "enable"
 }

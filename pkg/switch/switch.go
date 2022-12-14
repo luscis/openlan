@@ -95,6 +95,7 @@ type Switch struct {
 	newTime  int64
 	out      *libol.SubLogger
 	confd    *ConfD
+	l2tp     *L2TP
 }
 
 func NewSwitch(c *co.Switch) *Switch {
@@ -442,6 +443,10 @@ func (v *Switch) Initialize() {
 			Crt: cert.CrtFile,
 		})
 	}
+	// Enable L2TP
+	if v.cfg.L2TP != nil {
+		v.l2tp = NewL2TP(v.cfg.L2TP)
+	}
 	// Start confd monitor
 	v.confd.Initialize()
 }
@@ -570,13 +575,19 @@ func (v *Switch) Start() {
 	}
 	libol.Go(v.firewall.Start)
 	libol.Go(v.confd.Start)
+	if v.l2tp != nil {
+		libol.Go(v.l2tp.Start)
+	}
 }
 
 func (v *Switch) Stop() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	v.out.Debug("Switch.Stop")
+	v.out.Info("Switch.Stop")
+	if v.l2tp != nil {
+		v.l2tp.Stop()
+	}
 	v.confd.Stop()
 	// firstly, notify leave to point.
 	for p := range cache.Point.List() {
@@ -588,7 +599,6 @@ func (v *Switch) Stop() {
 	v.firewall.Stop()
 	if v.http != nil {
 		v.http.Shutdown()
-		v.http = nil
 	}
 	v.server.Close()
 	// stop network.

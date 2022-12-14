@@ -67,6 +67,16 @@ func (u User) Tmpl() string {
 `
 }
 
+func (u User) ChapTmpl() string {
+	return `# Generate by OpenLAN
+# Secrets for authentication using CHAP
+# client	server	secret			IP addresses
+{{- range . }}
+{{.Name}}@{{.Network}}{{"\t"}}*{{"\t"}}{{.Password}}{{"\t"}}*
+{{- end }}
+`
+}
+
 func (u User) List(c *cli.Context) error {
 	url := u.Url(c.String("url"), "")
 	clt := u.NewHttp(c.String("token"))
@@ -84,7 +94,12 @@ func (u User) List(c *cli.Context) error {
 		}
 		items = tmp
 	}
-	return u.Out(items, c.String("format"), u.Tmpl())
+	tmpl := u.Tmpl()
+	chap := c.Bool("chap")
+	if chap {
+		tmpl = u.ChapTmpl()
+	}
+	return u.Out(items, c.String("format"), tmpl)
 }
 
 func (u User) Get(c *cli.Context) error {
@@ -181,6 +196,7 @@ func (u User) Commands(app *api.App) {
 				Aliases: []string{"ls"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "network"},
+					&cli.BoolFlag{Name: "chap", Value: false},
 				},
 				Action: u.List,
 			},

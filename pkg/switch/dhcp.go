@@ -61,7 +61,8 @@ func (d *Dhcp) LogFile() string {
 	return filepath.Join(DhcpDir, d.uuid+".log")
 }
 
-const tmpl = `#Generate by OpenLAN
+func (d *Dhcp) Tmpl() string {
+	return `#Generate by OpenLAN
 strict-order
 except-interface=lo
 bind-interfaces
@@ -69,10 +70,11 @@ interface=%s
 dhcp-range=%s,%s,12h
 dhcp-leasefile=%s
 `
+}
 
 func (d *Dhcp) SaveConf() {
 	cfg := d.cfg
-	data := fmt.Sprintf(tmpl,
+	data := fmt.Sprintf(d.Tmpl(),
 		cfg.Bridge.Name,
 		cfg.Subnet.Start,
 		cfg.Subnet.End,
@@ -93,7 +95,7 @@ func (d *Dhcp) Start() {
 			"--conf-file=" + d.ConfFile(),
 			"--pid-file=" + d.PidFile(),
 		}
-		d.out.Debug("Dhcp.Start %s %v", d.Path(), args)
+		d.out.Info("Dhcp.Start %s %v", d.Path(), args)
 		cmd := exec.Command(d.Path(), args...)
 		cmd.Stdout = log
 		cmd.Stderr = log

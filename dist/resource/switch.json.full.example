@@ -33,5 +33,17 @@
         "baseDN": "dc=openlan,dc=com",
         "attribute": "cn",
         "filter": "(cn=%s)"
+    },
+    "l2tp": {
+        "ipsec": "enable",
+        "address": "192.168.33.1",
+        "subnet": {
+            "startAt": "192.168.33.100",
+            "endAt": "192.168.33.250"
+        },
+        "options": [
+            "ms-dns 8.8.8.8",
+            "ms-dns 8.8.4.4"
+        ]
     }
 }
