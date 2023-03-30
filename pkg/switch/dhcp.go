@@ -69,6 +69,10 @@ bind-interfaces
 interface=%s
 dhcp-range=%s,%s,12h
 dhcp-leasefile=%s
+## disable default gateway
+# dhcp-option=3
+## disable dns
+# dhcp-option=6
 `
 }
 

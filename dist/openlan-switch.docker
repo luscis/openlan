@@ -1,18 +1,18 @@
 
 FROM centos:7
 
-ARG VERSION
+ARG BIN
 
 WORKDIR /root
 
-ADD build/openlan-switch-${VERSION}-1.el7.x86_64.rpm /tmp
+ADD build/${BIN} /tmp
 
-RUN yum install -y epel-release \
-  && yum install -y iptables bridge-utils \
-  && yum install -y /tmp/openlan-switch-${VERSION}-1.el7.x86_64.rpm
+RUN yum install -y epel-release centos-release-openstack-train \
+    && yum install -y rdma-core libibverbs
+RUN DOCKER=yes /tmp/${BIN}
 
 LABEL application="OpenLAN Switch Application"
-LABEL maintainer="luscis@163.com"
+LABEL maintainer="danieldin95@163.com"
 
 EXPOSE 10000/tcp
 EXPOSE 10002/tcp

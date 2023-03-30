@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 tmp=""
 installer="$0"
@@ -13,7 +13,7 @@ function download() {
 
 function requires() {
   if type yum > /dev/null; then
-    yum install -y net-tools iptables iputils openvpn openvswitch dnsmasq
+    yum install -y openssl net-tools iptables iputils openvpn openvswitch dnsmasq
   elif type apt > /dev/null; then
     apt-get install -y net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq
   else
@@ -30,6 +30,9 @@ function install() {
 }
 
 function post() {
+  if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
+    sysctl -p /etc/sysctl.d/90-openlan.conf
+  fi
   [ -e "/etc/openlan/switch/switch.json" ] || {
     cp -rf /etc/openlan/switch/switch.json.example /etc/openlan/switch/switch.json
   }
@@ -42,15 +45,16 @@ function post() {
   [ -e "/etc/openlan/switch/confd.db" ] || {
     /usr/bin/ovsdb-tool create /etc/openlan/switch/confd.db /etc/openlan/switch/confd.schema.json
   }
-  [ -e "/var/openlan/confd.sock" ] && {
+  [ ! -e "/var/openlan/confd.sock" ] || {
     /usr/bin/ovsdb-client convert unix:///var/openlan/confd.sock /etc/openlan/switch/confd.schema.json
   }
-  sysctl -p /etc/sysctl.d/90-openlan.conf
 }
 
 function finish() {
   rm -rf $tmp
-  systemctl daemon-reload
+  if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
+    systemctl daemon-reload
+  fi
   echo "success"
 }
 
