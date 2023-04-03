@@ -11,6 +11,8 @@ RUN yum install -y epel-release centos-release-openstack-train \
     && yum install -y rdma-core libibverbs
 RUN DOCKER=yes /tmp/${BIN}
 
+RUN rm -rf /tmp/* && rm -rf /var/cache/yum/*
+
 LABEL application="OpenLAN Switch Application"
 LABEL maintainer="danieldin95@163.com"
 

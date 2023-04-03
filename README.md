@@ -1,7 +1,6 @@
 
 简体中文 | [English](./README.en.md)
 
-# 概述 
 [![Go Report Card](https://goreportcard.com/badge/github.com/luscis/openlan)](https://goreportcard.com/report/luscis/openlan)
 [![Codecov](https://codecov.io/gh/luscis/openlan/branch/master/graph/badge.svg)](https://codecov.io/gh/luscis/openlan)
 [![CodeQL](https://github.com/luscis/openlan/actions/workflows/codeql.yml/badge.svg)](https://github.com/luscis/openlan/actions/workflows/codeql.yml)
@@ -10,28 +9,27 @@
 [![Releases](https://img.shields.io/github/release/luscis/openlan/all.svg?style=flat-square)](https://github.com/luscis/openlan/releases)
 [![GPL 3.0 License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 
+# 什么是OpenLAN？
+
 OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够建立多个用户空间的虚拟以太网络。
 
-## 缩略语
+## 为什么是OpenLAN？
 
-* OLSW: OpenLAN Switch，开放局域网交换机
-* OLAP: OpenLAN Access Point，开放局域网接入点
-* NAT: Network Address Translation, 网络地址转换
-* VxLAN: Virtual eXtensible Local Area Network，虚拟扩展局域网
-* STT: Stateless Transport Tunneling，无状态传输隧道
+如果你有更加灵活的VPN业务需求，需要使用VPN访问企业内部，或者借用公网云主机等进行网络代理、网络穿透等，可以试试OpenLAN，可以做的更简单。
 
-## 功能清单
+## OpenLAN支持什么功能？
 
-* 支持多个网络空间划分，为不同的业务提供逻辑网络隔离；
-* 支持OLAP或者OpenVPN接入，提供网桥把局域网共享出去；
-* 支持IPSec隧道网络，以及基于VxLAN/STT的租户网络划分；
-* 支持基于用户名密码的接入认证，使用预共享密钥对数据报文进行加密；
-* 支持TCP/TLS，UDP/KCP，WS/WSS等多种传输协议实现，TCP模式具有较高的性能；
-* 支持HTTP/HTTPS，以及SOCKS5等HTTP的正向代理技术，灵活配置代理进行网络穿透；
-* 支持基于TCP的端口转发，为防火墙下的主机提供TCP端口代理。
+* 用户可以使用OpenLAN划分多个网络空间，为不同的业务提供逻辑网络隔离；
+* 多个OpenLAN Switch之间可以使用OpenLAN协议在二层上互联互通，在二层网络上可以添加SNAT路由轻松的访问企业内部网络；
+* 用户可以使用OpenVPN接入OpenLAN网络，OpenVPN支持多平台如Android/MacOS/Windows等；
+* 多个OpenLAN Switch之间也可以使用PSec隧道网络，并且支持在该网络上进一步划分VxLAN/STT的租户网络；
+* 使用简单的用户名密码的作为接入认证方式，并且可以设置预共享密钥对数据报文进行加密；
+* OpenLAN协议可以工作在TCP/TLS/UDP/KCP/WS/WSS等多种传输协议上，TCP具有较高的性能，TLS/WSS能够提供更好的加密安全；
+* OpenLAN也提供了简单的HTTP/HTTPS/SOCKS5等HTTP的正向代理技术，用户可以根据需要灵活配置代理进行网络穿透；
 
 
-## 分支中心接入
+## OpenLAN的工作场景？
+### 分支中心接入
 
                                        OLSW(企业中心) - 10.16.1.10/24
                                                 ^
@@ -48,7 +46,7 @@ OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够�
                  10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
                  
 
-## 多区域互联
+### 多区域互联
 
                    192.168.1.20/24                                 192.168.1.21/24
                          |                                                 |
@@ -69,7 +67,7 @@ OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够�
                      OLAP                     OLAP                         OLAP
                 192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
 
-## 数据中心全互联网络
+### 数据中心全互联网络
 
 * Underlay for VxLAN over Internet by IPSec.
 
@@ -124,7 +122,7 @@ OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够�
            VNI-1024 192.168.40.0/24 [vps-47_eth1.200, vps-92_enp2s4.101, vps-12_eth4.200]
 
 
-## 文档
+## 帮助文档
 - [软件安装](docs/install.md)
 - [分支接入](docs/central.md)
 - [多区域互联](docs/multiarea.md)
