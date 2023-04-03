@@ -240,12 +240,12 @@ func (chains IpChains) Pop(obj IpChain) IpChains {
 
 var __iptablesInit__ = false
 
-func IpInit() {
+func IptInit() {
 	if __iptablesInit__ {
 		return
 	}
 	__iptablesInit__ = true
 	if err := iptables.FirewalldInit(); err != nil {
-		libol.Error("IpInit %s", err)
+		libol.Info("IptInit %s", err)
 	}
 }

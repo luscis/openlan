@@ -1,11 +1,10 @@
-
 FROM centos:7
 
 ARG BIN
 
 WORKDIR /root
 
-ADD build/${BIN} /tmp
+ADD ${BIN} /tmp
 
 RUN yum install -y epel-release centos-release-openstack-train \
     && yum install -y rdma-core libibverbs
@@ -16,8 +15,4 @@ RUN rm -rf /tmp/* && rm -rf /var/cache/yum/*
 LABEL application="OpenLAN Switch Application"
 LABEL maintainer="danieldin95@163.com"
 
-EXPOSE 10000/tcp
-EXPOSE 10002/tcp
-EXPOSE 10002/udp
-
-CMD ["/usr/bin/openlan-switch", "-conf:dir", "/etc/openlan/switch", "-log:level", "20"]
+CMD ["/var/openlan/script/confd", "start"]

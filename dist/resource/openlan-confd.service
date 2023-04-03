@@ -5,11 +5,11 @@ Before=network.target network.service
 
 [Service]
 Type=forking
-PIDFile=/var/openlan/confd.pid
+PIDFile=/var/openlan/confd/confd.pid
 Restart=on-failure
 EnvironmentFile=-/etc/sysconfig/openlan/confd
 
-ExecStart=/var/openlan/script/confd start
+ExecStart=/var/openlan/script/confd start --detach
 ExecStop=/var/openlan/script/confd stop
 
 [Install]

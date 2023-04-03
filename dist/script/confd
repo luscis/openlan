@@ -2,13 +2,16 @@
 
 set -e
 
-command=$1
+command=$1; shift
+options=$@;
+
+dir=$(dirname $0)
 
 OVSDB_SERVER_BIN="/usr/bin/env ovsdb-server"
 [ "$OVSDB_DATABASE" == "" ] && OVSDB_DATABASE="/etc/openlan/switch/confd.db"
-[ "$OVSDB_LOG_FILE" == "" ] && OVSDB_LOG_FILE="/var/openlan/confd.log"
-[ "$OVSDB_SOCK" == "" ] && OVSDB_SOCK="/var/openlan/confd.sock"
-[ "$OVSDB_PID_FILE" == "" ] && OVSDB_PID_FILE="/var/openlan/confd.pid"
+[ "$OVSDB_LOG_FILE" == "" ] && OVSDB_LOG_FILE="/var/openlan/confd/confd.log"
+[ "$OVSDB_SOCK" == "" ] && OVSDB_SOCK="/var/openlan/confd/confd.sock"
+[ "$OVSDB_PID_FILE" == "" ] && OVSDB_PID_FILE="/var/openlan/confd/confd.pid"
 
 function stop() {
     [ -e "$OVSDB_PID_FILE" ] && kill "$(cat $OVSDB_PID_FILE)"
@@ -21,8 +24,10 @@ function start() {
     set "$@" --log-file="$OVSDB_LOG_FILE"
     set "$@" --pidfile="$OVSDB_PID_FILE"
     [ "$OVSDB_OPTIONS" != "" ] && set "$@" $OVSDB_OPTIONS
-    set "$@" --detach
-    OVS_RUNDIR="/var/openlan" "$@"
+    for opt in $options; do
+      set "$@" $opt
+    done
+    OVS_RUNDIR="/var/openlan/confd" "$@"
 }
 
 case $command in

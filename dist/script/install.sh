@@ -17,7 +17,7 @@ function requires() {
   elif type apt > /dev/null; then
     apt-get install -y net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq
   else
-    echo "We didn't find yum and apt."
+    echo "We didn't find any packet tool: yum or apt."
   fi
 }
 
@@ -45,8 +45,8 @@ function post() {
   [ -e "/etc/openlan/switch/confd.db" ] || {
     /usr/bin/ovsdb-tool create /etc/openlan/switch/confd.db /etc/openlan/switch/confd.schema.json
   }
-  [ ! -e "/var/openlan/confd.sock" ] || {
-    /usr/bin/ovsdb-client convert unix:///var/openlan/confd.sock /etc/openlan/switch/confd.schema.json
+  [ ! -e "/var/openlan/confd/confd.sock" ] || {
+    /usr/bin/ovsdb-client convert unix:///var/openlan/confd/confd.sock /etc/openlan/switch/confd.schema.json
   }
 }
 

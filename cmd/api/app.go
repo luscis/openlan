@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	ConfSockFile   = "unix:/var/openlan/confd.sock"
+	ConfSockFile   = "unix:/var/openlan/confd/confd.sock"
 	ConfDatabase   = "OpenLAN_Switch"
 	AdminTokenFile = "/etc/openlan/switch/token"
 )

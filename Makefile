@@ -38,8 +38,15 @@ bin: linux windows darwin ## build all platform binary
 ## docker run --network host --privileged \
 ##   -v /var/run:/var/run -v /etc/openlan/switch:/etc/openlan/switch \
 ##   openlan-switch:5.8.13
-docker: pkg
-	docker build -t openlan-switch:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f ./dist/openlan-switch.docker  .
+docker: docker-switch docker-confd
+
+docker-switch: pkg
+	cp $(SD)/docker/openlan-switch.docker $(BD)
+	cd $(BD) && docker build -t openlan-switch:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan-switch.docker  .
+
+docker-confd: pkg
+	cp $(SD)/docker/openlan-confd.docker $(BD)
+	cd $(BD) && docker build -t openlan-confd:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan-confd.docker  .
 
 clean: ## clean cache
 	rm -rvf ./build
@@ -131,6 +138,7 @@ install: env linux ## install packages
 	@mkdir -p $(LINUX_DIR)/var/openlan/point
 	@mkdir -p $(LINUX_DIR)/var/openlan/openvpn
 	@mkdir -p $(LINUX_DIR)/var/openlan/dhcp
+	@mkdir -p $(LINUX_DIR)/var/openlan/confd
 	@mkdir -p $(LINUX_DIR)/etc/sysconfig/openlan
 	@cp -rf $(SD)/dist/resource/point.cfg $(LINUX_DIR)/etc/sysconfig/openlan
 	@cp -rf $(SD)/dist/resource/proxy.cfg $(LINUX_DIR)/etc/sysconfig/openlan

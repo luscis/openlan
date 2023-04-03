@@ -83,7 +83,7 @@ func (f *FireWall) jumpOLC() {
 }
 
 func (f *FireWall) Initialize() {
-	IpInit()
+	IptInit()
 	// Init chains
 	f.addOLC()
 	f.jumpOLC()

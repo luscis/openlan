@@ -1,0 +1,16 @@
+version: "2.3"
+services:
+  confd:
+    image: "openlan-confd:latest"
+    volumes:
+      - /opt/openlan/confd:/var/openlan/confd
+  switch:
+    image: "openlan-switch:latest"
+    privileged: true
+    ports:
+      - 10000:10000
+      - 10002:10002
+    volumes:
+      - /opt/openlan/confd:/var/openlan/confd
+    depends_on:
+      - confd
