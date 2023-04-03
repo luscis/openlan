@@ -146,6 +146,7 @@ windows: windows-point ## build windows binary
 
 windows-point: env
 	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
 
 windows-gz: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -153,6 +154,8 @@ windows-gz: env windows ## build windows packages
 
 	@cp -rf $(SD)/dist/resource/point.json.example $(WIN_DIR)/point.json
 	@cp -rf $(BD)/openlan-point.exe $(WIN_DIR)
+	@cp -rf $(SD)/dist/resource/proxy.json.example $(WIN_DIR)/proxy.json
+	@cp -rf $(BD)/openlan-proxy.exe $(WIN_DIR)
 
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
 	@rm -rf $(WIN_DIR)
