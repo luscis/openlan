@@ -246,6 +246,6 @@ func IptInit() {
 	}
 	__iptablesInit__ = true
 	if err := iptables.FirewalldInit(); err != nil {
-		libol.Info("IptInit %s", err)
+		libol.Debug("IptInit %s", err)
 	}
 }

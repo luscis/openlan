@@ -15,4 +15,4 @@ RUN rm -rf /tmp/* && rm -rf /var/cache/yum/*
 LABEL application="OpenLAN Switch Application"
 LABEL maintainer="danieldin95@163.com"
 
-CMD ["/var/openlan/script/confd", "start"]
+CMD ["/var/openlan/script/switch.sh", "start"]

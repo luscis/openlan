@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .ONESHELL:
-.PHONY: linux linux-rpm darwin darwin-zip windows windows-zip test vendor
+.PHONY: docker linux linux-rpm darwin darwin-zip windows windows-zip test vendor
 
 ## version
 LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
@@ -38,15 +38,10 @@ bin: linux windows darwin ## build all platform binary
 ## docker run --network host --privileged \
 ##   -v /var/run:/var/run -v /etc/openlan/switch:/etc/openlan/switch \
 ##   openlan-switch:5.8.13
-docker: docker-switch docker-confd
+docker: pkg
+	cp $(SD)/docker/openlan.docker $(BD)
+	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.docker  .
 
-docker-switch: pkg
-	cp $(SD)/docker/openlan-switch.docker $(BD)
-	cd $(BD) && docker build -t openlan-switch:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan-switch.docker  .
-
-docker-confd: pkg
-	cp $(SD)/docker/openlan-confd.docker $(BD)
-	cd $(BD) && docker build -t openlan-confd:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan-confd.docker  .
 
 clean: ## clean cache
 	rm -rvf ./build
