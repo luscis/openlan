@@ -6,8 +6,7 @@ Requires=openlan-confd.service
 [Service]
 Type=notify
 EnvironmentFile=/etc/sysconfig/openlan/switch.cfg
-ExecStartPre=-/var/openlan/script/setup.sh
-ExecStart=/usr/bin/openlan-switch $OPTIONS
+ExecStart=/var/openlan/script/switch.sh start $OPTIONS
 LimitNOFILE=102400
 Restart=always
 

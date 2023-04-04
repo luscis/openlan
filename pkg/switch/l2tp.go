@@ -162,11 +162,6 @@ func (d *L2TP) Start() {
 	if d.cfg.Subnet == nil {
 		return
 	}
-	load := exec.Command("/sbin/modprobe", "-q", "l2tp_ppp")
-	if err := load.Run(); err != nil {
-		d.out.Error("L2TP.Start %s: %s", d.uuid, err)
-		return
-	}
 	d.SaveConf()
 	d.SaveOptions()
 	libol.Go(func() {

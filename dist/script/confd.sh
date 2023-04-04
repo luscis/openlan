@@ -32,7 +32,8 @@ function start() {
     for opt in $options; do
         set "$@" $opt
     done
-    OVS_RUNDIR="/var/openlan/confd" "$@"
+    export OVS_RUNDIR="/var/openlan/confd"
+    exec "$@"
 }
 
 case $command in

@@ -6,7 +6,7 @@ Summary: OpenLAN's Project Software
 Group: Applications/Communications
 License: GPL-3.0
 URL: https://github.com/luscis/openlan
-Requires: net-tools, iptables, iputils, openvpn, openvswitch, dnsmasq
+Requires: xl2tpd net-tools, iptables, iputils, openvpn, openvswitch, dnsmasq
 
 # binary no-debug by go build
 %global debug_package %{nil}

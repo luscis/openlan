@@ -2,6 +2,10 @@
 
 set -ex
 
+# clean older files.
+/usr/bin/env find /var/openlan/point -type f -delete
+/usr/bin/env find /var/openlan/openvpn -name '*.status' -delete
+
 if [ ! -e "/etc/openlan/switch/switch.json" ]; then
 cat >> /etc/openlan/switch/switch.json << EOF
 {
@@ -29,4 +33,4 @@ cat >> /etc/openlan/switch/network/example.json << EOF
 EOF
 fi
 
-/usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+exec /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20

@@ -589,18 +589,9 @@ func (v *Switch) Stop() {
 		v.l2tp.Stop()
 	}
 	v.confd.Stop()
-	// firstly, notify leave to point.
-	for p := range cache.Point.List() {
-		if p == nil {
-			break
-		}
-		v.leftClient(p.Client)
-	}
-	v.firewall.Stop()
 	if v.http != nil {
 		v.http.Shutdown()
 	}
-	v.server.Close()
 	// stop network.
 	for _, w := range v.worker {
 		if w.Provider() == "vxlan" {
@@ -608,6 +599,16 @@ func (v *Switch) Stop() {
 		}
 		w.Stop()
 	}
+	v.out.Info("Switch.Stop left points")
+	// notify leave to point.
+	for p := range cache.Point.List() {
+		if p == nil {
+			break
+		}
+		v.leftClient(p.Client)
+	}
+	v.firewall.Stop()
+	v.server.Close()
 }
 
 func (v *Switch) Alias() string {
