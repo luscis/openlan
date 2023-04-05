@@ -43,6 +43,9 @@ services:
     # network_mode: "host"
     network_mode: service:confd
     entrypoint: ["/var/openlan/script/switch.sh", "start"]
+    # stop_grace_period: 30s
+    # environment:
+    #   - ESPUDP=4600
     volumes:
       - /opt/openlan/confd:/var/openlan/confd
       - /opt/openlan/run/openvswitch:/run/openvswitch
