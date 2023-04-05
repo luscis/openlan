@@ -1,0 +1,19 @@
+FROM debian:buster
+
+ARG BIN
+
+WORKDIR /root
+
+ADD ${BIN} /tmp
+
+RUN apt-get update -y
+
+RUN DOCKER=yes /tmp/${BIN}
+RUN cd /usr/sbin && rm -rf iptables && ln -s xtables-legacy-multi iptables 
+
+RUN rm -rf /tmp/*
+
+LABEL application="OpenLAN Switch Application"
+LABEL maintainer="danieldin95@163.com"
+
+CMD ["/var/openlan/script/switch.sh", "start"]

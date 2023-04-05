@@ -39,9 +39,12 @@ bin: linux windows darwin ## build all platform binary
 ##   -v /var/run:/var/run -v /etc/openlan/switch:/etc/openlan/switch \
 ##   openlan-switch:5.8.13
 docker: pkg
-	cp $(SD)/docker/openlan.docker $(BD)
-	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.docker  .
+	cp $(SD)/docker/openlan.centos $(BD)
+	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
 
+docker-deb: pkg
+	cp $(SD)/docker/openlan.debian $(BD)
+	cd $(BD) && docker build -t openlan:d$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.debian  .
 
 clean: ## clean cache
 	rm -rvf ./build
@@ -132,6 +135,7 @@ install: env linux ## install packages
 	@cp -rf $(SD)/dist/resource/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
 	@mkdir -p $(LINUX_DIR)/var/openlan/point
 	@mkdir -p $(LINUX_DIR)/var/openlan/openvpn
+	@mkdir -p $(LINUX_DIR)/var/openlan/l2tp
 	@mkdir -p $(LINUX_DIR)/var/openlan/dhcp
 	@mkdir -p $(LINUX_DIR)/var/openlan/confd
 	@mkdir -p $(LINUX_DIR)/etc/sysconfig/openlan

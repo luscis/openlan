@@ -101,7 +101,7 @@ func (w *EspWorker) newPolicy(args PolicyParameter) *nl.XfrmPolicy {
 
 func (w *EspWorker) addState(ms *models.EspState) {
 	spi := ms.Spi
-	w.out.Info("EspWorker.addState %s-%s", ms.Local, ms.Remote)
+	w.out.Info("EspWorker.addState %s", ms.ID())
 	if st := w.newState(StateParameters{
 		spi, ms.Local, ms.Remote, ms.Auth, ms.Crypt,
 	}); st != nil {
@@ -123,7 +123,7 @@ func (w *EspWorker) addState(ms *models.EspState) {
 }
 
 func (w *EspWorker) delState(ms *models.EspState) {
-	w.out.Info("EspWorker.delState %s-%s", ms.Local, ms.Remote)
+	w.out.Info("EspWorker.delState %s", ms.ID())
 	cache.EspState.Del(ms.ID())
 }
 
@@ -131,15 +131,15 @@ func (w *EspWorker) addPolicy(mp *models.EspPolicy) {
 	spi := mp.Spi
 	src, err := libol.ParseNet(mp.Source)
 	if err != nil {
-		w.out.Error("EspWorker.addPolicy %s %s", mp.Source, err)
+		w.out.Error("EspWorker.addPolicy %s: %s", mp.ID(), err)
 		return
 	}
 	dst, err := libol.ParseNet(mp.Dest)
 	if err != nil {
-		w.out.Error("EspWorker.addPolicy %s %s", mp.Dest, err)
+		w.out.Error("EspWorker.addPolicy %s: %s", mp.ID(), err)
 		return
 	}
-	w.out.Info("EspWorker.addPolicy %s-%s", mp.Source, mp.Dest)
+	w.out.Info("EspWorker.addPolicy %s", mp.ID())
 	if po := w.newPolicy(PolicyParameter{
 		spi, mp.Local, mp.Remote, src, dst, nl.XFRM_DIR_OUT, mp.Priority,
 	}); po != nil {
@@ -166,7 +166,7 @@ func (w *EspWorker) addPolicy(mp *models.EspPolicy) {
 }
 
 func (w *EspWorker) delPolicy(mp *models.EspPolicy) {
-	w.out.Info("EspWorker.delPolicy %s-%s", mp.Source, mp.Dest)
+	w.out.Info("EspWorker.delPolicy %s", mp.ID())
 	cache.EspPolicy.Del(mp.ID())
 }
 
@@ -276,24 +276,24 @@ func (w *EspWorker) UpDummy(name, addr, peer string) error {
 
 func (w *EspWorker) addXfrm() {
 	for _, state := range w.states {
-		w.out.Debug("EspWorker.AddXfrm State %s", state.In.Spi)
+		w.out.Debug("EspWorker.AddXfrm State %v", state)
 		if err := nl.XfrmStateAdd(state.In); err != nil {
-			w.out.Error("EspWorker.Start.in State.in %s", err)
+			w.out.Error("EspWorker.addXfrm in %s: %s", state.ID(), err)
 		}
 		if err := nl.XfrmStateAdd(state.Out); err != nil {
-			w.out.Error("EspWorker.Start.out State.out %s", err)
+			w.out.Error("EspWorker.addXfrm out %s: %s", state.ID(), err)
 		}
 	}
-	for _, policy := range w.policies {
-		w.out.Debug("EspWorker.AddXfrm Policy %s", policy.Out.Dst)
-		if err := nl.XfrmPolicyAdd(policy.In); err != nil {
-			w.out.Error("EspWorker.addXfrm.in Policy %s", err)
+	for _, pol := range w.policies {
+		w.out.Debug("EspWorker.AddXfrm Policy %v", pol)
+		if err := nl.XfrmPolicyAdd(pol.In); err != nil {
+			w.out.Error("EspWorker.addXfrm in %v: %s", pol.In, err)
 		}
-		if err := nl.XfrmPolicyAdd(policy.Fwd); err != nil {
-			w.out.Error("EspWorker.addXfrm.fwd Policy %s", err)
+		if err := nl.XfrmPolicyAdd(pol.Fwd); err != nil {
+			w.out.Error("EspWorker.addXfrm fwd %v: %s", pol.Fwd, err)
 		}
-		if err := nl.XfrmPolicyAdd(policy.Out); err != nil {
-			w.out.Error("EspWorker.addXfrm.out Policy %s", err)
+		if err := nl.XfrmPolicyAdd(pol.Out); err != nil {
+			w.out.Error("EspWorker.addXfrm out %v: %s", pol.Out, err)
 		}
 	}
 }
@@ -330,23 +330,23 @@ func (w *EspWorker) delXfrm() {
 	for _, mp := range w.policies {
 		w.delPolicy(mp)
 		if err := nl.XfrmPolicyDel(mp.In); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy %s-%s: %s", mp.Source, mp.Dest, err)
+			w.out.Warn("EspWorker.delXfrm Policy.in %s: %s", mp.ID(), err)
 		}
 		if err := nl.XfrmPolicyDel(mp.Fwd); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy %s-%s: %s", mp.Source, mp.Dest, err)
+			w.out.Warn("EspWorker.delXfrm Policy.fwd %s: %s", mp.ID(), err)
 		}
 		if err := nl.XfrmPolicyDel(mp.Out); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy %s-%s: %s", mp.Source, mp.Dest, err)
+			w.out.Warn("EspWorker.delXfrm Policy.out %s: %s", mp.ID(), err)
 		}
 	}
 	w.policies = nil
 	for _, ms := range w.states {
 		w.delState(ms)
 		if err := nl.XfrmStateDel(ms.In); err != nil {
-			w.out.Warn("EspWorker.delXfrm State %s-%s: %s", ms.Local, ms.Remote, err)
+			w.out.Warn("EspWorker.delXfrm State.in %s: %s", ms.ID(), err)
 		}
 		if err := nl.XfrmStateDel(ms.Out); err != nil {
-			w.out.Warn("EspWorker.delXfrm State %s-%s: %s", ms.Local, ms.Remote, err)
+			w.out.Warn("EspWorker.delXfrm State.out %s: %s", ms.ID(), err)
 		}
 	}
 	w.states = nil

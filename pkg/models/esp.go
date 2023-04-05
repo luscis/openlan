@@ -60,7 +60,7 @@ func (l *EspState) Update() {
 }
 
 func (l *EspState) ID() string {
-	return fmt.Sprintf("%d-%s-%s", l.Spi, l.Local, l.Remote)
+	return fmt.Sprintf("spi:%d %s-%s", l.Spi, l.Local, l.Remote)
 }
 
 func (l *EspState) UpTime() int64 {
@@ -94,7 +94,7 @@ func (l *EspPolicy) Update() {
 }
 
 func (l *EspPolicy) ID() string {
-	return fmt.Sprintf("%d-%s-%s", l.Spi, l.Source, l.Dest)
+	return fmt.Sprintf("spi:%d %s-%s", l.Spi, l.Source, l.Dest)
 }
 
 func NewEspPolicySchema(e *EspPolicy) schema.EspPolicy {

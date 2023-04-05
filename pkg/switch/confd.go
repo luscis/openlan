@@ -28,18 +28,20 @@ func (c *ConfD) Initialize() {
 }
 
 func (c *ConfD) Start() {
+	c.out.Info("ConfD.Start")
 	handler := &cache.EventHandlerFuncs{
 		AddFunc:    c.Add,
 		DeleteFunc: c.Delete,
 		UpdateFunc: c.Update,
 	}
 	if _, err := database.NewConfClient(handler); err != nil {
-		c.out.Error("Confd.Start open db with %s", err)
+		c.out.Error("ConfD.Start open db with %s", err)
 		return
 	}
 }
 
 func (c *ConfD) Stop() {
+	c.out.Info("ConfD.Stop")
 }
 
 func (c *ConfD) Add(table string, model model.Model) {
@@ -107,6 +109,7 @@ func GetRoutes(result *[]database.PrefixRoute, device string) error {
 		func(l *database.PrefixRoute) bool {
 			return l.Gateway == device
 		}, result); err != nil {
+		libol.Warn("GetRoutes %v has %s", device, err)
 		return err
 	}
 	return nil

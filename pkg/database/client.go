@@ -57,7 +57,11 @@ func (o *OvSDB) List(result interface{}) error {
 }
 
 func (o *OvSDB) WhereList(predict interface{}, result interface{}) error {
-	return o.Client.WhereCache(predict).List(o.Context(), result)
+	cache := o.Client.WhereCache(predict)
+	if cache == nil {
+		return libol.NewErr("not cache list")
+	}
+	return cache.List(o.Context(), result)
 }
 
 type DBClient struct {
@@ -81,7 +85,7 @@ func (c *DBClient) NilLog() *logr.Logger {
 	return &l
 }
 
-func (c *DBClient) Open(handler *cache.EventHandlerFuncs) error {
+func (c *DBClient) Open(handler *cache.EventHandlerFuncs, block func(val *DBClient)) error {
 	server := c.Server
 	database := c.Database
 	dbModel, err := model.NewClientDBModel(database, models)
@@ -102,6 +106,9 @@ func (c *DBClient) Open(handler *cache.EventHandlerFuncs) error {
 		return err
 	}
 	c.Client = &OvSDB{Client: ovs}
+	if block != nil {
+		block(c)
+	}
 	if handler != nil {
 		processor := ovs.Cache()
 		if processor == nil {
@@ -126,11 +133,10 @@ func NewConfClient(handler *cache.EventHandlerFuncs) (*DBClient, error) {
 			Database: api.Database,
 			Verbose:  api.Verbose,
 		}
-		err = obj.Open(handler)
-		if err == nil {
-			Conf = obj
-			Client = obj.Client
-		}
+		err = obj.Open(handler, func(val *DBClient) {
+			Conf = val
+			Client = val.Client
+		})
 	}
 	return Conf, err
 }
@@ -141,6 +147,5 @@ func NewClient(handler *cache.EventHandlerFuncs) (*DBClient, error) {
 		Database: api.Database,
 		Verbose:  api.Verbose,
 	}
-	err := obj.Open(handler)
-	return obj, err
+	return obj, obj.Open(handler, nil)
 }
