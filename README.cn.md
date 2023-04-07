@@ -1,4 +1,5 @@
-English | [简体中文](./README.cn.md)
+
+简体中文 | [English](./README.en.md)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/luscis/openlan)](https://goreportcard.com/report/luscis/openlan)
 [![Codecov](https://codecov.io/gh/luscis/openlan/branch/master/graph/badge.svg)](https://codecov.io/gh/luscis/openlan)
@@ -8,28 +9,29 @@ English | [简体中文](./README.cn.md)
 [![Releases](https://img.shields.io/github/release/luscis/openlan/all.svg?style=flat-square)](https://github.com/luscis/openlan/releases)
 [![GPL 3.0 License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 
-## What's OpenLAN?
+## 什么是OpenLAN？
 
-OpenLAN provides a realization of the transmission of LAN data packets in the WAN, and can establish a virtual Ethernet network in multiple user spaces. 
+OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够建立多个用户空间的虚拟以太网络。
 
-## Why is OpenLAN?
+## 为什么是OpenLAN？
 
-If you have more flexible VPN business needs and need to use VPN to access the enterprise, or use public network cloud hosts for network proxy and network penetration, you can try OpenLAN, which can make deployment easier.
+如果你有更加灵活的VPN业务需求，需要使用VPN访问企业内部，或者借用公网云主机等进行网络代理、网络穿透等，可以试试OpenLAN，它能让部署变得更简单。
 
-## What is the function of OpenLAN?
+## OpenLAN有什么功能？
 
-* Users can use OpenLAN to divide multiple network spaces to provide logical network isolation for different services;
-* Multiple OpenLAN Switches can use the OpenLAN protocol to communicate on the second layer, and SNAT routes can be added to the second layer network to easily access the internal network of the enterprise;
-* Users can use OpenVPN to access the OpenLAN network, OpenVPN supports multiple platforms such as Android/MacOS/Windows, etc.;
-* IPSec tunnel network can also be used between multiple OpenLAN Switches, and it supports further division of VxLAN/STT tenant networks on this network;
-* Use a simple username and password as the access authentication method, and you can set a pre-shared key to encrypt data packets;
-* The OpenLAN protocol can work on various transmission protocols such as TCP/TLS/UDP/KCP/WS/WSS, TCP has high performance, and TLS/WSS can provide better encryption security;
-* OpenLAN also provides simple HTTP/HTTPS/SOCKS5 and other HTTP forward proxy technology, users can flexibly configure proxy for network penetration according to needs;
+* 用户可以使用OpenLAN划分多个网络空间，为不同的业务提供逻辑网络隔离；
+* 多个OpenLAN Switch之间可以使用OpenLAN协议在二层上互联互通，在二层网络上可以添加SNAT路由轻松的访问企业内部网络；
+* 用户可以使用OpenVPN接入OpenLAN网络，OpenVPN支持多平台如Android/MacOS/Windows等；
+* 多个OpenLAN Switch之间也可以使用IPSec隧道网络，并且支持在该网络上进一步划分VxLAN/STT的租户网络；
+* 使用简单的用户名密码的作为接入认证方式，并且可以设置预共享密钥对数据报文进行加密；
+* OpenLAN协议可以工作在TCP/TLS/UDP/KCP/WS/WSS等多种传输协议上，TCP具有较高的性能，TLS/WSS能够提供更好的加密安全；
+* OpenLAN也提供了简单的HTTP/HTTPS/SOCKS5等HTTP的正向代理技术，用户可以根据需要灵活配置代理进行网络穿透；
 
-## Working scenario of OpenLAN?
-### Branch center access
 
-                           OpenLan Switch(Center) - 10.16.1.10/24
+## OpenLAN的工作场景？
+### 分支中心接入
+
+                           OpenLan Switch(企业中心) - 10.16.1.10/24
                                       ^
                                       |
                                    Wifi(DNAT)
@@ -38,34 +40,34 @@ If you have more flexible VPN business needs and need to use VPN to access the e
              ----------------------Internet-------------------------
              ^                        ^                           ^
              |                        |                           |
-           Branch1                  Branch2                     Branch3     
+           分支1                    分支2                        分支3     
              |                        |                           |
          OpenLAN                  OpenLAN                      OpenLAN
       10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
+       
 
-### Multi-region interconnection
+### 多区域互联
 
      192.168.1.20/24                                                  192.168.1.21/24
             |                                                                |
-        OpenLAN -- Hotel Wifi --> OpenLAN Switch(NanJing) <--- Other Wifi --- OpenLAN
+        OpenLAN -- 酒店 Wifi --> OpenLAN Switch(南京) <--- 其他 Wifi --- OpenLAN
                                          |
                                          |
-                                       Internet
+                                       互联网
                                          |
                                          |
-                                 OpenLAN Switch(Shanghai) - 192.168.1.10/24
+                                 OpenLAN Switch(上海) - 192.168.1.10/24
                                          |
                                          |
                 ------------------------------------------------------
                 ^                        ^                           ^
                 |                        |                           |
-             Office Wifi              Home Wifi                 Hotel Wifi     
+             办公 Wifi               家庭 Wifi                 酒店 Wifi     
                 |                        |                           |
             OpenLAN                  OpenLAN                     OpenLAN
         192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
 
-
-### Data Center Full Internet
+### 数据中心全互联网络
 
 * Underlay for VxLAN over Internet by IPSec.
 
@@ -118,9 +120,10 @@ If you have more flexible VPN business needs and need to use VPN to access the e
        VNI-1023 192.168.30.0/24 [vps-47_eth1.100, vps-92_enp2s4.100, vps-12_eth4.30]
        VNI-1024 192.168.40.0/24 [vps-47_eth1.200, vps-92_enp2s4.101, vps-12_eth4.200]
 
-## Help documents
-- [Software Installation](docs/install.md)
-- [Branch Access](docs/central.md)
-- [Multi-region Interconnection](docs/multiarea.md)
-- [Fullly Interconnected Network](docs/fabric.md)
-- [IPSec Network](docs/ipsec.md)
+
+## 帮助文档
+- [软件安装](docs/install.md)
+- [分支接入](docs/central.md)
+- [多区域互联](docs/multiarea.md)
+- [全互连网络](docs/fabric.md)
+- [IPSec网络](docs/ipsec.md)
