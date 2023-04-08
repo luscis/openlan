@@ -23,6 +23,8 @@ function start() {
     [ -e "$OVSDB_DATABASE" ] || {
         $OVSDB_TOOL_BIN create $OVSDB_DATABASE $OVSDB_DATABASE_SCH
     }
+
+    set +x
     set $OVSDB_SERVER_BIN $OVSDB_DATABASE
     set "$@" -vconsole:info -vsyslog:off -vfile:off
     set "$@" --remote=punix:"$OVSDB_SOCK"
@@ -32,6 +34,7 @@ function start() {
     for opt in $options; do
         set "$@" $opt
     done
+    set -x
     export OVS_RUNDIR="/var/openlan/confd"
     exec "$@"
 }

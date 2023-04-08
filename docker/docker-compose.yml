@@ -55,3 +55,15 @@ services:
       - confd
       - ovsdb-server
       - ovs-vswitchd
+  proxy:
+    restart: always
+    image: "openlan:latest"
+    # privileged: true
+    # network_mode: "host"
+    network_mode: service:confd
+    entrypoint: ["/usr/bin/openlan-proxy", "-conf", "/etc/openlan/proxy.json", "-log:file", "/dev/null"]
+    volumes:
+      - /opt/openlan/etc/openlan:/etc/openlan
+    depends_on:
+      - confd
+      - switch

@@ -2,6 +2,10 @@
 
 set -ex
 
+## set this bridge as a root
+# ip link show  br-hello || brctl addbr br-hello
+# brctl setbridgeprio br-hello 0
+
 # clean older files.
 /usr/bin/env find /var/openlan/point -type f -delete
 /usr/bin/env find /var/openlan/openvpn -name '*.status' -delete
@@ -17,17 +21,6 @@ cat >> /etc/openlan/switch/switch.json << EOF
     },
     "crypt": {
         "secret": "cb2ff088a34d"
-    }
-}
-EOF
-fi
-
-if [ ! -e "/etc/openlan/switch/network/example.json" ]; then
-cat >> /etc/openlan/switch/network/example.json << EOF
-{
-    "name": "example",
-    "bridge": {
-        "address": "172.32.100.40/24"
     }
 }
 EOF
