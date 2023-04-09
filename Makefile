@@ -111,6 +111,7 @@ install: env linux ## install packages
 	@mkdir -p $(LINUX_DIR)/var/openlan/{cert,openvpn,point,l2tp,dhcp}
 	@cp -rf $(SD)/dist/cert/openlan/cert $(LINUX_DIR)/var/openlan
 	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
+	@cp -rf $(SD)/pkg/public $(LINUX_DIR)/var/openlan
 	@mkdir -p $(LINUX_DIR)/usr/bin
 	@cp -rf $(BD)/{openudp,openlan} $(LINUX_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LINUX_DIR)/usr/bin
