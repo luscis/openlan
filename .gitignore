@@ -13,6 +13,7 @@
 # Test binary, build with `go test -c`
 *.test
 *.idea
+*.DS_Store
 coverage.out
 coverage.html
 

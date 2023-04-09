@@ -100,53 +100,20 @@ linux-gz: install ## build linux packages
 	gzip -f $(BD)/$(LINUX_DIR).tar
 
 linux-bin: linux-gz ## build linux install binary
-	@cat $(SD)/dist/script/install.sh > $(BD)/$(LINUX_DIR).bin && \
+	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LINUX_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LINUX_DIR).bin && \
 	cat $(BD)/$(LINUX_DIR).tar.gz >> $(BD)/$(LINUX_DIR).bin && \
 	chmod +x $(BD)/$(LINUX_DIR).bin
 
 install: env linux ## install packages
-	@mkdir -p $(LINUX_DIR)/etc/sysctl.d
-	@cp -rf $(SD)/dist/resource/90-openlan.conf $(LINUX_DIR)/etc/sysctl.d
-	@mkdir -p $(LINUX_DIR)/etc/openlan
-	@cp -rf $(SD)/dist/resource/point.json.example $(LINUX_DIR)/etc/openlan
-	@cp -rf $(SD)/dist/resource/proxy.json.example $(LINUX_DIR)/etc/openlan
-	@mkdir -p $(LINUX_DIR)/etc/openlan/switch
-	@cp -rf $(SD)/dist/resource/confd.schema.json $(LINUX_DIR)/etc/openlan/switch
-	@cp -rf $(SD)/dist/resource/switch.json.example $(LINUX_DIR)/etc/openlan/switch
-	@mkdir -p $(LINUX_DIR)/etc/openlan/switch/acl
-	@cp -rf $(SD)/dist/resource/acl-1.json.example $(LINUX_DIR)/etc/openlan/switch/acl
-	@mkdir -p $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/default.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/network.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/ipsec.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/v1024.json.example $(LINUX_DIR)/etc/openlan/switch/network
-	@cp -rf $(SD)/dist/resource/fabric.json.example $(LINUX_DIR)/etc/openlan/switch/network
+	@mkdir -p $(LINUX_DIR)
+	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LINUX_DIR)
+	@mkdir -p $(LINUX_DIR)/var/openlan/{cert,openvpn,point,l2tp,dhcp}
+	@cp -rf $(SD)/dist/cert/openlan/cert $(LINUX_DIR)/var/openlan
+	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
 	@mkdir -p $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/openudp $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/openlan $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/openlan-proxy $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/openlan-point $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/openlan-switch $(LINUX_DIR)/usr/bin
-	@mkdir -p $(LINUX_DIR)/var/openlan
-	@cp -rf $(SD)/dist/resource/cert/openlan/cert $(LINUX_DIR)/var/openlan
-	@cp -rf $(SD)/dist/script $(LINUX_DIR)/var/openlan
-	@cp -rf $(SD)/pkg/public $(LINUX_DIR)/var/openlan
-	@cp -rf $(SD)/dist/resource/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
-	@mkdir -p $(LINUX_DIR)/var/openlan/point
-	@mkdir -p $(LINUX_DIR)/var/openlan/openvpn
-	@mkdir -p $(LINUX_DIR)/var/openlan/l2tp
-	@mkdir -p $(LINUX_DIR)/var/openlan/dhcp
-	@mkdir -p $(LINUX_DIR)/var/openlan/confd
-	@mkdir -p $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rf $(SD)/dist/resource/point.cfg $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rf $(SD)/dist/resource/proxy.cfg $(LINUX_DIR)/etc/sysconfig/openlan
-	@cp -rf $(SD)/dist/resource/switch.cfg $(LINUX_DIR)/etc/sysconfig/openlan
-	@mkdir -p $(LINUX_DIR)//usr/lib/systemd/system
-	@cp -rf $(SD)/dist/resource/openlan-point@.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rf $(SD)/dist/resource/openlan-proxy.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rf $(SD)/dist/resource/openlan-confd.service $(LINUX_DIR)/usr/lib/systemd/system
-	@cp -rf $(SD)/dist/resource/openlan-switch.service $(LINUX_DIR)/usr/lib/systemd/system
+	@cp -rf $(BD)/{openudp,openlan} $(LINUX_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LINUX_DIR)/usr/bin
 
 ## cross build for windows
 windows: windows-point ## build windows binary

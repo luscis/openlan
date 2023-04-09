@@ -1,4 +1,4 @@
-[submodule "dist/resource/cert"]
-	path = dist/resource/cert
+[submodule "dist/cert"]
+	path = dist/cert
 	url = https://github.com/danieldin95/freecert.git
 	branch = master
