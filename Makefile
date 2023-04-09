@@ -34,10 +34,11 @@ help: ## show make targets
 ## all platform
 bin: linux windows darwin ## build all platform binary
 
-#
-## docker run --network host --privileged \
-##   -v /var/run:/var/run -v /etc/openlan/switch:/etc/openlan/switch \
-##   openlan-switch:5.8.13
+## mkdir -p /opt/openlan
+# cp ./dist/rootfs/{var,etc} /opt/openlan
+# cp ./docker/docker-compose.yml /opt/openlan
+# cd /opt/openlan
+## docker-compose up -d
 docker: pkg
 	cp $(SD)/docker/openlan.centos $(BD)
 	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
