@@ -170,7 +170,6 @@ func (t *HttpProxy) Start() {
 		MinInt: time.Second * 10,
 	}
 	promise.Go(func() error {
-		defer t.server.Shutdown(nil)
 		if crt == nil || crt.KeyFile == "" {
 			if err := t.server.ListenAndServe(); err != nil {
 				t.out.Warn("HttpProxy.start %s", err)
@@ -182,6 +181,7 @@ func (t *HttpProxy) Start() {
 				return err
 			}
 		}
+		t.server.Shutdown(nil)
 		return nil
 	})
 }
