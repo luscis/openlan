@@ -39,11 +39,13 @@ bin: linux windows darwin ## build all platform binary
 # cp ./docker/docker-compose.yml /opt/openlan
 # cd /opt/openlan
 ## docker-compose up -d
-docker: pkg
+docker: pkg docker-rhel docker-deb ## Build docker images
+
+docker-rhel:
 	cp $(SD)/docker/openlan.centos $(BD)
 	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
 
-docker-deb: pkg
+docker-deb:
 	cp $(SD)/docker/openlan.debian $(BD)
 	cd $(BD) && docker build -t openlan:d$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.debian  .
 
@@ -128,9 +130,9 @@ windows-gz: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
 	@rm -rf $(WIN_DIR).tar.gz
 
-	@cp -rf $(SD)/dist/resource/point.json.example $(WIN_DIR)/point.json
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(WIN_DIR)/point.json
 	@cp -rf $(BD)/openlan-point.exe $(WIN_DIR)
-	@cp -rf $(SD)/dist/resource/proxy.json.example $(WIN_DIR)/proxy.json
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.example $(WIN_DIR)/proxy.json
 	@cp -rf $(BD)/openlan-proxy.exe $(WIN_DIR)
 
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
@@ -150,7 +152,7 @@ darwin-gz: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@rm -rf $(MAC_DIR).tar.gz
 
-	@cp -rf $(SD)/dist/resource/point.json.example $(MAC_DIR)/point.json
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(MAC_DIR)/point.json
 	@cp -rf $(BD)/openlan-point.darwin $(MAC_DIR)
 
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
