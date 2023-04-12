@@ -39,7 +39,7 @@ bin: linux windows darwin ## build all platform binary
 # cp ./docker/docker-compose.yml /opt/openlan
 # cd /opt/openlan
 ## docker-compose up -d
-docker: pkg docker-rhel docker-deb ## Build docker images
+docker: pkg docker-rhel docker-deb ## build docker images
 
 docker-rhel:
 	cp $(SD)/docker/openlan.centos $(BD)
