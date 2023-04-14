@@ -39,15 +39,15 @@ bin: linux windows darwin ## build all platform binary
 # cp ./docker/docker-compose.yml /opt/openlan
 # cd /opt/openlan
 ## docker-compose up -d
-docker: pkg docker-rhel docker-deb ## build docker images
+docker: linux-bin docker-rhel docker-deb ## build docker images
 
 docker-rhel:
 	cp $(SD)/docker/openlan.centos $(BD)
-	cd $(BD) && docker build -t openlan:$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
+	cd $(BD) && docker build -t openlan:$(VER).$(ARCH) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
 
 docker-deb:
 	cp $(SD)/docker/openlan.debian $(BD)
-	cd $(BD) && docker build -t openlan:d$(VER) --build-arg BIN=$(LINUX_DIR).bin -f openlan.debian  .
+	cd $(BD) && docker build -t openlan:d$(VER).$(ARCH) --build-arg BIN=$(LINUX_DIR).bin -f openlan.debian  .
 
 clean: ## clean cache
 	rm -rvf ./build

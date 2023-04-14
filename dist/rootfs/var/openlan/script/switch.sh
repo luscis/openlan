@@ -26,4 +26,20 @@ cat >> /etc/openlan/switch/switch.json << EOF
 EOF
 fi
 
+# wait confd service
+while true; do
+  if [ -e /var/openlan/confd/confd.sock ]; then
+    break
+  fi
+  sleep 5
+done
+
+# wait openvswitch service
+while true; do
+  if [ -e /var/run/openvswitch/db.sock ]; then
+    break
+  fi
+  sleep 5
+done
+
 exec /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20

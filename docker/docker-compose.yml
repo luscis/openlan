@@ -67,3 +67,18 @@ services:
     depends_on:
       - confd
       - switch
+  task:
+    restart: always
+    image: "luscis/openlan:latest"
+    # privileged: true
+    # network_mode: "host"
+    network_mode: service:confd
+    entrypoint: ["/var/openlan/script/task.sh"]
+    volumes:
+      - /opt/openlan/confd:/var/openlan/confd
+      - /opt/openlan/run/openvswitch:/run/openvswitch
+      - /opt/openlan/etc/openvswitch:/etc/openvswitch
+      - /opt/openlan/etc/openlan:/etc/openlan
+    depends_on:
+      - confd
+      - switch
