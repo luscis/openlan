@@ -8,7 +8,7 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: network-private
+  name: network-etc
   namespace: openlan
 data:
   private.json: |-
@@ -16,7 +16,7 @@ data:
       "name": "private",
       "provider": "openlan",
       "bridge": {
-          "address": "172.32.99.20/24"
+        "address": "172.32.99.20/24"
       },
       "routes": [
         {
@@ -35,6 +35,11 @@ data:
       ]
     }
 
+  ipsec.json: |-
+    {
+      "name": "ipsec",
+      "provider": "esp"
+    }
 
 ---
 
@@ -48,7 +53,7 @@ data:
     {
       "alias": "your-switch-alias-name",
       "crypt": {
-          "secret": "53a843402fa9"
+        "secret": "53a843402fa9"
       }
     }
 
@@ -168,12 +173,11 @@ spec:
           volumeMounts:
             - name: openlan-etc
               mountPath: /etc/openlan
-            - name: network-private
-              mountPath: /etc/openlan/switch/network/private.json
-              subPath: private.json
             - name: switch-etc
               mountPath: /etc/openlan/switch/switch.json
               subPath: switch.json
+            - name: network-etc
+              mountPath: /etc/openlan/switch/network
             - name: confd-run
               mountPath: /var/openlan/confd
             - name: ovs-run
@@ -225,36 +229,36 @@ spec:
       - name: ovs-etc
         hostPath:
           path: /opt/openlan/etc/openvswitch
-      - name: network-private
+      - name: network-etc
         configMap:
-          defaultMode: 420
-          name: network-private
+          defaultMode: 0777
+          name: network-etc
       - name: switch-etc
         configMap:
-          defaultMode: 420
+          defaultMode: 0777
           name: switch-etc
       - name: proxy-etc
         configMap:
-          defaultMode: 420
+          defaultMode: 0777
           name: proxy-etc
 
 ---
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: openlan
-  namespace: openlan
-spec:
-  type: LoadBalancer
-  ports:
-    - name: openlan-web
-      port: 10000
-      protocol: TCP
-      targetPort: 10000
-    - name: openlan-tun
-      port: 10002
-      protocol: TCP
-      targetPort: 10002
-  selector:
-    name: openlan
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: openlan
+#   namespace: openlan
+# spec:
+#   type: LoadBalancer
+#   ports:
+#     - name: openlan-web
+#       port: 10000
+#       protocol: TCP
+#       targetPort: 10000
+#     - name: openlan-tun
+#       port: 10002
+#       protocol: TCP
+#       targetPort: 10002
+#   selector:
+#     name: openlan
