@@ -1,0 +1,260 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openlan
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: network-private
+  namespace: openlan
+data:
+  private.json: |-
+    {
+      "name": "private",
+      "provider": "openlan",
+      "bridge": {
+          "address": "172.32.99.20/24"
+      },
+      "routes": [
+        {
+          "prefix": "172.16.0.0/16"
+        }
+      ],
+      "links": [
+        {
+          "connection": "your.public.addres",
+          "password": "abcdefghijkl",
+          "username": "admin",
+          "crypt": { 
+            "secret": "53a843402fa9" 
+          }
+        }
+      ]
+    }
+
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: switch-etc
+  namespace: openlan
+data:
+  switch.json: |-
+    {
+      "alias": "your-switch-alias-name",
+      "crypt": {
+          "secret": "53a843402fa9"
+      }
+    }
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-etc
+  namespace: openlan
+data:
+  proxy.json: |-
+    "tcp": [
+        {
+            "listen": "0.0.0.0:80",
+            "target": [
+                "192.168.100.80:80", 
+                "192.168.100.81:80"
+            ]
+        }
+    ]
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openlan
+  namespace: openlan
+spec:
+  selector:
+    matchLabels:
+      name: openlan
+  template:
+    metadata:
+      labels:
+        name: openlan
+    spec:
+      containers:
+        - name: "openlan-confd"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/openlan/script/confd.sh
+            - start
+          resources:
+            limits:
+              cpu: 200m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          volumeMounts:
+            - name: openlan-etc
+              mountPath: /etc/openlan
+            - name: confd-run
+              mountPath: /var/openlan/confd
+        - name: "ovsdb-server"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/openlan/script/ovsdb-server.sh
+            - start
+          resources:
+            limits:
+              cpu: 200m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          volumeMounts:
+            - name: ovs-run
+              mountPath: /run/openvswitch
+            - name: ovs-etc
+              mountPath: /etc/openvswitch 
+        - name: "ovs-vswitchd"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/openlan/script/ovs-vswitchd.sh
+            - start
+          resources:
+            limits:
+              cpu: 200m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          volumeMounts:
+            - name: ovs-run
+              mountPath: /run/openvswitch
+            - name: ovs-etc
+              mountPath: /etc/openvswitch
+          securityContext:
+            privileged: true
+        - name: "openlan-switch"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/openlan/script/switch.sh
+            - start
+          env:
+            - name: ESPUDP
+              value: "4500"
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 10000
+            - containerPort: 10002
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 1000m
+              memory: 512Mi
+          volumeMounts:
+            - name: openlan-etc
+              mountPath: /etc/openlan
+            - name: network-private
+              mountPath: /etc/openlan/switch/network/private.json
+              subPath: private.json
+            - name: switch-etc
+              mountPath: /etc/openlan/switch/switch.json
+              subPath: switch.json
+            - name: confd-run
+              mountPath: /var/openlan/confd
+            - name: ovs-run
+              mountPath: /run/openvswitch
+            - name: ovs-etc
+              mountPath: /etc/openvswitch
+        - name: "openlan-proxy"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/bin/openlan-proxy
+            - -conf
+            - /etc/openlan/proxy.json
+            - -log:file
+            - /dev/null
+          volumeMounts:
+            - name: proxy-etc
+              mountPath: /etc/openlan/proxy.json
+              subPath: proxy.json
+        - name: "openlan-task"
+          image: "luscis/openlan:23.04.02"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /var/openlan/script/task.sh
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: openlan-etc
+              mountPath: /etc/openlan
+            - name: confd-run
+              mountPath: /var/openlan/confd
+            - name: ovs-run
+              mountPath: /run/openvswitch
+            - name: ovs-etc
+              mountPath: /etc/openvswitch
+      volumes:
+      - name: confd-run
+        emptyDir: {}
+      - name: openlan-etc
+        hostPath:
+          path: /opt/openlan/etc/openlan
+      - name: ovs-run
+        emptyDir: {}
+      - name: ovs-etc
+        hostPath:
+          path: /opt/openlan/etc/openvswitch
+      - name: network-private
+        configMap:
+          defaultMode: 420
+          name: network-private
+      - name: switch-etc
+        configMap:
+          defaultMode: 420
+          name: switch-etc
+      - name: proxy-etc
+        configMap:
+          defaultMode: 420
+          name: proxy-etc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: openlan
+  namespace: openlan
+spec:
+  type: LoadBalancer
+  ports:
+    - name: openlan-web
+      port: 10000
+      protocol: TCP
+      targetPort: 10000
+    - name: openlan-tun
+      port: 10002
+      protocol: TCP
+      targetPort: 10002
+  selector:
+    name: openlan
