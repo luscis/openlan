@@ -9,7 +9,7 @@ dir=$(dirname $0)
 
 OVSDB_SERVER_BIN="/usr/bin/env ovsdb-server"
 OVSDB_TOOL_BIN="/usr/bin/env ovsdb-tool"
-[ "$OVSDB_DATABASE_SCH" == "" ] && OVSDB_DATABASE_SCH="/etc/openlan/switch/confd.schema.json"
+[ "$OVSDB_DATABASE_SCH" == "" ] && OVSDB_DATABASE_SCH="/var/openlan/confd.schema.json"
 [ "$OVSDB_DATABASE" == "" ] && OVSDB_DATABASE="/etc/openlan/switch/confd.db"
 [ "$OVSDB_LOG_FILE" == "" ] && OVSDB_LOG_FILE="/var/openlan/confd/confd.log"
 [ "$OVSDB_SOCK" == "" ] && OVSDB_SOCK="/var/openlan/confd/confd.sock"

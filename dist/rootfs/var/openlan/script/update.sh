@@ -3,7 +3,7 @@
 set -ex
 
 ## Upgrade ovsdb
-# ovsdb-client convert unix:///var/openlan/confd/confd.sock /etc/openlan/switch/confd.schema.json
+# ovsdb-client convert unix:///var/openlan/confd/confd.sock /var/openlan/confd.schema.json
 
 ## Enable check for DDNS
 # [root@centos ~]# crontab -l
