@@ -15,6 +15,8 @@ OVSDB_TOOL_BIN="/usr/bin/env ovsdb-tool"
 [ "$OVSDB_SOCK" == "" ] && OVSDB_SOCK="/var/openlan/confd/confd.sock"
 [ "$OVSDB_PID_FILE" == "" ] && OVSDB_PID_FILE="/var/openlan/confd/confd.pid"
 
+mkdir -p /var/openlan/confd
+
 function stop() {
     [ -e "$OVSDB_PID_FILE" ] && kill "$(cat $OVSDB_PID_FILE)"
 }
