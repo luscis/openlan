@@ -13,6 +13,7 @@ type PrefixRoute struct {
 	NextHop string `json:"nexthop"`
 	Metric  int    `json:"metric"`
 	Mode    string `json:"mode"`
+	Origin  string `json:"origin"`
 }
 
 type Subnet struct {

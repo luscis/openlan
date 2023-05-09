@@ -12,6 +12,7 @@ type Route struct {
 	NextHop string `json:"nexthop"`
 	Metric  int    `json:"metric"`
 	Mode    string `json:"mode"`
+	Origin  string `json:"origin"`
 }
 
 func NewRoute(prefix string, nexthop, mode string) (this *Route) {
@@ -30,6 +31,10 @@ func (u *Route) String() string {
 
 func (u *Route) SetMetric(value int) {
 	u.Metric = value
+}
+
+func (u *Route) SetOrigin(value string) {
+	u.Origin = value
 }
 
 type Network struct {

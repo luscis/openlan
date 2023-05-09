@@ -2,6 +2,10 @@ package _switch
 
 import (
 	"fmt"
+	"net"
+	"strings"
+	"time"
+
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
@@ -9,9 +13,6 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
-	"net"
-	"strings"
-	"time"
 )
 
 func PeerName(name, prefix string) (string, string) {
@@ -56,6 +57,9 @@ func (w *OpenLANWorker) Initialize() {
 		rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
 		if rt.Metric > 0 {
 			rte.Metric = rt.Metric
+		}
+		if rt.NextHop != "" {
+			rte.Origin = rt.NextHop
 		}
 		n.Routes = append(n.Routes, rte)
 	}

@@ -3,16 +3,17 @@ package access
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
-	"github.com/luscis/openlan/pkg/network"
-	"github.com/luscis/openlan/pkg/schema"
 	"net"
 	"os"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
+	"github.com/luscis/openlan/pkg/network"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 type jobTimer struct {
@@ -327,8 +328,11 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 	// Filter routes.
 	var routes []*models.Route
 	for _, rt := range n.Routes {
-		_, _, err := net.ParseCIDR(rt.Prefix)
-		if err != nil || rt.NextHop == n.IfAddr {
+		if _, _, err := net.ParseCIDR(rt.Prefix); err != nil {
+			w.out.Warn("Worker.OnIpAddr: parse %s failed.", rt.Prefix)
+			continue
+		}
+		if rt.NextHop == n.IfAddr || rt.Origin == n.IfAddr {
 			continue
 		}
 		routes = append(routes, rt)

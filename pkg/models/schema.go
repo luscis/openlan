@@ -111,6 +111,7 @@ func NewNetworkSchema(n *Network) schema.Network {
 				Prefix:  route.Prefix,
 				Metric:  route.Metric,
 				Mode:    route.Mode,
+				Origin:  route.Origin,
 			})
 	}
 	return sn
