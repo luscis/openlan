@@ -50,7 +50,7 @@ func NewProxy() *Proxy {
 
 func (p *Proxy) Parse() {
 	flag.StringVar(&p.Log.File, "log:file", "", "Configure log file")
-	flag.StringVar(&p.Conf, "conf", "", "The configure file")
+	flag.StringVar(&p.Conf, "conf", "proxy.json", "The configure file")
 	flag.StringVar(&p.PProf, "prof", "", "Http listen for CPU prof")
 	flag.IntVar(&p.Log.Verbose, "log:level", 20, "Configure log level")
 	flag.Parse()
