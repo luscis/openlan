@@ -2,13 +2,14 @@ package _switch
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
-	"strconv"
-	"strings"
 )
 
 type Networker interface {
@@ -64,6 +65,7 @@ type WorkerImpl struct {
 	out     *libol.SubLogger
 	dhcp    *Dhcp
 	outputs []*LinuxPort
+	fire    *cn.FireWallTable
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -85,6 +87,7 @@ func (w *WorkerImpl) Initialize() {
 			Bridge: w.cfg.Bridge,
 		})
 	}
+	w.fire = cn.NewFireWallTable(w.cfg.Name)
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
@@ -171,27 +174,21 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg := w.cfg
-	fire := v.Firewall()
+	fire := w.fire
 
 	if cfg.Acl != "" {
-		fire.AddRule(cn.IpRule{
-			Table: cn.TRaw,
-			Chain: cn.OLCPre,
+		fire.Raw.Pre.AddRule(cn.IpRule{
 			Input: cfg.Bridge.Name,
 			Jump:  cfg.Acl,
 		})
 	}
-	fire.AddRule(cn.IpRule{
-		Table:  cn.TFilter,
-		Chain:  cn.OLCForward,
+	fire.Filter.For.AddRule(cn.IpRule{
 		Input:  cfg.Bridge.Name,
 		Output: cfg.Bridge.Name,
 	})
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
-		fire.AddRule(cn.IpRule{
-			Table:   cn.TMangle,
-			Chain:   cn.OLCPost,
+		fire.Mangle.Post.AddRule(cn.IpRule{
 			Output:  cfg.Bridge.Name,
 			Proto:   "tcp",
 			Match:   "tcp",
@@ -200,9 +197,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			SetMss:  cfg.Bridge.Mss,
 		})
 		// connect from local
-		fire.AddRule(cn.IpRule{
-			Table:   cn.TMangle,
-			Chain:   cn.OLCInput,
+		fire.Mangle.In.AddRule(cn.IpRule{
 			Input:   cfg.Bridge.Name,
 			Proto:   "tcp",
 			Match:   "tcp",
@@ -221,9 +216,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	}
 	if w.dhcp != nil {
 		w.dhcp.Start()
-		fire.AddRule(cn.IpRule{
-			Table:  cn.TNat,
-			Chain:  cn.OLCPost,
+		fire.Nat.Post.AddRule(cn.IpRule{
 			Source: cfg.Bridge.Address,
 			NoDest: cfg.Bridge.Address,
 			Jump:   cn.CMasq,

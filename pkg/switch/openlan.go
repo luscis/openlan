@@ -39,6 +39,152 @@ func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
 	}
 }
 
+func (w *OpenLANWorker) toACL(acl, input string) {
+	if input == "" {
+		return
+	}
+	if acl != "" {
+		w.fire.Raw.Pre.AddRule(network.IpRule{
+			Input: input,
+			Jump:  acl,
+		})
+	}
+}
+
+func (w *OpenLANWorker) openPort(protocol, port string) {
+	w.out.Info("OpenLANWorker.openPort %s %s", protocol, port)
+	// allowed forward between source and prefix.
+	w.fire.Filter.In.AddRule(network.IpRule{
+		Proto:   protocol,
+		Match:   "multiport",
+		DstPort: port,
+	})
+}
+
+func (w *OpenLANWorker) toForward(input, output, source, prefix string) {
+	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, source, prefix)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(network.IpRule{
+		Input:  input,
+		Output: output,
+		Source: source,
+		Dest:   prefix,
+	})
+	if source != prefix {
+		w.fire.Filter.For.AddRule(network.IpRule{
+			Output: input,
+			Input:  output,
+			Source: prefix,
+			Dest:   source,
+		})
+	}
+}
+
+func (w *OpenLANWorker) toMasq(input, output, source, prefix string) {
+	if source == prefix {
+		return
+	}
+	// Enable masquerade from source to prefix.
+	if prefix == "" || prefix == "0.0.0.0/0" {
+		w.fire.Nat.Post.AddRule(network.IpRule{
+			Source: source,
+			NoDest: source,
+			Jump:   network.CMasq,
+		})
+	} else {
+		w.fire.Nat.Post.AddRule(network.IpRule{
+			Source: source,
+			Dest:   prefix,
+			Jump:   network.CMasq,
+		})
+	}
+}
+
+func (w *OpenLANWorker) toSnat(input, output, source, prefix string) {
+	if source == prefix {
+		return
+	}
+	// Enable masquerade from source to prefix.
+	w.fire.Nat.Post.AddRule(network.IpRule{
+		ToSource: source,
+		Dest:     prefix,
+		Jump:     network.CSnat,
+	})
+}
+
+func (w *OpenLANWorker) updateVPN() {
+	cfg := w.Config()
+	vCfg := cfg.OpenVPN
+	if vCfg == nil {
+		return
+	}
+	routes := vCfg.Routes
+	routes = append(routes, vCfg.Subnet)
+	if addr := w.Subnet(); addr != "" {
+		libol.Info("OpenLANWorker.updateVPN %s subnet %s", cfg.Name, addr)
+		routes = append(routes, addr)
+	}
+	for _, rt := range cfg.Routes {
+		addr := rt.Prefix
+		if addr == "0.0.0.0/0" {
+			vCfg.Push = append(vCfg.Push, "redirect-gateway def1")
+			continue
+		}
+		if _, inet, err := net.ParseCIDR(addr); err == nil {
+			routes = append(routes, inet.String())
+		}
+	}
+	vCfg.Routes = routes
+}
+
+func (w *OpenLANWorker) allowedVPN() {
+	cfg := w.Config()
+	vCfg := cfg.OpenVPN
+	if vCfg == nil {
+		return
+	}
+
+	_, port := libol.GetHostPort(vCfg.Listen)
+	if vCfg.Protocol == "udp" {
+		w.openPort("udp", port)
+	} else {
+		w.openPort("tcp", port)
+	}
+
+	devName := vCfg.Device
+	w.toACL(cfg.Acl, devName)
+	for _, rt := range vCfg.Routes {
+		w.toForward(devName, "", vCfg.Subnet, rt)
+		w.toMasq(devName, "", vCfg.Subnet, rt)
+	}
+}
+
+func (w *OpenLANWorker) allowedSubnet() {
+	cfg := w.Config()
+	br := cfg.Bridge
+	ifAddr := strings.SplitN(br.Address, "/", 2)[0]
+	if ifAddr == "" {
+		return
+	}
+
+	vCfg := w.cfg.OpenVPN
+	subnet := w.Subnet()
+	// Enable MASQUERADE, and allowed forward.
+	for _, rt := range cfg.Routes {
+		if vCfg != nil {
+			w.toForward("", br.Name, vCfg.Subnet, rt.Prefix)
+			w.toMasq("", br.Name, vCfg.Subnet, rt.Prefix)
+		}
+
+		w.toForward(br.Name, "", subnet, rt.Prefix)
+		if rt.MultiPath != nil {
+			w.toSnat(br.Name, "", ifAddr, rt.Prefix)
+		} else if rt.Mode == "snat" {
+			w.toMasq(br.Name, "", subnet, rt.Prefix)
+		}
+	}
+}
+
 func (w *OpenLANWorker) Initialize() {
 	brCfg := w.cfg.Bridge
 	n := models.Network{
@@ -79,6 +225,9 @@ func (w *OpenLANWorker) Initialize() {
 		w.vpn = obj
 	}
 	w.WorkerImpl.Initialize()
+	w.allowedSubnet()
+	w.updateVPN()
+	w.allowedVPN()
 }
 
 func (w *OpenLANWorker) LoadLinks() {
@@ -236,6 +385,7 @@ func (w *OpenLANWorker) Start(v api.Switcher) {
 		w.vpn.Start()
 	}
 	w.WorkerImpl.Start(v)
+	w.fire.Start()
 }
 
 func (w *OpenLANWorker) downBridge(cfg *co.Bridge) {
@@ -261,6 +411,7 @@ func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
 
 func (w *OpenLANWorker) Stop() {
 	w.out.Info("OpenLANWorker.Close")
+	w.fire.Stop()
 	w.WorkerImpl.Stop()
 	if !(w.vpn == nil) {
 		w.vpn.Stop()

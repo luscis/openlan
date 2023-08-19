@@ -2,7 +2,6 @@ package _switch
 
 import (
 	"encoding/json"
-	"net"
 	"strings"
 	"sync"
 	"time"
@@ -84,31 +83,31 @@ type Apps struct {
 type Hook func(client libol.SocketClient, frame *libol.FrameMessage) error
 
 type Switch struct {
-	lock     sync.Mutex
-	cfg      *co.Switch
-	apps     Apps
-	firewall *network.FireWallGlobal
-	hooks    []Hook
-	http     *Http
-	server   libol.SocketServer
-	worker   map[string]Networker
-	uuid     string
-	newTime  int64
-	out      *libol.SubLogger
-	confd    *ConfD
-	l2tp     *L2TP
+	lock    sync.Mutex
+	cfg     *co.Switch
+	apps    Apps
+	fire    *network.FireWallGlobal
+	hooks   []Hook
+	http    *Http
+	server  libol.SocketServer
+	worker  map[string]Networker
+	uuid    string
+	newTime int64
+	out     *libol.SubLogger
+	confd   *ConfD
+	l2tp    *L2TP
 }
 
 func NewSwitch(c *co.Switch) *Switch {
 	server := GetSocketServer(c)
 	v := &Switch{
-		cfg:      c,
-		firewall: network.NewFireWallGlobal(c.FireWall),
-		worker:   make(map[string]Networker, 32),
-		server:   server,
-		newTime:  time.Now().Unix(),
-		hooks:    make([]Hook, 0, 64),
-		out:      libol.NewSubLogger(c.Alias),
+		cfg:     c,
+		fire:    network.NewFireWallGlobal(c.FireWall),
+		worker:  make(map[string]Networker, 32),
+		server:  server,
+		newTime: time.Now().Unix(),
+		hooks:   make([]Hook, 0, 64),
+		out:     libol.NewSubLogger(c.Alias),
 	}
 	v.confd = NewConfd(v)
 	return v
@@ -124,7 +123,7 @@ func (v *Switch) Protocol() string {
 func (v *Switch) enablePort(protocol, port string) {
 	v.out.Info("Switch.enablePort %s %s", protocol, port)
 	// allowed forward between source and prefix.
-	v.firewall.AddRule(network.IpRule{
+	v.fire.AddRule(network.IpRule{
 		Table:   network.TFilter,
 		Chain:   network.OLCInput,
 		Proto:   protocol,
@@ -133,183 +132,15 @@ func (v *Switch) enablePort(protocol, port string) {
 	})
 }
 
-func (v *Switch) enableFwd(input, output, source, prefix string) {
-	v.out.Debug("Switch.enableFwd %s:%s %s:%s", input, output, source, prefix)
-	// allowed forward between source and prefix.
-	v.firewall.AddRule(network.IpRule{
-		Table:  network.TFilter,
-		Chain:  network.OLCForward,
-		Input:  input,
-		Output: output,
-		Source: source,
-		Dest:   prefix,
-	})
-	if source != prefix {
-		v.firewall.AddRule(network.IpRule{
-			Table:  network.TFilter,
-			Chain:  network.OLCForward,
-			Output: input,
-			Input:  output,
-			Source: prefix,
-			Dest:   source,
-		})
-	}
-}
-
-func (v *Switch) enableMasq(input, output, source, prefix string) {
-	if source == prefix {
-		return
-	}
-	// enable masquerade from source to prefix.
-	if prefix == "" || prefix == "0.0.0.0/0" {
-		v.firewall.AddRule(network.IpRule{
-			Table:  network.TNat,
-			Chain:  network.OLCPost,
-			Source: source,
-			NoDest: source,
-			Jump:   network.CMasq,
-		})
-	} else {
-		v.firewall.AddRule(network.IpRule{
-			Table:  network.TNat,
-			Chain:  network.OLCPost,
-			Source: source,
-			Dest:   prefix,
-			Jump:   network.CMasq,
-		})
-	}
-}
-
-func (v *Switch) enableSnat(input, output, source, prefix string) {
-	if source == prefix {
-		return
-	}
-	// enable masquerade from source to prefix.
-	v.firewall.AddRule(network.IpRule{
-		Table:    network.TNat,
-		Chain:    network.OLCPost,
-		ToSource: source,
-		Dest:     prefix,
-		Jump:     network.CSnat,
-	})
-}
-
-func (v *Switch) preWorkerVPN(w Networker, vCfg *co.OpenVPN) {
-	if w == nil || vCfg == nil {
-		return
-	}
-	cfg := w.Config()
-	routes := vCfg.Routes
-	routes = append(routes, vCfg.Subnet)
-	if addr := w.Subnet(); addr != "" {
-		libol.Info("Switch.preWorkerVPN %s subnet %s", cfg.Name, addr)
-		routes = append(routes, addr)
-	}
-	for _, rt := range cfg.Routes {
-		addr := rt.Prefix
-		if addr == "0.0.0.0/0" {
-			vCfg.Push = append(vCfg.Push, "redirect-gateway def1")
-			continue
-		}
-		if _, inet, err := net.ParseCIDR(addr); err == nil {
-			routes = append(routes, inet.String())
-		}
-	}
-	vCfg.Routes = routes
-}
-
-func (v *Switch) preWorker(w Networker) {
-	cfg := w.Config()
-	if cfg.OpenVPN != nil {
-		v.preWorkerVPN(w, cfg.OpenVPN)
-	}
-	br := cfg.Bridge
-	if br.Mss > 0 {
-		v.firewall.AddRule(network.IpRule{
-			Table:   network.TMangle,
-			Chain:   network.OLCPost,
-			Output:  br.Name,
-			Proto:   "tcp",
-			Match:   "tcp",
-			TcpFlag: []string{"SYN,RST", "SYN"},
-			Jump:    "TCPMSS",
-			SetMss:  br.Mss,
-		})
-	}
-}
-
-func (v *Switch) enableAcl(acl, input string) {
-	if input == "" {
-		return
-	}
-	if acl != "" {
-		v.firewall.AddRule(network.IpRule{
-			Table: network.TRaw,
-			Chain: network.OLCPre,
-			Input: input,
-			Jump:  acl,
-		})
-	}
-}
-
-func (v *Switch) preNetVPN0(nCfg *co.Network, vCfg *co.OpenVPN) {
-	if nCfg == nil || vCfg == nil {
-		return
-	}
-	devName := vCfg.Device
-	v.enableAcl(nCfg.Acl, devName)
-	for _, rt := range vCfg.Routes {
-		v.enableFwd(devName, "", vCfg.Subnet, rt)
-		v.enableMasq(devName, "", vCfg.Subnet, rt)
-	}
-}
-
-func (v *Switch) preNetVPN1(bridge, prefix string, vCfg *co.OpenVPN) {
-	if vCfg == nil {
-		return
-	}
-	// Enable MASQUERADE, and allowed forward.
-	v.enableFwd("", bridge, vCfg.Subnet, prefix)
-	v.enableMasq("", bridge, vCfg.Subnet, prefix)
-}
-
-func (v *Switch) preNets() {
+func (v *Switch) preNetwork() {
 	for _, nCfg := range v.cfg.Network {
 		name := nCfg.Name
 		w := NewNetworker(nCfg)
 		v.worker[name] = w
-		brCfg := nCfg.Bridge
-		if brCfg == nil {
-			continue
-		}
-
-		v.preWorker(w)
-		brName := brCfg.Name
-		vCfg := nCfg.OpenVPN
-
-		ifAddr := strings.SplitN(brCfg.Address, "/", 2)[0]
-		// Enable MASQUERADE for OpenVPN
-		if vCfg != nil {
-			v.preNetVPN0(nCfg, vCfg)
-		}
-		if ifAddr == "" {
-			continue
-		}
-		subnet := w.Subnet()
-		// Enable MASQUERADE, and allowed forward.
-		for _, rt := range nCfg.Routes {
-			v.preNetVPN1(brName, rt.Prefix, vCfg)
-			v.enableFwd(brName, "", subnet, rt.Prefix)
-			if rt.MultiPath != nil {
-				v.enableSnat(brName, "", ifAddr, rt.Prefix)
-			} else if rt.Mode == "snat" {
-				v.enableMasq(brName, "", subnet, rt.Prefix)
-			}
-		}
 	}
 }
 
-func (v *Switch) preApps() {
+func (v *Switch) preApplication() {
 	// Append accessed auth for point
 	v.apps.Auth = app.NewAccess(v)
 	v.hooks = append(v.hooks, v.apps.Auth.OnFrame)
@@ -332,21 +163,21 @@ func (v *Switch) preApps() {
 		v.hooks = append(v.hooks, v.apps.OnLines.OnFrame)
 	}
 	for i, h := range v.hooks {
-		v.out.Debug("Switch.preApps: id %d, func %s", i, libol.FunName(h))
+		v.out.Debug("Switch.preApplication: id %d, func %s", i, libol.FunName(h))
 	}
 }
 
-func (v *Switch) preAcl() {
+func (v *Switch) loadACLs() {
 	for _, acl := range v.cfg.Acl {
 		if acl.Name == "" {
 			continue
 		}
-		v.firewall.AddChain(network.IpChain{
+		v.fire.AddChain(network.IpChain{
 			Table: network.TRaw,
 			Name:  acl.Name,
 		})
 		for _, rule := range acl.Rules {
-			v.firewall.AddRule(network.IpRule{
+			v.fire.AddRule(network.IpRule{
 				Table:   network.TRaw,
 				Chain:   acl.Name,
 				Source:  rule.SrcIp,
@@ -365,19 +196,7 @@ func (v *Switch) GetPort(listen string) string {
 	return port
 }
 
-func (v *Switch) preAllowVPN(cfg *co.OpenVPN) {
-	if cfg == nil {
-		return
-	}
-	port := v.GetPort(cfg.Listen)
-	if cfg.Protocol == "udp" {
-		v.enablePort("udp", port)
-	} else {
-		v.enablePort("tcp", port)
-	}
-}
-
-func (v *Switch) preAllow() {
+func (v *Switch) openPorts() {
 	port := v.GetPort(v.cfg.Listen)
 	UdpPorts := []string{"4500", "4500", "8472", "4789", port}
 	TcpPorts := []string{"7471", port}
@@ -386,12 +205,6 @@ func (v *Switch) preAllow() {
 	}
 	v.enablePort("udp", strings.Join(UdpPorts, ","))
 	v.enablePort("tcp", strings.Join(TcpPorts, ","))
-	for _, nCfg := range v.cfg.Network {
-		if nCfg.OpenVPN == nil {
-			continue
-		}
-		v.preAllowVPN(nCfg.OpenVPN)
-	}
 }
 
 func (v *Switch) SetPass(file string) {
@@ -406,15 +219,15 @@ func (v *Switch) Initialize() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	v.preAcl()
-	v.preAllow()
-	v.preApps()
+	v.loadACLs()
+	v.openPorts()
+	v.preApplication()
 	if v.cfg.Http != nil {
 		v.http = NewHttp(v)
 	}
-	v.preNets()
-	// FireWall
-	v.firewall.Initialize()
+	v.preNetwork()
+	// Load global firewall
+	v.fire.Initialize()
 	for _, w := range v.worker {
 		if w.Provider() == "vxlan" {
 			continue
@@ -556,6 +369,7 @@ func (v *Switch) Start() {
 	defer v.lock.Unlock()
 
 	OpenUDP()
+	v.fire.Start()
 	// firstly, start network.
 	for _, w := range v.worker {
 		if w.Provider() == "vxlan" {
@@ -574,7 +388,6 @@ func (v *Switch) Start() {
 	if v.http != nil {
 		libol.Go(v.http.Start)
 	}
-	libol.Go(v.firewall.Start)
 	libol.Go(v.confd.Start)
 	if v.l2tp != nil {
 		libol.Go(v.l2tp.Start)
@@ -608,7 +421,7 @@ func (v *Switch) Stop() {
 		}
 		v.leftClient(p.Client)
 	}
-	v.firewall.Stop()
+	v.fire.Stop()
 	v.server.Close()
 }
 
@@ -762,17 +575,13 @@ func (v *Switch) leftClient(client libol.SocketClient) {
 	}
 }
 
-func (v *Switch) Firewall() *network.FireWallGlobal {
-	return v.firewall
-}
-
 func (v *Switch) Reload() {
 	co.Reload()
 	cache.Reload()
 	for _, w := range v.worker {
 		w.Reload(v)
 	}
-	libol.Go(v.firewall.Start)
+	libol.Go(v.fire.Start)
 }
 
 func (v *Switch) Save() {

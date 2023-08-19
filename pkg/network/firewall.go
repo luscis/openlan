@@ -467,3 +467,17 @@ func NewFireWallTable(name string) *FireWallTable {
 		Raw:    NewFireWallRaw(name),
 	}
 }
+
+func (t *FireWallTable) Start() {
+	t.Filter.Install()
+	t.Nat.Install()
+	t.Mangle.Install()
+	t.Raw.Install()
+}
+
+func (t *FireWallTable) Stop() {
+	t.Raw.Cancel()
+	t.Mangle.Cancel()
+	t.Nat.Cancel()
+	t.Filter.Cancel()
+}

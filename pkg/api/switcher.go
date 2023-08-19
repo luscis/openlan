@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -13,7 +12,6 @@ type Switcher interface {
 	Alias() string
 	Config() *config.Switch
 	Server() libol.SocketServer
-	Firewall() *network.FireWallGlobal
 	Reload()
 	Save()
 }
