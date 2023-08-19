@@ -218,6 +218,8 @@ func (w *OpenLANWorker) Initialize() {
 		}
 	}
 	w.bridge = network.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
+
+	w.updateVPN()
 	vCfg := w.cfg.OpenVPN
 	if !(vCfg == nil) {
 		obj := NewOpenVPN(vCfg)
@@ -226,7 +228,6 @@ func (w *OpenLANWorker) Initialize() {
 	}
 	w.WorkerImpl.Initialize()
 	w.allowedSubnet()
-	w.updateVPN()
 	w.allowedVPN()
 }
 
