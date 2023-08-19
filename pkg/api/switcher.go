@@ -13,7 +13,7 @@ type Switcher interface {
 	Alias() string
 	Config() *config.Switch
 	Server() libol.SocketServer
-	Firewall() *network.FireWall
+	Firewall() *network.FireWallGlobal
 	Reload()
 	Save()
 }

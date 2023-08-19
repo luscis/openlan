@@ -2,16 +2,17 @@ package _switch
 
 import (
 	"encoding/json"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/luscis/openlan/pkg/app"
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 func GetSocketServer(s *co.Switch) libol.SocketServer {
@@ -86,7 +87,7 @@ type Switch struct {
 	lock     sync.Mutex
 	cfg      *co.Switch
 	apps     Apps
-	firewall *network.FireWall
+	firewall *network.FireWallGlobal
 	hooks    []Hook
 	http     *Http
 	server   libol.SocketServer
@@ -102,7 +103,7 @@ func NewSwitch(c *co.Switch) *Switch {
 	server := GetSocketServer(c)
 	v := &Switch{
 		cfg:      c,
-		firewall: network.NewFireWall(c.FireWall),
+		firewall: network.NewFireWallGlobal(c.FireWall),
 		worker:   make(map[string]Networker, 32),
 		server:   server,
 		newTime:  time.Now().Unix(),
@@ -761,7 +762,7 @@ func (v *Switch) leftClient(client libol.SocketClient) {
 	}
 }
 
-func (v *Switch) Firewall() *network.FireWall {
+func (v *Switch) Firewall() *network.FireWallGlobal {
 	return v.firewall
 }
 

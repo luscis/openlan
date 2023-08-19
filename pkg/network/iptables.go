@@ -1,11 +1,12 @@
 package network
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/moby/libnetwork/iptables"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/moby/libnetwork/iptables"
 )
 
 const (
@@ -181,6 +182,7 @@ func (rules IpRules) Remove(obj IpRule) IpRules {
 type IpChain struct {
 	Table string
 	Name  string
+	From  string
 }
 
 type IpChains []IpChain
@@ -240,7 +242,7 @@ func (chains IpChains) Pop(obj IpChain) IpChains {
 
 var __iptablesInit__ = false
 
-func IptInit() {
+func IptableInit() {
 	if __iptablesInit__ {
 		return
 	}
