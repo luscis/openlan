@@ -104,7 +104,7 @@ verb 3
 `
 )
 
-func NewOpenVpnDataFromConf(obj *OpenVPN) *OpenVPNData {
+func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 	cfg := obj.Cfg
 	data := &OpenVPNData{
 		Local:    obj.Local,
@@ -264,7 +264,7 @@ func (o *OpenVPN) WriteConf(path string) error {
 		return err
 	}
 	defer fp.Close()
-	data := NewOpenVpnDataFromConf(o)
+	data := NewOpenVPNDataFromConf(o)
 	o.out.Debug("OpenVPN.WriteConf %v", data)
 	if data.ClientConfigDir != "" {
 		_ = o.writeClientConfig()
@@ -407,7 +407,7 @@ func (o *OpenVPN) ProfileTmpl() string {
 }
 
 func (o *OpenVPN) Profile() ([]byte, error) {
-	data := NewOpenVpnProfileFromConf(o)
+	data := NewOpenVPNProfileFromConf(o)
 	tmplStr := o.ProfileTmpl()
 	tmpl, err := template.New("main").Parse(tmplStr)
 	if err != nil {
@@ -484,7 +484,7 @@ verb 4
 `
 )
 
-func NewOpenVpnProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
+func NewOpenVPNProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
 	cfg := obj.Cfg
 	data := &OpenVPNProfile{
 		Server:   obj.Local,
@@ -493,6 +493,11 @@ func NewOpenVpnProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
 		Device:   cfg.Device[:3],
 		Protocol: cfg.Protocol,
 		Renego:   cfg.Renego,
+	}
+	if data.Server == "0.0.0.0" {
+		if name, err := os.Hostname(); err == nil {
+			data.Server = name
+		}
 	}
 	if ctx, err := ioutil.ReadFile(cfg.RootCa); err == nil {
 		data.Ca = string(ctx)
