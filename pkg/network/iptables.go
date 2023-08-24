@@ -92,6 +92,9 @@ func (ru IpRule) Args() []string {
 	if ru.Output != "" {
 		args = append(args, "-o", ru.Output)
 	}
+	if ru.Comment != "" {
+		args = append(args, "-m", "comment", "--comment", ru.Comment)
+	}
 	if ru.Jump != "" {
 		jump := strings.ToUpper(ru.Jump)
 		if jump == "DROP" || jump == "ACCEPT" {

@@ -51,56 +51,61 @@ func (w *OpenLANWorker) toACL(acl, input string) {
 	}
 }
 
-func (w *OpenLANWorker) openPort(protocol, port string) {
+func (w *OpenLANWorker) openPort(protocol, port, comment string) {
 	w.out.Info("OpenLANWorker.openPort %s %s", protocol, port)
 	// allowed forward between source and prefix.
 	w.fire.Filter.In.AddRule(network.IpRule{
 		Proto:   protocol,
 		Match:   "multiport",
 		DstPort: port,
+		Comment: comment,
 	})
 }
 
-func (w *OpenLANWorker) toForward(input, output, source, prefix string) {
+func (w *OpenLANWorker) toForward(input, output, source, prefix, comment string) {
 	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, source, prefix)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRule(network.IpRule{
-		Input:  input,
-		Output: output,
-		Source: source,
-		Dest:   prefix,
+		Input:   input,
+		Output:  output,
+		Source:  source,
+		Dest:    prefix,
+		Comment: comment,
 	})
 	if source != prefix {
 		w.fire.Filter.For.AddRule(network.IpRule{
-			Output: input,
-			Input:  output,
-			Source: prefix,
-			Dest:   source,
+			Output:  input,
+			Input:   output,
+			Source:  prefix,
+			Dest:    source,
+			Comment: comment,
 		})
 	}
 }
 
-func (w *OpenLANWorker) toMasq(input, output, source, prefix string) {
+func (w *OpenLANWorker) toMasq(source, prefix, comment string) {
 	if source == prefix {
 		return
 	}
 	// Enable masquerade from source to prefix.
 	if prefix == "" || prefix == "0.0.0.0/0" {
 		w.fire.Nat.Post.AddRule(network.IpRule{
-			Source: source,
-			NoDest: source,
-			Jump:   network.CMasq,
+			Source:  source,
+			NoDest:  source,
+			Jump:    network.CMasq,
+			Comment: comment,
 		})
 	} else {
 		w.fire.Nat.Post.AddRule(network.IpRule{
-			Source: source,
-			Dest:   prefix,
-			Jump:   network.CMasq,
+			Source:  source,
+			Dest:    prefix,
+			Jump:    network.CMasq,
+			Comment: comment,
 		})
 	}
 }
 
-func (w *OpenLANWorker) toSnat(input, output, source, prefix string) {
+func (w *OpenLANWorker) toSnat(source, prefix, comment string) {
 	if source == prefix {
 		return
 	}
@@ -109,6 +114,7 @@ func (w *OpenLANWorker) toSnat(input, output, source, prefix string) {
 		ToSource: source,
 		Dest:     prefix,
 		Jump:     network.CSnat,
+		Comment:  comment,
 	})
 }
 
@@ -146,16 +152,16 @@ func (w *OpenLANWorker) allowedVPN() {
 
 	_, port := libol.GetHostPort(vCfg.Listen)
 	if vCfg.Protocol == "udp" {
-		w.openPort("udp", port)
+		w.openPort("udp", port, "Open VPN")
 	} else {
-		w.openPort("tcp", port)
+		w.openPort("tcp", port, "Open VPN")
 	}
 
 	devName := vCfg.Device
 	w.toACL(cfg.Acl, devName)
 	for _, rt := range vCfg.Routes {
-		w.toForward(devName, "", vCfg.Subnet, rt)
-		w.toMasq(devName, "", vCfg.Subnet, rt)
+		w.toForward(devName, "", vCfg.Subnet, rt, "From VPN")
+		w.toMasq(vCfg.Subnet, rt, "From VPN")
 	}
 }
 
@@ -172,15 +178,15 @@ func (w *OpenLANWorker) allowedSubnet() {
 	// Enable MASQUERADE, and allowed forward.
 	for _, rt := range cfg.Routes {
 		if vCfg != nil {
-			w.toForward("", br.Name, vCfg.Subnet, rt.Prefix)
-			w.toMasq("", br.Name, vCfg.Subnet, rt.Prefix)
+			w.toForward("", br.Name, vCfg.Subnet, rt.Prefix, "To VPN")
+			w.toMasq(vCfg.Subnet, rt.Prefix, "To VPN")
 		}
 
-		w.toForward(br.Name, "", subnet, rt.Prefix)
+		w.toForward(br.Name, "", subnet, rt.Prefix, "To route")
 		if rt.MultiPath != nil {
-			w.toSnat(br.Name, "", ifAddr, rt.Prefix)
+			w.toSnat(ifAddr, rt.Prefix, "To SNAT")
 		} else if rt.Mode == "snat" {
-			w.toMasq(br.Name, "", subnet, rt.Prefix)
+			w.toMasq(subnet, rt.Prefix, "To Masq")
 		}
 	}
 }

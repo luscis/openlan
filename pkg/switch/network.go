@@ -217,9 +217,10 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	if w.dhcp != nil {
 		w.dhcp.Start()
 		fire.Nat.Post.AddRule(cn.IpRule{
-			Source: cfg.Bridge.Address,
-			NoDest: cfg.Bridge.Address,
-			Jump:   cn.CMasq,
+			Source:  cfg.Bridge.Address,
+			NoDest:  cfg.Bridge.Address,
+			Jump:    cn.CMasq,
+			Comment: "Default Gateway for DHCP",
 		})
 	}
 }

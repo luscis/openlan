@@ -129,6 +129,7 @@ func (v *Switch) enablePort(protocol, port string) {
 		Proto:   protocol,
 		Match:   "multiport",
 		DstPort: port,
+		Comment: "Open Default Ports",
 	})
 }
 
