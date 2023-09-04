@@ -2,13 +2,14 @@ package v5
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
-	"os"
-	"strings"
-	"time"
 )
 
 type User struct {
@@ -153,7 +154,7 @@ func (u User) Check(c *cli.Context) error {
 }
 
 func (u User) Commands(app *api.App) {
-	lease := time.Now().AddDate(99, 0, 0)
+	lease := time.Now().AddDate(1, 0, 0)
 	app.Command(&cli.Command{
 		Name:    "user",
 		Aliases: []string{"us"},

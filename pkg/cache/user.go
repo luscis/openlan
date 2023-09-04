@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
 	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
 )
 
 type user struct {
@@ -45,7 +46,7 @@ func (w *user) Load() {
 		if len(columns) > 3 {
 			leStr = columns[3]
 		}
-		lease, _ := libol.GetLocalTime(libol.LeaseTime, leStr)
+		lease, _ := libol.GetLeaseTime(leStr)
 		obj := &models.User{
 			Name:     user,
 			Password: pass,

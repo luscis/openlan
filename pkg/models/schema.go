@@ -80,7 +80,7 @@ func NewUserSchema(u *User) schema.User {
 }
 
 func SchemaToUserModel(user *schema.User) *User {
-	lease, _ := libol.GetLocalTime(libol.LeaseTime, user.Lease)
+	lease, _ := libol.GetLeaseTime(user.Lease)
 	obj := &User{
 		Alias:    user.Alias,
 		Password: user.Password,

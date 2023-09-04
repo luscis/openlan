@@ -306,6 +306,10 @@ func GetLocalTime(layout, value string) (time.Time, error) {
 	return time.ParseInLocation(layout, value, time.Local)
 }
 
+func GetLeaseTime(value string) (time.Time, error) {
+	return time.ParseInLocation(LeaseTime, value, time.Local)
+}
+
 func Base64Decode(value string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(value)
 }
