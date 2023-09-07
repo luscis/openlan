@@ -179,7 +179,7 @@ func (w *OpenLANWorker) allowedSubnet() {
 	for _, rt := range cfg.Routes {
 		if vCfg != nil {
 			w.toForward("", br.Name, vCfg.Subnet, rt.Prefix, "To VPN")
-			w.toMasq(vCfg.Subnet, rt.Prefix, "To VPN")
+			w.toMasq(rt.Prefix, vCfg.Subnet, "To VPN")
 		}
 
 		w.toForward(br.Name, "", subnet, rt.Prefix, "To route")

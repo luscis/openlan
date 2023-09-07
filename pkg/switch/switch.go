@@ -414,6 +414,8 @@ func (v *Switch) Stop() {
 	defer v.lock.Unlock()
 
 	v.out.Info("Switch.Stop")
+	v.fire.Stop()
+
 	if v.l2tp != nil {
 		v.l2tp.Stop()
 	}
@@ -436,7 +438,6 @@ func (v *Switch) Stop() {
 		}
 		v.leftClient(p.Client)
 	}
-	v.fire.Stop()
 	v.server.Close()
 }
 
