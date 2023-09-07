@@ -216,6 +216,30 @@ func (v *Switch) LoadPass() {
 	cache.User.Load()
 }
 
+func (v *Switch) LoadLDAP() {
+	ldap := v.cfg.Ldap
+	if ldap == nil {
+		return
+	}
+	ldapCfg := libol.LDAPConfig{
+		Server:    ldap.Server,
+		BindUser:  ldap.BindDN,
+		BindPass:  ldap.BindPass,
+		BaseDN:    ldap.BaseDN,
+		Attr:      ldap.Attribute,
+		Filter:    ldap.Filter,
+		EnableTls: ldap.Tls,
+	}
+	promise := &libol.Promise{
+		First:  time.Second * 2,
+		MaxInt: time.Minute,
+		MinInt: time.Second * 10,
+	}
+	promise.Go(func() error {
+		return cache.User.SetLdap(&ldapCfg)
+	})
+}
+
 func (v *Switch) Initialize() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
@@ -239,18 +263,8 @@ func (v *Switch) Initialize() {
 	v.SetPass(v.cfg.PassFile)
 	v.LoadPass()
 
-	ldap := v.cfg.Ldap
-	if ldap != nil {
-		cache.User.SetLdap(&libol.LDAPConfig{
-			Server:    ldap.Server,
-			BindUser:  ldap.BindDN,
-			BindPass:  ldap.BindPass,
-			BaseDN:    ldap.BaseDN,
-			Attr:      ldap.Attribute,
-			Filter:    ldap.Filter,
-			EnableTls: ldap.Tls,
-		})
-	}
+	v.LoadLDAP()
+
 	// Enable cert verify for access
 	cert := v.cfg.Cert
 	if cert != nil {

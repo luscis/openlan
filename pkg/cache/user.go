@@ -228,18 +228,18 @@ func (w *user) GetLdap() *libol.LDAPService {
 	return w.LdapSvc
 }
 
-func (w *user) SetLdap(cfg *libol.LDAPConfig) {
+func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
 	w.Lock.Lock()
 	defer w.Lock.Unlock()
-	if w.LdapCfg != cfg {
-		w.LdapCfg = cfg
-	}
 	if l, err := libol.NewLDAPService(*cfg); err != nil {
 		libol.Warn("user.SetLdap %s", err)
+		return err
 	} else {
-		libol.Info("user.SetLdap %s", w.LdapCfg.Server)
+		w.LdapCfg = cfg
 		w.LdapSvc = l
+		libol.Info("user.SetLdap %s", w.LdapCfg.Server)
 	}
+	return nil
 }
 
 func (w *user) SetCert(cfg *libol.CertConfig) {
