@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path"
 	"reflect"
@@ -330,4 +331,10 @@ func GetSuffix(value string, index int) string {
 		return value[index:]
 	}
 	return ""
+}
+
+func Sudo(bin string, args ...string) (string, error) {
+	binArgs := append([]string{bin}, args...)
+	out, err := exec.Command("sudo", binArgs...).CombinedOutput()
+	return string(out), err
 }
