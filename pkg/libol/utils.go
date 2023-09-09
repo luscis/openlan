@@ -338,3 +338,8 @@ func Sudo(bin string, args ...string) (string, error) {
 	out, err := exec.Command("sudo", binArgs...).CombinedOutput()
 	return string(out), err
 }
+
+func Exec(bin string, args ...string) (string, error) {
+	out, err := exec.Command(bin, args...).CombinedOutput()
+	return string(out), err
+}

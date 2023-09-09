@@ -25,25 +25,29 @@ const (
 )
 
 type IpRule struct {
-	Table    string
-	Chain    string
-	Source   string
-	ToSource string
-	NoSource string
-	Dest     string
-	ToDest   string
-	NoDest   string
-	Proto    string
-	DstPort  string
-	SrcPort  string
-	Input    string
-	Output   string
-	Comment  string
-	Jump     string
-	SetMss   int
-	Order    string
-	Match    string
-	TcpFlag  []string
+	Table     string
+	Chain     string
+	Source    string
+	SrcSet    string
+	ToSource  string
+	NoSource  string
+	NoSrcSet  string
+	Dest      string
+	DestSet   string
+	ToDest    string
+	NoDest    string
+	NoDestSet string
+	Proto     string
+	DstPort   string
+	SrcPort   string
+	Input     string
+	Output    string
+	Comment   string
+	Jump      string
+	SetMss    int
+	Order     string
+	Match     string
+	TcpFlag   []string
 }
 
 type IpRules []IpRule
@@ -60,12 +64,22 @@ func (ru IpRule) Args() []string {
 	} else if ru.NoSource != "" {
 		args = append(args, "!")
 		args = append(args, "-s", ru.NoSource)
+	} else if ru.SrcSet != "" {
+		args = append(args, "-m", "set", "--match-set", ru.SrcSet, "src")
+	} else if ru.NoSrcSet != "" {
+		args = append(args, "!")
+		args = append(args, "-m", "set", "--match-set", ru.NoSrcSet, "src")
 	}
 	if ru.Dest != "" {
 		args = append(args, "-d", ru.Dest)
 	} else if ru.NoDest != "" {
 		args = append(args, "!")
 		args = append(args, "-d", ru.NoDest)
+	} else if ru.DestSet != "" {
+		args = append(args, "-m", "set", "--match-set", ru.DestSet, "dst")
+	} else if ru.NoDestSet != "" {
+		args = append(args, "!")
+		args = append(args, "-m", "set", "--match-set", ru.NoDestSet, "dst")
 	}
 	if ru.Proto != "" {
 		args = append(args, "-p", ru.Proto)

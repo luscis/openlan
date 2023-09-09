@@ -27,6 +27,8 @@ type OpenLANWorker struct {
 	links     *Links
 	bridge    network.Bridger
 	vpn       *OpenVPN
+	setR      *network.IPSet
+	setV      *network.IPSet
 }
 
 func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
@@ -36,6 +38,8 @@ func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
 		newTime:    time.Now().Unix(),
 		startTime:  0,
 		links:      NewLinks(),
+		setR:       network.NewIPSet(c.Name+"_r", "hash:net"),
+		setV:       network.NewIPSet(c.Name+"_v", "hash:net"),
 	}
 }
 
@@ -62,60 +66,50 @@ func (w *OpenLANWorker) openPort(protocol, port, comment string) {
 	})
 }
 
-func (w *OpenLANWorker) toForward(input, output, source, prefix, comment string) {
-	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, source, prefix)
+func (w *OpenLANWorker) toForward_r(input, output, source, pfxSet, comment string) {
+	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, source, pfxSet)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRule(network.IpRule{
 		Input:   input,
 		Output:  output,
 		Source:  source,
+		DestSet: pfxSet,
+		Comment: comment,
+	})
+}
+
+func (w *OpenLANWorker) toForward_s(input, output, srcSet, prefix, comment string) {
+	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, srcSet, prefix)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(network.IpRule{
+		Input:   input,
+		Output:  output,
+		SrcSet:  srcSet,
 		Dest:    prefix,
 		Comment: comment,
 	})
-	if source != prefix {
-		w.fire.Filter.For.AddRule(network.IpRule{
-			Output:  input,
-			Input:   output,
-			Source:  prefix,
-			Dest:    source,
-			Comment: comment,
-		})
-	}
 }
 
-func (w *OpenLANWorker) toMasq(source, prefix, comment string) {
-	if source == prefix {
-		return
-	}
-	// Enable masquerade from source to prefix.
-	if prefix == "" || prefix == "0.0.0.0/0" {
-		w.fire.Nat.Post.AddRule(network.IpRule{
-			Source:  source,
-			NoDest:  source,
-			Jump:    network.CMasq,
-			Comment: comment,
-		})
-	} else {
-		w.fire.Nat.Post.AddRule(network.IpRule{
-			Source:  source,
-			Dest:    prefix,
-			Jump:    network.CMasq,
-			Comment: comment,
-		})
-	}
-}
-
-func (w *OpenLANWorker) toSnat(source, prefix, comment string) {
-	if source == prefix {
-		return
-	}
+func (w *OpenLANWorker) toMasq_r(source, pfxSet, comment string) {
 	// Enable masquerade from source to prefix.
 	w.fire.Nat.Post.AddRule(network.IpRule{
-		ToSource: source,
-		Dest:     prefix,
-		Jump:     network.CSnat,
-		Comment:  comment,
+		Source:  source,
+		DestSet: pfxSet,
+		Jump:    network.CMasq,
+		Comment: comment,
 	})
+
+}
+
+func (w *OpenLANWorker) toMast_s(srcSet, prefix, comment string) {
+	// Enable masquerade from source to prefix.
+	w.fire.Nat.Post.AddRule(network.IpRule{
+		SrcSet:  srcSet,
+		Dest:    prefix,
+		Jump:    network.CMasq,
+		Comment: comment,
+	})
+
 }
 
 func (w *OpenLANWorker) updateVPN() {
@@ -159,10 +153,13 @@ func (w *OpenLANWorker) allowedVPN() {
 
 	devName := vCfg.Device
 	w.toACL(cfg.Acl, devName)
+
 	for _, rt := range vCfg.Routes {
-		w.toForward(devName, "", vCfg.Subnet, rt, "From VPN")
-		w.toMasq(vCfg.Subnet, rt, "From VPN")
+		w.setV.Add(rt)
 	}
+	w.toForward_r(devName, "", vCfg.Subnet, w.setV.Name, "From VPN")
+	w.toForward_s("", devName, w.setV.Name, vCfg.Subnet, "To VPN")
+	w.toMasq_r(vCfg.Subnet, w.setV.Name, "From VPN")
 }
 
 func (w *OpenLANWorker) allowedSubnet() {
@@ -175,20 +172,20 @@ func (w *OpenLANWorker) allowedSubnet() {
 
 	vCfg := w.cfg.OpenVPN
 	subnet := w.Subnet()
+
 	// Enable MASQUERADE, and allowed forward.
 	for _, rt := range cfg.Routes {
-		if vCfg != nil {
-			w.toForward("", br.Name, vCfg.Subnet, rt.Prefix, "To VPN")
-			w.toMasq(rt.Prefix, vCfg.Subnet, "To VPN")
-		}
-
-		w.toForward(br.Name, "", subnet, rt.Prefix, "To route")
 		if rt.MultiPath != nil {
-			w.toSnat(ifAddr, rt.Prefix, "To SNAT")
-		} else if rt.Mode == "snat" {
-			w.toMasq(subnet, rt.Prefix, "To Masq")
+			continue
 		}
+		w.setR.Add(rt.Prefix)
 	}
+	w.toForward_r(br.Name, "", subnet, w.setR.Name, "To route")
+	w.toForward_s("", br.Name, w.setR.Name, subnet, "From route")
+	if vCfg != nil {
+		w.toMast_s(w.setR.Name, vCfg.Subnet, "To VPN")
+	}
+	w.toMasq_r(subnet, w.setR.Name, "To Masq")
 }
 
 func (w *OpenLANWorker) Initialize() {
@@ -201,6 +198,7 @@ func (w *OpenLANWorker) Initialize() {
 		IfAddr:  w.cfg.Bridge.Address,
 		Routes:  make([]*models.Route, 0, 2),
 	}
+
 	for _, rt := range w.cfg.Routes {
 		if rt.NextHop == "" {
 			w.out.Warn("OpenLANWorker.Initialize: %s noNextHop", rt.Prefix)
@@ -233,6 +231,12 @@ func (w *OpenLANWorker) Initialize() {
 		w.vpn = obj
 	}
 	w.WorkerImpl.Initialize()
+	if out, err := w.setV.Clear(); err != nil {
+		w.out.Error("OpenLANWorker.Initialize: create ipset: %s", out)
+	}
+	if out, err := w.setR.Clear(); err != nil {
+		w.out.Error("OpenLANWorker.Initialize: create ipset: %s", out)
+	}
 	w.allowedSubnet()
 	w.allowedVPN()
 }
@@ -427,6 +431,8 @@ func (w *OpenLANWorker) Stop() {
 	w.UnLoadLinks()
 	w.startTime = 0
 	w.downBridge(w.cfg.Bridge)
+	w.setR.Destroy()
+	w.setV.Destroy()
 }
 
 func (w *OpenLANWorker) UpTime() int64 {

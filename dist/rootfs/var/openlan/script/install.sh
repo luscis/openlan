@@ -13,9 +13,9 @@ function download() {
 
 function requires() {
   if type yum > /dev/null; then
-    yum install -y xl2tpd openssl net-tools iptables iputils openvpn openvswitch dnsmasq bridge-utils iperf3 tcpdump
+    yum install -y xl2tpd openssl net-tools iptables iputils openvpn openvswitch dnsmasq bridge-utils iperf3 tcpdump ipset
   elif type apt > /dev/null; then
-    apt-get install -y xl2tpd net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq bridge-utils iperf3 tcpdump
+    apt-get install -y xl2tpd net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq bridge-utils iperf3 tcpdump ipset
   else
     echo "We didn't find any packet tool: yum or apt."
   fi

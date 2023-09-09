@@ -6,6 +6,7 @@ import (
 
 func TestIPSetCreateDestroy(t *testing.T) {
 	i := NewIPSet("hi", "hash:net")
+	i.Sudo = true
 	if out, err := i.Create(); err != nil {
 		t.Errorf(out)
 	}
