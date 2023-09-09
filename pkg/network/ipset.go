@@ -1,9 +1,7 @@
 package network
 
-import "github.com/luscis/openlan/pkg/libol"
-
-const (
-	IPSetBin = "/usr/sbin/ipset"
+import (
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type IPSet struct {
@@ -21,10 +19,14 @@ func NewIPSet(name, method string) *IPSet {
 }
 
 func (i *IPSet) exec(args ...string) (string, error) {
+	bin := "/usr/sbin/ipset"
+	if err := libol.FileExist(bin); err != nil {
+		bin = "/sbin/ipset"
+	}
 	if i.Sudo {
-		return libol.Sudo(IPSetBin, args...)
+		return libol.Sudo(bin, args...)
 	} else {
-		return libol.Exec(IPSetBin, args...)
+		return libol.Exec(bin, args...)
 	}
 }
 

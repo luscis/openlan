@@ -232,10 +232,10 @@ func (w *OpenLANWorker) Initialize() {
 	}
 	w.WorkerImpl.Initialize()
 	if out, err := w.setV.Clear(); err != nil {
-		w.out.Error("OpenLANWorker.Initialize: create ipset: %s", out)
+		w.out.Error("OpenLANWorker.Initialize: create ipset: %s %s", out, err)
 	}
 	if out, err := w.setR.Clear(); err != nil {
-		w.out.Error("OpenLANWorker.Initialize: create ipset: %s", out)
+		w.out.Error("OpenLANWorker.Initialize: create ipset: %s %s", out, err)
 	}
 	w.allowedSubnet()
 	w.allowedVPN()
