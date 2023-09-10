@@ -155,6 +155,11 @@ func (w *OpenLANWorker) allowedVPN() {
 	w.toACL(cfg.Acl, devName)
 
 	for _, rt := range vCfg.Routes {
+		if rt == "0.0.0.0/0" {
+			w.setV.Add("0.0.0.0/1")
+			w.setV.Add("128.0.0.0/1")
+			break
+		}
 		w.setV.Add(rt)
 	}
 	w.toForward_r(devName, "", vCfg.Subnet, w.setV.Name, "From VPN")
@@ -177,6 +182,11 @@ func (w *OpenLANWorker) allowedSubnet() {
 	for _, rt := range cfg.Routes {
 		if rt.MultiPath != nil {
 			continue
+		}
+		if rt.Prefix == "0.0.0.0/0" {
+			w.setR.Add("0.0.0.0/1")
+			w.setR.Add("128.0.0.0/1")
+			break
 		}
 		w.setR.Add(rt.Prefix)
 	}
