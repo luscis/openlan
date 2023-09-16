@@ -139,7 +139,8 @@ func (ru IpRule) Exist() bool {
 }
 
 func (ru IpRule) String() string {
-	return ru.Table + " " + ru.Chain + " " + strings.Join(ru.Args(), " ")
+	elems := append([]string{"-t", ru.Table, "-A", ru.Chain}, ru.Args()...)
+	return strings.Join(elems, " ")
 }
 
 func (ru IpRule) Eq(obj IpRule) bool {
@@ -148,17 +149,10 @@ func (ru IpRule) Eq(obj IpRule) bool {
 
 func (ru IpRule) Opr(opr string) ([]byte, error) {
 	libol.Debug("IpRuleOpr: %s, %v", opr, ru)
-	table := iptables.Table(ru.Table)
-	chain := ru.Chain
 	switch runtime.GOOS {
 	case "linux":
 		args := ru.Args()
 		fullArgs := append([]string{"-t", ru.Table, opr, ru.Chain}, args...)
-		if opr == "-I" || opr == "-A" {
-			if iptables.Exists(table, chain, args...) {
-				return nil, nil
-			}
-		}
 		return iptables.Raw(fullArgs...)
 	default:
 		return nil, libol.NewErr("iptables notSupport %s", runtime.GOOS)

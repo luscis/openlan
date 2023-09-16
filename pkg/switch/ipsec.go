@@ -1,6 +1,10 @@
 package _switch
 
 import (
+	"net"
+	"os/exec"
+	"strconv"
+
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
@@ -8,9 +12,6 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
-	"net"
-	"os/exec"
-	"strconv"
 )
 
 const (
@@ -101,7 +102,7 @@ func (w *EspWorker) newPolicy(args PolicyParameter) *nl.XfrmPolicy {
 
 func (w *EspWorker) addState(ms *models.EspState) {
 	spi := ms.Spi
-	w.out.Info("EspWorker.addState %s", ms.ID())
+	w.out.Info("EspWorker.addState %s", ms.String())
 	if st := w.newState(StateParameters{
 		spi, ms.Local, ms.Remote, ms.Auth, ms.Crypt,
 	}); st != nil {
@@ -123,7 +124,7 @@ func (w *EspWorker) addState(ms *models.EspState) {
 }
 
 func (w *EspWorker) delState(ms *models.EspState) {
-	w.out.Info("EspWorker.delState %s", ms.ID())
+	w.out.Info("EspWorker.delState %s", ms.String())
 	cache.EspState.Del(ms.ID())
 }
 
@@ -131,15 +132,15 @@ func (w *EspWorker) addPolicy(mp *models.EspPolicy) {
 	spi := mp.Spi
 	src, err := libol.ParseNet(mp.Source)
 	if err != nil {
-		w.out.Error("EspWorker.addPolicy %s: %s", mp.ID(), err)
+		w.out.Error("EspWorker.addPolicy %s: %s", mp.String(), err)
 		return
 	}
 	dst, err := libol.ParseNet(mp.Dest)
 	if err != nil {
-		w.out.Error("EspWorker.addPolicy %s: %s", mp.ID(), err)
+		w.out.Error("EspWorker.addPolicy %s: %s", mp.String(), err)
 		return
 	}
-	w.out.Info("EspWorker.addPolicy %s", mp.ID())
+	w.out.Info("EspWorker.addPolicy %s", mp.String())
 	if po := w.newPolicy(PolicyParameter{
 		spi, mp.Local, mp.Remote, src, dst, nl.XFRM_DIR_OUT, mp.Priority,
 	}); po != nil {
@@ -166,7 +167,7 @@ func (w *EspWorker) addPolicy(mp *models.EspPolicy) {
 }
 
 func (w *EspWorker) delPolicy(mp *models.EspPolicy) {
-	w.out.Info("EspWorker.delPolicy %s", mp.ID())
+	w.out.Info("EspWorker.delPolicy %s", mp.String())
 	cache.EspPolicy.Del(mp.ID())
 }
 
@@ -278,10 +279,10 @@ func (w *EspWorker) addXfrm() {
 	for _, state := range w.states {
 		w.out.Debug("EspWorker.AddXfrm State %v", state)
 		if err := nl.XfrmStateAdd(state.In); err != nil {
-			w.out.Error("EspWorker.addXfrm in %s: %s", state.ID(), err)
+			w.out.Error("EspWorker.addXfrm in %s: %s", state.String(), err)
 		}
 		if err := nl.XfrmStateAdd(state.Out); err != nil {
-			w.out.Error("EspWorker.addXfrm out %s: %s", state.ID(), err)
+			w.out.Error("EspWorker.addXfrm out %s: %s", state.String(), err)
 		}
 	}
 	for _, pol := range w.policies {
@@ -330,23 +331,23 @@ func (w *EspWorker) delXfrm() {
 	for _, mp := range w.policies {
 		w.delPolicy(mp)
 		if err := nl.XfrmPolicyDel(mp.In); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy.in %s: %s", mp.ID(), err)
+			w.out.Warn("EspWorker.delXfrm Policy.in %s: %s", mp.String(), err)
 		}
 		if err := nl.XfrmPolicyDel(mp.Fwd); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy.fwd %s: %s", mp.ID(), err)
+			w.out.Warn("EspWorker.delXfrm Policy.fwd %s: %s", mp.String(), err)
 		}
 		if err := nl.XfrmPolicyDel(mp.Out); err != nil {
-			w.out.Warn("EspWorker.delXfrm Policy.out %s: %s", mp.ID(), err)
+			w.out.Warn("EspWorker.delXfrm Policy.out %s: %s", mp.String(), err)
 		}
 	}
 	w.policies = nil
 	for _, ms := range w.states {
 		w.delState(ms)
 		if err := nl.XfrmStateDel(ms.In); err != nil {
-			w.out.Warn("EspWorker.delXfrm State.in %s: %s", ms.ID(), err)
+			w.out.Warn("EspWorker.delXfrm State.in %s: %s", ms.String(), err)
 		}
 		if err := nl.XfrmStateDel(ms.Out); err != nil {
-			w.out.Warn("EspWorker.delXfrm State.out %s: %s", ms.ID(), err)
+			w.out.Warn("EspWorker.delXfrm State.out %s: %s", ms.String(), err)
 		}
 	}
 	w.states = nil

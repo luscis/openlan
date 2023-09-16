@@ -294,7 +294,7 @@ func (w *OpenLANWorker) LoadRoutes() {
 			nlrt.Gw = net.ParseIP(rt.NextHop)
 			nlrt.Priority = rt.Metric
 		}
-		w.out.Debug("OpenLANWorker.LoadRoute: %s", nlrt)
+		w.out.Debug("OpenLANWorker.LoadRoute: %s", nlrt.String())
 		promise := &libol.Promise{
 			First:  time.Second * 2,
 			MaxInt: time.Minute,
@@ -305,7 +305,7 @@ func (w *OpenLANWorker) LoadRoutes() {
 				w.out.Warn("OpenLANWorker.LoadRoute: %v %s", nlrt, err)
 				return err
 			}
-			w.out.Info("OpenLANWorker.LoadRoute: %v success", nlrt)
+			w.out.Info("OpenLANWorker.LoadRoute: %v success", rt.String())
 			return nil
 		})
 	}
@@ -323,12 +323,12 @@ func (w *OpenLANWorker) UnLoadRoutes() {
 			nlRt.Gw = net.ParseIP(rt.NextHop)
 			nlRt.Priority = rt.Metric
 		}
-		w.out.Debug("OpenLANWorker.UnLoadRoute: %s", nlRt)
+		w.out.Debug("OpenLANWorker.UnLoadRoute: %s", nlRt.String())
 		if err := netlink.RouteDel(&nlRt); err != nil {
 			w.out.Warn("OpenLANWorker.UnLoadRoute: %s", err)
 			continue
 		}
-		w.out.Info("OpenLANWorker.UnLoadRoute: %v", rt)
+		w.out.Info("OpenLANWorker.UnLoadRoute: %v", rt.String())
 	}
 }
 
@@ -506,4 +506,10 @@ func (w *OpenLANWorker) Bridge() network.Bridger {
 
 func (w *OpenLANWorker) IfAddr() string {
 	return strings.SplitN(w.cfg.Bridge.Address, "/", 2)[0]
+}
+
+func (w *OpenLANWorker) Reload(v api.Switcher) {
+	w.Stop()
+	w.Initialize()
+	w.Start(v)
 }

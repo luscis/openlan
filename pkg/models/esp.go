@@ -67,6 +67,10 @@ func (l *EspState) UpTime() int64 {
 	return time.Now().Unix() - l.NewTime
 }
 
+func (l *EspState) String() string {
+	return fmt.Sprintf("{Spi: %d Local: %s Remote: %s}", l.Spi, l.Local, l.Remote)
+}
+
 func NewEspStateSchema(e *EspState) schema.EspState {
 	e.Update()
 	se := schema.EspState{
@@ -95,6 +99,10 @@ func (l *EspPolicy) Update() {
 
 func (l *EspPolicy) ID() string {
 	return fmt.Sprintf("spi:%d %s-%s", l.Spi, l.Source, l.Dest)
+}
+
+func (l *EspPolicy) String() string {
+	return fmt.Sprintf("{Spi: %d Source: %s Dest: %s}", l.Spi, l.Source, l.Dest)
 }
 
 func NewEspPolicySchema(e *EspPolicy) schema.EspPolicy {

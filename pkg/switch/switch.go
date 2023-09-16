@@ -414,7 +414,6 @@ func (v *Switch) Stop() {
 	defer v.lock.Unlock()
 
 	v.out.Info("Switch.Stop")
-	v.fire.Stop()
 
 	if v.l2tp != nil {
 		v.l2tp.Stop()
@@ -439,6 +438,7 @@ func (v *Switch) Stop() {
 		v.leftClient(p.Client)
 	}
 	v.server.Close()
+	v.fire.Stop()
 }
 
 func (v *Switch) Alias() string {
@@ -594,10 +594,11 @@ func (v *Switch) leftClient(client libol.SocketClient) {
 func (v *Switch) Reload() {
 	co.Reload()
 	cache.Reload()
+
+	v.fire.Start()
 	for _, w := range v.worker {
 		w.Reload(v)
 	}
-	libol.Go(v.fire.Start)
 }
 
 func (v *Switch) Save() {

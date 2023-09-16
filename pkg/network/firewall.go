@@ -185,10 +185,13 @@ func (f *FireWallGlobal) Refresh() {
 }
 
 type FireWallJump struct {
+	lock  sync.Mutex
 	rules IpRules
 }
 
 func (j *FireWallJump) Install(ch IpChain) {
+	j.lock.Lock()
+	defer j.lock.Unlock()
 	r := IpRule{
 		Order: "-I",
 		Table: ch.Table,
@@ -200,11 +203,12 @@ func (j *FireWallJump) Install(ch IpChain) {
 		libol.Error("FireWallJump.install %s", err)
 		return
 	}
-
 	j.rules = j.rules.Add(r)
 }
 
 func (j *FireWallJump) Cancel() {
+	j.lock.Lock()
+	defer j.lock.Unlock()
 	for _, r := range j.rules {
 		if _, err := r.Opr("-D"); err != nil {
 			libol.Warn("FireWallJump.cancel %s", err)
@@ -213,6 +217,7 @@ func (j *FireWallJump) Cancel() {
 }
 
 type FireWallChain struct {
+	lock   sync.Mutex
 	name   string
 	parent string
 	rules  IpRules
@@ -257,6 +262,8 @@ func (ch *FireWallChain) AddRule(rule IpRule) {
 }
 
 func (ch *FireWallChain) Install() {
+	ch.lock.Lock()
+	defer ch.lock.Unlock()
 	ch.new()
 	for _, r := range ch.rules {
 		order := r.Order
@@ -270,6 +277,8 @@ func (ch *FireWallChain) Install() {
 }
 
 func (ch *FireWallChain) Cancel() {
+	ch.lock.Lock()
+	defer ch.lock.Unlock()
 	for _, c := range ch.rules {
 		if _, err := c.Opr("-D"); err != nil {
 			libol.Warn("FireWall.cancel %s", err)

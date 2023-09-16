@@ -2,10 +2,11 @@ package cache
 
 import (
 	"encoding/binary"
+	"net"
+
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
-	"net"
 )
 
 type network struct {
@@ -115,7 +116,7 @@ func (w *network) AddLease(alias, ipStr, network string) *schema.Lease {
 		return nil
 	}
 	uuid := alias + "@" + network
-	libol.Info("network.AddLease %s %s", uuid, ipStr)
+	libol.Info("network.AddLease {%s %s}", uuid, ipStr)
 	obj := &schema.Lease{
 		Alias:   alias,
 		Address: ipStr,
@@ -139,7 +140,7 @@ func (w *network) DelLease(alias string, network string) {
 	if obj, ok := w.UUID.GetEx(uuid); ok {
 		lease := obj.(*schema.Lease)
 		addr = lease.Address
-		libol.Info("network.DelLease (%s, %s) by UUID", uuid, addr)
+		libol.Info("network.DelLease {%s %s} by UUID", uuid, addr)
 		if lease.Type != "static" {
 			w.UUID.Del(uuid)
 		}
@@ -147,7 +148,7 @@ func (w *network) DelLease(alias string, network string) {
 	ruid := addr + "@" + network
 	if obj, ok := w.Addr.GetEx(ruid); ok {
 		lease := obj.(*schema.Lease)
-		libol.Info("network.DelLease (%s, %s) by Addr", ruid, alias)
+		libol.Info("network.DelLease {%s %s} by Addr", ruid, alias)
 		if lease.Type != "static" {
 			w.Addr.Del(ruid)
 		}
