@@ -57,8 +57,9 @@ func (l *logger) Write(level int, format string, v ...interface{}) {
 	if !ok {
 		str = "NULL"
 	}
+	now := time.Now()
 	if level >= l.Level {
-		log.Printf(fmt.Sprintf("%s|%s", str, format), v...)
+		log.Printf(fmt.Sprintf("%s %s|%s", now.Format(time.RFC3339), str, format), v...)
 	}
 	if level >= INFO {
 		l.Save(str, format, v...)
