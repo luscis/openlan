@@ -10,7 +10,7 @@ RUN yum install -y epel-release centos-release-openstack-train \
     && yum install -y rdma-core libibverbs
 RUN DOCKER=yes /tmp/${BIN}
 
-LABEL application="OpenLAN Switch Application"
+LABEL application="OpenLAN Network Solutions"
 LABEL maintainer="danieldin95@163.com"
 
 CMD ["/var/openlan/script/switch.sh", "start"]
