@@ -352,24 +352,22 @@ func (w *WorkerImpl) openPort(protocol, port, comment string) {
 	})
 }
 
-func (w *WorkerImpl) toForward_r(input, output, source, pfxSet, comment string) {
-	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, output, source, pfxSet)
+func (w *WorkerImpl) toForward_r(input, source, pfxSet, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, source, pfxSet)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRule(cn.IpRule{
 		Input:   input,
-		Output:  output,
 		Source:  source,
 		DestSet: pfxSet,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toForward_s(input, output, srcSet, prefix, comment string) {
-	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, output, srcSet, prefix)
+func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, srcSet, prefix)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRule(cn.IpRule{
 		Input:   input,
-		Output:  output,
 		SrcSet:  srcSet,
 		Dest:    prefix,
 		Comment: comment,

@@ -93,7 +93,7 @@ func (w *RouterWorker) UnLoadRoutes() {
 
 func (w *RouterWorker) Forward() {
 	spec := w.spec
-	// Enable MASQUERADE, and allowed forward.
+	// Enable MASQUERADE, and FORWARD it.
 	w.out.Debug("RouterWorker.Forward %v", w.cfg)
 	for _, sub := range spec.Subnets {
 		if sub.CIDR == "" {
@@ -102,7 +102,7 @@ func (w *RouterWorker) Forward() {
 		w.setR.Add(sub.CIDR)
 	}
 	w.toRelated(spec.Link, "Accept related")
-	w.toForward_s(spec.Link, "", w.setR.Name, "", "From route")
+	w.toForward_s(spec.Link, w.setR.Name, "", "From route")
 	w.toMasq_s(w.setR.Name, "", "To Masq")
 }
 

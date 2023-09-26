@@ -63,7 +63,7 @@ func (w *OpenLANWorker) updateVPN() {
 	vCfg.Routes = routes
 }
 
-func (w *OpenLANWorker) allowedVPN() {
+func (w *OpenLANWorker) forwardVPN() {
 	cfg := w.Config()
 	vCfg := cfg.OpenVPN
 	if vCfg == nil {
@@ -78,7 +78,7 @@ func (w *OpenLANWorker) allowedVPN() {
 	}
 
 	devName := vCfg.Device
-	// Enable MASQUERADE, and allowed forward.
+	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(devName, "Accept related")
 	w.toACL(cfg.Acl, devName)
 
@@ -90,12 +90,11 @@ func (w *OpenLANWorker) allowedVPN() {
 		}
 		w.setV.Add(rt)
 	}
-	w.toForward_r(devName, "", vCfg.Subnet, w.setV.Name, "From VPN")
-	w.toForward_s("", devName, w.setV.Name, vCfg.Subnet, "To VPN")
+	w.toForward_r(devName, vCfg.Subnet, w.setV.Name, "From VPN")
 	w.toMasq_r(vCfg.Subnet, w.setV.Name, "From VPN")
 }
 
-func (w *OpenLANWorker) allowedSubnet() {
+func (w *OpenLANWorker) forwardSubnet() {
 	cfg := w.Config()
 	br := cfg.Bridge
 	ifAddr := strings.SplitN(br.Address, "/", 2)[0]
@@ -106,7 +105,7 @@ func (w *OpenLANWorker) allowedSubnet() {
 	vCfg := w.cfg.OpenVPN
 	subnet := w.Subnet()
 
-	// Enable MASQUERADE, and allowed forward.
+	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(br.Name, "Accept related")
 	for _, rt := range cfg.Routes {
 		if rt.MultiPath != nil {
@@ -119,8 +118,7 @@ func (w *OpenLANWorker) allowedSubnet() {
 		}
 		w.setR.Add(rt.Prefix)
 	}
-	w.toForward_r(br.Name, "", subnet, w.setR.Name, "To route")
-	w.toForward_s("", br.Name, w.setR.Name, subnet, "From route")
+	w.toForward_r(br.Name, subnet, w.setR.Name, "To route")
 	if vCfg != nil {
 		w.toMasq_s(w.setR.Name, vCfg.Subnet, "To VPN")
 	}
@@ -170,8 +168,8 @@ func (w *OpenLANWorker) Initialize() {
 		w.vpn = obj
 	}
 	w.WorkerImpl.Initialize()
-	w.allowedSubnet()
-	w.allowedVPN()
+	w.forwardSubnet()
+	w.forwardVPN()
 }
 
 func (w *OpenLANWorker) LoadLinks() {
