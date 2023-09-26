@@ -2,8 +2,9 @@ package config
 
 import (
 	"flag"
-	"github.com/luscis/openlan/pkg/libol"
 	"path/filepath"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Perf struct {
@@ -150,22 +151,13 @@ func (s *Switch) Dir(elem ...string) string {
 
 func (s *Switch) Format() {
 	for _, obj := range s.Network {
-		libol.Debug("Switch.Format %s", obj)
 		context := obj.Specifies
-		switch obj.Provider {
-		case "esp":
-			obj.Specifies = &ESPSpecifies{}
-		case "vxlan":
-			obj.Specifies = &VxLANSpecifies{}
-		case "fabric":
-			obj.Specifies = &FabricSpecifies{}
-		default:
-			obj.Specifies = nil
-			continue
-		}
+		obj.NewSpecifies()
 		if data, err := libol.Marshal(context, true); err == nil {
 			if err := libol.Unmarshal(obj.Specifies, data); err != nil {
 				libol.Warn("Switch.Format %s", err)
+			} else {
+				libol.Info("Switch.Format %v", obj.Specifies)
 			}
 		}
 	}

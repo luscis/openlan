@@ -10,6 +10,7 @@ type Subnet struct {
 	Start   string `json:"startAt,omitempty"`
 	End     string `json:"endAt,omitempty"`
 	Netmask string `json:"netmask,omitempty"`
+	CIDR    string `json:"cidr,omitempty"`
 }
 
 type MultiPath struct {
@@ -42,6 +43,20 @@ func (r *PrefixRoute) String() string {
 		elems = append(elems, fmt.Sprintf("Metric: %d", r.Metric))
 	}
 	return fmt.Sprintf("{%s}", strings.Join(elems, " "))
+}
+
+func CorrectRoutes(routes []PrefixRoute, nexthop string) {
+	for i := range routes {
+		if routes[i].Metric == 0 {
+			routes[i].Metric = 660
+		}
+		if routes[i].NextHop == "" {
+			routes[i].NextHop = nexthop
+		}
+		if routes[i].Mode == "" {
+			routes[i].Mode = "snat"
+		}
+	}
 }
 
 type HostLease struct {

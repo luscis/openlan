@@ -44,6 +44,7 @@ func NewFireWallGlobal(flows []config.FlowRule) *FireWallGlobal {
 			SrcPort:  rule.SrcPort,
 			Input:    rule.Input,
 			Output:   rule.Output,
+			CtState:  rule.CtState,
 		})
 	}
 	return f

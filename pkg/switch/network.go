@@ -36,6 +36,8 @@ func NewNetworker(c *co.Network) Networker {
 		obj = NewVxLANWorker(c)
 	case "fabric":
 		obj = NewFabricWorker(c)
+	case "router":
+		obj = NewRouterWorker(c)
 	default:
 		obj = NewOpenLANWorker(c)
 	}
@@ -66,12 +68,17 @@ type WorkerImpl struct {
 	dhcp    *Dhcp
 	outputs []*LinuxPort
 	fire    *cn.FireWallTable
+	setR    *cn.IPSet
+	setV    *cn.IPSet
+	vpn     *OpenVPN
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
 	return &WorkerImpl{
-		cfg: c,
-		out: libol.NewSubLogger(c.Name),
+		cfg:  c,
+		out:  libol.NewSubLogger(c.Name),
+		setR: cn.NewIPSet(c.Name+"_r", "hash:net"),
+		setV: cn.NewIPSet(c.Name+"_v", "hash:net"),
 	}
 }
 
@@ -88,6 +95,12 @@ func (w *WorkerImpl) Initialize() {
 		})
 	}
 	w.fire = cn.NewFireWallTable(w.cfg.Name)
+	if out, err := w.setV.Clear(); err != nil {
+		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
+	}
+	if out, err := w.setR.Clear(); err != nil {
+		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
+	}
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
@@ -176,6 +189,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg := w.cfg
 	fire := w.fire
 
+	w.out.Info("WorkerImpl.Start")
 	if cfg.Acl != "" {
 		fire.Raw.Pre.AddRule(cn.IpRule{
 			Input: cfg.Bridge.Name,
@@ -214,7 +228,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		w.AddOutput(cfg.Bridge.Name, port)
 		w.outputs = append(w.outputs, port)
 	}
-	if w.dhcp != nil {
+	if !(w.dhcp == nil) {
 		w.dhcp.Start()
 		fire.Nat.Post.AddRule(cn.IpRule{
 			Source:  cfg.Bridge.Address,
@@ -223,6 +237,10 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			Comment: "Default Gateway for DHCP",
 		})
 	}
+	if !(w.vpn == nil) {
+		w.vpn.Start()
+	}
+	w.fire.Start()
 }
 
 func (w *WorkerImpl) DelPhysical(bridge string, vlan int, output string) {
@@ -272,13 +290,20 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 }
 
 func (w *WorkerImpl) Stop() {
-	if w.dhcp != nil {
+	w.out.Info("WorkerImpl.Stop")
+	w.fire.Stop()
+	if !(w.vpn == nil) {
+		w.vpn.Stop()
+	}
+	if !(w.dhcp == nil) {
 		w.dhcp.Stop()
 	}
 	for _, output := range w.outputs {
 		w.DelOutput(w.cfg.Bridge.Name, output)
 	}
 	w.outputs = nil
+	w.setR.Destroy()
+	w.setV.Destroy()
 }
 
 func (w *WorkerImpl) String() string {
@@ -302,4 +327,83 @@ func (w *WorkerImpl) Subnet() string {
 }
 
 func (w *WorkerImpl) Reload(v api.Switcher) {
+}
+
+func (w *WorkerImpl) toACL(acl, input string) {
+	if input == "" {
+		return
+	}
+	if acl != "" {
+		w.fire.Raw.Pre.AddRule(cn.IpRule{
+			Input: input,
+			Jump:  acl,
+		})
+	}
+}
+
+func (w *WorkerImpl) openPort(protocol, port, comment string) {
+	w.out.Info("WorkerImpl.openPort %s %s", protocol, port)
+	// allowed forward between source and prefix.
+	w.fire.Filter.In.AddRule(cn.IpRule{
+		Proto:   protocol,
+		Match:   "multiport",
+		DstPort: port,
+		Comment: comment,
+	})
+}
+
+func (w *WorkerImpl) toForward_r(input, output, source, pfxSet, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, output, source, pfxSet)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(cn.IpRule{
+		Input:   input,
+		Output:  output,
+		Source:  source,
+		DestSet: pfxSet,
+		Comment: comment,
+	})
+}
+
+func (w *WorkerImpl) toForward_s(input, output, srcSet, prefix, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, output, srcSet, prefix)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(cn.IpRule{
+		Input:   input,
+		Output:  output,
+		SrcSet:  srcSet,
+		Dest:    prefix,
+		Comment: comment,
+	})
+}
+
+func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
+	// Enable masquerade from source to prefix.
+	w.fire.Nat.Post.AddRule(cn.IpRule{
+		Source:  source,
+		DestSet: pfxSet,
+		Jump:    cn.CMasq,
+		Comment: comment,
+	})
+
+}
+
+func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
+	// Enable masquerade from source to prefix.
+	w.fire.Nat.Post.AddRule(cn.IpRule{
+		SrcSet:  srcSet,
+		Dest:    prefix,
+		Jump:    cn.CMasq,
+		Comment: comment,
+	})
+
+}
+
+func (w *WorkerImpl) toRelated(output, comment string) {
+	w.out.Debug("WorkerImpl.toRelated %s", output)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(cn.IpRule{
+		Output:  output,
+		CtState: "RELATED,ESTABLISHED",
+		Comment: comment,
+	})
 }

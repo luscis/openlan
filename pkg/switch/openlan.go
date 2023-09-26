@@ -11,8 +11,8 @@ import (
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
-	"github.com/luscis/openlan/pkg/network"
-	"github.com/vishvananda/netlink"
+	cn "github.com/luscis/openlan/pkg/network"
+	nl "github.com/vishvananda/netlink"
 )
 
 func PeerName(name, prefix string) (string, string) {
@@ -25,10 +25,7 @@ type OpenLANWorker struct {
 	newTime   int64
 	startTime int64
 	links     *Links
-	bridge    network.Bridger
-	vpn       *OpenVPN
-	setR      *network.IPSet
-	setV      *network.IPSet
+	bridge    cn.Bridger
 }
 
 func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
@@ -38,78 +35,7 @@ func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
 		newTime:    time.Now().Unix(),
 		startTime:  0,
 		links:      NewLinks(),
-		setR:       network.NewIPSet(c.Name+"_r", "hash:net"),
-		setV:       network.NewIPSet(c.Name+"_v", "hash:net"),
 	}
-}
-
-func (w *OpenLANWorker) toACL(acl, input string) {
-	if input == "" {
-		return
-	}
-	if acl != "" {
-		w.fire.Raw.Pre.AddRule(network.IpRule{
-			Input: input,
-			Jump:  acl,
-		})
-	}
-}
-
-func (w *OpenLANWorker) openPort(protocol, port, comment string) {
-	w.out.Info("OpenLANWorker.openPort %s %s", protocol, port)
-	// allowed forward between source and prefix.
-	w.fire.Filter.In.AddRule(network.IpRule{
-		Proto:   protocol,
-		Match:   "multiport",
-		DstPort: port,
-		Comment: comment,
-	})
-}
-
-func (w *OpenLANWorker) toForward_r(input, output, source, pfxSet, comment string) {
-	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, source, pfxSet)
-	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(network.IpRule{
-		Input:   input,
-		Output:  output,
-		Source:  source,
-		DestSet: pfxSet,
-		Comment: comment,
-	})
-}
-
-func (w *OpenLANWorker) toForward_s(input, output, srcSet, prefix, comment string) {
-	w.out.Debug("OpenLANWorker.toForward %s:%s %s:%s", input, output, srcSet, prefix)
-	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(network.IpRule{
-		Input:   input,
-		Output:  output,
-		SrcSet:  srcSet,
-		Dest:    prefix,
-		Comment: comment,
-	})
-}
-
-func (w *OpenLANWorker) toMasq_r(source, pfxSet, comment string) {
-	// Enable masquerade from source to prefix.
-	w.fire.Nat.Post.AddRule(network.IpRule{
-		Source:  source,
-		DestSet: pfxSet,
-		Jump:    network.CMasq,
-		Comment: comment,
-	})
-
-}
-
-func (w *OpenLANWorker) toMast_s(srcSet, prefix, comment string) {
-	// Enable masquerade from source to prefix.
-	w.fire.Nat.Post.AddRule(network.IpRule{
-		SrcSet:  srcSet,
-		Dest:    prefix,
-		Jump:    network.CMasq,
-		Comment: comment,
-	})
-
 }
 
 func (w *OpenLANWorker) updateVPN() {
@@ -152,6 +78,8 @@ func (w *OpenLANWorker) allowedVPN() {
 	}
 
 	devName := vCfg.Device
+	// Enable MASQUERADE, and allowed forward.
+	w.toRelated(devName, "Accept related")
 	w.toACL(cfg.Acl, devName)
 
 	for _, rt := range vCfg.Routes {
@@ -179,6 +107,7 @@ func (w *OpenLANWorker) allowedSubnet() {
 	subnet := w.Subnet()
 
 	// Enable MASQUERADE, and allowed forward.
+	w.toRelated(br.Name, "Accept related")
 	for _, rt := range cfg.Routes {
 		if rt.MultiPath != nil {
 			continue
@@ -193,7 +122,7 @@ func (w *OpenLANWorker) allowedSubnet() {
 	w.toForward_r(br.Name, "", subnet, w.setR.Name, "To route")
 	w.toForward_s("", br.Name, w.setR.Name, subnet, "From route")
 	if vCfg != nil {
-		w.toMast_s(w.setR.Name, vCfg.Subnet, "To VPN")
+		w.toMasq_s(w.setR.Name, vCfg.Subnet, "To VPN")
 	}
 	w.toMasq_r(subnet, w.setR.Name, "To Masq")
 }
@@ -231,7 +160,7 @@ func (w *OpenLANWorker) Initialize() {
 			lease.Network = w.cfg.Name
 		}
 	}
-	w.bridge = network.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
+	w.bridge = cn.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
 
 	w.updateVPN()
 	vCfg := w.cfg.OpenVPN
@@ -241,12 +170,6 @@ func (w *OpenLANWorker) Initialize() {
 		w.vpn = obj
 	}
 	w.WorkerImpl.Initialize()
-	if out, err := w.setV.Clear(); err != nil {
-		w.out.Error("OpenLANWorker.Initialize: create ipset: %s %s", out, err)
-	}
-	if out, err := w.setR.Clear(); err != nil {
-		w.out.Error("OpenLANWorker.Initialize: create ipset: %s %s", out, err)
-	}
 	w.allowedSubnet()
 	w.allowedVPN()
 }
@@ -282,9 +205,9 @@ func (w *OpenLANWorker) LoadRoutes() {
 			// route's next-hop is local not install again.
 			continue
 		}
-		nlrt := netlink.Route{Dst: dst}
+		nlrt := nl.Route{Dst: dst}
 		for _, hop := range rt.MultiPath {
-			nxhe := &netlink.NexthopInfo{
+			nxhe := &nl.NexthopInfo{
 				Hops: hop.Weight,
 				Gw:   net.ParseIP(hop.NextHop),
 			}
@@ -302,7 +225,7 @@ func (w *OpenLANWorker) LoadRoutes() {
 		}
 		rt_c := rt
 		promise.Go(func() error {
-			if err := netlink.RouteReplace(&nlrt); err != nil {
+			if err := nl.RouteReplace(&nlrt); err != nil {
 				w.out.Warn("OpenLANWorker.LoadRoute: %v %s", nlrt, err)
 				return err
 			}
@@ -319,13 +242,13 @@ func (w *OpenLANWorker) UnLoadRoutes() {
 		if err != nil {
 			continue
 		}
-		nlRt := netlink.Route{Dst: dst}
+		nlRt := nl.Route{Dst: dst}
 		if rt.MultiPath == nil {
 			nlRt.Gw = net.ParseIP(rt.NextHop)
 			nlRt.Priority = rt.Metric
 		}
 		w.out.Debug("OpenLANWorker.UnLoadRoute: %s", nlRt.String())
-		if err := netlink.RouteDel(&nlRt); err != nil {
+		if err := nl.RouteDel(&nlRt); err != nil {
 			w.out.Warn("OpenLANWorker.UnLoadRoute: %s", err)
 			continue
 		}
@@ -364,11 +287,11 @@ func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
 		return
 	}
 	in, ex := PeerName(cfg.Network, "-e")
-	link := &netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{Name: in},
+	link := &nl.Veth{
+		LinkAttrs: nl.LinkAttrs{Name: in},
 		PeerName:  ex,
 	}
-	br := network.NewBrCtl(cfg.Peer, cfg.IPMtu)
+	br := cn.NewBrCtl(cfg.Peer, cfg.IPMtu)
 	promise := &libol.Promise{
 		First:  time.Second * 2,
 		MaxInt: time.Minute,
@@ -379,16 +302,16 @@ func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
 			w.out.Warn("%s notFound", br.Name)
 			return libol.NewErr("%s notFound", br.Name)
 		}
-		err := netlink.LinkAdd(link)
+		err := nl.LinkAdd(link)
 		if err != nil {
 			w.out.Error("OpenLANWorker.connectPeer: %s", err)
 			return nil
 		}
-		br0 := network.NewBrCtl(cfg.Name, cfg.IPMtu)
+		br0 := cn.NewBrCtl(cfg.Name, cfg.IPMtu)
 		if err := br0.AddPort(in); err != nil {
 			w.out.Error("OpenLANWorker.connectPeer: %s", err)
 		}
-		br1 := network.NewBrCtl(cfg.Peer, cfg.IPMtu)
+		br1 := cn.NewBrCtl(cfg.Peer, cfg.IPMtu)
 		if err := br1.AddPort(ex); err != nil {
 			w.out.Error("OpenLANWorker.connectPeer: %s", err)
 		}
@@ -403,11 +326,7 @@ func (w *OpenLANWorker) Start(v api.Switcher) {
 	w.UpBridge(w.cfg.Bridge)
 	w.LoadLinks()
 	w.LoadRoutes()
-	if !(w.vpn == nil) {
-		w.vpn.Start()
-	}
 	w.WorkerImpl.Start(v)
-	w.fire.Start()
 }
 
 func (w *OpenLANWorker) downBridge(cfg *co.Bridge) {
@@ -420,11 +339,11 @@ func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
 		return
 	}
 	in, ex := PeerName(cfg.Network, "-e")
-	link := &netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{Name: in},
+	link := &nl.Veth{
+		LinkAttrs: nl.LinkAttrs{Name: in},
 		PeerName:  ex,
 	}
-	err := netlink.LinkDel(link)
+	err := nl.LinkDel(link)
 	if err != nil {
 		w.out.Error("OpenLANWorker.closePeer: %s", err)
 		return
@@ -433,17 +352,11 @@ func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
 
 func (w *OpenLANWorker) Stop() {
 	w.out.Info("OpenLANWorker.Close")
-	w.fire.Stop()
 	w.WorkerImpl.Stop()
-	if !(w.vpn == nil) {
-		w.vpn.Stop()
-	}
 	w.UnLoadRoutes()
 	w.UnLoadLinks()
 	w.startTime = 0
 	w.downBridge(w.cfg.Bridge)
-	w.setR.Destroy()
-	w.setV.Destroy()
 }
 
 func (w *OpenLANWorker) UpTime() int64 {
@@ -459,7 +372,7 @@ func (w *OpenLANWorker) AddLink(c co.Point) {
 
 	c.Alias = w.alias
 	c.Network = w.cfg.Name
-	c.Interface.Name = network.Taps.GenName()
+	c.Interface.Name = cn.Taps.GenName()
 	c.Interface.Bridge = br.Name
 	c.Interface.Address = br.Address
 	c.Interface.Provider = br.Provider
@@ -501,7 +414,7 @@ func (w *OpenLANWorker) Subnet() string {
 	return ""
 }
 
-func (w *OpenLANWorker) Bridge() network.Bridger {
+func (w *OpenLANWorker) Bridge() cn.Bridger {
 	return w.bridge
 }
 

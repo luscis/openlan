@@ -14,5 +14,6 @@ type FlowRule struct {
 	Match    string `json:"match,omitempty"`
 	DstPort  string `json:"destPort,omitempty"`
 	SrcPort  string `json:"sourcePort,omitempty"`
+	CtState  string `json:"ctState,omitempty"`
 	Jump     string `json:"jump,omitempty"` // SNAT/RETURN/MASQUERADE
 }

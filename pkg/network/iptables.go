@@ -47,6 +47,7 @@ type IpRule struct {
 	SetMss    int
 	Order     string
 	Match     string
+	CtState   string
 	TcpFlag   []string
 }
 
@@ -80,6 +81,9 @@ func (ru IpRule) Args() []string {
 	} else if ru.NoDestSet != "" {
 		args = append(args, "!")
 		args = append(args, "-m", "set", "--match-set", ru.NoDestSet, "dst")
+	}
+	if ru.CtState != "" {
+		args = append(args, "-m", "conntrack", "--ctstate", ru.CtState)
 	}
 	if ru.Proto != "" {
 		args = append(args, "-p", ru.Proto)

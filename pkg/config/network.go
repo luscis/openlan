@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
 	"net"
 	"path/filepath"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Network struct {
@@ -22,6 +23,22 @@ type Network struct {
 	Specifies interface{}   `json:"specifies,omitempty"`
 	Dhcp      string        `json:"dhcp,omitempty"`
 	Outputs   []Output      `json:"outputs"`
+}
+
+func (n *Network) NewSpecifies() interface{} {
+	switch n.Provider {
+	case "esp":
+		n.Specifies = &ESPSpecifies{}
+	case "vxlan":
+		n.Specifies = &VxLANSpecifies{}
+	case "fabric":
+		n.Specifies = &FabricSpecifies{}
+	case "router":
+		n.Specifies = &RouterSpecifies{}
+	default:
+		n.Specifies = nil
+	}
+	return n.Specifies
 }
 
 func (n *Network) Correct() {
@@ -51,36 +68,31 @@ func (n *Network) Correct() {
 			obj.Correct()
 			obj.Name = n.Name
 		}
-	default:
-		if n.Subnet == nil {
-			n.Subnet = &Subnet{}
+	case "router":
+		spec := n.Specifies
+		if obj, ok := spec.(*RouterSpecifies); ok {
+			obj.Correct()
+			obj.Name = n.Name
 		}
-		ipAddr := ""
-		ipMask := ""
-		if _i, _n, err := net.ParseCIDR(br.Address); err == nil {
-			ipAddr = _i.String()
-			ipMask = net.IP(_n.Mask).String()
-		}
-		if n.Subnet.Netmask == "" {
-			n.Subnet.Netmask = ipMask
-		}
-		for i := range n.Routes {
-			if n.Routes[i].Metric == 0 {
-				n.Routes[i].Metric = 660
-			}
-			if n.Routes[i].NextHop == "" {
-				n.Routes[i].NextHop = ipAddr
-			}
-			if n.Routes[i].Mode == "" {
-				n.Routes[i].Mode = "snat"
-			}
-		}
-		if n.OpenVPN != nil {
-			n.OpenVPN.Network = n.Name
-			obj := DefaultOpenVPN()
-			n.OpenVPN.Merge(obj)
-			n.OpenVPN.Correct()
-		}
+	}
+	if n.Subnet == nil {
+		n.Subnet = &Subnet{}
+	}
+	ipAddr := ""
+	ipMask := ""
+	if _i, _n, err := net.ParseCIDR(br.Address); err == nil {
+		ipAddr = _i.String()
+		ipMask = net.IP(_n.Mask).String()
+	}
+	if n.Subnet.Netmask == "" {
+		n.Subnet.Netmask = ipMask
+	}
+	CorrectRoutes(n.Routes, ipAddr)
+	if n.OpenVPN != nil {
+		n.OpenVPN.Network = n.Name
+		obj := DefaultOpenVPN()
+		n.OpenVPN.Merge(obj)
+		n.OpenVPN.Correct()
 	}
 }
 
