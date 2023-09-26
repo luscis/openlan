@@ -2,7 +2,7 @@
     "name": "router",
     "provider": "router",
     "specifies": {
-	"link": "eth0",
+	"link": "eth+",
         "subnets": [
             {
                 "cidr": "192.168.0.0/24"
@@ -16,5 +16,8 @@
        {
 	  "prefix": "172.16.3.0/24"
        }
-    ]
+    ],
+    "openvpn": {
+	"listen": "0.0.0.0:3295"
+    }
 }

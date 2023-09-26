@@ -23,8 +23,28 @@ func NewRouterWorker(c *co.Network) *RouterWorker {
 	return w
 }
 
+func (w *RouterWorker) updateVPN() {
+	spec := w.spec
+	_, vpn := w.GetCfgs()
+	if vpn == nil {
+		return
+	}
+
+	routes := vpn.Routes
+	routes = append(routes, vpn.Subnet)
+	for _, sub := range spec.Subnets {
+		routes = append(routes, sub.CIDR)
+	}
+
+	w.WorkerImpl.updateVPN(routes)
+}
+
 func (w *RouterWorker) Initialize() {
+	w.updateVPN()
 	w.WorkerImpl.Initialize()
+
+	w.Forward()
+	w.forwardVPN()
 }
 
 func (w *RouterWorker) LoadRoutes() {
@@ -109,7 +129,6 @@ func (w *RouterWorker) Forward() {
 func (w *RouterWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.LoadRoutes()
-	w.Forward()
 	w.WorkerImpl.Start(v)
 }
 

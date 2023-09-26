@@ -2,6 +2,7 @@ package _switch
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -101,6 +102,7 @@ func (w *WorkerImpl) Initialize() {
 	if out, err := w.setR.Clear(); err != nil {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
+	w.newVPN()
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
@@ -404,4 +406,70 @@ func (w *WorkerImpl) toRelated(output, comment string) {
 		CtState: "RELATED,ESTABLISHED",
 		Comment: comment,
 	})
+}
+
+func (w *WorkerImpl) GetCfgs() (*co.Network, *co.OpenVPN) {
+	cfg := w.cfg
+	vpn := cfg.OpenVPN
+	return cfg, vpn
+}
+
+func (w *WorkerImpl) updateVPN(routes []string) {
+	cfg, vpn := w.GetCfgs()
+	if cfg == nil {
+		return
+	}
+
+	for _, rt := range cfg.Routes {
+		addr := rt.Prefix
+		if addr == "0.0.0.0/0" {
+			vpn.Push = append(vpn.Push, "redirect-gateway def1")
+			continue
+		}
+		if _, inet, err := net.ParseCIDR(addr); err == nil {
+			routes = append(routes, inet.String())
+		}
+	}
+	vpn.Routes = routes
+}
+
+func (w *WorkerImpl) forwardVPN() {
+	cfg, vpn := w.GetCfgs()
+	if vpn == nil {
+		return
+	}
+
+	devName := vpn.Device
+	_, port := libol.GetHostPort(vpn.Listen)
+	if vpn.Protocol == "udp" {
+		w.openPort("udp", port, "Open VPN")
+	} else {
+		w.openPort("tcp", port, "Open VPN")
+	}
+
+	// Enable MASQUERADE, and FORWARD it.
+	w.toRelated(devName, "Accept related")
+	w.toACL(cfg.Acl, devName)
+
+	for _, rt := range vpn.Routes {
+		if rt == "0.0.0.0/0" {
+			w.setV.Add("0.0.0.0/1")
+			w.setV.Add("128.0.0.0/1")
+			break
+		}
+		w.setV.Add(rt)
+	}
+	w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
+	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
+}
+
+func (w *WorkerImpl) newVPN() {
+	_, vpn := w.GetCfgs()
+	if vpn == nil {
+		return
+	}
+
+	obj := NewOpenVPN(vpn)
+	obj.Initialize()
+	w.vpn = obj
 }

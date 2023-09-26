@@ -39,72 +39,30 @@ func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
 }
 
 func (w *OpenLANWorker) updateVPN() {
-	cfg := w.Config()
-	vCfg := cfg.OpenVPN
-	if vCfg == nil {
+	cfg, vpn := w.GetCfgs()
+	if vpn == nil {
 		return
 	}
-	routes := vCfg.Routes
-	routes = append(routes, vCfg.Subnet)
+
+	routes := vpn.Routes
+	routes = append(routes, vpn.Subnet)
 	if addr := w.Subnet(); addr != "" {
 		libol.Info("OpenLANWorker.updateVPN %s subnet %s", cfg.Name, addr)
 		routes = append(routes, addr)
 	}
-	for _, rt := range cfg.Routes {
-		addr := rt.Prefix
-		if addr == "0.0.0.0/0" {
-			vCfg.Push = append(vCfg.Push, "redirect-gateway def1")
-			continue
-		}
-		if _, inet, err := net.ParseCIDR(addr); err == nil {
-			routes = append(routes, inet.String())
-		}
-	}
-	vCfg.Routes = routes
-}
 
-func (w *OpenLANWorker) forwardVPN() {
-	cfg := w.Config()
-	vCfg := cfg.OpenVPN
-	if vCfg == nil {
-		return
-	}
-
-	_, port := libol.GetHostPort(vCfg.Listen)
-	if vCfg.Protocol == "udp" {
-		w.openPort("udp", port, "Open VPN")
-	} else {
-		w.openPort("tcp", port, "Open VPN")
-	}
-
-	devName := vCfg.Device
-	// Enable MASQUERADE, and FORWARD it.
-	w.toRelated(devName, "Accept related")
-	w.toACL(cfg.Acl, devName)
-
-	for _, rt := range vCfg.Routes {
-		if rt == "0.0.0.0/0" {
-			w.setV.Add("0.0.0.0/1")
-			w.setV.Add("128.0.0.0/1")
-			break
-		}
-		w.setV.Add(rt)
-	}
-	w.toForward_r(devName, vCfg.Subnet, w.setV.Name, "From VPN")
-	w.toMasq_r(vCfg.Subnet, w.setV.Name, "From VPN")
+	w.WorkerImpl.updateVPN(routes)
 }
 
 func (w *OpenLANWorker) forwardSubnet() {
-	cfg := w.Config()
+	cfg, vpn := w.GetCfgs()
 	br := cfg.Bridge
 	ifAddr := strings.SplitN(br.Address, "/", 2)[0]
 	if ifAddr == "" {
 		return
 	}
 
-	vCfg := w.cfg.OpenVPN
 	subnet := w.Subnet()
-
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(br.Name, "Accept related")
 	for _, rt := range cfg.Routes {
@@ -119,8 +77,8 @@ func (w *OpenLANWorker) forwardSubnet() {
 		w.setR.Add(rt.Prefix)
 	}
 	w.toForward_r(br.Name, subnet, w.setR.Name, "To route")
-	if vCfg != nil {
-		w.toMasq_s(w.setR.Name, vCfg.Subnet, "To VPN")
+	if vpn != nil {
+		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
 	w.toMasq_r(subnet, w.setR.Name, "To Masq")
 }
@@ -161,13 +119,8 @@ func (w *OpenLANWorker) Initialize() {
 	w.bridge = cn.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
 
 	w.updateVPN()
-	vCfg := w.cfg.OpenVPN
-	if !(vCfg == nil) {
-		obj := NewOpenVPN(vCfg)
-		obj.Initialize()
-		w.vpn = obj
-	}
 	w.WorkerImpl.Initialize()
+
 	w.forwardSubnet()
 	w.forwardVPN()
 }
