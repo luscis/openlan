@@ -153,12 +153,13 @@ func (s *Switch) Format() {
 	for _, obj := range s.Network {
 		context := obj.Specifies
 		obj.NewSpecifies()
-		if data, err := libol.Marshal(context, true); err == nil {
-			if err := libol.Unmarshal(obj.Specifies, data); err != nil {
-				libol.Warn("Switch.Format %s", err)
-			} else {
-				libol.Info("Switch.Format %v", obj.Specifies)
-			}
+		if obj.Specifies == nil {
+			continue
+		}
+		if data, err := libol.Marshal(context, true); err != nil {
+			libol.Warn("Switch.Format %s", err)
+		} else if err := libol.Unmarshal(obj.Specifies, data); err != nil {
+			libol.Warn("Switch.Format %s", err)
 		}
 	}
 }

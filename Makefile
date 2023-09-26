@@ -55,7 +55,7 @@ clean: ## clean cache
 ## prepare environment
 update:
 	git submodule init
-	git submodule update
+	git submodule update --remote
 
 vendor:
 	go clean -modcache

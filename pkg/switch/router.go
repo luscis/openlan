@@ -33,6 +33,7 @@ func (w *RouterWorker) updateVPN() {
 	routes := vpn.Routes
 	routes = append(routes, vpn.Subnet)
 	for _, sub := range spec.Subnets {
+		w.out.Info("RouterWorker.updateVPN subnet %s", sub.CIDR)
 		routes = append(routes, sub.CIDR)
 	}
 

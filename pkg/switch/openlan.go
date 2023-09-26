@@ -39,7 +39,7 @@ func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
 }
 
 func (w *OpenLANWorker) updateVPN() {
-	cfg, vpn := w.GetCfgs()
+	_, vpn := w.GetCfgs()
 	if vpn == nil {
 		return
 	}
@@ -47,7 +47,7 @@ func (w *OpenLANWorker) updateVPN() {
 	routes := vpn.Routes
 	routes = append(routes, vpn.Subnet)
 	if addr := w.Subnet(); addr != "" {
-		libol.Info("OpenLANWorker.updateVPN %s subnet %s", cfg.Name, addr)
+		w.out.Info("OpenLANWorker.updateVPN subnet %s", addr)
 		routes = append(routes, addr)
 	}
 
