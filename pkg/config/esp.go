@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 var (
@@ -184,6 +185,7 @@ type ESPSpecifies struct {
 	State   EspState     `json:"state,omitempty"`
 	Members []*ESPMember `json:"members"`
 	Listen  string       `json:"listen,omitempty"`
+	TcpMss  int          `json:"tcpMss"`
 }
 
 func (n *ESPSpecifies) Correct() {
@@ -203,6 +205,9 @@ func (n *ESPSpecifies) Correct() {
 		}
 		m.State.Merge(&n.State)
 		m.Correct()
+	}
+	if n.TcpMss == 0 {
+		n.TcpMss = 1430 // 1460 - 20 - 8
 	}
 }
 

@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
+
 	db "github.com/luscis/openlan/pkg/database"
 	"github.com/luscis/openlan/pkg/libol"
-	"time"
 )
 
 type Config struct {
@@ -77,7 +78,16 @@ func (u *UdpServer) toStatus(li *db.DBClient, from *libol.UdpInConnection) {
 	if obj.Status == nil {
 		obj.Status = make(map[string]string, 2)
 	}
-	obj.Status["remote_connection"] = fmt.Sprintf("udp:%s", from.Connection())
+
+	new_conn := fmt.Sprintf("udp:%s", from.Connection())
+	if obj.Status["remote_connection"] != new_conn ||
+		obj.Status["hostname"] != from.Hostname {
+		obj.Status["remote_connection"] = new_conn
+		obj.Status["hostname"] = from.Hostname
+		u.out.Info("Updating %s on %s from %s", device, new_conn, from.Hostname)
+	}
+	// Updating status
+	obj.Status["update_at"] = time.Now().UTC().String()
 	ops, err := li.Client.Where(obj).Update(obj)
 	if err != nil {
 		u.out.Warn("UdpServer.toStatus update %s", err)
@@ -87,6 +97,8 @@ func (u *UdpServer) toStatus(li *db.DBClient, from *libol.UdpInConnection) {
 		u.out.Warn("UdpServer.toStatus commit %s", err)
 		return
 	}
+
+	// Reply pong
 	if obj.Connection == "any" {
 		_ = u.server.Send(from)
 	}
@@ -100,16 +112,19 @@ func (u *UdpServer) toLinkState(li *db.DBClient, from *libol.UdpInConnection) {
 	if err := li.Client.Get(obj); err != nil {
 		return
 	}
-	obj.LinkState = "up"
-	ops, err := li.Client.Where(obj).Update(obj)
-	if err != nil {
-		u.out.Warn("UdpServer.toLinkState update %s", err)
-		return
+	if obj.LinkState != "up" {
+		obj.LinkState = "up"
+		ops, err := li.Client.Where(obj).Update(obj)
+		if err != nil {
+			u.out.Warn("UdpServer.toLinkState update %s", err)
+			return
+		}
+		if _, err := li.Client.Transact(ops...); err != nil {
+			u.out.Warn("UdpServer.toLinkState commit %s", err)
+			return
+		}
 	}
-	if _, err := li.Client.Transact(ops...); err != nil {
-		u.out.Warn("UdpServer.toLinkState commit %s", err)
-		return
-	}
+	// TODO check update_at and update to down if expired.
 }
 
 func (u *UdpServer) Pong() {

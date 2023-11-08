@@ -236,7 +236,8 @@ func (w *EspWorker) AddRoute(device, src, remote string) error {
 		Dst:       dst,
 		Gw:        gw,
 		LinkIndex: link.Attrs().Index,
-		Priority:  600,
+		Priority:  650,
+		AdvMSS:    w.spec.TcpMss,
 	}
 	w.out.Debug("EspWorker.AddRoute: %s", rte)
 	if err := nl.RouteReplace(rte); err != nil {

@@ -6,6 +6,7 @@ package libol
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -20,6 +21,7 @@ typedef struct {
 	u_int32_t padding[2];
 	u_int32_t spi;
 	u_int32_t seqno;
+	char hostname[32];
 } udpin_message;
 
 typedef struct {
@@ -33,6 +35,7 @@ typedef struct {
 	const char *remote_addr;
 	u_int32_t spi;
 	u_int32_t seqno;
+	char hostname[32];
 } udpin_connection;
 
 int seqno = 0;
@@ -49,8 +52,10 @@ int send_ping_once(udpin_connection *conn) {
 	udpin_message data = {
 		.padding = {0, 0},
 		.spi = htonl(conn->spi),
+		.hostname = {0},
 	};
 	data.seqno = htonl(conn->seqno);
+	gethostname(data.hostname, sizeof data.hostname - 1);
 
 	retval = sendto(conn->socket, &data, sizeof data, 0, (struct sockaddr *)&dstaddr, sizeof dstaddr);
 	return retval;
@@ -75,6 +80,7 @@ int recv_ping_once(udpin_server *srv,  udpin_connection *from) {
 	from->spi = ntohl(data.spi);
 	from->remote_addr = inet_ntoa(addr.sin_addr);
 	from->remote_port = ntohs(addr.sin_port);
+	strncpy(from->hostname, data.hostname, sizeof from->hostname);
 
 	return retval;
 }
@@ -131,6 +137,7 @@ type UdpInConnection struct {
 	RemotePort uint16
 	RemoteAddr string
 	Spi        uint32
+	Hostname   string
 }
 
 func (c *UdpInConnection) Connection() string {
@@ -183,5 +190,6 @@ func (u *UdpInServer) Recv() (*UdpInConnection, error) {
 		RemotePort: uint16(from.remote_port),
 		RemoteAddr: C.GoString(from.remote_addr),
 		Spi:        uint32(from.spi),
+		Hostname:   C.GoString(&from.hostname[0]),
 	}, nil
 }
