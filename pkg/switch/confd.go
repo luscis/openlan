@@ -93,9 +93,14 @@ func (c *ConfD) Update(table string, old model.Model, new model.Model) {
 		c.out.Info("ConfD.Update virtual network %s:%s", obj.Name, obj.Address)
 	}
 
-	if obj, ok := new.(*database.VirtualLink); ok {
-		c.out.Info("ConfD.Update virtual link %s:%s", obj.Network, obj.Connection)
-		c.AddLink(obj)
+	if ob1, ok := new.(*database.VirtualLink); ok {
+		ob0, _ := old.(*database.VirtualLink)
+		oldConn := ob0.Status["remote_connection"]
+		newConn := ob1.Status["remote_connection"]
+		c.out.Info("ConfD.Update virtual link %s:%s->%s", ob1.Network, oldConn, newConn)
+		if c.DiffLink(ob0, ob1) {
+			c.AddLink(ob1)
+		}
 	}
 
 	if obj, ok := new.(*database.NameCache); ok {
@@ -113,6 +118,32 @@ func GetRoutes(result *[]database.PrefixRoute, device string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *ConfD) DiffLink(old *database.VirtualLink, new *database.VirtualLink) bool {
+	c.out.Cmd("ConfD.Update virtual link %v->%v", old, new)
+	if old.Connection != new.Connection {
+		return true
+	}
+	if old.Device != new.Device {
+		return true
+	}
+	if old.Status["remote_connection"] != new.Status["remote_connection"] {
+		return true
+	}
+	if old.OtherConfig["local_address"] != new.OtherConfig["local_address"] {
+		return true
+	}
+	if old.OtherConfig["remote_address"] != new.OtherConfig["remote_address"] {
+		return true
+	}
+	if old.Authentication["username"] != new.Authentication["username"] {
+		return true
+	}
+	if old.Authentication["password"] != new.Authentication["password"] {
+		return true
+	}
+	return false
 }
 
 func (c *ConfD) AddLink(obj *database.VirtualLink) {
