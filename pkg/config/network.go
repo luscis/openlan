@@ -28,7 +28,7 @@ type Network struct {
 func (n *Network) NewSpecifies() interface{} {
 	switch n.Provider {
 	case "esp":
-		n.Specifies = &ESPSpecifies{}
+		n.Specifies = &EspSpecifies{}
 	case "vxlan":
 		n.Specifies = &VxLANSpecifies{}
 	case "fabric":
@@ -51,7 +51,7 @@ func (n *Network) Correct() {
 	switch n.Provider {
 	case "esp":
 		spec := n.Specifies
-		if obj, ok := spec.(*ESPSpecifies); ok {
+		if obj, ok := spec.(*EspSpecifies); ok {
 			obj.Correct()
 			obj.Name = n.Name
 		}
@@ -154,7 +154,7 @@ func (n *Network) Reload() {
 	switch n.Provider {
 	case "esp":
 		spec := n.Specifies
-		if obj, ok := spec.(*ESPSpecifies); ok {
+		if obj, ok := spec.(*EspSpecifies); ok {
 			obj.Correct()
 		}
 	}

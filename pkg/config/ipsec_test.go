@@ -1,18 +1,19 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestESPSpecifies(t *testing.T) {
-	spec := ESPSpecifies{
+func TestEspSpecifies(t *testing.T) {
+	spec := EspSpecifies{
 		State: EspState{
 			Local: "3.3.3.1",
 			Crypt: "fake-crypt",
 			Auth:  "fake-auth",
 		},
-		Members: []*ESPMember{
+		Members: []*EspMember{
 			{
 				Peer:    "1.1.1.0",
 				Address: "1.1.1.1",
@@ -29,14 +30,14 @@ func TestESPSpecifies(t *testing.T) {
 	assert.Equal(t, spec.State.Auth, spec.Members[0].State.Auth, "be the same.")
 }
 
-func TestESPSpecifies_GetMember(t *testing.T) {
-	spec := ESPSpecifies{
+func TestEspSpecifies_GetMember(t *testing.T) {
+	spec := EspSpecifies{
 		State: EspState{
 			Local: "3.3.3.1",
 			Crypt: "fake-crypt",
 			Auth:  "fake-auth",
 		},
-		Members: []*ESPMember{
+		Members: []*EspMember{
 			{
 				Peer:    "1.1.1.0",
 				Address: "1.1.1.1",
@@ -52,7 +53,7 @@ func TestESPSpecifies_GetMember(t *testing.T) {
 	assert.Equal(t, spec.Members[0], obj, "be the same.")
 	// Add
 	{
-		mem1 := &ESPMember{
+		mem1 := &EspMember{
 			Peer:    "1.1.1.0",
 			Address: "1.1.1.2",
 			Spi:     124,
@@ -69,16 +70,16 @@ func TestESPSpecifies_GetMember(t *testing.T) {
 	{
 		spec.DelMember("spi:123")
 		obj0 := spec.GetMember("spi:123")
-		assert.Equal(t, (*ESPMember)(nil), obj0, "be the same.")
+		assert.Equal(t, (*EspMember)(nil), obj0, "be the same.")
 
 		spec.DelMember("spi:124")
 		obj1 := spec.GetMember("spi:124")
-		assert.Equal(t, (*ESPMember)(nil), obj1, "be the same.")
+		assert.Equal(t, (*EspMember)(nil), obj1, "be the same.")
 	}
 }
 
-func TestESPSpecifies_AddPolicy(t *testing.T) {
-	mem := &ESPMember{
+func TestEspSpecifies_AddPolicy(t *testing.T) {
+	mem := &EspMember{
 		Peer:    "1.1.1.0",
 		Address: "1.1.1.2",
 		Spi:     124,
@@ -90,7 +91,7 @@ func TestESPSpecifies_AddPolicy(t *testing.T) {
 	mem.Correct()
 	assert.Equal(t, 1, len(mem.Policies), "be the same.")
 	{
-		po := &ESPPolicy{
+		po := &EspPolicy{
 			Dest: "192.1.0.0/24",
 		}
 		mem.AddPolicy(po)

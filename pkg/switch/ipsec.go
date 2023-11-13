@@ -36,7 +36,7 @@ type EspWorker struct {
 	mode     nl.Mode
 	states   []*models.EspState
 	policies []*models.EspPolicy
-	spec     *co.ESPSpecifies
+	spec     *co.EspSpecifies
 }
 
 func NewESPWorker(c *co.Network) *EspWorker {
@@ -45,7 +45,7 @@ func NewESPWorker(c *co.Network) *EspWorker {
 		proto:      nl.XFRM_PROTO_ESP,
 		mode:       nl.XFRM_MODE_TUNNEL,
 	}
-	w.spec, _ = c.Specifies.(*co.ESPSpecifies)
+	w.spec, _ = c.Specifies.(*co.EspSpecifies)
 	return w
 }
 

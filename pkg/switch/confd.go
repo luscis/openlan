@@ -190,7 +190,7 @@ func (c *ConfD) UpdateName(obj *database.NameCache) {
 		if spec == nil {
 			return
 		}
-		if specObj, ok := spec.(*config.ESPSpecifies); ok {
+		if specObj, ok := spec.(*config.EspSpecifies); ok {
 			if specObj.HasRemote(obj.Name, obj.Address) {
 				cfg.Correct()
 				w.Reload(c.api)
@@ -215,16 +215,16 @@ func (c *ConfD) AddRoute(obj *database.PrefixRoute) {
 		return
 	}
 	spec := netCfg.Specifies
-	poCfg := &config.ESPPolicy{
+	poCfg := &config.EspPolicy{
 		Source: obj.Source,
 		Dest:   obj.Prefix,
 	}
-	if specObj, ok := spec.(*config.ESPSpecifies); ok {
-		var mem *config.ESPMember
+	if specObj, ok := spec.(*config.EspSpecifies); ok {
+		var mem *config.EspMember
 		if mem = specObj.GetMember(obj.Gateway); mem != nil {
 			mem.AddPolicy(poCfg)
 		} else if libol.GetPrefix(obj.Gateway, 4) == "spi:" {
-			mem = &config.ESPMember{
+			mem = &config.EspMember{
 				Name: obj.Gateway,
 			}
 			specObj.AddMember(mem)
@@ -253,7 +253,7 @@ func (c *ConfD) DelRoute(obj *database.PrefixRoute) {
 		return
 	}
 	spec := netCfg.Specifies
-	if specObj, ok := spec.(*config.ESPSpecifies); ok {
+	if specObj, ok := spec.(*config.EspSpecifies); ok {
 		if mem := specObj.GetMember(obj.Gateway); mem != nil {
 			if mem.RemovePolicy(obj.Prefix) {
 				specObj.Correct()
@@ -305,7 +305,7 @@ func (l *MemberLink) Add(obj *database.VirtualLink) {
 		return
 	}
 	l.out.Info("MemberLink.Add remote link %s:%d", remote, port)
-	memCfg := &config.ESPMember{
+	memCfg := &config.EspMember{
 		Name:    obj.Device,
 		Address: obj.OtherConfig["local_address"],
 		Peer:    obj.OtherConfig["remote_address"],
@@ -320,14 +320,14 @@ func (l *MemberLink) Add(obj *database.VirtualLink) {
 	_ = GetRoutes(&routes, obj.Device)
 	for _, route := range routes {
 		l.out.Info("MemberLink.Add %s via %s", route.Prefix, obj.Device)
-		memCfg.AddPolicy(&config.ESPPolicy{
+		memCfg.AddPolicy(&config.EspPolicy{
 			Source: route.Source,
 			Dest:   route.Prefix,
 		})
 	}
 	l.out.Cmd("MemberLink.Add %v", memCfg)
 	spec := l.worker.Config().Specifies
-	if specObj, ok := spec.(*config.ESPSpecifies); ok {
+	if specObj, ok := spec.(*config.EspSpecifies); ok {
 		specObj.AddMember(memCfg)
 		specObj.Correct()
 		l.worker.Reload(l.api)
@@ -341,7 +341,7 @@ func (l *MemberLink) Update(obj *database.VirtualLink) {
 func (l *MemberLink) Del(obj *database.VirtualLink) {
 	l.out.Info("MemberLink.Del remote link %s", obj.Device)
 	spec := l.worker.Config().Specifies
-	if specObj, ok := spec.(*config.ESPSpecifies); ok {
+	if specObj, ok := spec.(*config.EspSpecifies); ok {
 		if specObj.DelMember(obj.Device) {
 			specObj.Correct()
 			l.worker.Reload(l.api)

@@ -93,29 +93,29 @@ func (s *EspState) Correct() {
 	s.Crypt = s.Padding(s.Crypt, 32)
 }
 
-type ESPPolicy struct {
+type EspPolicy struct {
 	Source   string `json:"source,omitempty"`
 	Dest     string `json:"destination,omitempty"`
 	Priority int    `json:"priority,omitempty"`
 }
 
-func (p *ESPPolicy) Correct() {
+func (p *EspPolicy) Correct() {
 	if p.Source == "" {
 		p.Source = "0.0.0.0/0"
 	}
 	p.Priority = 128 - libol.GetPrefixLen(p.Dest)
 }
 
-type ESPMember struct {
+type EspMember struct {
 	Name     string       `json:"name,omitempty"`
 	Address  string       `json:"address,omitempty"`
 	Peer     string       `json:"peer"`
 	Spi      int          `json:"spi"`
 	State    EspState     `json:"state"`
-	Policies []*ESPPolicy `json:"policies"`
+	Policies []*EspPolicy `json:"policies"`
 }
 
-func (m *ESPMember) Correct() {
+func (m *EspMember) Correct() {
 	if m.Name == "" {
 		m.Name = fmt.Sprintf("spi:%d", m.Spi)
 	} else if m.Spi == 0 {
@@ -128,7 +128,7 @@ func (m *ESPMember) Correct() {
 	m.Address = Addr2Cidr(m.Address)
 	m.State.Correct()
 	if m.Policies == nil {
-		m.Policies = make([]*ESPPolicy, 0, 2)
+		m.Policies = make([]*EspPolicy, 0, 2)
 	}
 	found := -1
 	for index, pol := range m.Policies {
@@ -139,7 +139,7 @@ func (m *ESPMember) Correct() {
 		found = index
 	}
 	if found < 0 {
-		pol := &ESPPolicy{
+		pol := &EspPolicy{
 			Dest: m.Peer,
 		}
 		pol.Correct()
@@ -147,7 +147,7 @@ func (m *ESPMember) Correct() {
 	}
 }
 
-func (m *ESPMember) AddPolicy(obj *ESPPolicy) {
+func (m *EspMember) AddPolicy(obj *EspPolicy) {
 	found := -1
 	for index, po := range m.Policies {
 		if po.Dest != obj.Dest {
@@ -163,7 +163,7 @@ func (m *ESPMember) AddPolicy(obj *ESPPolicy) {
 	}
 }
 
-func (m *ESPMember) RemovePolicy(dest string) bool {
+func (m *EspMember) RemovePolicy(dest string) bool {
 	found := -1
 	for index, po := range m.Policies {
 		if po.Dest != dest {
@@ -179,16 +179,16 @@ func (m *ESPMember) RemovePolicy(dest string) bool {
 	return found >= 0
 }
 
-type ESPSpecifies struct {
+type EspSpecifies struct {
 	Name    string       `json:"name"`
 	Address string       `json:"address,omitempty"`
 	State   EspState     `json:"state,omitempty"`
-	Members []*ESPMember `json:"members"`
+	Members []*EspMember `json:"members"`
 	Listen  string       `json:"listen,omitempty"`
 	TcpMss  int          `json:"tcpMss"`
 }
 
-func (n *ESPSpecifies) Correct() {
+func (n *EspSpecifies) Correct() {
 	if n.Listen != "" {
 		addr, port := libol.GetHostPort(n.Listen)
 		if addr != "" {
@@ -211,7 +211,7 @@ func (n *ESPSpecifies) Correct() {
 	}
 }
 
-func (n *ESPSpecifies) GetMember(name string) *ESPMember {
+func (n *EspSpecifies) GetMember(name string) *EspMember {
 	for _, mem := range n.Members {
 		if mem.Name == name {
 			return mem
@@ -220,7 +220,7 @@ func (n *ESPSpecifies) GetMember(name string) *ESPMember {
 	return nil
 }
 
-func (n *ESPSpecifies) HasRemote(name, addr string) bool {
+func (n *EspSpecifies) HasRemote(name, addr string) bool {
 	for _, mem := range n.Members {
 		state := mem.State
 		if state.Remote != name || state.RemoteIp.String() == addr {
@@ -231,7 +231,7 @@ func (n *ESPSpecifies) HasRemote(name, addr string) bool {
 	return false
 }
 
-func (n *ESPSpecifies) AddMember(obj *ESPMember) {
+func (n *EspSpecifies) AddMember(obj *EspMember) {
 	found := -1
 	for index, mem := range n.Members {
 		if mem.Spi != obj.Spi && mem.Name != obj.Name {
@@ -249,7 +249,7 @@ func (n *ESPSpecifies) AddMember(obj *ESPMember) {
 	}
 }
 
-func (n *ESPSpecifies) DelMember(name string) bool {
+func (n *EspSpecifies) DelMember(name string) bool {
 	found := -1
 	for index, mem := range n.Members {
 		if mem.Name != name {
