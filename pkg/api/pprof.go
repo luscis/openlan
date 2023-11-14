@@ -1,12 +1,11 @@
 package api
 
 import (
-	"encoding/json"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
-	"io/ioutil"
-	"net/http"
 )
 
 var pprof = &libol.PProf{}
@@ -25,19 +24,13 @@ func (h PProf) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h PProf) Add(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	if pprof.Listen != "" && pprof.Error == nil {
 		http.Error(w, "already listen on "+pprof.Listen, http.StatusConflict)
 		return
 	}
 
 	pp := &schema.PProf{}
-	if err := json.Unmarshal(body, pp); err != nil {
+	if err := GetData(r, pp); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

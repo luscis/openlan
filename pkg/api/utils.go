@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"net/http"
 )
 
 func ResponseJson(w http.ResponseWriter, v interface{}) {
@@ -39,7 +40,6 @@ func ResponseYaml(w http.ResponseWriter, v interface{}) {
 }
 
 func GetData(r *http.Request, v interface{}) error {
-	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err

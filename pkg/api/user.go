@@ -1,15 +1,14 @@
 package api
 
 import (
-	"encoding/json"
+	"net/http"
+	"sort"
+
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
-	"io/ioutil"
-	"net/http"
-	"sort"
 )
 
 type User struct {
@@ -49,15 +48,8 @@ func (h User) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h User) Add(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	user := &schema.User{}
-	if err := json.Unmarshal(body, user); err != nil {
+	if err := GetData(r, user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -81,14 +73,8 @@ func (h User) Del(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h User) Check(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	user := &schema.User{}
-	if err := json.Unmarshal(body, user); err != nil {
+	if err := GetData(r, user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

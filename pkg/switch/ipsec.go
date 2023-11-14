@@ -2,8 +2,6 @@ package _switch
 
 import (
 	"net"
-	"os/exec"
-	"strconv"
 
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
@@ -12,10 +10,6 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
-)
-
-const (
-	UDPBin = "openudp"
 )
 
 func GetStateEncap(mode string, sport, dport int) *nl.XfrmStateEncap {
@@ -392,18 +386,4 @@ func (w *EspWorker) downMember() {
 			w.out.Error("EspWorker.downMember %d %s", mem.Spi, err)
 		}
 	}
-}
-
-func OpenUDP() {
-	libol.Go(func() {
-		args := []string{
-			"-port", strconv.Itoa(co.EspLocalUdp),
-			"-log:file", "/var/openlan/openudp.log",
-		}
-		libol.Info("%s %v", UDPBin, args)
-		cmd := exec.Command(UDPBin, args...)
-		if err := cmd.Run(); err != nil {
-			libol.Error("OpenUDP %s", err)
-		}
-	})
 }

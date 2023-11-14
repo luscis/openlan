@@ -1,10 +1,11 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
-	"github.com/urfave/cli/v2"
 	"io/ioutil"
 	"strings"
+
+	"github.com/luscis/openlan/cmd/api"
+	"github.com/urfave/cli/v2"
 )
 
 func Before(c *cli.Context) error {
@@ -42,4 +43,5 @@ func Commands(app *api.App) {
 	State{}.Commands(app)
 	Policy{}.Commands(app)
 	Version{}.Commands(app)
+	Log{}.Commands(app)
 }

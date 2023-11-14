@@ -2,6 +2,8 @@ package _switch
 
 import (
 	"encoding/json"
+	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,6 +14,10 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
+)
+
+const (
+	UDPBin = "openudp"
 )
 
 func GetSocketServer(s *co.Switch) libol.SocketServer {
@@ -379,11 +385,22 @@ func (v *Switch) OnClose(client libol.SocketClient) error {
 	return nil
 }
 
+func (v *Switch) openUdp() {
+	args := []string{
+		"-port", strconv.Itoa(co.EspLocalUdp),
+		"-log:file", "/var/openlan/openudp.log",
+	}
+	libol.Info("%s %v", UDPBin, args)
+	cmd := exec.Command(UDPBin, args...)
+	if err := cmd.Run(); err != nil {
+		libol.Error("Switch.OpenUdp %s", err)
+	}
+}
+
 func (v *Switch) Start() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	OpenUDP()
 	v.fire.Start()
 	// firstly, start network.
 	for _, w := range v.worker {
@@ -407,6 +424,7 @@ func (v *Switch) Start() {
 	if v.l2tp != nil {
 		libol.Go(v.l2tp.Start)
 	}
+	libol.Go(v.openUdp)
 }
 
 func (v *Switch) Stop() {

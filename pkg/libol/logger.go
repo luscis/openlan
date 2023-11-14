@@ -120,6 +120,10 @@ func SetLogger(file string, level int) {
 	}
 }
 
+func SetLevel(level int) {
+	Logger.Level = level
+}
+
 type SubLogger struct {
 	*logger
 	Prefix string
