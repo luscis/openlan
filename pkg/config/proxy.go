@@ -2,6 +2,9 @@ package config
 
 import (
 	"flag"
+	"path"
+	"strings"
+
 	"github.com/luscis/openlan/pkg/libol"
 )
 
@@ -21,9 +24,20 @@ type SocksProxy struct {
 }
 
 type HttpProxy struct {
-	Listen string   `json:"listen,omitempty"`
-	Auth   Password `json:"auth,omitempty"`
-	Cert   *Cert    `json:"cert,omitempty"`
+	ConfDir  string   `json:"-"`
+	Listen   string   `json:"listen,omitempty"`
+	Auth     Password `json:"auth,omitempty"`
+	Cert     *Cert    `json:"cert,omitempty"`
+	Password string   `json:"password"`
+}
+
+func (h *HttpProxy) Correct() {
+	if h.Cert != nil {
+		h.Cert.Correct()
+	}
+	if h.Password != "" && !strings.Contains(h.Password, "/") {
+		h.Password = path.Join(h.ConfDir, h.Password)
+	}
 }
 
 type TcpProxy struct {
@@ -32,13 +46,14 @@ type TcpProxy struct {
 }
 
 type Proxy struct {
-	Conf   string         `json:"-"`
-	Log    Log            `json:"log"`
-	Socks  []*SocksProxy  `json:"socks,omitempty"`
-	Http   []*HttpProxy   `json:"http,omitempty"`
-	Tcp    []*TcpProxy    `json:"tcp,omitempty"`
-	Shadow []*ShadowProxy `json:"shadow,omitempty"`
-	PProf  string         `json:"pprof"`
+	Conf    string         `json:"-"`
+	ConfDir string         `json:"-"`
+	Log     Log            `json:"log"`
+	Socks   []*SocksProxy  `json:"socks,omitempty"`
+	Http    []*HttpProxy   `json:"http,omitempty"`
+	Tcp     []*TcpProxy    `json:"tcp,omitempty"`
+	Shadow  []*ShadowProxy `json:"shadow,omitempty"`
+	PProf   string         `json:"pprof"`
 }
 
 func NewProxy() *Proxy {
@@ -65,10 +80,10 @@ func (p *Proxy) Initialize() {
 }
 
 func (p *Proxy) Correct() {
+	p.ConfDir = path.Dir(p.Conf)
 	for _, h := range p.Http {
-		if h.Cert != nil {
-			h.Cert.Correct()
-		}
+		h.ConfDir = p.ConfDir
+		h.Correct()
 	}
 	p.Log.Correct()
 }

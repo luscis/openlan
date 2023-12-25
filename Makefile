@@ -12,7 +12,7 @@ ARCH = $(shell uname -m)
 SD = $(shell pwd)
 BD = "$(SD)/build"
 CD = "$(SD)/build/coverage"
-LINUX_DIR ?= "openlan-$(LSB)-$(VER).$(ARCH)"
+LIN_DIR ?= "openlan-$(LSB)-$(VER).$(ARCH)"
 WIN_DIR ?= "openlan-windows-$(VER).$(ARCH)"
 MAC_DIR ?= "openlan-darwin-$(VER).$(ARCH)"
 
@@ -34,25 +34,12 @@ help: ## show make targets
 ## all platform
 bin: linux windows darwin ## build all platform binary
 
-## mkdir -p /opt/openlan
-# cp ./dist/rootfs/{var,etc} /opt/openlan
-# cp ./docker/docker-compose.yml /opt/openlan
-# cd /opt/openlan
-## docker-compose up -d
-docker: linux-bin docker-rhel docker-deb ## build docker images
-
-docker-rhel:
-	cp $(SD)/docker/openlan.centos $(BD)
-	cd $(BD) && docker build -t openlan:$(VER).$(ARCH) --build-arg BIN=$(LINUX_DIR).bin -f openlan.centos  .
-
-docker-deb:
-	cp $(SD)/docker/openlan.debian $(BD)
-	cd $(BD) && docker build -t openlan:d$(VER).$(ARCH) --build-arg BIN=$(LINUX_DIR).bin -f openlan.debian  .
-
-clean: ## clean cache
-	rm -rvf ./build
-
 ## prepare environment
+env:
+	@mkdir -p $(BD)
+	@go version
+	@gofmt -w -s ./pkg ./cmd
+
 update:
 	git submodule init
 	git submodule update --remote
@@ -62,10 +49,23 @@ vendor:
 	go mod tidy
 	go mod vendor -v
 
-env:
-	@mkdir -p $(BD)
-	@go version
-	@gofmt -w -s ./pkg ./cmd
+docker: linux-bin docker-rhel docker-deb ## build docker images
+
+docker-rhel:
+	cp $(SD)/docker/openlan.centos $(BD)
+	cd $(BD) && docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.centos  .
+
+docker-deb:
+	cp $(SD)/docker/openlan.debian $(BD)
+	cd $(BD) && docker build -t luscis/openlan:d$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
+
+docker-compose:
+	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
+	cp -rvf ./dist/rootfs/{var,etc} /tmp/openlan.c && \
+	cp -rvf ./docker/docker-compose.yml /tmp/openlan.c  && \
+	echo "######## Lunch a openlan cluster #######" && \
+	echo "$ cd /tmp/openlan.c" && \
+	echo "$ docker-compose up -d"
 
 ## linux platform
 linux: linux-proxy linux-point linux-switch
@@ -97,28 +97,28 @@ linux-proxy: env
 
 
 linux-gz: install ## build linux packages
-	@rm -rf $(LINUX_DIR).tar.gz
-	tar -cf $(LINUX_DIR).tar $(LINUX_DIR) && mv $(LINUX_DIR).tar $(BD)
-	@rm -rf $(LINUX_DIR)
-	gzip -f $(BD)/$(LINUX_DIR).tar
+	@rm -rf $(LIN_DIR).tar.gz
+	tar -cf $(LIN_DIR).tar $(LIN_DIR) && mv $(LIN_DIR).tar $(BD)
+	@rm -rf $(LIN_DIR)
+	gzip -f $(BD)/$(LIN_DIR).tar
 
 linux-bin: linux-gz ## build linux install binary
-	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LINUX_DIR).bin && \
-	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LINUX_DIR).bin && \
-	cat $(BD)/$(LINUX_DIR).tar.gz >> $(BD)/$(LINUX_DIR).bin && \
-	chmod +x $(BD)/$(LINUX_DIR).bin && \
-	echo "Save to $(BD)/$(LINUX_DIR).bin"
+	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LIN_DIR).bin && \
+	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
+	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \
+	chmod +x $(BD)/$(LIN_DIR).bin && \
+	echo "Save to $(BD)/$(LIN_DIR).bin"
 
 install: env linux ## install packages
-	@mkdir -p $(LINUX_DIR)
-	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LINUX_DIR)
-	@mkdir -p $(LINUX_DIR)/var/openlan/{cert,openvpn,point,l2tp,dhcp}
-	@cp -rf $(SD)/dist/cert/openlan/cert $(LINUX_DIR)/var/openlan
-	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LINUX_DIR)/var/openlan/cert
-	@cp -rf $(SD)/pkg/public $(LINUX_DIR)/var/openlan
-	@mkdir -p $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/{openudp,openlan} $(LINUX_DIR)/usr/bin
-	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LINUX_DIR)/usr/bin
+	@mkdir -p $(LIN_DIR)
+	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LIN_DIR)
+	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,point,l2tp,dhcp}
+	@cp -rf $(SD)/dist/cert/openlan/cert $(LIN_DIR)/var/openlan
+	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LIN_DIR)/var/openlan/cert
+	@cp -rf $(SD)/pkg/public $(LIN_DIR)/var/openlan
+	@mkdir -p $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openudp,openlan} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LIN_DIR)/usr/bin
 
 ## cross build for windows
 windows: windows-point ## build windows binary
@@ -183,3 +183,6 @@ cover: env ## execute unit test and output coverage
 	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
 	go tool cover -html=coverage.out -o coverage.html
+
+clean: ## clean cache
+	rm -rvf ./build

@@ -1,14 +1,16 @@
 package proxy
 
 import (
+	"bufio"
 	"encoding/base64"
-	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type HttpProxy struct {
@@ -41,19 +43,48 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 
 func NewHttpProxy(cfg *config.HttpProxy) *HttpProxy {
 	h := &HttpProxy{
-		out: libol.NewSubLogger(cfg.Listen),
-		cfg: cfg,
+		out:   libol.NewSubLogger(cfg.Listen),
+		cfg:   cfg,
+		users: make(map[string]string),
 	}
 	h.server = &http.Server{
 		Addr:    cfg.Listen,
 		Handler: h,
 	}
 	auth := cfg.Auth
-	if len(auth.Username) > 0 {
-		h.users = make(map[string]string, 1)
+	if auth.Username != "" {
 		h.users[auth.Username] = auth.Password
 	}
+	h.LoadPass()
+
 	return h
+}
+
+func (t *HttpProxy) LoadPass() {
+	file := t.cfg.Password
+	if file == "" {
+		return
+	}
+	reader, err := libol.OpenRead(file)
+	if err != nil {
+		libol.Warn("HttpProxy.LoadPass open %v", err)
+		return
+	}
+	defer reader.Close()
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		columns := strings.SplitN(line, ":", 2)
+		if len(columns) < 2 {
+			continue
+		}
+		user := columns[0]
+		pass := columns[1]
+		t.users[user] = pass
+	}
+	if err := scanner.Err(); err != nil {
+		libol.Warn("HttpProxy.LoadPass scaner %v", err)
+	}
 }
 
 func (t *HttpProxy) isAuth(username, password string) bool {

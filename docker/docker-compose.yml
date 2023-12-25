@@ -2,7 +2,7 @@ version: "2.3"
 services:
   confd:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     privileged: true
     entrypoint: ["/var/openlan/script/confd.sh", "start"]
     # network_mode: "host"
@@ -14,7 +14,7 @@ services:
       - 10002:10002
   ovsdb-server:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     privileged: true
     entrypoint: ["/var/openlan/script/ovsdb-server.sh", "start"]
     # network_mode: "host"
@@ -26,7 +26,7 @@ services:
       - confd
   ovs-vswitchd:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     privileged: true
     # network_mode: "host"
     network_mode: service:confd
@@ -38,7 +38,7 @@ services:
       - ovsdb-server
   switch:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     privileged: true
     # network_mode: "host"
     network_mode: service:confd
@@ -57,7 +57,7 @@ services:
       - ovs-vswitchd
   proxy:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     # privileged: true
     # network_mode: "host"
     network_mode: service:confd
@@ -69,7 +69,7 @@ services:
       - switch
   task:
     restart: always
-    image: "luscis/openlan:latest"
+    image: "luscis/openlan:latest.x86_64"
     # privileged: true
     # network_mode: "host"
     network_mode: service:confd
@@ -84,7 +84,7 @@ services:
       - switch
   dns:
     restart: always
-    image: "adguard/dnsproxy:latest"
+    image: "adguard/dnsproxy:latest.x86_64"
     # privileged: true
     # network_mode: "host"
     network_mode: service:confd
