@@ -5,7 +5,7 @@ SHELL := /bin/bash
 
 ## version
 LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
-VER = $(shell cat VERSION)
+VER = $(shell ./dist/version.sh)
 ARCH = $(shell uname -m)
 
 ## declare directory

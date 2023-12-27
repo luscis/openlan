@@ -2,9 +2,6 @@ package cache
 
 import (
 	"bufio"
-	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/schema"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +9,10 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 type vpnClient struct {
@@ -156,9 +157,15 @@ func (o *vpnClient) List(name string) <-chan *schema.VPNClient {
 	return c
 }
 
-func (o *vpnClient) GetClientProfile(network, client, remote string) (string, error) {
-	file := o.Dir(network, client+"client.ovpn")
-	reader, err := os.Open(file)
+func (o *vpnClient) clientFile(name string) string {
+	files, _ := filepath.Glob(o.Dir(name, "*client.ovpn"))
+	if len(files) > 0 {
+		return files[0]
+	}
+	return ""
+}
+func (o *vpnClient) GetClientProfile(network, remote string) (string, error) {
+	reader, err := os.Open(o.clientFile(network))
 	if err != nil {
 		return "", err
 	}
@@ -166,8 +173,9 @@ func (o *vpnClient) GetClientProfile(network, client, remote string) (string, er
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "remote 0.0.0.0") {
-			profile += strings.Replace(line, "0.0.0.0", remote, 1)
+		elements := strings.SplitN(line, " ", 3)
+		if len(elements) == 3 && elements[0] == "remote" {
+			profile += "remote " + remote + " " + elements[2]
 		} else {
 			profile += line
 		}

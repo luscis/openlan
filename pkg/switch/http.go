@@ -2,16 +2,7 @@ package _switch
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/api"
-	"github.com/luscis/openlan/pkg/cache"
-	co "github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
-	"github.com/luscis/openlan/pkg/schema"
 	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
@@ -21,13 +12,20 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/luscis/openlan/pkg/api"
+	"github.com/luscis/openlan/pkg/cache"
+	co "github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 type Http struct {
 	switcher   api.Switcher
 	listen     string
 	adminToken string
-	guestToken string
 	adminFile  string
 	server     *http.Server
 	crtFile    string
@@ -141,9 +139,7 @@ func (h *Http) LoadToken() {
 }
 
 func (h *Http) SetToken(value string) {
-	sum := md5.Sum([]byte(value))
 	h.adminToken = value
-	h.guestToken = hex.EncodeToString(sum[:16])[:12]
 }
 
 func (h *Http) Start() {
@@ -182,16 +178,27 @@ func (h *Http) Shutdown() {
 func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
 	token, pass, ok := r.BasicAuth()
 	libol.Debug("Http.IsAuth token: %s, pass: %s", token, pass)
-	if strings.HasPrefix(r.URL.Path, "/api/") {
-		if !ok || token != h.adminToken {
-			return false
-		}
-	} else if strings.HasPrefix(r.URL.Path, "/get/") {
-		if !ok || token != h.guestToken {
-			return false
+	if !ok {
+		return false
+	}
+	if token == h.adminToken {
+		return true
+	}
+
+	elements := strings.SplitN(r.URL.Path, "/", 8)
+	if len(elements) > 3 {
+		if elements[2] == "network" {
+			zone := elements[3]
+			if !strings.HasSuffix(token, "@"+zone) {
+				return false
+			}
+			if api.UserCheck(token, pass) == nil {
+				return true
+			}
 		}
 	}
-	return true
+
+	return false
 }
 
 func (h *Http) getFile(name string) string {

@@ -72,14 +72,25 @@ func (h User) Del(w http.ResponseWriter, r *http.Request) {
 	ResponseMsg(w, 0, "")
 }
 
+func UserCheck(user, pass string) error {
+	model := &models.User{
+		Name:     user,
+		Password: pass,
+	}
+	if _, err := cache.User.Check(model); err == nil {
+		return nil
+	} else {
+		return err
+	}
+}
+
 func (h User) Check(w http.ResponseWriter, r *http.Request) {
 	user := &schema.User{}
 	if err := GetData(r, user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	model := models.SchemaToUserModel(user)
-	if _, err := cache.User.Check(model); err == nil {
+	if err := UserCheck(user.Name, user.Password); err == nil {
 		ResponseMsg(w, 0, "success")
 	} else {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

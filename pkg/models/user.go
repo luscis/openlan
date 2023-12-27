@@ -2,10 +2,11 @@ package models
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type User struct {
@@ -56,5 +57,8 @@ func (u *User) Update() {
 }
 
 func (u *User) Id() string {
+	if u.Network == "" {
+		return u.Name
+	}
 	return u.Name + "@" + u.Network
 }
