@@ -193,7 +193,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	w.out.Info("WorkerImpl.Start")
 	if cfg.Acl != "" {
-		fire.Raw.Pre.AddRule(cn.IpRule{
+		fire.Mangle.Pre.AddRule(cn.IpRule{
 			Input: cfg.Bridge.Name,
 			Jump:  cfg.Acl,
 		})
@@ -336,7 +336,7 @@ func (w *WorkerImpl) toACL(acl, input string) {
 		return
 	}
 	if acl != "" {
-		w.fire.Raw.Pre.AddRule(cn.IpRule{
+		w.fire.Mangle.Pre.AddRule(cn.IpRule{
 			Input: input,
 			Jump:  acl,
 		})

@@ -102,6 +102,7 @@ type Switch struct {
 	out     *libol.SubLogger
 	confd   *ConfD
 	l2tp    *L2TP
+	acls    []*network.FireWallChain
 }
 
 func NewSwitch(c *co.Switch) *Switch {
@@ -179,14 +180,9 @@ func (v *Switch) loadACLs() {
 		if acl.Name == "" {
 			continue
 		}
-		v.fire.AddChain(network.IpChain{
-			Table: network.TRaw,
-			Name:  acl.Name,
-		})
+		chain := network.NewFireWallChain(acl.Name, network.TMangle, "")
 		for _, rule := range acl.Rules {
-			v.fire.AddRule(network.IpRule{
-				Table:   network.TRaw,
-				Chain:   acl.Name,
+			chain.AddRule(network.IpRule{
 				Source:  rule.SrcIp,
 				Dest:    rule.DstIp,
 				Proto:   rule.Proto,
@@ -195,6 +191,7 @@ func (v *Switch) loadACLs() {
 				Jump:    rule.Action,
 			})
 		}
+		v.acls = append(v.acls, chain)
 	}
 }
 
@@ -401,6 +398,9 @@ func (v *Switch) Start() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
+	for _, l := range v.acls {
+		l.Install()
+	}
 	v.fire.Start()
 	// firstly, start network.
 	for _, w := range v.worker {
@@ -457,6 +457,9 @@ func (v *Switch) Stop() {
 	}
 	v.server.Close()
 	v.fire.Stop()
+	for _, l := range v.acls {
+		l.Cancel()
+	}
 }
 
 func (v *Switch) Alias() string {

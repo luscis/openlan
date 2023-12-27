@@ -185,38 +185,6 @@ func (f *FireWallGlobal) Refresh() {
 	f.install()
 }
 
-type FireWallJump struct {
-	lock  sync.Mutex
-	rules IpRules
-}
-
-func (j *FireWallJump) Install(ch IpChain) {
-	j.lock.Lock()
-	defer j.lock.Unlock()
-	r := IpRule{
-		Order: "-I",
-		Table: ch.Table,
-		Chain: ch.From,
-		Jump:  ch.Name,
-	}
-
-	if _, err := r.Opr(r.Order); err != nil {
-		libol.Error("FireWallJump.install %s", err)
-		return
-	}
-	j.rules = j.rules.Add(r)
-}
-
-func (j *FireWallJump) Cancel() {
-	j.lock.Lock()
-	defer j.lock.Unlock()
-	for _, r := range j.rules {
-		if _, err := r.Opr("-D"); err != nil {
-			libol.Warn("FireWallJump.cancel %s", err)
-		}
-	}
-}
-
 type FireWallChain struct {
 	lock   sync.Mutex
 	name   string
@@ -233,25 +201,28 @@ func NewFireWallChain(name, table, parent string) *FireWallChain {
 	}
 }
 
-func (ch *FireWallChain) new() {
-	c := ch.Chain()
-	if _, err := c.Opr("-N"); err != nil {
-		libol.Error("FireWallChain.new %s", err)
-	}
-}
-
-func (ch *FireWallChain) free() {
-	c := ch.Chain()
-	if _, err := c.Opr("-X"); err != nil {
-		libol.Error("FireWallChain.free %s", err)
-	}
-}
-
 func (ch *FireWallChain) Chain() IpChain {
+	name := ch.name
+	if ch.parent != "" {
+		name = ch.parent + "-" + ch.name
+	}
+	if len(name) > 28 {
+		name = name[:28]
+	}
 	return IpChain{
 		Table: ch.table,
-		Name:  ch.parent + "-" + ch.name,
+		Name:  name,
 		From:  ch.parent,
+	}
+}
+
+func (ch *FireWallChain) Jump() IpRule {
+	c := ch.Chain()
+	return IpRule{
+		Order: "-I",
+		Table: c.Table,
+		Chain: c.From,
+		Jump:  c.Name,
 	}
 }
 
@@ -265,7 +236,12 @@ func (ch *FireWallChain) AddRule(rule IpRule) {
 func (ch *FireWallChain) Install() {
 	ch.lock.Lock()
 	defer ch.lock.Unlock()
-	ch.new()
+
+	c := ch.Chain()
+	if _, err := c.Opr("-N"); err != nil {
+		libol.Error("FireWallChain.new %s", err)
+	}
+
 	for _, r := range ch.rules {
 		order := r.Order
 		if order == "" {
@@ -275,17 +251,35 @@ func (ch *FireWallChain) Install() {
 			libol.Error("FireWallChain.install %s", err)
 		}
 	}
+
+	j := ch.Jump()
+	if j.Chain != "" {
+		if _, err := j.Opr(j.Order); err != nil {
+			libol.Error("FireWallChain.new %s", err)
+		}
+	}
 }
 
 func (ch *FireWallChain) Cancel() {
 	ch.lock.Lock()
 	defer ch.lock.Unlock()
-	for _, c := range ch.rules {
-		if _, err := c.Opr("-D"); err != nil {
+
+	j := ch.Jump()
+	if j.Chain != "" {
+		if _, err := j.Opr("-D"); err != nil {
+			libol.Error("FireWallChain.cancel %s", err)
+		}
+	}
+	for _, r := range ch.rules {
+		if _, err := r.Opr("-D"); err != nil {
 			libol.Warn("FireWall.cancel %s", err)
 		}
 	}
-	ch.free()
+
+	c := ch.Chain()
+	if _, err := c.Opr("-X"); err != nil {
+		libol.Error("FireWallChain.free %s", err)
+	}
 }
 
 type FireWallFilter struct {
@@ -293,15 +287,13 @@ type FireWallFilter struct {
 	In   *FireWallChain
 	Out  *FireWallChain
 	For  *FireWallChain
-	Jump *FireWallJump
 }
 
 func NewFireWallFilter(name string) *FireWallFilter {
 	return &FireWallFilter{
-		In:   NewFireWallChain(name, TFilter, OLCInput),
-		For:  NewFireWallChain(name, TFilter, OLCForward),
-		Out:  NewFireWallChain(name, TFilter, OLCOutput),
-		Jump: &FireWallJump{},
+		In:  NewFireWallChain(name, TFilter, OLCInput),
+		For: NewFireWallChain(name, TFilter, OLCForward),
+		Out: NewFireWallChain(name, TFilter, OLCOutput),
 	}
 }
 
@@ -310,16 +302,9 @@ func (f *FireWallFilter) Install() {
 	f.In.Install()
 	f.For.Install()
 	f.Out.Install()
-
-	// Add Jump Rules
-	f.Jump.Install(f.In.Chain())
-	f.Jump.Install(f.For.Chain())
-	f.Jump.Install(f.Out.Chain())
 }
 
 func (f *FireWallFilter) Cancel() {
-	// Remove Jump Rules
-	f.Jump.Cancel()
 	// Cancel Chain Rules
 	f.In.Cancel()
 	f.For.Cancel()
@@ -344,7 +329,6 @@ type FireWallNAT struct {
 	In   *FireWallChain
 	Out  *FireWallChain
 	Post *FireWallChain
-	Jump *FireWallJump
 }
 
 func NewFireWallNAT(name string) *FireWallNAT {
@@ -353,7 +337,6 @@ func NewFireWallNAT(name string) *FireWallNAT {
 		In:   NewFireWallChain(name, TNat, OLCInput),
 		Out:  NewFireWallChain(name, TNat, OLCOutput),
 		Post: NewFireWallChain(name, TNat, OLCPost),
-		Jump: &FireWallJump{},
 	}
 }
 
@@ -363,17 +346,9 @@ func (n *FireWallNAT) Install() {
 	n.In.Install()
 	n.Out.Install()
 	n.Post.Install()
-
-	// Add Jump Rules
-	n.Jump.Install(n.Pre.Chain())
-	n.Jump.Install(n.In.Chain())
-	n.Jump.Install(n.Out.Chain())
-	n.Jump.Install(n.Post.Chain())
 }
 
 func (n *FireWallNAT) Cancel() {
-	// Remove Jump Rules
-	n.Jump.Cancel()
 	// Cancel Chain Rules
 	n.Pre.Cancel()
 	n.In.Cancel()
@@ -388,7 +363,6 @@ type FireWallMangle struct {
 	For  *FireWallChain
 	Out  *FireWallChain
 	Post *FireWallChain
-	Jump *FireWallJump
 }
 
 func NewFireWallMangle(name string) *FireWallMangle {
@@ -398,7 +372,6 @@ func NewFireWallMangle(name string) *FireWallMangle {
 		For:  NewFireWallChain(name, TMangle, OLCForward),
 		Out:  NewFireWallChain(name, TMangle, OLCOutput),
 		Post: NewFireWallChain(name, TMangle, OLCPost),
-		Jump: &FireWallJump{},
 	}
 }
 
@@ -409,18 +382,9 @@ func (m *FireWallMangle) Install() {
 	m.For.Install()
 	m.Out.Install()
 	m.Post.Install()
-
-	// Add Jump Rules
-	m.Jump.Install(m.Pre.Chain())
-	m.Jump.Install(m.In.Chain())
-	m.Jump.Install(m.For.Chain())
-	m.Jump.Install(m.Out.Chain())
-	m.Jump.Install(m.Post.Chain())
 }
 
 func (m *FireWallMangle) Cancel() {
-	// Remove Jump Rules
-	m.Jump.Cancel()
 	// Cancel Chain Rules
 	m.Pre.Cancel()
 	m.In.Cancel()
@@ -433,29 +397,21 @@ type FireWallRaw struct {
 	name string
 	Pre  *FireWallChain
 	Out  *FireWallChain
-	Jump *FireWallJump
 }
 
 func NewFireWallRaw(name string) *FireWallRaw {
 	return &FireWallRaw{
-		Pre:  NewFireWallChain(name, TRaw, OLCPre),
-		Out:  NewFireWallChain(name, TRaw, OLCOutput),
-		Jump: &FireWallJump{},
+		Pre: NewFireWallChain(name, TRaw, OLCPre),
+		Out: NewFireWallChain(name, TRaw, OLCOutput),
 	}
 }
 func (r *FireWallRaw) Install() {
 	// Install Chain Rules
 	r.Pre.Install()
 	r.Out.Install()
-
-	// Add Jump Rules
-	r.Jump.Install(r.Pre.Chain())
-	r.Jump.Install(r.Out.Chain())
 }
 
 func (r *FireWallRaw) Cancel() {
-	// Remove Jump Rules
-	r.Jump.Cancel()
 	// Cancel Chain Rules
 	r.Pre.Cancel()
 	r.Out.Cancel()
