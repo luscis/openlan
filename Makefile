@@ -57,7 +57,7 @@ docker-rhel:
 
 docker-deb:
 	cp $(SD)/docker/openlan.debian $(BD)
-	cd $(BD) && docker build -t luscis/openlan:d$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
+	cd $(BD) && docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
 
 docker-compose:
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
