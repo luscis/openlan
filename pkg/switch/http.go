@@ -22,6 +22,16 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
+func NotFound(w http.ResponseWriter, r *http.Request) {
+	libol.Info("NotFound %s %s", r.Method, r.URL.Path)
+	http.Error(w, "oops!!!", http.StatusNotFound)
+}
+
+func NotAllowed(w http.ResponseWriter, r *http.Request) {
+	libol.Info("NotAllowed %s %s", r.Method, r.URL.Path)
+	http.Error(w, "oops!!!", http.StatusMethodNotAllowed)
+}
+
 type Http struct {
 	switcher   api.Switcher
 	listen     string
@@ -89,6 +99,8 @@ func (h *Http) Middleware(next http.Handler) http.Handler {
 func (h *Http) Router() *mux.Router {
 	if h.router == nil {
 		h.router = mux.NewRouter()
+		h.router.NotFoundHandler = http.HandlerFunc(NotFound)
+		h.router.MethodNotAllowedHandler = http.HandlerFunc(NotAllowed)
 		h.router.Use(h.Middleware)
 	}
 
@@ -196,6 +208,9 @@ func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
 				return true
 			}
 		}
+	}
+	if elements[1] == "openvpn-api" || elements[1] == "rest" {
+		return true
 	}
 
 	return false

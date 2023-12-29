@@ -21,4 +21,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	Config{Switcher: switcher}.Router(router)
 	Version{}.Router(router)
 	Log{}.Router(router)
+	OpenAPI{}.Router(router)
 }
