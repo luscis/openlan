@@ -35,14 +35,14 @@ help: ## show make targets
 bin: linux windows darwin ## build all platform binary
 
 ## prepare environment
-env:
+env: update
 	@mkdir -p $(BD)
 	@go version
 	@gofmt -w -s ./pkg ./cmd
 
 update:
 	git submodule init
-	git submodule update --remote
+	git submodule update
 
 vendor:
 	go clean -modcache
@@ -53,11 +53,11 @@ docker: linux-bin docker-rhel docker-deb ## build docker images
 
 docker-rhel:
 	cp $(SD)/docker/openlan.centos $(BD)
-	cd $(BD) && docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.centos  .
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.centos  .
 
 docker-deb:
 	cp $(SD)/docker/openlan.debian $(BD)
-	cd $(BD) && docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
 
 docker-compose:
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
