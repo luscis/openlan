@@ -1,10 +1,11 @@
-package _switch
+package cswitch
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSwitch_LoadPass(t *testing.T) {

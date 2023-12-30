@@ -1,14 +1,15 @@
-package _switch
+package cswitch
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/danieldin95/go-openvswitch/ovs"
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
-	"strings"
 )
 
 type Fabricer interface {

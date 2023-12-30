@@ -226,6 +226,30 @@ func (ch *FireWallChain) Jump() IpRule {
 	}
 }
 
+func (ch *FireWallChain) AddRuleX(rule IpRule) error {
+	chain := ch.Chain()
+	rule.Table = chain.Table
+	rule.Chain = chain.Name
+	order := rule.Order
+	if order == "" {
+		order = "-A"
+	}
+	if _, err := rule.Opr(order); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ch *FireWallChain) DelRuleX(rule IpRule) error {
+	chain := ch.Chain()
+	rule.Table = chain.Table
+	rule.Chain = chain.Name
+	if _, err := rule.Opr("-D"); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ch *FireWallChain) AddRule(rule IpRule) {
 	chain := ch.Chain()
 	rule.Table = chain.Table

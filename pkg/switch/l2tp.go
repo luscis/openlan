@@ -1,14 +1,15 @@
-package _switch
+package cswitch
 
 import (
-	co "github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	co "github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 const (

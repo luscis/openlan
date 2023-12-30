@@ -1,4 +1,4 @@
-package _switch
+package cswitch
 
 import (
 	"github.com/luscis/openlan/pkg/api"

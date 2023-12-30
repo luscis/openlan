@@ -1,4 +1,4 @@
-package _switch
+package cswitch
 
 import (
 	"fmt"
@@ -72,6 +72,7 @@ type WorkerImpl struct {
 	setR    *cn.IPSet
 	setV    *cn.IPSet
 	vpn     *OpenVPN
+	trust   *ZeroTrust
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -103,6 +104,10 @@ func (w *WorkerImpl) Initialize() {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
 	w.newVPN()
+	if w.cfg.ZeroTrust == "enable" {
+		w.trust = NewZeroTrust(w.cfg.Name, 30)
+		w.trust.Initialize()
+	}
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
@@ -188,7 +193,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 }
 
 func (w *WorkerImpl) Start(v api.Switcher) {
-	cfg := w.cfg
+	cfg, vpn := w.GetCfgs()
 	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
@@ -242,7 +247,15 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	if !(w.vpn == nil) {
 		w.vpn.Start()
 	}
-	w.fire.Start()
+
+	if !(w.vpn == nil || w.trust == nil) {
+		w.trust.Start()
+		fire.Mangle.Pre.AddRule(cn.IpRule{
+			Input: vpn.Device,
+			Jump:  w.trust.Chain(),
+		})
+	}
+	fire.Start()
 }
 
 func (w *WorkerImpl) DelPhysical(bridge string, vlan int, output string) {
@@ -294,6 +307,9 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 	w.fire.Stop()
+	if !(w.vpn == nil || w.trust == nil) {
+		w.trust.Stop()
+	}
 	if !(w.vpn == nil) {
 		w.vpn.Stop()
 	}
