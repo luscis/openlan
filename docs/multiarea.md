@@ -5,13 +5,13 @@
 ```
               192.168.1.20/24                                 192.168.1.21/24
                      |                                                 |
-                  OLAP1 -- Hotal Wifi --> OLSW(NJ) <--- Other Wifi --- OLAP2
+               Access1 -- Hotal Wifi --> Switch(NJ) <--- Other Wifi --- Access2
                                             |
                                             |
                                          Internet
                                             |
                                             |
-                                         OLSW(SH) - 192.168.1.10/24
+                                         Switch(SH) - 192.168.1.10/24
                                             |
                                             |
                    +------------------------+---------------------------+
@@ -19,17 +19,17 @@
                    |                        |                           |
               Office Wifi               Home Wifi                  Hotal Wifi     
                    |                        |                           |
-                 OLAP3                    OLAP4                       OLAP5
+                Access3                 Access4                       Access5
             192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
 ```
 
-## Configure OLSW for Nanjing
+## Configure Central Switch for Nanjing
 
-配置交换机：
+Global configure:
 
 ```
-[root@olsw-nj ~]# cd /etc/openlan/switch
-[root@olsw-nj ~]# cat > switch.json <<EOF
+[root@switch-nj ~]# cd /etc/openlan/switch
+[root@switch-nj ~]# cat > switch.json <<EOF
 {
   "cert": {
     "dir": "/var/openlan/cert"
@@ -44,11 +44,11 @@
 EOF
 ```
 
-配置网络：
+Network configure:
 
 ```
-[root@olsw-nj ~]# cd network
-[root@olsw-nj ~]# cat > private.json <<EOF
+[root@switch-nj ~]# cd network
+[root@switch-nj ~]# cat > private.json <<EOF
 {
   "name": "private",
   "bridge": {
@@ -66,25 +66,25 @@ EOF
   }
 }
 EOF
-[root@olsw-nj ~]# openlan cfg co
-[root@olsw-sh ~]# systemctl restart openlan-switch
+[root@switch-nj ~]# openlan cfg co
+[root@switch-sh ~]# systemctl restart openlan-switch
 ```
 
-添加认证用户：
+Add two access users on private network:
 
 ```
-[root@olsw-nj ~]# openlan us add --name admin@private --role admin
-[root@olsw-nj ~]# openlan us add --name olap1@private
-[root@olsw-nj ~]# openlan us add --name olap2@private
+[root@switch-nj ~]# openlan us add --name admin@private --role admin
+[root@switch-nj ~]# openlan us add --name access1@private
+[root@switch-nj ~]# openlan us add --name access2@private
 ```
 
-## Configure OLSW for ShangHai
+## Configure Central Switch for ShangHai
 
-配置交换机：
+Global configure:
 
 ```
-[root@olsw-sh ~]# cd /etc/openlan/switch
-[root@olsw-sh ~]# cat > switch.json <<EOF
+[root@switch-sh ~]# cd /etc/openlan/switch
+[root@switch-sh ~]# cat > switch.json <<EOF
 {
   "cert": {
     "dir": "/var/openlan/cert"
@@ -99,11 +99,11 @@ EOF
 EOF
 ```
 
-配置网络：
+Network configure:
 
 ```
-[root@olsw-sh ~]# cd network
-[root@olsw-sh ~]# cat > private.json <<EOF
+[root@switch-sh ~]# cd network
+[root@switch-sh ~]# cat > private.json <<EOF
 {
   "name": "private",
   "bridge": {
@@ -121,8 +121,8 @@ EOF
   },
   "links": [
     {
-      "connection": "address-of-olsw-nj",
-      "password": "get-it-from-olsw-nj",
+      "connection": "address-of-switch-nj",
+      "password": "get-it-from-switch-nj",
       "username": "admin",
       "crypt": { 
          "secret": "f367aa429ed2" 
@@ -131,16 +131,16 @@ EOF
   ]
 }
 EOF
-[root@olsw-sh ~]# openlan cfg co
-[root@olsw-sh ~]# systemctl restart openlan-switch
+[root@switch-sh ~]# openlan cfg co
+[root@switch-sh ~]# systemctl restart openlan-switch
 ```
 
-添加认证用户：
+Add three access users on private network:
 
 ```
-[root@olsw-sh ~]# openlan us add --name admin@private --role admin
-[root@olsw-sh ~]# openlan us add --name olap3@private
-[root@olsw-sh ~]# openlan us add --name olap4@private
-[root@olsw-sh ~]# openlan us add --name olap5@private
+[root@switch-sh ~]# openlan us add --name admin@private --role admin
+[root@switch-sh ~]# openlan us add --name access3@private
+[root@switch-sh ~]# openlan us add --name access4@private
+[root@switch-sh ~]# openlan us add --name access5@private
 ```
 

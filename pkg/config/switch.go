@@ -139,7 +139,7 @@ func (s *Switch) Correct() {
 		s.Protocol = "tcp"
 	}
 	if s.AddrPool == "" {
-		s.AddrPool = "100.44"
+		s.AddrPool = "169.254"
 	}
 	s.Queue.Correct()
 }

@@ -1,16 +1,16 @@
 # Preface
 
-openlan软件包含下面部分：
+OpenLAN软件包含下面部分：
 
-* openlan switch具有公网地址的centos服务器、云主机或者dmz主机
-* openlan point运行在企业内部的centos主机或者移动办公的pc上，没有公网地址
-* openlan network管理员定义的逻辑网络
+* Central Switch : 具有公网地址的CentOS服务器、云主机或者DMZ主机
+* Access Point : 运行在企业内部的CentOS主机或者移动办公的PC上，没有公网地址
+* User Network : 管理员定义的逻辑网络
 
 # CentOS
 
-## OpenLAN Switch
+## Central Switch
 
-您可以在centos7上通过下面步骤部署openlan switch软件：
+您可以在CentOS7上通过下面步骤部署Central Switch软件：
 1. 安装依赖的软件；
    ```
    yum install -y epel-release
@@ -18,11 +18,11 @@ openlan软件包含下面部分：
    yum install -y centos-release-openstack-train
    yum install -y rdma-core libibverbs
    ```
-2. 使用yum安装openlan switch软件；
+2. 使用yum安装Central Switch软件；
    ```
    yum install -y https://github.com/luscis/openlan/releases/download/v5.8.22/openlan-switch-5.8.22-1.el7.x86_64.rpm
    ```
-3. 配置openlan switch服务自启动；
+3. 配置Central Switch服务自启动；
    ```
    systemctl enable --now openlan-switch
    ```
@@ -41,26 +41,25 @@ openlan软件包含下面部分：
    openlan cfg co                  ## 配置预检查
    ```
    
-5. 添加一个新的openlan网络；
+5. 添加一个新的OpenLAN网络；
    ```
    cd ./network
    cp ./network.json.example ./example.json
    vim ./example.json 
    {
        "name": "example",
-       "provider": "openlan",
        "bridge": {
-           "address": "172.32.10.10/24"       ## 本地地址
+           "address": "172.32.10.10/24"       ## 一个唯一的子网地址，如共享二层网络填充本地地址
        },
        "subnet": {                            ## 网络的子网配置，如果没有动态地址分配可以忽略
-           "start": "172.32.10.100",          ## 用于动态分配给point的起始地址
-           "end": "172.32.10.150",            ## 截止地址
-           "netmask": "255.255.255.0"         ## 子网掩码
+           "start": "172.32.10.100",          ## 用于动态分配给接入point的起始地址
+           "end": "172.32.10.150",            ## 用于动态分配的截止地址
+           "netmask": "255.255.255.0"         ## 网络子网的掩码
        },
        "hosts": [                             ## 为point添加静态地址分配
            {
-               "hostname": "pc-99",           ## point的主机名称
-               "address": "172.32.10.99"      ## 分配的地址
+               "hostname": "pc-99",           ## 接入point的主机名称
+               "address": "172.32.10.99"      ## 固定的地址
            }
        ],
        "routes": [                            ## 注入给point的路由信息
@@ -77,35 +76,34 @@ openlan软件包含下面部分：
    }
    openlan cfg co                             ## 配置预检查
    ```
-6. 重启openlan switch服务；
+6. 重启Central Switch服务；
    ```
    systemctl restart openlan-switch
    journalctl -u openlan-switch               ## 查看日志信息
    ```
-7. 导出openvpn的客户端配置文件；
-   ```
-   cd /var/openlan/openvpn/example            ## openvpn的配置信息存放目录
-   cat ./client.ovpn                          ## 导出后编辑remote配置项，替换0.0.0.0为公网IP地址
-   ```
-   或者通过http接口获取
-   ```
-   cat /etc/openlan/switch/token | md5sum | cut -b 1-12
-   a01234abc00                                ## 获取口令
-   curl -k https://a01234abc00@<access-ip>:10000/get/network/example/tcp1194.ovpn
-                                              ## 替换access-ip为公网IP地址
-   ```
-8. 添加一个新的接入认证的用户；
+7. 添加一个新的接入认证的用户；
    ```
    openlan us add --name hi@example               ## <用户名>@<网络>
-   openlan us ls | grep example                   ## 查看随机密码
-   hi@example  l6llot97yxulsw1qqbm07vn1 guest     ## <用户名>@<网络> 密码 角色 租期
-   
+   openlan us ls --network example                ## 查看随机密码
+   hi@example  l6llot97yx  guest                  ## <用户名>@<网络> 密码 角色 租期
+
    openlan us rm --name hi@example                ## 删除一个用户
    ```
-## OpenLAN Point
+8. 导出OpenVPN的客户端配置文件；
 
-同样的您也可以在centos7上通过下面步骤部署openlan point软件：
-1. 使用yum安装openlan point软件；
+   在浏览器直接访问接口获取VPN Profile，弹出框中输入账户密码。
+   ```
+   curl -k https://<access-ip>:10000/get/network/example/ovpn
+                                                  ## 替换access-ip为公网IP地址
+   ```
+   在OpenVPN的客户端，`via URL`的方式自动导入，输入框中录入用户名密码。
+   ```
+   https://<access-ip>:10000
+   ```
+## Access Point
+
+同样的您也可以在CentOS7上通过下面步骤部署Access Point软件：
+1. 使用yum安装Access Point软件；
    ```
    yum install -y https://github.com/luscis/openlan/releases/download/v5.6.4/openlan-point-5.6.4-1.el7.x86_64.rpm
    ```
@@ -126,7 +124,7 @@ openlan软件包含下面部分：
    }
    cat example.json | python -m json.tool     ## 配置预检查
    ```
-3. 配置openlan point服务自启动；
+3. 配置Access Point服务自启动；
    ```
    systemctl enable --now openlan-point@example
    journalctl -u openlan-point@example        ## 查看日志信息

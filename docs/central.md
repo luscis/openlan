@@ -3,7 +3,7 @@
 ## Topology
 
 ```
-                                    OLSW(Central) - 10.16.1.10/24
+                                     Switch(Central) - 10.16.1.10/24
                                             ^
                                             |
                                          Wifi(DNAT)
@@ -14,26 +14,26 @@
                    |                        |                           |
                  Branch1                  Branch2                     Branch3     
                    |                        |                           |
-                 OLAP1                    OLAP2                       OLAP3
+               Access Point            Access Point                 Access Point
              10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
 
 ```
 
-## Configure OLSW
+## Configure Central Switch
 
-生成预共享密钥：
+Generage a pre-shared key:
 
 ```
-[root@olsw ~]# uuidgen 
+[root@switch ~]# uuidgen 
 e108fe36-a2cd-43bc-82e2-f367aa429ed2
-[root@olsw ~]# 
+[root@switch ~]# 
 ```
 
-交换机配置：
+Global configure with pre-share key:
 
 ```
-[root@olsw ~]# cd /etc/openlan/switch
-[root@olsw ~]# cat > switch.json <<EOF
+[root@switch ~]# cd /etc/openlan/switch
+[root@switch ~]# cat > switch.json <<EOF
 {
   "cert": {
     "dir": "/var/openlan/cert"
@@ -52,11 +52,11 @@ e108fe36-a2cd-43bc-82e2-f367aa429ed2
 EOF
 ```
 
-添加网络配置：
+Add a user network configuration:
 
 ```
-[root@olsw ~]# cd network
-[root@olsw ~]# cat > central.json <<EOF
+[root@switch ~]# cd network
+[root@switch ~]# cat > central.json <<EOF
 {
   "name": "central",
   "bridge": {
@@ -70,7 +70,7 @@ EOF
   },
   "hosts": [
      {
-       "hostname": "olap1.hostname",
+       "hostname": "access1.hostname",
        "address": "10.16.1.11"
      }
   ],
@@ -82,44 +82,44 @@ EOF
 EOF
 ```
 
-添加接入认证的用户：
+Add three access users on central network:
 
 ```
 
-[root@olsw ~]# openlan us add --name admin@central --role admin
-[root@olsw ~]# openlan us add --name olap1@central
-[root@olsw ~]# openlan us add --name olap2@central
-[root@olsw ~]# openlan us add --name olap3@central
+[root@switch ~]# openlan us add --name admin@central --role admin
+[root@switch ~]# openlan us add --name access1@central
+[root@switch ~]# openlan us add --name access2@central
+[root@switch ~]# openlan us add --name access3@central
 ```
 
 
 
-## Configure OLAP
+## Configure Access Point
 
-添加一个网络：
+Add a user network configuration:
 
 ```
-[root@olap1 ~]# cd /etc/openlan
-[root@olap1 ~]# cat > central.json <<EOF                          
+[root@access1 ~]# cd /etc/openlan
+[root@access1 ~]# cat > central.json <<EOF                          
 {
   "crypt": {
     "secret": "f367aa429ed2"
   },
-  "connection": "public-ip-of-olsw",
-  "username": "olap1@central",
-  "password": "get-password-of-olsw-administrator"
+  "connection": "public-ip-of-switch",
+  "username": "access1@central",
+  "password": "get-password-of-switch-administrator"
 }
 EOF
-[root@olap1 ~]# cat central.json | python -m json.tool
+[root@access1 ~]# cat central.json | python -m json.tool
 ```
 
-配置网络服务：
+Enable Access Point for central network:
 
 ```
 systemctl enable --now openlan-point@central
 ```
 
-检查启动日志：
+Check journal log:
 
 ```
 journalctl -u openlan-point@central
