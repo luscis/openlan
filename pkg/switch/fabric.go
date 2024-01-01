@@ -221,7 +221,7 @@ func (w *FabricWorker) Initialize() {
 	}
 	_ = w.ovs.setMode("secure")
 	w.upTables()
-	ListWorker(func(n Networker) {
+	api.ListWorker(func(n api.Networker) {
 		if w.IsSlave(n) {
 			n.Initialize()
 		}
@@ -441,7 +441,7 @@ func (w *FabricWorker) Start(v api.Switcher) {
 		w.AddTunnel(*tunnel)
 	}
 	w.WorkerImpl.Start(v)
-	ListWorker(func(n Networker) {
+	api.ListWorker(func(n api.Networker) {
 		if w.IsSlave(n) {
 			n.Start(v)
 		}
@@ -471,7 +471,7 @@ func (w *FabricWorker) DelTunnel(name string) {
 	_ = w.ovs.delPort(name)
 }
 
-func (w *FabricWorker) IsSlave(n Networker) bool {
+func (w *FabricWorker) IsSlave(n api.Networker) bool {
 	cfg := n.Config()
 	if cfg == nil || cfg.Specifies == nil {
 		return false
@@ -485,7 +485,7 @@ func (w *FabricWorker) IsSlave(n Networker) bool {
 
 func (w *FabricWorker) Stop() {
 	w.out.Info("FabricWorker.Stop")
-	ListWorker(func(n Networker) {
+	api.ListWorker(func(n api.Networker) {
 		if w.IsSlave(n) {
 			n.Stop()
 		}

@@ -1,12 +1,13 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
-	"net/http"
 )
 
 type Link struct {
@@ -31,7 +32,7 @@ func (h Link) List(w http.ResponseWriter, r *http.Request) {
 
 func (h Link) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	libol.Info("GetPoint %s", vars["id"])
+	libol.Info("Link.Get %s", vars["id"])
 
 	link := cache.Link.Get(vars["id"])
 	if link != nil {

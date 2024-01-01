@@ -147,7 +147,7 @@ func (c *ConfD) DiffLink(old *database.VirtualLink, new *database.VirtualLink) b
 }
 
 func (c *ConfD) AddLink(obj *database.VirtualLink) {
-	worker := GetWorker(obj.Network)
+	worker := api.GetWorker(obj.Network)
 	if worker == nil {
 		c.out.Warn("ConfD.AddLink network %s not found.", obj.Network)
 		return
@@ -179,7 +179,7 @@ func (c *ConfD) AddLink(obj *database.VirtualLink) {
 }
 
 func (c *ConfD) DelLink(obj *database.VirtualLink) {
-	worker := GetWorker(obj.Network)
+	worker := api.GetWorker(obj.Network)
 	if worker == nil {
 		c.out.Warn("ConfD.DelLink network %s not found.", obj.Network)
 		return
@@ -215,7 +215,7 @@ func (c *ConfD) UpdateName(obj *database.NameCache) {
 		return
 	}
 	c.out.Info("ConfD.UpdateName %s %s", obj.Name, obj.Address)
-	ListWorker(func(w Networker) {
+	api.ListWorker(func(w api.Networker) {
 		cfg := w.Config()
 		spec := cfg.Specifies
 		if spec == nil {
@@ -235,7 +235,7 @@ func (c *ConfD) AddRoute(obj *database.PrefixRoute) {
 		return
 	}
 	c.out.Cmd("ConfD.DelRoute %v", obj.Network)
-	worker := GetWorker(obj.Network)
+	worker := api.GetWorker(obj.Network)
 	if worker == nil {
 		c.out.Warn("ConfD.DelRoute network %s not found.", obj.Network)
 		return
@@ -273,7 +273,7 @@ func (c *ConfD) DelRoute(obj *database.PrefixRoute) {
 		return
 	}
 	c.out.Cmd("ConfD.DelRoute %v", obj.Network)
-	worker := GetWorker(obj.Network)
+	worker := api.GetWorker(obj.Network)
 	if worker == nil {
 		c.out.Warn("ConfD.DelRoute network %s not found.", obj.Network)
 		return
@@ -297,7 +297,7 @@ func (c *ConfD) DelRoute(obj *database.PrefixRoute) {
 type LinkImpl struct {
 	api    api.Switcher
 	out    *libol.SubLogger
-	worker Networker
+	worker api.Networker
 }
 
 func (l *LinkImpl) Add(obj *database.VirtualLink) {

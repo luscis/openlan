@@ -26,22 +26,17 @@ func (u User) Url(prefix, name string) string {
 
 func (u User) Add(c *cli.Context) error {
 	username := c.String("name")
+	if !strings.Contains(username, "@") {
+		return libol.NewErr("invalid username")
+	}
 	user := &schema.User{
 		Name:     username,
 		Password: c.String("password"),
 		Role:     c.String("role"),
 		Lease:    c.String("lease"),
 	}
-	if user.Name == "" {
-		return libol.NewErr("name is empty")
-	}
-	if !strings.Contains(username, "@") {
-		return libol.NewErr("name not contains network")
-	}
-	values := strings.SplitN(username, "@", 2)
-	user.Name = values[0]
-	user.Network = values[1]
-	url := u.Url(c.String("url"), user.Name)
+	user.Name, user.Network = api.SplitName(username)
+	url := u.Url(c.String("url"), username)
 	clt := u.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, user, nil); err != nil {
 		return err

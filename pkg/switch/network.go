@@ -13,23 +13,8 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-type Networker interface {
-	String() string
-	ID() string
-	Initialize()
-	Start(v api.Switcher)
-	Stop()
-	Bridge() cn.Bridger
-	Config() *co.Network
-	Subnet() string
-	Reload(v api.Switcher)
-	Provider() string
-}
-
-var workers = make(map[string]Networker)
-
-func NewNetworker(c *co.Network) Networker {
-	var obj Networker
+func NewNetworker(c *co.Network) api.Networker {
+	var obj api.Networker
 	switch c.Provider {
 	case "esp":
 		obj = NewESPWorker(c)
@@ -42,18 +27,8 @@ func NewNetworker(c *co.Network) Networker {
 	default:
 		obj = NewOpenLANWorker(c)
 	}
-	workers[c.Name] = obj
+	api.AddWorker(c.Name, obj)
 	return obj
-}
-
-func GetWorker(name string) Networker {
-	return workers[name]
-}
-
-func ListWorker(call func(w Networker)) {
-	for _, worker := range workers {
-		call(worker)
-	}
 }
 
 type LinuxPort struct {
@@ -72,7 +47,7 @@ type WorkerImpl struct {
 	setR    *cn.IPSet
 	setV    *cn.IPSet
 	vpn     *OpenVPN
-	trust   *ZeroTrust
+	ztrust  *ZTrust
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -104,9 +79,9 @@ func (w *WorkerImpl) Initialize() {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
 	w.newVPN()
-	if w.cfg.ZeroTrust == "enable" {
-		w.trust = NewZeroTrust(w.cfg.Name, 30)
-		w.trust.Initialize()
+	if w.cfg.ZTrust == "enable" {
+		w.ztrust = NewZTrust(w.cfg.Name, 30)
+		w.ztrust.Initialize()
 	}
 }
 
@@ -248,11 +223,11 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		w.vpn.Start()
 	}
 
-	if !(w.vpn == nil || w.trust == nil) {
-		w.trust.Start()
+	if !(w.vpn == nil || w.ztrust == nil) {
+		w.ztrust.Start()
 		fire.Mangle.Pre.AddRule(cn.IpRule{
 			Input: vpn.Device,
-			Jump:  w.trust.Chain(),
+			Jump:  w.ztrust.Chain(),
 		})
 	}
 	fire.Start()
@@ -307,8 +282,8 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 	w.fire.Stop()
-	if !(w.vpn == nil || w.trust == nil) {
-		w.trust.Stop()
+	if !(w.vpn == nil || w.ztrust == nil) {
+		w.ztrust.Stop()
 	}
 	if !(w.vpn == nil) {
 		w.vpn.Stop()
@@ -488,4 +463,8 @@ func (w *WorkerImpl) newVPN() {
 	obj := NewOpenVPN(vpn)
 	obj.Initialize()
 	w.vpn = obj
+}
+
+func (w *WorkerImpl) ZTruster() api.ZTruster {
+	return w.ztrust
 }

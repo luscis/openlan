@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/app"
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
@@ -96,7 +97,7 @@ type Switch struct {
 	hooks   []Hook
 	http    *Http
 	server  libol.SocketServer
-	worker  map[string]Networker
+	worker  map[string]api.Networker
 	uuid    string
 	newTime int64
 	out     *libol.SubLogger
@@ -110,7 +111,7 @@ func NewSwitch(c *co.Switch) *Switch {
 	v := &Switch{
 		cfg:     c,
 		fire:    network.NewFireWallGlobal(c.FireWall),
-		worker:  make(map[string]Networker, 32),
+		worker:  make(map[string]api.Networker, 32),
 		server:  server,
 		newTime: time.Now().Unix(),
 		hooks:   make([]Hook, 0, 64),

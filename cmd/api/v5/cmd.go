@@ -44,4 +44,6 @@ func Commands(app *api.App) {
 	Policy{}.Commands(app)
 	Version{}.Commands(app)
 	Log{}.Commands(app)
+	ZGuest{}.Commands(app)
+	Knock{}.Commands(app)
 }

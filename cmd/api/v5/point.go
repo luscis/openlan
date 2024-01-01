@@ -51,7 +51,7 @@ func (u Point) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:    "point",
 		Aliases: []string{"ap"},
-		Usage:   "Point connected to this",
+		Usage:   "Point accessed to switch",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
