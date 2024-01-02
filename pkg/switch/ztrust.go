@@ -48,18 +48,18 @@ func (r *KnockRule) Rule() cn.IpRule {
 type ZGuest struct {
 	network  string
 	username string
-	sources  map[string]string
+	source   string
 	rules    map[string]*KnockRule
 	chain    *cn.FireWallChain
 	out      *libol.SubLogger
 	lock     sync.Mutex
 }
 
-func NewZGuest(network, name string) *ZGuest {
+func NewZGuest(network, name, source string) *ZGuest {
 	return &ZGuest{
 		network:  network,
 		username: name,
-		sources:  make(map[string]string, 2),
+		source:   source,
 		rules:    make(map[string]*KnockRule, 1024),
 		out:      libol.NewSubLogger(name + "@" + network),
 	}
@@ -69,38 +69,9 @@ func (g *ZGuest) Chain() string {
 	return "ZTT_" + g.network + "-" + g.username
 }
 
-func (g *ZGuest) Initialize() {
-	g.chain = cn.NewFireWallChain(g.Chain(), network.TMangle, "")
-}
-
 func (g *ZGuest) Start() {
+	g.chain = cn.NewFireWallChain(g.Chain(), network.TMangle, "")
 	g.chain.Install()
-}
-
-func (g *ZGuest) AddSource(source string) {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-
-	g.sources[source] = source
-}
-
-func (g *ZGuest) HasSource(source string) bool {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-
-	if _, ok := g.sources[source]; ok {
-		return true
-	}
-	return false
-}
-
-func (g *ZGuest) DelSource(source string) {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-
-	if _, ok := g.sources[source]; ok {
-		delete(g.sources, source)
-	}
 }
 
 func (g *ZGuest) addRuleX(rule cn.IpRule) {
@@ -139,6 +110,10 @@ func (g *ZGuest) DelRule(rule *KnockRule) {
 }
 
 func (g *ZGuest) Stop() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	g.flush()
 	g.chain.Cancel()
 }
 
@@ -157,6 +132,19 @@ func (g *ZGuest) Clear() {
 		delete(g.rules, rule.Id())
 		g.delRuleX(rule.Rule())
 	}
+}
+
+func (g *ZGuest) flush() {
+	for _, rule := range g.rules {
+		g.delRuleX(rule.Rule())
+	}
+}
+
+func (g *ZGuest) Flush() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	g.flush()
 }
 
 type ZTrust struct {
@@ -231,41 +219,39 @@ func (z *ZTrust) AddGuest(name, source string) error {
 		return libol.NewErr("AddGuest: invalid source")
 	}
 	guest, ok := z.guests[name]
-	if !ok {
-		guest = NewZGuest(z.network, name)
-		guest.Initialize()
-		guest.Start()
-		z.guests[name] = guest
+	if ok {
+		return nil
 	}
-	if !guest.HasSource(source) {
-		z.addRuleX(cn.IpRule{
-			Source:  source,
-			Comment: "User " + guest.username + "@" + guest.network,
-			Jump:    guest.Chain(),
-			Order:   "-I",
-		})
-	}
-	guest.AddSource(source)
+
+	guest = NewZGuest(z.network, name, source)
+	guest.Start()
+	z.addRuleX(cn.IpRule{
+		Source:  guest.source,
+		Comment: "User " + guest.username + "@" + guest.network,
+		Jump:    guest.Chain(),
+		Order:   "-I",
+	})
+	z.guests[name] = guest
+
 	return nil
 }
 
 func (z *ZTrust) DelGuest(name, source string) error {
-	if source == "" {
-		return libol.NewErr("DelGuest: invalid source")
-	}
 	guest, ok := z.guests[name]
 	if !ok {
-		return libol.NewErr("DelGuest: not found %s", name)
+		return nil
 	}
+
 	z.out.Info("ZTrust.DelGuest: %s %s", name, source)
-	if guest.HasSource(source) {
-		z.delRuleX(cn.IpRule{
-			Source:  source,
-			Comment: guest.username + "." + guest.network,
-			Jump:    guest.Chain(),
-		})
-	}
-	guest.DelSource(source)
+
+	z.delRuleX(cn.IpRule{
+		Source:  guest.source,
+		Comment: "User " + guest.username + "@" + guest.network,
+		Jump:    guest.Chain(),
+	})
+	guest.Stop()
+	delete(z.guests, name)
+
 	return nil
 }
 
@@ -285,14 +271,12 @@ func (z *ZTrust) Stop() {
 
 func (z *ZTrust) ListGuest(call func(obj schema.ZGuest)) {
 	for _, guest := range z.guests {
-		for _, source := range guest.sources {
-			obj := schema.ZGuest{
-				Name:    guest.username,
-				Network: guest.network,
-				Address: source,
-			}
-			call(obj)
+		obj := schema.ZGuest{
+			Name:    guest.username,
+			Network: guest.network,
+			Address: guest.source,
 		}
+		call(obj)
 	}
 }
 
