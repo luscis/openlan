@@ -7,6 +7,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/network"
 	cn "github.com/luscis/openlan/pkg/network"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 type KnockRule struct {
@@ -213,5 +214,37 @@ func (z *ZTrust) Stop() {
 	z.chain.Cancel()
 	for _, guest := range z.guests {
 		guest.Stop()
+	}
+}
+
+func (z *ZTrust) ListGuest(call func(obj schema.ZGuest)) {
+	for _, guest := range z.guests {
+		for _, source := range guest.sources {
+			obj := schema.ZGuest{
+				Name:    guest.username,
+				Network: guest.network,
+				Address: source,
+			}
+			call(obj)
+		}
+	}
+}
+
+func (z *ZTrust) ListKnock(name string, call func(obj schema.KnockRule)) {
+	guest, ok := z.guests[name]
+	if !ok {
+		return
+	}
+
+	for _, rule := range guest.rules {
+		obj := schema.KnockRule{
+			Name:     name,
+			Network:  z.network,
+			Protocol: rule.protocol,
+			Dest:     rule.destination,
+			Port:     rule.port,
+			CreateAt: rule.createAt,
+		}
+		call(obj)
 	}
 }

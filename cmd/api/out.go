@@ -2,11 +2,12 @@ package api
 
 import (
 	"fmt"
-	"github.com/ghodss/yaml"
-	"github.com/luscis/openlan/pkg/libol"
 	"os"
 	"strconv"
 	"text/template"
+
+	"github.com/ghodss/yaml"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 func OutJson(data interface{}) error {
@@ -60,6 +61,9 @@ func OutTable(data interface{}, tmpl string) error {
 				format = "%-" + strconv.Itoa(space) + "s"
 			}
 			return fmt.Sprintf(format, value)
+		},
+		"ut": func(value int64) string {
+			return libol.UnixTime(value)
 		},
 	}
 	if tmpl, err := template.New("main").Funcs(funcMap).Parse(tmpl); err != nil {

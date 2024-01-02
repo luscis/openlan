@@ -15,7 +15,7 @@ type Knock struct {
 
 func (u Knock) Url(prefix, name string) string {
 	name, network := api.SplitName(name)
-	return prefix + "/api/ztrust/" + network + "/guest/" + name + "/knock"
+	return prefix + "/api/network/" + network + "/guest/" + name + "/knock"
 }
 
 func (u Knock) Add(c *cli.Context) error {
@@ -25,7 +25,7 @@ func (u Knock) Add(c *cli.Context) error {
 	}
 	socket := c.String("socket")
 	knock := &schema.KnockRule{
-		Protocl: c.String("protocol"),
+		Protocol: c.String("protocol"),
 	}
 	knock.Name, knock.Network = api.SplitName(username)
 	knock.Dest, knock.Port = api.SplitSocket(socket)
@@ -45,7 +45,7 @@ func (u Knock) Remove(c *cli.Context) error {
 	}
 	socket := c.String("socket")
 	knock := &schema.KnockRule{
-		Protocl: c.String("protocol"),
+		Protocol: c.String("protocol"),
 	}
 	knock.Name, knock.Network = api.SplitName(username)
 	knock.Dest, knock.Port = api.SplitSocket(socket)
@@ -60,15 +60,25 @@ func (u Knock) Remove(c *cli.Context) error {
 
 func (u Knock) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -24 "username"}} {{ps -24 "address"}}
+{{ps -24 "username"}} {{ps -8 "protocol"}} {{ps -24 "socket"}} {{ps -24 "createAt"}}
 {{- range . }}
-{{p2 -24 "%s@%s" .Name .Network}} {{ps -24 .Address}}
+{{p2 -24 "%s@%s" .Name .Network}} {{ps -8 .Protocol}} {{p2 -24 "%s:%s" .Dest .Port}} {{ut .CreateAt}}
 {{- end }}
 `
 }
 
 func (u Knock) List(c *cli.Context) error {
-	return nil
+	name := c.String("name")
+
+	url := u.Url(c.String("url"), name)
+	clt := u.NewHttp(c.String("token"))
+
+	var items []schema.KnockRule
+	if err := clt.GetJSON(url, &items); err != nil {
+		return err
+	}
+
+	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
 func (u Knock) Commands(app *api.App) {
@@ -103,7 +113,7 @@ func (u Knock) Commands(app *api.App) {
 				Usage:   "Display all knock",
 				Aliases: []string{"ls"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
+					&cli.StringFlag{Name: "name"},
 				},
 				Action: u.List,
 			},

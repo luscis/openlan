@@ -34,6 +34,8 @@ type ZTruster interface {
 	AddGuest(name, source string) error
 	DelGuest(name, source string) error
 	Knock(name string, protocol, dest, port string, age int) error
+	ListGuest(call func(obj schema.ZGuest))
+	ListKnock(name string, call func(obj schema.KnockRule))
 }
 
 type Networker interface {

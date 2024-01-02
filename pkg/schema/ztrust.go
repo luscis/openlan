@@ -8,10 +8,11 @@ type ZGuest struct {
 }
 
 type KnockRule struct {
-	Network string `json:"network"`
-	Name    string `json:"name"`
-	Dest    string `json:"destination"`
-	Protocl string `json:"protocol"`
-	Port    string `json:"port"`
-	Age     int    `json:"age"`
+	Network  string `json:"network"`
+	Name     string `json:"name"`
+	Dest     string `json:"destination"`
+	Protocol string `json:"protocol"`
+	Port     string `json:"port"`
+	Age      int    `json:"age"`
+	CreateAt int64  `json:"createAt"`
 }

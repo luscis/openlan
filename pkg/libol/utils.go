@@ -192,6 +192,10 @@ func IPNetwork(ipAddr string) (string, error) {
 	}
 }
 
+func UnixTime(value int64) string {
+	return time.Unix(value, 0).UTC().String()
+}
+
 func PrettyTime(t int64) string {
 	s := ""
 	if t < 0 {

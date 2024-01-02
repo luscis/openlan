@@ -16,10 +16,9 @@ type ZGuest struct {
 func (u ZGuest) Url(prefix, name string) string {
 	name, network := api.SplitName(name)
 	if name == "" {
-		return prefix + "/api/ztrust/" + network + "/guest"
-	} else {
-		return prefix + "/api/ztrust/" + network + "/guest/" + name
+		return prefix + "/api/network/" + network + "/guest"
 	}
+	return prefix + "/api/network/" + network + "/guest/" + name
 }
 
 func (u ZGuest) Add(c *cli.Context) error {
@@ -68,7 +67,17 @@ func (u ZGuest) Tmpl() string {
 }
 
 func (u ZGuest) List(c *cli.Context) error {
-	return nil
+	network := c.String("network")
+
+	url := u.Url(c.String("url"), "@"+network)
+	clt := u.NewHttp(c.String("token"))
+
+	var items []schema.ZGuest
+	if err := clt.GetJSON(url, &items); err != nil {
+		return err
+	}
+
+	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
 func (u ZGuest) Commands(app *api.App) {
