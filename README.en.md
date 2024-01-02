@@ -124,3 +124,4 @@ If you have more flexible VPN business needs and need to use VPN to access the e
 - [Multi-region Interconnection](docs/multiarea.md)
 - [Fullly Interconnected Network](docs/fabric.md)
 - [IPSec Network](docs/ipsec.md)
+- [Zero Trust Network](docs/ztrust.md)

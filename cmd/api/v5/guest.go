@@ -15,8 +15,8 @@ type Guest struct {
 
 func (u Guest) Url(prefix, name string) string {
 	name, network := api.SplitName(name)
-	if name == "" {
-		return prefix + "/api/network/" + network + "/guest"
+	if network == "" {
+		return prefix + "/api/network/" + name + "/guest"
 	}
 	return prefix + "/api/network/" + network + "/guest/" + name
 }
@@ -69,7 +69,7 @@ func (u Guest) Tmpl() string {
 func (u Guest) List(c *cli.Context) error {
 	network := c.String("network")
 
-	url := u.Url(c.String("url"), "@"+network)
+	url := u.Url(c.String("url"), network)
 	clt := u.NewHttp(c.String("token"))
 
 	var items []schema.ZGuest
@@ -81,6 +81,7 @@ func (u Guest) List(c *cli.Context) error {
 }
 
 func (u Guest) Commands(app *api.App) {
+	name := api.GetUser(api.Token)
 	app.Command(&cli.Command{
 		Name:    "guest",
 		Aliases: []string{"gu"},
@@ -90,7 +91,7 @@ func (u Guest) Commands(app *api.App) {
 				Name:  "add",
 				Usage: "Add a zGuest",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "name", Value: name},
 					&cli.StringFlag{Name: "address"},
 				},
 				Action: u.Add,
@@ -100,7 +101,7 @@ func (u Guest) Commands(app *api.App) {
 				Usage:   "Remove an existing zGuest",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "name", Value: name},
 					&cli.StringFlag{Name: "address"},
 				},
 				Action: u.Remove,
@@ -110,7 +111,7 @@ func (u Guest) Commands(app *api.App) {
 				Usage:   "Display all zGuests",
 				Aliases: []string{"ls"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
+					&cli.StringFlag{Name: "network", Value: name},
 				},
 				Action: u.List,
 			},

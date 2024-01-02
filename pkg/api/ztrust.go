@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
@@ -16,10 +17,19 @@ type ZTrust struct {
 func (h ZTrust) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/ztrust", h.List).Methods("GET")
 	router.HandleFunc("/api/network/{id}/guest", h.ListGuest).Methods("GET")
+	router.HandleFunc("/api/network/{id}/guest/{user}", h.ListGuest).Methods("GET")
 	router.HandleFunc("/api/network/{id}/guest/{user}", h.AddGuest).Methods("POST")
 	router.HandleFunc("/api/network/{id}/guest/{user}", h.DelGuest).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/guest/{user}/knock", h.ListKnock).Methods("GET")
 	router.HandleFunc("/api/network/{id}/guest/{user}/knock", h.AddKnock).Methods("POST")
+}
+
+func CheckUser(r *http.Request) (bool, string) {
+	user, _, _ := r.BasicAuth()
+	if strings.Contains(user, "@") {
+		return false, strings.SplitN(user, "@", 2)[0]
+	}
+	return true, ""
 }
 
 func (h ZTrust) List(w http.ResponseWriter, r *http.Request) {
@@ -47,9 +57,17 @@ func (h ZTrust) ListGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	admin, name := CheckUser(r)
 	guests := make([]schema.ZGuest, 0, 1024)
 	ztrust.ListGuest(func(obj schema.ZGuest) {
-		guests = append(guests, obj)
+		if !admin {
+			if obj.Name == name {
+				guests = append(guests, obj)
+			}
+		} else {
+			guests = append(guests, obj)
+		}
+
 	})
 
 	ResponseJson(w, guests)
@@ -77,7 +95,10 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest.Name = vars["user"]
-	libol.Info("ZTrust.AddGuest %s@%s", guest.Name, id)
+	admin, name := CheckUser(r)
+	if !admin {
+		guest.Name = name
+	}
 	if guest.Address == "" {
 		client := cache.VPNClient.Get(id, guest.Name)
 		if client != nil {
@@ -85,6 +106,9 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 			guest.Device = client.Device
 		}
 	}
+
+	libol.Info("ZTrust.AddGuest %s@%s", guest.Name, id)
+
 	if guest.Address == "" {
 		http.Error(w, "invalid address", http.StatusBadRequest)
 		return
@@ -120,6 +144,11 @@ func (h ZTrust) DelGuest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest.Name = vars["user"]
+	admin, name := CheckUser(r)
+	if !admin {
+		guest.Name = name
+	}
+
 	libol.Info("ZTrust.DelGuest %s@%s", guest.Name, id)
 	if err := ztrust.DelGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
@@ -144,9 +173,14 @@ func (h ZTrust) ListKnock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := vars["user"]
+	user := vars["user"]
+	admin, name := CheckUser(r)
+	if !admin {
+		user = name
+	}
+
 	rules := make([]schema.KnockRule, 0, 1024)
-	ztrust.ListKnock(name, func(obj schema.KnockRule) {
+	ztrust.ListKnock(user, func(obj schema.KnockRule) {
 		rules = append(rules, obj)
 	})
 
@@ -173,10 +207,15 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	name := vars["user"]
-	libol.Info("ZTrust.AddKnock %s@%s", rule.Name, id)
 
-	if err := ztrust.Knock(name, rule.Protocol, rule.Dest, rule.Port, rule.Age); err == nil {
+	user := vars["user"]
+	admin, name := CheckUser(r)
+	if !admin {
+		user = name
+	}
+	libol.Info("ZTrust.AddKnock %s@%s", user, id)
+
+	if err := ztrust.Knock(user, rule.Protocol, rule.Dest, rule.Port, rule.Age); err == nil {
 		ResponseJson(w, "success")
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

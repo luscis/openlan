@@ -13,6 +13,14 @@ func GetEnv(key, value string) string {
 	return val
 }
 
+func GetUser(name string) string {
+	values := strings.SplitN(name, ":", 2)
+	if strings.Contains(values[0], "@") {
+		return values[0]
+	}
+	return ""
+}
+
 func SplitName(name string) (string, string) {
 	values := strings.SplitN(name, "@", 2)
 	if len(values) == 2 {

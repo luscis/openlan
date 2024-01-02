@@ -3,10 +3,12 @@ package v5
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/luscis/openlan/cmd/api"
-	"github.com/luscis/openlan/pkg/libol"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
+	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Client struct {
@@ -104,9 +106,16 @@ type Cmd struct {
 }
 
 func (c Cmd) NewHttp(token string) Client {
+	values := strings.SplitN(token, ":", 2)
+	username := values[0]
+	password := values[0]
+	if len(values) == 2 {
+		password = values[1]
+	}
 	client := Client{
 		Auth: libol.Auth{
-			Username: token,
+			Username: username,
+			Password: password,
 		},
 	}
 	return client

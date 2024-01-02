@@ -83,6 +83,7 @@ func (u Knock) List(c *cli.Context) error {
 }
 
 func (u Knock) Commands(app *api.App) {
+	name := api.GetUser(api.Token)
 	app.Command(&cli.Command{
 		Name:    "knock",
 		Aliases: []string{"kn"},
@@ -92,7 +93,7 @@ func (u Knock) Commands(app *api.App) {
 				Name:  "add",
 				Usage: "Add a knock",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "name", Value: name},
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "socket"},
 					&cli.IntFlag{Name: "age", Value: 60},
@@ -104,7 +105,7 @@ func (u Knock) Commands(app *api.App) {
 				Usage:   "Remove an existing knock",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "name", Value: name},
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "socket"},
 				},
@@ -115,7 +116,7 @@ func (u Knock) Commands(app *api.App) {
 				Usage:   "Display all knock",
 				Aliases: []string{"ls"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "name", Value: name},
 				},
 				Action: u.List,
 			},
