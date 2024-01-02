@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -77,6 +78,17 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 
 	guest.Name = vars["user"]
 	libol.Info("ZTrust.AddGuest %s@%s", guest.Name, id)
+	if guest.Address == "" {
+		client := cache.VPNClient.Get(id, guest.Name)
+		if client != nil {
+			guest.Address = client.Address
+			guest.Device = client.Device
+		}
+	}
+	if guest.Address == "" {
+		http.Error(w, "invalid address", http.StatusBadRequest)
+		return
+	}
 
 	if err := ztrust.AddGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
@@ -164,7 +176,7 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 	name := vars["user"]
 	libol.Info("ZTrust.AddKnock %s@%s", rule.Name, id)
 
-	if err := ztrust.Knock(name, rule.Protocol, rule.Dest, rule.Port, 0); err == nil {
+	if err := ztrust.Knock(name, rule.Protocol, rule.Dest, rule.Port, rule.Age); err == nil {
 		ResponseJson(w, "success")
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

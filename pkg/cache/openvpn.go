@@ -157,6 +157,17 @@ func (o *vpnClient) List(name string) <-chan *schema.VPNClient {
 	return c
 }
 
+func (o *vpnClient) Get(name, user string) *schema.VPNClient {
+	username := user + "@" + name
+	clients := o.readStatus(name)
+	for _, client := range clients {
+		if client.Name == username {
+			return client
+		}
+	}
+	return nil
+}
+
 func (o *vpnClient) clientFile(name string) string {
 	files, _ := filepath.Glob(o.Dir(name, "*client.ovpn"))
 	if len(files) > 0 {

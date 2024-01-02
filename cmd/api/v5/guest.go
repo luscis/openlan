@@ -9,11 +9,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type ZGuest struct {
+type Guest struct {
 	Cmd
 }
 
-func (u ZGuest) Url(prefix, name string) string {
+func (u Guest) Url(prefix, name string) string {
 	name, network := api.SplitName(name)
 	if name == "" {
 		return prefix + "/api/network/" + network + "/guest"
@@ -21,7 +21,7 @@ func (u ZGuest) Url(prefix, name string) string {
 	return prefix + "/api/network/" + network + "/guest/" + name
 }
 
-func (u ZGuest) Add(c *cli.Context) error {
+func (u Guest) Add(c *cli.Context) error {
 	username := c.String("name")
 	if !strings.Contains(username, "@") {
 		return libol.NewErr("invalid username")
@@ -39,7 +39,7 @@ func (u ZGuest) Add(c *cli.Context) error {
 	return nil
 }
 
-func (u ZGuest) Remove(c *cli.Context) error {
+func (u Guest) Remove(c *cli.Context) error {
 	username := c.String("name")
 	if !strings.Contains(username, "@") {
 		return libol.NewErr("invalid username")
@@ -57,7 +57,7 @@ func (u ZGuest) Remove(c *cli.Context) error {
 	return nil
 }
 
-func (u ZGuest) Tmpl() string {
+func (u Guest) Tmpl() string {
 	return `# total {{ len . }}
 {{ps -24 "username"}} {{ps -24 "address"}}
 {{- range . }}
@@ -66,7 +66,7 @@ func (u ZGuest) Tmpl() string {
 `
 }
 
-func (u ZGuest) List(c *cli.Context) error {
+func (u Guest) List(c *cli.Context) error {
 	network := c.String("network")
 
 	url := u.Url(c.String("url"), "@"+network)
@@ -80,11 +80,11 @@ func (u ZGuest) List(c *cli.Context) error {
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
-func (u ZGuest) Commands(app *api.App) {
+func (u Guest) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "zguest",
-		Aliases: []string{"zg"},
-		Usage:   "zGuest configuration",
+		Name:    "guest",
+		Aliases: []string{"gu"},
+		Usage:   "ZTrust Guest configuration",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

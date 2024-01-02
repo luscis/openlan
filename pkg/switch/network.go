@@ -226,8 +226,14 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	if !(w.vpn == nil || w.ztrust == nil) {
 		w.ztrust.Start()
 		fire.Mangle.Pre.AddRule(cn.IpRule{
-			Input: vpn.Device,
-			Jump:  w.ztrust.Chain(),
+			Input:   vpn.Device,
+			CtState: "RELATED,ESTABLISHED",
+			Comment: "Forwarding Accpted",
+		})
+		fire.Mangle.Pre.AddRule(cn.IpRule{
+			Input:   vpn.Device,
+			Jump:    w.ztrust.Chain(),
+			Comment: "Goto Zero Trust",
 		})
 	}
 	fire.Start()

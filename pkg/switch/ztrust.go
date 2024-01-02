@@ -2,6 +2,7 @@ package cswitch
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/luscis/openlan/pkg/libol"
@@ -11,8 +12,8 @@ import (
 )
 
 type KnockRule struct {
-	createAt    int64
-	age         int
+	createAt    time.Time
+	age         int64
 	protocol    string
 	destination string
 	port        string
@@ -23,6 +24,27 @@ func (r *KnockRule) Id() string {
 	return fmt.Sprintf("%s:%s:%s", r.protocol, r.destination, r.port)
 }
 
+func (r *KnockRule) Expire() bool {
+	now := time.Now()
+	if r.createAt.Unix()+int64(r.age) < now.Unix() {
+		return true
+	}
+	return false
+}
+
+func (r *KnockRule) Rule() cn.IpRule {
+	if r.rule == nil {
+		r.rule = &cn.IpRule{
+			Dest:    r.destination,
+			DstPort: r.port,
+			Proto:   r.protocol,
+			Jump:    "ACCEPT",
+			Comment: "Knock at " + r.createAt.UTC().String(),
+		}
+	}
+	return *r.rule
+}
+
 type ZGuest struct {
 	network  string
 	username string
@@ -30,6 +52,7 @@ type ZGuest struct {
 	rules    map[string]*KnockRule
 	chain    *cn.FireWallChain
 	out      *libol.SubLogger
+	lock     sync.Mutex
 }
 
 func NewZGuest(network, name string) *ZGuest {
@@ -55,53 +78,85 @@ func (g *ZGuest) Start() {
 }
 
 func (g *ZGuest) AddSource(source string) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	g.sources[source] = source
 }
 
+func (g *ZGuest) HasSource(source string) bool {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	if _, ok := g.sources[source]; ok {
+		return true
+	}
+	return false
+}
+
 func (g *ZGuest) DelSource(source string) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	if _, ok := g.sources[source]; ok {
 		delete(g.sources, source)
 	}
 }
 
-func (g *ZGuest) AddRuleX(rule cn.IpRule) {
+func (g *ZGuest) addRuleX(rule cn.IpRule) {
 	if err := g.chain.AddRuleX(rule); err != nil {
 		g.out.Warn("ZTrust.AddRuleX: %s", err)
 	}
 }
 
-func (g *ZGuest) DelRuleX(rule cn.IpRule) {
+func (g *ZGuest) delRuleX(rule cn.IpRule) {
 	if err := g.chain.DelRuleX(rule); err != nil {
 		g.out.Warn("ZTrust.DelRuleX: %s", err)
 	}
 }
 
 func (g *ZGuest) AddRule(rule *KnockRule) {
-	g.rules[rule.Id()] = rule
-	g.AddRuleX(cn.IpRule{
-		Dest:    rule.destination,
-		DstPort: rule.port,
-		Proto:   rule.protocol,
-		Jump:    "ACCEPT",
-		Comment: "Knock at " + time.Now().UTC().String(),
-	})
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	if dst, ok := g.rules[rule.Id()]; !ok {
+		g.addRuleX(rule.Rule())
+		g.rules[rule.Id()] = rule
+	} else {
+		dst.age = rule.age
+		dst.createAt = rule.createAt
+	}
 }
 
 func (g *ZGuest) DelRule(rule *KnockRule) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	if _, ok := g.rules[rule.Id()]; ok {
+		g.delRuleX(rule.Rule())
 		delete(g.rules, rule.Id())
 	}
-	g.DelRuleX(cn.IpRule{
-		Proto:   rule.protocol,
-		Dest:    rule.destination,
-		DstPort: rule.port,
-		Jump:    "ACCEPT",
-		Comment: "Knock at " + time.Now().Local().String(),
-	})
 }
 
 func (g *ZGuest) Stop() {
 	g.chain.Cancel()
+}
+
+func (g *ZGuest) Clear() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	removed := make([]*KnockRule, 0, 32)
+	for _, rule := range g.rules {
+		if rule.Expire() {
+			removed = append(removed, rule)
+		}
+	}
+	for _, rule := range removed {
+		g.out.Info("ZTrust.Clear: %s", rule.Id())
+		delete(g.rules, rule.Id())
+		g.delRuleX(rule.Rule())
+	}
 }
 
 type ZTrust struct {
@@ -128,7 +183,7 @@ func (z *ZTrust) Chain() string {
 func (z *ZTrust) Initialize() {
 	z.chain = cn.NewFireWallChain(z.Chain(), network.TMangle, "")
 	z.chain.AddRule(cn.IpRule{
-		Comment: "ZTrust Default",
+		Comment: "ZTrust Deny All",
 		Jump:    "DROP",
 	})
 }
@@ -142,23 +197,29 @@ func (z *ZTrust) Knock(name string, protocol, dest, port string, age int) error 
 		protocol:    protocol,
 		destination: dest,
 		port:        port,
-		createAt:    time.Now().Unix(),
-		age:         age,
+		createAt:    time.Now(),
+		age:         int64(age),
 	})
 	return nil
 }
 
 func (z *ZTrust) Update() {
-	//TODO expire knock rules.
+	for {
+		for _, guest := range z.guests {
+			guest.Clear()
+		}
+
+		time.Sleep(time.Second * 3)
+	}
 }
 
-func (z *ZTrust) AddRuleX(rule cn.IpRule) {
+func (z *ZTrust) addRuleX(rule cn.IpRule) {
 	if err := z.chain.AddRuleX(rule); err != nil {
 		z.out.Warn("ZTrust.AddRuleX: %s", err)
 	}
 }
 
-func (z *ZTrust) DelRuleX(rule cn.IpRule) {
+func (z *ZTrust) delRuleX(rule cn.IpRule) {
 	if err := z.chain.DelRuleX(rule); err != nil {
 		z.out.Warn("ZTrust.DelRuleX: %s", err)
 	}
@@ -176,13 +237,15 @@ func (z *ZTrust) AddGuest(name, source string) error {
 		guest.Start()
 		z.guests[name] = guest
 	}
+	if !guest.HasSource(source) {
+		z.addRuleX(cn.IpRule{
+			Source:  source,
+			Comment: "User " + guest.username + "@" + guest.network,
+			Jump:    guest.Chain(),
+			Order:   "-I",
+		})
+	}
 	guest.AddSource(source)
-	z.AddRuleX(cn.IpRule{
-		Source:  source,
-		Comment: "User " + guest.username + "@" + guest.network,
-		Jump:    guest.Chain(),
-		Order:   "-I",
-	})
 	return nil
 }
 
@@ -195,11 +258,13 @@ func (z *ZTrust) DelGuest(name, source string) error {
 		return libol.NewErr("DelGuest: not found %s", name)
 	}
 	z.out.Info("ZTrust.DelGuest: %s %s", name, source)
-	z.DelRuleX(cn.IpRule{
-		Source:  source,
-		Comment: guest.username + "." + guest.network,
-		Jump:    guest.Chain(),
-	})
+	if guest.HasSource(source) {
+		z.delRuleX(cn.IpRule{
+			Source:  source,
+			Comment: guest.username + "." + guest.network,
+			Jump:    guest.Chain(),
+		})
+	}
 	guest.DelSource(source)
 	return nil
 }
@@ -207,6 +272,7 @@ func (z *ZTrust) DelGuest(name, source string) error {
 func (z *ZTrust) Start() {
 	z.out.Info("ZTrust.Start")
 	z.chain.Install()
+	libol.Go(z.Update)
 }
 
 func (z *ZTrust) Stop() {
@@ -236,14 +302,17 @@ func (z *ZTrust) ListKnock(name string, call func(obj schema.KnockRule)) {
 		return
 	}
 
+	now := time.Now()
 	for _, rule := range guest.rules {
+		createAt := rule.createAt
 		obj := schema.KnockRule{
 			Name:     name,
 			Network:  z.network,
 			Protocol: rule.protocol,
 			Dest:     rule.destination,
 			Port:     rule.port,
-			CreateAt: rule.createAt,
+			CreateAt: createAt.Unix(),
+			Age:      int(rule.age + createAt.Unix() - now.Unix()),
 		}
 		call(obj)
 	}

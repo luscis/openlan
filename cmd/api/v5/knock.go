@@ -26,6 +26,7 @@ func (u Knock) Add(c *cli.Context) error {
 	socket := c.String("socket")
 	knock := &schema.KnockRule{
 		Protocol: c.String("protocol"),
+		Age:      c.Int("age"),
 	}
 	knock.Name, knock.Network = api.SplitName(username)
 	knock.Dest, knock.Port = api.SplitSocket(socket)
@@ -60,9 +61,9 @@ func (u Knock) Remove(c *cli.Context) error {
 
 func (u Knock) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -24 "username"}} {{ps -8 "protocol"}} {{ps -24 "socket"}} {{ps -24 "createAt"}}
+{{ps -24 "username"}} {{ps -8 "protocol"}} {{ps -24 "socket"}} {{ps -4 "age"}} {{ps -24 "createAt"}}
 {{- range . }}
-{{p2 -24 "%s@%s" .Name .Network}} {{ps -8 .Protocol}} {{p2 -24 "%s:%s" .Dest .Port}} {{ut .CreateAt}}
+{{p2 -24 "%s@%s" .Name .Network}} {{ps -8 .Protocol}} {{p2 -24 "%s:%s" .Dest .Port}} {{pi -4 .Age}} {{ut .CreateAt}}
 {{- end }}
 `
 }
@@ -94,6 +95,7 @@ func (u Knock) Commands(app *api.App) {
 					&cli.StringFlag{Name: "name"},
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "socket"},
+					&cli.IntFlag{Name: "age", Value: 60},
 				},
 				Action: u.Add,
 			},

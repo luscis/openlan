@@ -66,7 +66,7 @@ push "{{ . }}"
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 cipher {{ .Cipher }}
-status {{ .Protocol }}{{ .Port }}server.status 5
+status {{ .Protocol }}{{ .Port }}server.status 2
 {{- if .CertNot }}
 client-cert-not-required
 {{- else }}
@@ -98,7 +98,7 @@ push "route {{ . }}"
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 cipher {{ .Cipher }}
-status {{ .Protocol }}{{ .Port }}server.status 5
+status {{ .Protocol }}{{ .Port }}server.status 2
 client-config-dir {{ .ClientConfigDir }}
 verb 3
 `
@@ -313,7 +313,7 @@ func (o *OpenVPN) Clean() {
 			}
 		}
 	}
-	files := []string{o.FileStats(true), o.FileIpp(true)}
+	files := []string{o.FileStats(true), o.FileIpp(true), o.FileClient(true)}
 	for _, file := range files {
 		if err := libol.FileExist(file); err == nil {
 			if err := os.Remove(file); err != nil {
