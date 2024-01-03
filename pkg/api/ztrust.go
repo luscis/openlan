@@ -94,11 +94,14 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guest.Name = vars["user"]
+	user := vars["user"]
 	admin, name := CheckUser(r)
-	if !admin {
-		guest.Name = name
+	if !admin && user != name {
+		http.Error(w, "have no permission", http.StatusForbidden)
+		return
 	}
+
+	guest.Name = user
 	if guest.Address == "" {
 		client := cache.VPNClient.Get(id, guest.Name)
 		if client != nil {
@@ -106,14 +109,12 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 			guest.Device = client.Device
 		}
 	}
-
-	libol.Info("ZTrust.AddGuest %s@%s", guest.Name, id)
-
 	if guest.Address == "" {
-		http.Error(w, "invalid address", http.StatusBadRequest)
+		http.Error(w, "can't find address", http.StatusBadRequest)
 		return
 	}
 
+	libol.Debug("ZTrust.AddGuest %s@%s", guest.Name, id)
 	if err := ztrust.AddGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
 	} else {
@@ -143,13 +144,15 @@ func (h ZTrust) DelGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guest.Name = vars["user"]
+	user := vars["user"]
 	admin, name := CheckUser(r)
-	if !admin {
-		guest.Name = name
+	if !admin && user != name {
+		http.Error(w, "have no permission", http.StatusForbidden)
+		return
 	}
 
-	libol.Info("ZTrust.DelGuest %s@%s", guest.Name, id)
+	guest.Name = user
+	libol.Debug("ZTrust.DelGuest %s@%s", guest.Name, id)
 	if err := ztrust.DelGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
 	} else {
@@ -175,8 +178,9 @@ func (h ZTrust) ListKnock(w http.ResponseWriter, r *http.Request) {
 
 	user := vars["user"]
 	admin, name := CheckUser(r)
-	if !admin {
-		user = name
+	if !admin && user != name {
+		http.Error(w, "have no permission", http.StatusForbidden)
+		return
 	}
 
 	rules := make([]schema.KnockRule, 0, 1024)
@@ -210,11 +214,12 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 
 	user := vars["user"]
 	admin, name := CheckUser(r)
-	if !admin {
-		user = name
+	if !admin && user != name {
+		http.Error(w, "have no permission", http.StatusForbidden)
+		return
 	}
-	libol.Info("ZTrust.AddKnock %s@%s", user, id)
 
+	libol.Debug("ZTrust.AddKnock %s@%s", user, id)
 	if err := ztrust.Knock(user, rule.Protocol, rule.Dest, rule.Port, rule.Age); err == nil {
 		ResponseJson(w, "success")
 	} else {

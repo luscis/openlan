@@ -23,9 +23,9 @@ LDFLAGS += -X $(MOD).Version=$(VER)
 
 build: test pkg
 
-pkg: clean linux-rpm linux-bin windows-gz darwin-gz ## build all plaftorm packages
+pkg: clean linux-rpm linux-bin windows-gzip darwin-gzip ## build all plaftorm packages
 
-gz: linux-gz windows-gz darwin-gz
+gzip: linux-gzip windows-gzip darwin-gzip ## build all plaftorm gzip
 
 help: ## show make targets
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);\
@@ -67,8 +67,12 @@ docker-compose:
 	echo "$ cd /tmp/openlan.c" && \
 	echo "$ docker-compose up -d"
 
-## linux platform
-linux: linux-proxy linux-point linux-switch
+linux: env ## build linux binary
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 rpm: env ## build rpm packages
 	mkdir -p ~/rpmbuild/SPECS
@@ -77,32 +81,13 @@ rpm: env ## build rpm packages
 	@dist/spec.sh
 	rpmbuild -ba ~/rpmbuild/SPECS/openlan.spec
 
-## compile command line
-cmd: env
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
-
-openudp: env
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
-
-linux: linux-point linux-switch linux-proxy ## build all linux binary
-
-linux-point: env
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
-
-linux-switch: env cmd openudp
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
-
-linux-proxy: env
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
-
-
-linux-gz: install ## build linux packages
+linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
 	tar -cf $(LIN_DIR).tar $(LIN_DIR) && mv $(LIN_DIR).tar $(BD)
 	@rm -rf $(LIN_DIR)
 	gzip -f $(BD)/$(LIN_DIR).tar
 
-linux-bin: linux-gz ## build linux install binary
+linux-bin: linux-gzip ## build linux install binary
 	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LIN_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
 	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \
@@ -121,13 +106,12 @@ install: env linux ## install packages
 	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LIN_DIR)/usr/bin
 
 ## cross build for windows
-windows: windows-point ## build windows binary
-
-windows-point: env
+windows: ## build windows binary
 	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
 	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.exe ./cmd/main.go
 
-windows-gz: env windows ## build windows packages
+windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
 	@rm -rf $(WIN_DIR).tar.gz
 
@@ -147,14 +131,16 @@ windows-syso: ## build windows syso
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.darwin ./cmd/point_darwin
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.din ./cmd/point_darwin
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.din ./cmd/main.go
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.din ./cmd/proxy
 
-darwin-gz: env darwin ## build darwin packages
+darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@rm -rf $(MAC_DIR).tar.gz
 
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(MAC_DIR)/point.json
-	@cp -rf $(BD)/openlan-point.darwin $(MAC_DIR)
+	@cp -rf $(BD)/openlan-point.din $(MAC_DIR)
 
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	@rm -rf $(MAC_DIR)

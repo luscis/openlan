@@ -181,13 +181,15 @@ func (z *ZTrust) Knock(name string, protocol, dest, port string, age int) error 
 	if !ok {
 		return libol.NewErr("Knock: not found %s", name)
 	}
-	guest.AddRule(&KnockRule{
+	rule := &KnockRule{
 		protocol:    protocol,
 		destination: dest,
 		port:        port,
 		createAt:    time.Now(),
 		age:         int64(age),
-	})
+	}
+	z.out.Info("Knock: %s %s", name, rule.Id())
+	guest.AddRule(rule)
 	return nil
 }
 
