@@ -52,12 +52,12 @@ vendor:
 docker: linux-bin docker-rhel docker-deb ## build docker images
 
 docker-rhel:
-	cp $(SD)/docker/openlan.centos $(BD)
-	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f openlan.centos  .
+	cp -rf $(SD)/docker/centos $(BD)
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f centos/Dockerfile  .
 
 docker-deb:
-	cp $(SD)/docker/openlan.debian $(BD)
-	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f openlan.debian  .
+	cp -rf $(SD)/docker/debian $(BD)
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f debian/Dockerfile  .
 
 docker-compose:
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \

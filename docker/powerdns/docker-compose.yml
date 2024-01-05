@@ -1,0 +1,70 @@
+# based on https://github.com/PowerDNS/pdns
+---
+version: '2.0'
+services:
+  db-init:
+    image: powerdns/pdns-auth-46:4.6.4
+    user: root
+    entrypoint: ["/opt/powerdns/db-init.sh"]
+    volumes:
+      - /opt/powerdns:/opt/powerdns
+      - /opt/powerdns/lib:/var/lib/powerdns
+  auth:
+    image: powerdns/pdns-auth-46:4.6.4
+    user: root
+    environment:
+      - PDNS_AUTH_API_KEY=luscis
+    ports:
+      - "5301:53" 
+      - "5301:53/udp"
+      - "5381:8081"
+    volumes:
+      - /opt/powerdns/lib:/var/lib/powerdns
+    depends_on:
+      - db-init
+    networks:
+      default:
+        ipv4_address: 172.99.0.254
+  recursor:
+    image: powerdns/pdns-recursor-48:4.8.5
+    user: root
+    environment:
+      - PDNS_RECURSOR_API_KEY=luscis
+    ports:
+      - "5302:53"
+      - "5302:53/udp"
+      - "5382:8082"
+    volumes:
+      - /opt/powerdns/recursor.d:/etc/powerdns/recursor.d
+    depends_on:
+      - auth
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.99.0.0/24
+
+
+# docker exec -it powerdns_auth_1 bash
+## ZONE
+# pdnsutil create-zone luscis.io
+# pdnsutil add-record luscis.io @ NS admin.ns.luscis.io
+
+## A
+# pdnsutil add-record luscis.io a0 A 192.168.0.88
+# pdnsutil add-record luscis.io a1 A 192.168.0.66
+
+## A
+# pdnsutil create-zone jump.io
+# pdnsutil add-record jump.io @ NS admin.ns.jump.io
+# pdnsutil add-record jump.io a86 A 192.168.0.86
+
+
+## PTR
+# pdnsutil create-zone 168.192.in-addr.arpa
+# pdnsutil add-record 168.192.in-addr.arpa 84.0 PTR a0.luscis.io
+# pdnsutil add-record 168.192.in-addr.arpa @ NS admin.ns.168.192.in-addr.arpa
+# pdnsutil list-zone 168.192.in-addr.arpa
+
