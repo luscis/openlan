@@ -50,6 +50,7 @@ type Networker interface {
 	Reload(v Switcher)
 	Provider() string
 	ZTruster() ZTruster
+	IfAddr() string
 }
 
 var workers = make(map[string]Networker)

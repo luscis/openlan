@@ -5,12 +5,16 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/luscis/openlan/pkg/api"
+	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
+	nl "github.com/vishvananda/netlink"
 )
 
 func NewNetworker(c *co.Network) api.Networker {
@@ -64,6 +68,34 @@ func (w *WorkerImpl) Provider() string {
 }
 
 func (w *WorkerImpl) Initialize() {
+	n := models.Network{
+		Name:    w.cfg.Name,
+		IpStart: w.cfg.Subnet.Start,
+		IpEnd:   w.cfg.Subnet.End,
+		Netmask: w.cfg.Subnet.Netmask,
+		IfAddr:  w.cfg.Bridge.Address,
+		Routes:  make([]*models.Route, 0, 2),
+	}
+	for _, rt := range w.cfg.Routes {
+		if rt.NextHop == "" {
+			w.out.Warn("WorkerImpl.Initialize: %s noNextHop", rt.Prefix)
+			continue
+		}
+		rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
+		if rt.Metric > 0 {
+			rte.Metric = rt.Metric
+		}
+		if rt.NextHop != "" {
+			rte.Origin = rt.NextHop
+		}
+		n.Routes = append(n.Routes, rte)
+	}
+
+	cache.Network.Add(&n)
+
+	w.updateVPN()
+	w.createVPN()
+
 	if w.cfg.Dhcp == "enable" {
 		w.dhcp = NewDhcp(&co.Dhcp{
 			Name:   w.cfg.Name,
@@ -71,18 +103,23 @@ func (w *WorkerImpl) Initialize() {
 			Bridge: w.cfg.Bridge,
 		})
 	}
+
 	w.fire = cn.NewFireWallTable(w.cfg.Name)
+
 	if out, err := w.setV.Clear(); err != nil {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
 	if out, err := w.setR.Clear(); err != nil {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
-	w.newVPN()
+
 	if w.cfg.ZTrust == "enable" {
 		w.ztrust = NewZTrust(w.cfg.Name, 30)
 		w.ztrust.Initialize()
 	}
+
+	w.forwardSubnet()
+	w.forwardVPN()
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
@@ -167,21 +204,70 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 	w.AddPhysical(bridge, port.vlan, port.link)
 }
 
+func (w *WorkerImpl) loadRoutes() {
+	// install routes
+	cfg := w.cfg
+	w.out.Debug("WorkerImpl.LoadRoute: %v", cfg.Routes)
+	ifAddr := w.IfAddr()
+	for _, rt := range cfg.Routes {
+		_, dst, err := net.ParseCIDR(rt.Prefix)
+		if err != nil {
+			continue
+		}
+		if ifAddr == rt.NextHop && rt.MultiPath == nil {
+			// route's next-hop is local not install again.
+			continue
+		}
+		nlrt := nl.Route{Dst: dst}
+		for _, hop := range rt.MultiPath {
+			nxhe := &nl.NexthopInfo{
+				Hops: hop.Weight,
+				Gw:   net.ParseIP(hop.NextHop),
+			}
+			nlrt.MultiPath = append(nlrt.MultiPath, nxhe)
+		}
+		if rt.MultiPath == nil {
+			nlrt.Gw = net.ParseIP(rt.NextHop)
+			nlrt.Priority = rt.Metric
+		}
+		w.out.Debug("WorkerImpl.LoadRoute: %s", nlrt.String())
+		promise := &libol.Promise{
+			First:  time.Second * 2,
+			MaxInt: time.Minute,
+			MinInt: time.Second * 10,
+		}
+		rt_c := rt
+		promise.Go(func() error {
+			if err := nl.RouteReplace(&nlrt); err != nil {
+				w.out.Warn("WorkerImpl.LoadRoute: %v %s", nlrt, err)
+				return err
+			}
+			w.out.Info("WorkerImpl.LoadRoute: %v success", rt_c.String())
+			return nil
+		})
+	}
+}
+
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg, vpn := w.GetCfgs()
 	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
+
+	w.loadRoutes()
+
 	if cfg.Acl != "" {
 		fire.Mangle.Pre.AddRule(cn.IpRule{
 			Input: cfg.Bridge.Name,
 			Jump:  cfg.Acl,
 		})
 	}
+
 	fire.Filter.For.AddRule(cn.IpRule{
 		Input:  cfg.Bridge.Name,
 		Output: cfg.Bridge.Name,
 	})
+
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
 		fire.Mangle.Post.AddRule(cn.IpRule{
@@ -202,6 +288,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			SetMss:  cfg.Bridge.Mss,
 		})
 	}
+
 	for _, output := range cfg.Outputs {
 		port := &LinuxPort{
 			name: output.Interface,
@@ -210,6 +297,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		w.AddOutput(cfg.Bridge.Name, port)
 		w.outputs = append(w.outputs, port)
 	}
+
 	if !(w.dhcp == nil) {
 		w.dhcp.Start()
 		fire.Nat.Post.AddRule(cn.IpRule{
@@ -219,6 +307,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			Comment: "Default Gateway for DHCP",
 		})
 	}
+
 	if !(w.vpn == nil) {
 		w.vpn.Start()
 	}
@@ -236,6 +325,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			Comment: "Goto Zero Trust",
 		})
 	}
+
 	fire.Start()
 }
 
@@ -285,24 +375,53 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 	}
 }
 
+func (w *WorkerImpl) unloadRoutes() {
+	cfg := w.cfg
+	for _, rt := range cfg.Routes {
+		_, dst, err := net.ParseCIDR(rt.Prefix)
+		if err != nil {
+			continue
+		}
+		nlRt := nl.Route{Dst: dst}
+		if rt.MultiPath == nil {
+			nlRt.Gw = net.ParseIP(rt.NextHop)
+			nlRt.Priority = rt.Metric
+		}
+		w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlRt.String())
+		if err := nl.RouteDel(&nlRt); err != nil {
+			w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
+			continue
+		}
+		w.out.Info("WorkerImpl.UnLoadRoute: %v", rt.String())
+	}
+}
+
 func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
+
 	w.fire.Stop()
+
 	if !(w.vpn == nil || w.ztrust == nil) {
 		w.ztrust.Stop()
 	}
+
 	if !(w.vpn == nil) {
 		w.vpn.Stop()
 	}
+
 	if !(w.dhcp == nil) {
 		w.dhcp.Stop()
 	}
+
 	for _, output := range w.outputs {
 		w.DelOutput(w.cfg.Bridge.Name, output)
 	}
+
 	w.outputs = nil
 	w.setR.Destroy()
 	w.setV.Destroy()
+
+	w.unloadRoutes()
 }
 
 func (w *WorkerImpl) String() string {
@@ -322,6 +441,27 @@ func (w *WorkerImpl) Config() *co.Network {
 }
 
 func (w *WorkerImpl) Subnet() string {
+	cfg := w.cfg
+
+	ipAddr := cfg.Bridge.Address
+	ipMask := cfg.Subnet.Netmask
+	if ipAddr == "" {
+		ipAddr = cfg.Subnet.Start
+	}
+	if ipAddr == "" {
+		return ""
+	}
+
+	addr := ipAddr
+	if ipMask != "" {
+		prefix := libol.Netmask2Len(ipMask)
+		ifAddr := strings.SplitN(ipAddr, "/", 2)[0]
+		addr = fmt.Sprintf("%s/%d", ifAddr, prefix)
+	}
+	if _, inet, err := net.ParseCIDR(addr); err == nil {
+		return inet.String()
+	}
+
 	return ""
 }
 
@@ -411,10 +551,17 @@ func (w *WorkerImpl) GetCfgs() (*co.Network, *co.OpenVPN) {
 	return cfg, vpn
 }
 
-func (w *WorkerImpl) updateVPN(routes []string) {
+func (w *WorkerImpl) updateVPN() {
 	cfg, vpn := w.GetCfgs()
-	if cfg == nil {
+	if vpn == nil {
 		return
+	}
+
+	routes := vpn.Routes
+	routes = append(routes, vpn.Subnet) // add subnet of VPN self.
+	if addr := w.Subnet(); addr != "" {
+		w.out.Info("WorkerImpl.updateVPN subnet %s", addr)
+		routes = append(routes, addr)
 	}
 
 	for _, rt := range cfg.Routes {
@@ -460,7 +607,36 @@ func (w *WorkerImpl) forwardVPN() {
 	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 }
 
-func (w *WorkerImpl) newVPN() {
+func (w *WorkerImpl) forwardSubnet() {
+	cfg, vpn := w.GetCfgs()
+	br := cfg.Bridge
+	ifAddr := strings.SplitN(br.Address, "/", 2)[0]
+	if ifAddr == "" {
+		return
+	}
+
+	subnet := w.Subnet()
+	// Enable MASQUERADE, and FORWARD it.
+	w.toRelated(br.Name, "Accept related")
+	for _, rt := range cfg.Routes {
+		if rt.MultiPath != nil {
+			continue
+		}
+		if rt.Prefix == "0.0.0.0/0" {
+			w.setR.Add("0.0.0.0/1")
+			w.setR.Add("128.0.0.0/1")
+			break
+		}
+		w.setR.Add(rt.Prefix)
+	}
+	w.toForward_r(br.Name, subnet, w.setR.Name, "To route")
+	if vpn != nil {
+		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
+	}
+	w.toMasq_r(subnet, w.setR.Name, "To Masq")
+}
+
+func (w *WorkerImpl) createVPN() {
 	_, vpn := w.GetCfgs()
 	if vpn == nil {
 		return
@@ -473,4 +649,8 @@ func (w *WorkerImpl) newVPN() {
 
 func (w *WorkerImpl) ZTruster() api.ZTruster {
 	return w.ztrust
+}
+
+func (w *WorkerImpl) IfAddr() string {
+	return strings.SplitN(w.cfg.Bridge.Address, "/", 2)[0]
 }

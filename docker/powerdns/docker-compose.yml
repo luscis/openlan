@@ -50,7 +50,7 @@ networks:
 # docker exec -it powerdns_auth_1 bash
 ## ZONE
 # pdnsutil create-zone luscis.io
-# pdnsutil add-record luscis.io @ NS admin.ns.luscis.io
+# pdnsutil add-record luscis.io @ NS ns1.luscis.io
 
 ## A
 # pdnsutil add-record luscis.io a0 A 192.168.0.88
@@ -58,13 +58,13 @@ networks:
 
 ## A
 # pdnsutil create-zone jump.io
-# pdnsutil add-record jump.io @ NS admin.ns.jump.io
+# pdnsutil add-record jump.io @ NS ns1.jump.io
 # pdnsutil add-record jump.io a86 A 192.168.0.86
 
 
 ## PTR
 # pdnsutil create-zone 168.192.in-addr.arpa
 # pdnsutil add-record 168.192.in-addr.arpa 84.0 PTR a0.luscis.io
-# pdnsutil add-record 168.192.in-addr.arpa @ NS admin.ns.168.192.in-addr.arpa
+# pdnsutil add-record 168.192.in-addr.arpa @ NS ns1.168.192.in-addr.arpa
 # pdnsutil list-zone 168.192.in-addr.arpa
 
