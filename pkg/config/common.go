@@ -37,10 +37,10 @@ type Http struct {
 	Public string `json:"public,omitempty"`
 }
 
-func CorrectAddr(listen *string, port int) {
-	values := strings.SplitN(*listen, ":", 2)
-	if len(values) == 1 {
-		*listen = fmt.Sprintf("%s:%d", values[0], port)
+func (h *Http) Correct() {
+	CorrectAddr(&h.Listen, 10000)
+	if h.Public == "" {
+		h.Public = VarDir("public")
 	}
 }
 
@@ -51,6 +51,17 @@ func (h *Http) GetUrl() string {
 		port = values[1]
 	}
 	return "https://127.0.0.1:" + port
+}
+
+func CorrectAddr(listen *string, port int) {
+	if *listen == "" {
+		*listen = fmt.Sprintf("0.0.0.0:%d", port)
+		return
+	}
+	values := strings.SplitN(*listen, ":", 2)
+	if len(values) == 1 {
+		*listen = fmt.Sprintf("%s:%d", values[0], port)
+	}
 }
 
 func GetAlias() string {

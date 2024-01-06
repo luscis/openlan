@@ -103,21 +103,18 @@ func (s *Switch) LoadExt() {
 }
 
 func (s *Switch) Correct() {
+	s.Log.Correct()
+	s.Queue.Correct()
+
 	if s.Alias == "" {
 		s.Alias = GetAlias()
 	}
-	if s.Listen == "" {
-		s.Listen = "0.0.0.0:10002"
-	}
+
 	CorrectAddr(&s.Listen, 10002)
 	if s.Http == nil {
-		s.Http = &Http{
-			Listen: "0.0.0.0:10000",
-		}
+		s.Http = &Http{}
 	}
-	if s.Http != nil {
-		CorrectAddr(&s.Http.Listen, 10000)
-	}
+	s.Http.Correct()
 
 	vpn := DefaultOpenVPN()
 	vpn.Url = s.Http.GetUrl()
@@ -126,28 +123,27 @@ func (s *Switch) Correct() {
 		s.Timeout = 120
 	}
 
-	s.TokenFile = filepath.Join(s.ConfDir, "token")
-	s.File = filepath.Join(s.ConfDir, "switch.json")
+	s.TokenFile = s.Dir("token")
+	s.File = s.Dir("switch.json")
 
 	if s.Cert == nil {
 		s.Cert = &Cert{}
 	}
 	s.Cert.Correct()
+
 	if s.Crypt == nil {
 		s.Crypt = &Crypt{}
 	}
-	s.Log.Correct()
 	s.Crypt.Correct()
 	s.Perf.Correct()
 
-	s.PassFile = filepath.Join(s.ConfDir, "password")
+	s.PassFile = s.Dir("password")
 	if s.Protocol == "" {
 		s.Protocol = "tcp"
 	}
 	if s.AddrPool == "" {
 		s.AddrPool = "169.254"
 	}
-	s.Queue.Correct()
 }
 
 func (s *Switch) Dir(elem ...string) string {
