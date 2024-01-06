@@ -2,7 +2,7 @@
 
 set -ex
 
-version=$(cat VERSION)
+version=$(./dist/version.sh)
 package=openlan-$version
 
 # build dist.tar

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 .ONESHELL:
-.PHONY: docker linux linux-rpm darwin darwin-zip windows windows-zip test vendor
+.PHONY: docker linux darwin darwin-zip windows windows-zip test vendor
 
 ## version
 LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
@@ -23,7 +23,7 @@ LDFLAGS += -X $(MOD).Version=$(VER)
 
 build: test pkg
 
-pkg: clean linux-rpm linux-bin windows-gzip darwin-gzip ## build all plaftorm packages
+pkg: clean linux-bin windows-gzip darwin-gzip ## build all plaftorm packages
 
 gzip: linux-gzip windows-gzip darwin-gzip ## build all plaftorm gzip
 
@@ -41,8 +41,8 @@ env: update
 	@gofmt -w -s ./pkg ./cmd
 
 update:
-	git submodule init
-	git submodule update
+	@git submodule init  2> /dev/null
+	@git submodule update 2> /dev/null
 
 vendor:
 	go clean -modcache
@@ -83,13 +83,6 @@ linux: env ## build linux binary
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
-
-rpm: env ## build rpm packages
-	mkdir -p ~/rpmbuild/SPECS
-	mkdir -p ~/rpmbuild/SOURCES
-	sed -e "s/Version:.*/Version:\ $(VER)/" $(SD)/dist/openlan.spec.in > ~/rpmbuild/SPECS/openlan.spec
-	@dist/spec.sh
-	rpmbuild -ba ~/rpmbuild/SPECS/openlan.spec
 
 linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
