@@ -162,6 +162,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		link := &netlink.Gretap{
 			LinkAttrs: netlink.LinkAttrs{
 				Name: port.link,
+				MTU:  1460,
 			},
 			Local:    libol.ParseAddr("0.0.0.0"),
 			Remote:   libol.ParseAddr(values[1]),
@@ -189,6 +190,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			LinkAttrs: netlink.LinkAttrs{
 				TxQLen: -1,
 				Name:   port.link,
+				MTU:    1450,
 			},
 			Group: libol.ParseAddr(values[1]),
 			Port:  dport,
