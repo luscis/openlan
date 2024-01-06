@@ -118,12 +118,17 @@ func (s *Switch) Correct() {
 	if s.Http != nil {
 		CorrectAddr(&s.Http.Listen, 10000)
 	}
+
+	vpn := DefaultOpenVPN()
+	vpn.Url = s.Http.GetUrl()
+
 	if s.Timeout == 0 {
 		s.Timeout = 120
 	}
-	libol.Debug("Proxy.Correct Http %v", s.Http)
+
 	s.TokenFile = filepath.Join(s.ConfDir, "token")
 	s.File = filepath.Join(s.ConfDir, "switch.json")
+
 	if s.Cert == nil {
 		s.Cert = &Cert{}
 	}
@@ -134,6 +139,7 @@ func (s *Switch) Correct() {
 	s.Log.Correct()
 	s.Crypt.Correct()
 	s.Perf.Correct()
+
 	s.PassFile = filepath.Join(s.ConfDir, "password")
 	if s.Protocol == "" {
 		s.Protocol = "tcp"

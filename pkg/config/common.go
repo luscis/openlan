@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 var index = 1024
@@ -37,10 +38,19 @@ type Http struct {
 }
 
 func CorrectAddr(listen *string, port int) {
-	values := strings.Split(*listen, ":")
+	values := strings.SplitN(*listen, ":", 2)
 	if len(values) == 1 {
 		*listen = fmt.Sprintf("%s:%d", values[0], port)
 	}
+}
+
+func (h *Http) GetUrl() string {
+	port := "10000"
+	values := strings.SplitN(h.Listen, ":", 2)
+	if len(values) == 2 {
+		port = values[1]
+	}
+	return "https://127.0.0.1:" + port
 }
 
 func GetAlias() string {

@@ -2,13 +2,15 @@ package config
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
 	"strconv"
 	"strings"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type OpenVPN struct {
 	Network   string           `json:"network"`
+	Url       string           `json:"url"`
 	Directory string           `json:"directory"`
 	Listen    string           `json:"listen"`
 	Protocol  string           `json:"protocol,omitempty"`
@@ -35,19 +37,29 @@ type OpenVPNClient struct {
 	Netmask string `json:"netmask"`
 }
 
+var defaultVpn = &OpenVPN{
+	Protocol:  "tcp",
+	Auth:      "xauth",
+	Device:    "tun0",
+	RootCa:    VarDir("cert/ca.crt"),
+	ServerCrt: VarDir("cert/crt"),
+	ServerKey: VarDir("cert/key"),
+	DhPem:     VarDir("openvpn/dh.pem"),
+	TlsAuth:   VarDir("openvpn/ta.key"),
+	Cipher:    "AES-256-CBC",
+	Script:    "/usr/bin/openlan",
+}
+
 func DefaultOpenVPN() *OpenVPN {
-	return &OpenVPN{
-		Protocol:  "tcp",
-		Auth:      "xauth",
-		Device:    "tun0",
-		RootCa:    VarDir("cert/ca.crt"),
-		ServerCrt: VarDir("cert/crt"),
-		ServerKey: VarDir("cert/key"),
-		DhPem:     VarDir("openvpn/dh.pem"),
-		TlsAuth:   VarDir("openvpn/ta.key"),
-		Cipher:    "AES-256-CBC",
-		Script:    "/usr/bin/openlan",
-	}
+	return defaultVpn
+}
+
+func (o *OpenVPN) AuthBin(obj *OpenVPN) string {
+	bin := obj.Script
+	bin += " -l " + obj.Url
+	bin += " user check"
+	bin += " --network " + o.Network
+	return bin
 }
 
 func (o *OpenVPN) Merge(obj *OpenVPN) {
@@ -88,8 +100,7 @@ func (o *OpenVPN) Merge(obj *OpenVPN) {
 		o.Push = append(o.Push, obj.Push...)
 	}
 	if o.Script == "" {
-		bin := obj.Script + " user check --network " + o.Network
-		o.Script = bin
+		o.Script = o.AuthBin(obj)
 	}
 	if o.Clients == nil || len(o.Clients) == 0 {
 		o.Clients = append(o.Clients, obj.Clients...)

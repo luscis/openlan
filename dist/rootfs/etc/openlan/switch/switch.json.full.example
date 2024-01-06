@@ -1,9 +1,11 @@
 {
     "protocol": "tls",
+    "listen": "0.0.0.0:10002",
     "cert": {
         "directory": "/var/openlan/cert"
     },
     "http": {
+        "listen": "0.0.0.0:10000",
         "public": "/var/openlan/public"
     },
     "crypt": {
@@ -13,18 +15,6 @@
     "inspect": [
         "neighbor",
         "online"
-    ],
-    "firewall": [
-       {
-          "table": "nat",
-          "chain": "PREROUTING",
-          "protocol": "tcp",
-          "match": "tcp",
-          "destination": "0.0.0.0/0",
-          "destPort": 80,
-          "jump": "DNAT",
-          "toDestination": "100.44.85.6:80"
-       }
     ],
     "ldap": {
         "server": "ldap-server.net:389",
