@@ -49,6 +49,16 @@ vendor:
 	go mod tidy
 	go mod vendor -v
 
+config:
+	cd $(BD) && mkdir -p config/openlan
+	cp -rvf ../docker/docker-compose.yml config/openlan
+
+	mkdir -p config/openlan/etc
+	cp -rvf ../dist/rootfs/etc/openlan config/openlan/etc
+
+	cd config && tar -cf ../config.tar openlan && cd ..
+	gzip -f config.tar
+
 docker: linux-bin docker-rhel docker-deb ## build docker images
 
 docker-rhel:

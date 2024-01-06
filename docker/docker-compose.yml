@@ -82,15 +82,3 @@ services:
     depends_on:
       - confd
       - switch
-  dns:
-    restart: always
-    image: "adguard/dnsproxy:latest.x86_64"
-    # privileged: true
-    # network_mode: "host"
-    network_mode: service:confd
-    entrypoint: ["/opt/dnsproxy/dnsproxy", "--config-path=/opt/dnsproxy/config.yaml"]
-    volumes:
-      - /opt/openlan/etc/dnsproxy/config.yaml:/opt/dnsproxy/config.yaml
-    depends_on:
-      - confd
-      - switch
