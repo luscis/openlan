@@ -568,6 +568,7 @@ func (w *WorkerImpl) updateVPN() {
 		addr := rt.Prefix
 		if addr == "0.0.0.0/0" {
 			vpn.Push = append(vpn.Push, "redirect-gateway def1")
+			routes = append(routes, addr)
 			continue
 		}
 		if _, inet, err := net.ParseCIDR(addr); err == nil {
