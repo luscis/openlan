@@ -157,20 +157,12 @@ func (v *Switch) preApplication() {
 	v.apps.Request = app.NewRequest(v)
 	v.hooks = append(v.hooks, v.apps.Request.OnFrame)
 
-	inspect := ""
-	for _, v := range v.cfg.Inspect {
-		inspect += v
-	}
-	// Check whether inspect neighbor
-	if strings.Contains(inspect, "neighbor") {
-		v.apps.Neighbor = app.NewNeighbors(v)
-		v.hooks = append(v.hooks, v.apps.Neighbor.OnFrame)
-	}
-	// Check whether inspect online flow by five-tuple.
-	if strings.Contains(inspect, "online") {
-		v.apps.OnLines = app.NewOnline(v)
-		v.hooks = append(v.hooks, v.apps.OnLines.OnFrame)
-	}
+	v.apps.Neighbor = app.NewNeighbors(v)
+	v.hooks = append(v.hooks, v.apps.Neighbor.OnFrame)
+
+	v.apps.OnLines = app.NewOnline(v)
+	v.hooks = append(v.hooks, v.apps.OnLines.OnFrame)
+
 	for i, h := range v.hooks {
 		v.out.Debug("Switch.preApplication: id %d, func %s", i, libol.FunName(h))
 	}

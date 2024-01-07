@@ -20,12 +20,6 @@
             "prefix": "172.32.10.0/24"
         }
     ],
-    "password": [
-        {
-            "username": "hi",
-            "password": "1f4ee82b5eb6"
-        }
-    ],
     "links": [
         {
             "protocol": "tls",

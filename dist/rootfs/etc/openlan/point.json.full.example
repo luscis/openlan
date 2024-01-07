@@ -1,7 +1,5 @@
 {
     "interface": {
-        "name": "tap0",
-        "bridge": "br-default",
         "address": "172.32.100.10/24"
     },
     "connection": "who.openlan.net",

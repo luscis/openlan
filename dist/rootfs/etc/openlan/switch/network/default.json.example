@@ -15,7 +15,6 @@
         }
     ],
     "openvpn": {
-        "protocol": "tcp",
         "listen": "0.0.0.0:3294",
         "subnet": "172.32.194.0/24"
     },

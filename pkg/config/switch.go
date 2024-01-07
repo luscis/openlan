@@ -63,7 +63,6 @@ type Switch struct {
 	Network   []*Network `json:"network,omitempty"`
 	Acl       []*ACL     `json:"acl,omitempty"`
 	FireWall  []FlowRule `json:"firewall,omitempty"`
-	Inspect   []string   `json:"inspect,omitempty"`
 	Queue     Queue      `json:"queue"`
 	PassFile  string     `json:"password"`
 	Ldap      *LDAP      `json:"ldap,omitempty"`

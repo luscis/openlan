@@ -1,9 +1,6 @@
 {
-    "protocol": "tls",
+    "protocol": "tcp",
     "connection": "who.openlan.net",
     "username": "hi@default",
-    "password": "cb2ff088a34d",
-    "cert": {
-        "insecure": true
-    }
+    "password": "cb2ff088a34d"
 }

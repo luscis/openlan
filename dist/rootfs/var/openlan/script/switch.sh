@@ -9,16 +9,12 @@ set -ex
 # clean older files.
 /usr/bin/env find /var/openlan/point -type f -delete
 /usr/bin/env find /var/openlan/openvpn -name '*.status' -delete
+/usr/bin/env find /var/openlan/openvpn -name '*client.ovpn' -delete
+/usr/bin/env find /var/openlan/openvpn -name '*client.tmpl' -delete
 
 if [ ! -e "/etc/openlan/switch/switch.json" ]; then
 cat >> /etc/openlan/switch/switch.json << EOF
 {
-    "cert": {
-        "directory": "/var/openlan/cert"
-    },
-    "http": {
-        "public": "/var/openlan/public"
-    },
     "crypt": {
         "secret": "cb2ff088a34d"
     }

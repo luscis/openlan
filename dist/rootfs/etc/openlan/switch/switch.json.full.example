@@ -1,21 +1,13 @@
 {
     "protocol": "tls",
     "listen": "0.0.0.0:10002",
-    "cert": {
-        "directory": "/var/openlan/cert"
-    },
     "http": {
-        "listen": "0.0.0.0:10000",
-        "public": "/var/openlan/public"
+        "listen": "0.0.0.0:10000"
     },
     "crypt": {
         "algorithm": "aes-128",
         "secret": "cb2ff088a34d"
     },
-    "inspect": [
-        "neighbor",
-        "online"
-    ],
     "ldap": {
         "server": "ldap-server.net:389",
         "bindDN": "cn=admin,dc=openlan,dc=com",
