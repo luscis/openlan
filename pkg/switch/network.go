@@ -157,7 +157,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 	values := strings.SplitN(name, ":", 6)
 	if values[0] == "gre" {
 		if port.link == "" {
-			port.link = co.GenName("ge-")
+			port.link = co.GenName("gre")
 		}
 		link := &netlink.Gretap{
 			LinkAttrs: netlink.LinkAttrs{
@@ -178,7 +178,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			return
 		}
 		if port.link == "" {
-			port.link = co.GenName("vn-")
+			port.link = co.GenName("vxn")
 		}
 		dport := 8472
 		if len(values) == 4 {
