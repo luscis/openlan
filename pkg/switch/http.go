@@ -305,6 +305,19 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 		jj := body.States[j]
 		return ii.Spi > jj.Spi
 	})
+
+	// display esp state
+	for s := range cache.Output.List() {
+		if s == nil {
+			break
+		}
+		body.Outputs = append(body.Outputs, models.NewOutputSchema(s))
+	}
+	sort.SliceStable(body.Outputs, func(i, j int) bool {
+		ii := body.Outputs[i]
+		jj := body.Outputs[j]
+		return ii.Device > jj.Device
+	})
 	return body
 }
 
@@ -327,14 +340,7 @@ func (h *Http) ParseFiles(w http.ResponseWriter, name string, data interface{}) 
 }
 
 func (h *Http) IndexHtml(w http.ResponseWriter, r *http.Request) {
-	body := schema.Index{
-		Points:    make([]schema.Point, 0, 128),
-		Links:     make([]schema.Link, 0, 128),
-		Neighbors: make([]schema.Neighbor, 0, 128),
-		OnLines:   make([]schema.OnLine, 0, 128),
-		Clients:   make([]schema.VPNClient, 0, 128),
-		States:    make([]schema.EspState, 0, 128),
-	}
+	body := schema.Index{}
 	h.getIndex(&body)
 	file := h.getFile("/index.html")
 	if err := h.ParseFiles(w, file, &body); err != nil {
@@ -343,14 +349,7 @@ func (h *Http) IndexHtml(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Http) GetIndex(w http.ResponseWriter, r *http.Request) {
-	body := schema.Index{
-		Points:    make([]schema.Point, 0, 128),
-		Links:     make([]schema.Link, 0, 128),
-		Neighbors: make([]schema.Neighbor, 0, 128),
-		OnLines:   make([]schema.OnLine, 0, 128),
-		Network:   make([]schema.Network, 0, 128),
-		Clients:   make([]schema.VPNClient, 0, 128),
-	}
+	body := schema.Index{}
 	h.getIndex(&body)
 	api.ResponseJson(w, body)
 }

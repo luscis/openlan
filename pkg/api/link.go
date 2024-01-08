@@ -32,8 +32,8 @@ func (h Link) List(w http.ResponseWriter, r *http.Request) {
 
 func (h Link) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	libol.Info("Link.Get %s", vars["id"])
 
+	libol.Debug("Link.Get %s", vars["id"])
 	link := cache.Link.Get(vars["id"])
 	if link != nil {
 		ResponseJson(w, models.NewLinkSchema(link))

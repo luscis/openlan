@@ -237,9 +237,9 @@ func (w *Worker) FlushStatus() {
 	}
 	sts := client.Statistics()
 	status := &schema.Point{
-		RxBytes:   sts[libol.CsRecvOkay],
-		TxBytes:   sts[libol.CsSendOkay],
-		ErrPkt:    sts[libol.CsSendError],
+		RxBytes:   uint64(sts[libol.CsRecvOkay]),
+		TxBytes:   uint64(sts[libol.CsSendOkay]),
+		ErrPkt:    uint64(sts[libol.CsSendError]),
 		Uptime:    client.UpTime(),
 		State:     client.Status().String(),
 		Device:    device.Name(),

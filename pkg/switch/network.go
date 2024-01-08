@@ -155,7 +155,17 @@ func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
 func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 	name := port.name
 	values := strings.SplitN(name, ":", 6)
+
+	out := &models.Output{
+		Network: w.cfg.Name,
+		NewTime: time.Now().Unix(),
+	}
 	if values[0] == "gre" {
+		if len(values) < 3 {
+			w.out.Error("WorkerImpl.LinkAdd %s wrong", name)
+			return
+		}
+
 		if port.link == "" {
 			port.link = co.GenName("gre")
 		}
@@ -175,11 +185,14 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
 			return
 		}
+		out.Protocol = "gre"
+		out.Connection = fmt.Sprintf("%s:%s", values[1], values[2])
 	} else if values[0] == "vxlan" {
 		if len(values) < 3 {
 			w.out.Error("WorkerImpl.LinkAdd %s wrong", name)
 			return
 		}
+
 		if port.link == "" {
 			port.link = co.GenName("vxn")
 		}
@@ -202,9 +215,15 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
 			return
 		}
+		out.Protocol = "vxlan"
+		out.Connection = fmt.Sprintf("%s:%s", values[1], values[2])
 	} else {
 		port.link = name
 	}
+
+	out.Device = port.link
+	cache.Output.Add(port.link, out)
+
 	w.out.Info("WorkerImpl.AddOutput %s %s", port.link, port.name)
 	w.AddPhysical(bridge, port.vlan, port.link)
 }
@@ -355,7 +374,10 @@ func (w *WorkerImpl) DelPhysical(bridge string, vlan int, output string) {
 
 func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 	w.out.Info("WorkerImpl.DelOutput %s %s", port.link, port.name)
+
+	cache.Output.Del(port.link)
 	w.DelPhysical(bridge, port.vlan, port.link)
+
 	values := strings.SplitN(port.name, ":", 6)
 	if values[0] == "gre" {
 		link := &netlink.Gretap{

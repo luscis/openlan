@@ -150,12 +150,28 @@
                 </tr>
                 </thead>
                 <tbody>
+		{{ range .Outputs }}
+			<tr>
+			    <td>output</td>
+			    <td>{{ prettyTime .AliveTime }}</td>
+			    <td>{{ .Device }}</td>
+			    <td>--</td>
+			    <td>{{ .Protocol }}</td>
+			    <td>{{ .Connection }}</a></td>
+			    <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+			    <td>
+				{{ if .RxBytes }}<span class="success">success</span>
+				{{ else }}<span class="unknown">unknown</span>
+				{{ end}}
+			    </td>
+			</tr>
+		{{ end }}
                 {{ range .States }}
                     <tr>
                         <td>{{ .Name }}</td>
                         <td>{{ prettyTime .AliveTime }}</td>
                         <td>spi:{{ .Spi }}</td>
-                        <td>{{ .Local }}</td>
+                        <td>--</td>
                         <td>esp</td>
                         <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
                         <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>

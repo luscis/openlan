@@ -10,6 +10,7 @@ type Index struct {
 	Network   []Network   `json:"network"`
 	Clients   []VPNClient `json:"clients"`
 	States    []EspState  `json:"states"`
+	Outputs   []Output    `json:"output"`
 }
 
 type Ctrl struct {

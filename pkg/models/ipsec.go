@@ -1,13 +1,11 @@
-// +build linux
-
 package models
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
+	"time"
+
 	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
-	"time"
 )
 
 type Esp struct {
@@ -37,26 +35,6 @@ type EspState struct {
 	NewTime int64
 	In      *nl.XfrmState
 	Out     *nl.XfrmState
-}
-
-func (l *EspState) Update() {
-	used := int64(0)
-	if xss, err := nl.XfrmStateGet(l.In); xss != nil {
-		l.TxBytes = int64(xss.Statistics.Bytes)
-		l.TxPackages = int64(xss.Statistics.Packets)
-		used = int64(xss.Statistics.UseTime)
-	} else {
-		libol.Debug("EspState.Update %s", err)
-	}
-	if xss, err := nl.XfrmStateGet(l.Out); xss != nil {
-		l.RxBytes = int64(xss.Statistics.Bytes)
-		l.RxPackages = int64(xss.Statistics.Packets)
-	} else {
-		libol.Debug("EspState.Update %s", err)
-	}
-	if used > 0 {
-		l.AliveTime = time.Now().Unix() - used
-	}
 }
 
 func (l *EspState) ID() string {
@@ -94,15 +72,15 @@ type EspPolicy struct {
 	Out *nl.XfrmPolicy
 }
 
-func (l *EspPolicy) Update() {
-}
-
 func (l *EspPolicy) ID() string {
 	return fmt.Sprintf("spi:%d %s-%s", l.Spi, l.Source, l.Dest)
 }
 
 func (l *EspPolicy) String() string {
 	return fmt.Sprintf("{Spi: %d Source: %s Dest: %s}", l.Spi, l.Source, l.Dest)
+}
+
+func (l *EspPolicy) Update() {
 }
 
 func NewEspPolicySchema(e *EspPolicy) schema.EspPolicy {

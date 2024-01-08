@@ -20,10 +20,10 @@ type EspState struct {
 	Crypt      string `json:"crypt"`
 	Encap      string `json:"encap" `
 	RemotePort int    `json:"remotePort"`
-	TxBytes    int64  `json:"txBytes"`
-	TxPackages int64  `json:"txPackages"`
-	RxBytes    int64  `json:"rxBytes"`
-	RxPackages int64  `json:"rxPackages"`
+	TxBytes    uint64 `json:"txBytes"`
+	TxPackages uint64 `json:"txPackages"`
+	RxBytes    uint64 `json:"rxBytes"`
+	RxPackages uint64 `json:"rxPackages"`
 }
 
 type EspPolicy struct {

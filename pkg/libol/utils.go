@@ -214,8 +214,8 @@ func PrettyTime(t int64) string {
 	return fmt.Sprintf("%s%dd%dh", s, days, hours%24)
 }
 
-func PrettyBytes(b int64) string {
-	split := func(_v int64, _m int64) (i int64, d int) {
+func PrettyBytes(b uint64) string {
+	split := func(_v uint64, _m uint64) (i uint64, d int) {
 		_d := float64(_v%_m) / float64(_m)
 		return _v / _m, int(_d * 100) //move two decimal to integer
 	}

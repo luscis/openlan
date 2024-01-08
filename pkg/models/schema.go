@@ -16,9 +16,9 @@ func NewPointSchema(p *Point) schema.Point {
 		Protocol:  p.Protocol,
 		Remote:    client.String(),
 		Device:    dev.Name(),
-		RxBytes:   sts[libol.CsRecvOkay],
-		TxBytes:   sts[libol.CsSendOkay],
-		ErrPkt:    sts[libol.CsSendError],
+		RxBytes:   uint64(sts[libol.CsRecvOkay]),
+		TxBytes:   uint64(sts[libol.CsSendOkay]),
+		ErrPkt:    uint64(sts[libol.CsSendError]),
 		State:     client.Status().String(),
 		Network:   p.Network,
 		AliveTime: client.AliveTime(),
@@ -115,4 +115,16 @@ func NewNetworkSchema(n *Network) schema.Network {
 			})
 	}
 	return sn
+}
+
+func NewOutputSchema(o *Output) schema.Output {
+	return schema.Output{
+		Network:    o.Network,
+		Protocol:   o.Protocol,
+		Connection: o.Connection,
+		Device:     o.Device,
+		RxBytes:    o.RxBytes,
+		TxBytes:    o.RxBytes,
+		AliveTime:  o.UpTime(),
+	}
 }

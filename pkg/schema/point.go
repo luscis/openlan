@@ -10,9 +10,9 @@ type Point struct {
 	Remote    string  `json:"remote"`
 	Switch    string  `json:"switch,omitempty"`
 	Device    string  `json:"device"`
-	RxBytes   int64   `json:"rxBytes"`
-	TxBytes   int64   `json:"txBytes"`
-	ErrPkt    int64   `json:"errors"`
+	RxBytes   uint64  `json:"rxBytes"`
+	TxBytes   uint64  `json:"txBytes"`
+	ErrPkt    uint64  `json:"errors"`
 	State     string  `json:"state"`
 	AliveTime int64   `json:"aliveTime"`
 	System    string  `json:"system"`
