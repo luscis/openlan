@@ -159,7 +159,10 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		if port.link == "" {
 			port.link = co.GenName("gre")
 		}
+		key, _ := strconv.Atoi(values[2])
 		link := &netlink.Gretap{
+			IKey: uint32(key),
+			OKey: uint32(key),
 			LinkAttrs: netlink.LinkAttrs{
 				Name: port.link,
 				MTU:  1460,

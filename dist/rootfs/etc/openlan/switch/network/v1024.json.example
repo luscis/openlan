@@ -20,7 +20,7 @@
         },
         {
             "vlan": 0,
-            "interface": "gre:3.3.3.3"
+            "interface": "gre:3.3.3.3:55"
         }
     ]
 }
