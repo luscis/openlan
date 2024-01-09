@@ -23,6 +23,10 @@ func ParseInt64(value string) (int64, error) {
 	return strconv.ParseInt(value, 10, 64)
 }
 
+func ParseUint64(value string) (uint64, error) {
+	return strconv.ParseUint(value, 10, 64)
+}
+
 func (o *vpnClient) GetDevice(name string) string {
 	sw := config.Manager.Switch
 	if sw == nil {
@@ -75,10 +79,10 @@ func (o *vpnClient) scanStatus(network string, reader io.Reader,
 					State:  "success",
 					Device: o.GetDevice(network),
 				}
-				if rxc, err := ParseInt64(columns[2]); err == nil {
+				if rxc, err := ParseUint64(columns[2]); err == nil {
 					client.RxBytes = rxc
 				}
-				if txc, err := ParseInt64(columns[3]); err == nil {
+				if txc, err := ParseUint64(columns[3]); err == nil {
 					client.TxBytes = txc
 				}
 				if len(columns[4]) > 0 {
