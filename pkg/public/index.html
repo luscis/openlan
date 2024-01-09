@@ -145,7 +145,7 @@
                     <th>User</th>
                     <th>Protocol</th>
                     <th>Connection</th>
-                    <th>r/t|Traffic</th>
+                    <th>Rx|Tx Traffic</th>
                     <th>State</th>
                 </tr>
                 </thead>
@@ -157,8 +157,8 @@
 			    <td>{{ .Device }}</td>
 			    <td>--</td>
 			    <td>{{ .Protocol }}</td>
-			    <td>{{ .Connection }}</a></td>
-			    <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+			    <td><a href="https://{{ getIpAddr .Connection }}:10000">{{ .Connection }}</a></td>
+			    <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
 			    <td>
 				{{ if .RxBytes }}<span class="success">success</span>
 				{{ else }}<span class="unknown">unknown</span>
@@ -174,7 +174,7 @@
                         <td>--</td>
                         <td>esp</td>
                         <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
-                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                         <td>
                             {{ if .RxBytes }}<span class="success">success</span>
                             {{ else }}<span class="unknown">unknown</span>
@@ -190,7 +190,7 @@
                         <td>{{ .User }}@{{ .Network }}</td>
                         <td>{{ .Protocol }}</td>
                         <td><a href="https://{{ getIpAddr .Server }}:10000">{{ getIpAddr .Server }}</a></td>
-                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
@@ -214,7 +214,7 @@
                     <th>Alias</th>
                     <th>Connection</th>
                     <th>User</th>
-                    <th>r/t|Traffic</th>
+                    <th>Rx|Tx Traffic</th>
                     <th>State</th>
                 </tr>
                 </thead>
@@ -227,7 +227,7 @@
                         <td>{{ .Address }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .Name }}</td>
-                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
@@ -239,7 +239,7 @@
                         <td>{{ .Alias }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .User }}@{{ .Network }}</td>
-                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
+                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}

@@ -124,7 +124,7 @@ func NewOutputSchema(o *Output) schema.Output {
 		Connection: o.Connection,
 		Device:     o.Device,
 		RxBytes:    o.RxBytes,
-		TxBytes:    o.RxBytes,
+		TxBytes:    o.TxBytes,
 		AliveTime:  o.UpTime(),
 	}
 }
