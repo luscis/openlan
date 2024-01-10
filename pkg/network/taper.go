@@ -113,3 +113,10 @@ type TapConfig struct {
 	KernBuf  int
 	Mtu      int
 }
+
+func GetName(name string) string {
+	if len(name) > 15 {
+		return name[:15]
+	}
+	return name
+}

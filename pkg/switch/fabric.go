@@ -9,7 +9,7 @@ import (
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
-	"github.com/vishvananda/netlink"
+	nl "github.com/vishvananda/netlink"
 )
 
 type Fabricer interface {
@@ -236,16 +236,17 @@ func (w *FabricWorker) vni2peer(vni uint32) (string, string) {
 
 func (w *FabricWorker) UpLink(bridge string, vni uint32, addr string) *ovs.PortStats {
 	brPort, tunPort := w.vni2peer(vni)
-	link := &netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{Name: tunPort},
+	link := &nl.Veth{
+		LinkAttrs: nl.LinkAttrs{Name: tunPort},
 		PeerName:  brPort,
 	}
-	if err := netlink.LinkAdd(link); err != nil {
+	if err := nl.LinkAdd(link); err != nil {
 		w.out.Warn("FabricWorker.addLink %s", err)
 	}
-	if err := netlink.LinkSetUp(link); err != nil {
+	if err := nl.LinkSetUp(link); err != nil {
 		w.out.Warn("FabricWorker.setLinkUp %s", err)
 	}
+
 	// Setup linux bridge for outputs
 	br := cn.NewLinuxBridge(bridge, 0)
 	br.Open(addr)
@@ -253,6 +254,7 @@ func (w *FabricWorker) UpLink(bridge string, vni uint32, addr string) *ovs.PortS
 	if err := br.CallIptables(1); err != nil {
 		w.out.Warn("FabricWorker.IpTables %s", err)
 	}
+
 	w.bridge[bridge] = br
 	// Add port to OvS tunnel bridge
 	_ = w.ovs.addPort(tunPort, nil)
@@ -457,11 +459,11 @@ func (w *FabricWorker) DelNetwork(bridge string, vni uint32) {
 	if err := w.ovs.delPort(tunPort); err != nil {
 		libol.Warn("FabricWorker.downNetwork %s", err)
 	}
-	link := &netlink.Veth{
-		LinkAttrs: netlink.LinkAttrs{Name: tunPort},
+	link := &nl.Veth{
+		LinkAttrs: nl.LinkAttrs{Name: tunPort},
 		PeerName:  brPort,
 	}
-	_ = netlink.LinkDel(link)
+	_ = nl.LinkDel(link)
 	if br, ok := w.bridge[bridge]; ok {
 		_ = br.Close()
 	}

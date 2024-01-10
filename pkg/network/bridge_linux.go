@@ -1,18 +1,29 @@
 package network
 
 import (
+	"fmt"
+
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/vishvananda/netlink"
+	nl "github.com/vishvananda/netlink"
 )
 
 type LinuxBridge struct {
 	sts     DeviceStats
-	address *netlink.Addr
+	address *nl.Addr
 	ipMtu   int
 	name    string
-	device  netlink.Link
+	device  nl.Link
 	ctl     *BrCtl
 	out     *libol.SubLogger
+	l3if    string
+	l2if    string
+}
+
+func GetPair(name string) (string, string) {
+	s0 := fmt.Sprintf("bi-%s", name)
+	s1 := fmt.Sprintf("vi-%s", name)
+
+	return GetName(s0), GetName(s1)
 }
 
 func NewLinuxBridge(name string, mtu int) *LinuxBridge {
@@ -35,49 +46,49 @@ func (b *LinuxBridge) Kernel() string {
 
 func (b *LinuxBridge) Open(addr string) {
 	b.out.Debug("LinuxBridge.Open")
-	link, _ := netlink.LinkByName(b.name)
+	link, _ := nl.LinkByName(b.name)
 	if link == nil {
-		br := &netlink.Bridge{
-			LinkAttrs: netlink.LinkAttrs{
+		br := &nl.Bridge{
+			LinkAttrs: nl.LinkAttrs{
 				TxQLen: -1,
 				Name:   b.name,
 				MTU:    b.ipMtu,
 			},
 		}
-		err := netlink.LinkAdd(br)
+		err := nl.LinkAdd(br)
 		if err != nil {
 			b.out.Error("LinuxBridge.Open: %s", err)
 			return
 		}
-		link, err = netlink.LinkByName(b.name)
+		link, err = nl.LinkByName(b.name)
 		if link == nil {
 			b.out.Error("LinuxBridge.Open: %s", err)
 			return
 		}
 	}
-	if err := netlink.LinkSetUp(link); err != nil {
+	if err := nl.LinkSetUp(link); err != nil {
 		libol.Error("LinuxBridge.Open: %s", err)
 	}
+
 	b.out.Info("LinuxBridge.Open success")
+
 	if addr != "" {
-		ipAddr, err := netlink.ParseAddr(addr)
+		ipAddr, err := nl.ParseAddr(addr)
 		if err != nil {
 			b.out.Error("LinuxBridge.Open: ParseCIDR %s", err)
 		}
-		if err := netlink.AddrAdd(link, ipAddr); err != nil {
-			b.out.Error("LinuxBridge.Open: SetLinkIp: %s", err)
-		}
 		b.address = ipAddr
+		if err := b.Plugin(ipAddr); err != nil {
+			libol.Error("LinuxBridge.Open: %s", err)
+		}
 	}
 	b.device = link
 }
 
 func (b *LinuxBridge) Close() error {
 	var err error
-	if b.device != nil && b.address != nil {
-		if err = netlink.AddrDel(b.device, b.address); err != nil {
-			b.out.Error("LinuxBridge.Close: UnsetLinkIp %s", err)
-		}
+	if b.address != nil {
+		b.Unplugin()
 	}
 	return err
 }
@@ -148,4 +159,53 @@ func (b *LinuxBridge) Stats() DeviceStats {
 
 func (b *LinuxBridge) CallIptables(value int) error {
 	return b.ctl.CallIptables(value)
+}
+
+func (b *LinuxBridge) Plugin(addr *nl.Addr) error {
+	if b.l2if != "" {
+		return nil
+	}
+
+	name := libol.GenString(8)
+	b.l3if, b.l2if = GetPair(name)
+	link := &nl.Veth{
+		LinkAttrs: nl.LinkAttrs{Name: b.l3if},
+		PeerName:  b.l2if,
+	}
+	if err := nl.LinkAdd(link); err != nil {
+		return err
+	}
+	if err := nl.LinkSetUp(link); err != nil {
+		return err
+	}
+
+	if err := b.AddSlave(b.l2if); err != nil {
+		return err
+	}
+	if err := nl.AddrAdd(link, addr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *LinuxBridge) Unplugin() error {
+	if b.l2if == "" {
+		return nil
+	}
+
+	link, err := nl.LinkByName(b.l2if)
+	if err != nil {
+		return nil
+	}
+
+	if err := nl.LinkDel(link); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *LinuxBridge) L3Name() string {
+	return b.l3if
 }

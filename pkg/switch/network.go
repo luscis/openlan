@@ -13,7 +13,6 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	cn "github.com/luscis/openlan/pkg/network"
-	"github.com/vishvananda/netlink"
 	nl "github.com/vishvananda/netlink"
 )
 
@@ -52,14 +51,17 @@ type WorkerImpl struct {
 	setV    *cn.IPSet
 	vpn     *OpenVPN
 	ztrust  *ZTrust
+	vrf     *cn.VRF
+	table   int
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
 	return &WorkerImpl{
-		cfg:  c,
-		out:  libol.NewSubLogger(c.Name),
-		setR: cn.NewIPSet(c.Name+"_r", "hash:net"),
-		setV: cn.NewIPSet(c.Name+"_v", "hash:net"),
+		cfg:   c,
+		out:   libol.NewSubLogger(c.Name),
+		setR:  cn.NewIPSet(c.Name+"_r", "hash:net"),
+		setV:  cn.NewIPSet(c.Name+"_v", "hash:net"),
+		table: 0,
 	}
 }
 
@@ -123,24 +125,24 @@ func (w *WorkerImpl) Initialize() {
 }
 
 func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
-	link, err := netlink.LinkByName(output)
+	link, err := nl.LinkByName(output)
 	if err != nil {
 		w.out.Error("WorkerImpl.LinkByName %s %s", output, err)
 		return
 	}
 	slaver := output
 	if vlan > 0 {
-		if err := netlink.LinkSetUp(link); err != nil {
+		if err := nl.LinkSetUp(link); err != nil {
 			w.out.Warn("WorkerImpl.LinkSetUp %s %s", output, err)
 		}
-		subLink := &netlink.Vlan{
-			LinkAttrs: netlink.LinkAttrs{
+		subLink := &nl.Vlan{
+			LinkAttrs: nl.LinkAttrs{
 				Name:        fmt.Sprintf("%s.%d", output, vlan),
 				ParentIndex: link.Attrs().Index,
 			},
 			VlanId: vlan,
 		}
-		if err := netlink.LinkAdd(subLink); err != nil {
+		if err := nl.LinkAdd(subLink); err != nil {
 			w.out.Error("WorkerImpl.LinkAdd %s %s", subLink.Name, err)
 			return
 		}
@@ -170,10 +172,10 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			port.link = co.GenName("gre")
 		}
 		key, _ := strconv.Atoi(values[2])
-		link := &netlink.Gretap{
+		link := &nl.Gretap{
 			IKey: uint32(key),
 			OKey: uint32(key),
-			LinkAttrs: netlink.LinkAttrs{
+			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 				MTU:  1460,
 			},
@@ -181,7 +183,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			Remote:   libol.ParseAddr(values[1]),
 			PMtuDisc: 1,
 		}
-		if err := netlink.LinkAdd(link); err != nil {
+		if err := nl.LinkAdd(link); err != nil {
 			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
 			return
 		}
@@ -201,9 +203,9 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			dport, _ = strconv.Atoi(values[3])
 		}
 		vni, _ := strconv.Atoi(values[2])
-		link := &netlink.Vxlan{
+		link := &nl.Vxlan{
 			VxlanId: vni,
-			LinkAttrs: netlink.LinkAttrs{
+			LinkAttrs: nl.LinkAttrs{
 				TxQLen: -1,
 				Name:   port.link,
 				MTU:    1450,
@@ -211,7 +213,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			Group: libol.ParseAddr(values[1]),
 			Port:  dport,
 		}
-		if err := netlink.LinkAdd(link); err != nil {
+		if err := nl.LinkAdd(link); err != nil {
 			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
 			return
 		}
@@ -233,6 +235,7 @@ func (w *WorkerImpl) loadRoutes() {
 	cfg := w.cfg
 	w.out.Debug("WorkerImpl.LoadRoute: %v", cfg.Routes)
 	ifAddr := w.IfAddr()
+
 	for _, rt := range cfg.Routes {
 		_, dst, err := net.ParseCIDR(rt.Prefix)
 		if err != nil {
@@ -242,7 +245,10 @@ func (w *WorkerImpl) loadRoutes() {
 			// route's next-hop is local not install again.
 			continue
 		}
-		nlrt := nl.Route{Dst: dst}
+		nlrt := nl.Route{
+			Dst:   dst,
+			Table: w.table,
+		}
 		for _, hop := range rt.MultiPath {
 			nxhe := &nl.NexthopInfo{
 				Hops: hop.Weight,
@@ -277,7 +283,6 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
-
 	w.loadRoutes()
 
 	if cfg.Acl != "" {
@@ -355,12 +360,12 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 func (w *WorkerImpl) DelPhysical(bridge string, vlan int, output string) {
 	if vlan > 0 {
-		subLink := &netlink.Vlan{
-			LinkAttrs: netlink.LinkAttrs{
+		subLink := &nl.Vlan{
+			LinkAttrs: nl.LinkAttrs{
 				Name: fmt.Sprintf("%s.%d", output, vlan),
 			},
 		}
-		if err := netlink.LinkDel(subLink); err != nil {
+		if err := nl.LinkDel(subLink); err != nil {
 			w.out.Error("WorkerImpl.DelPhysical.LinkDel %s %s", subLink.Name, err)
 			return
 		}
@@ -380,22 +385,22 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 
 	values := strings.SplitN(port.name, ":", 6)
 	if values[0] == "gre" {
-		link := &netlink.Gretap{
-			LinkAttrs: netlink.LinkAttrs{
+		link := &nl.Gretap{
+			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 			},
 		}
-		if err := netlink.LinkDel(link); err != nil {
+		if err := nl.LinkDel(link); err != nil {
 			w.out.Error("WorkerImpl.DelOutput.LinkDel %s %s", link.Name, err)
 			return
 		}
 	} else if values[0] == "vxlan" {
-		link := &netlink.Vxlan{
-			LinkAttrs: netlink.LinkAttrs{
+		link := &nl.Vxlan{
+			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 			},
 		}
-		if err := netlink.LinkDel(link); err != nil {
+		if err := nl.LinkDel(link); err != nil {
 			w.out.Error("WorkerImpl.DelOutput.LinkDel %s %s", link.Name, err)
 			return
 		}
@@ -409,7 +414,10 @@ func (w *WorkerImpl) unloadRoutes() {
 		if err != nil {
 			continue
 		}
-		nlRt := nl.Route{Dst: dst}
+		nlRt := nl.Route{
+			Dst:   dst,
+			Table: w.table,
+		}
 		if rt.MultiPath == nil {
 			nlRt.Gw = net.ParseIP(rt.NextHop)
 			nlRt.Priority = rt.Metric

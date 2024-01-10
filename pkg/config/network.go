@@ -24,6 +24,7 @@ type Network struct {
 	Dhcp      string        `json:"dhcp,omitempty"`
 	Outputs   []Output      `json:"outputs"`
 	ZTrust    string        `json:"ztrust"`
+	Namespace string        `json:"namespace"`
 }
 
 func (n *Network) NewSpecifies() interface{} {

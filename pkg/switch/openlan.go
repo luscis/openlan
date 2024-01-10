@@ -38,6 +38,10 @@ func (w *OpenLANWorker) Initialize() {
 	brCfg := w.cfg.Bridge
 	name := w.cfg.Name
 
+	if w.cfg.Namespace != "" {
+		w.vrf = cn.NewVRF(w.cfg.Namespace, 0)
+	}
+
 	for _, ht := range w.cfg.Hosts {
 		lease := cache.Network.AddLease(ht.Hostname, ht.Address, name)
 		if lease != nil {
@@ -131,12 +135,34 @@ func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
 	})
 }
 
+func (w *OpenLANWorker) UpVRF() {
+	if w.vrf == nil {
+		return
+	}
+
+	br := w.bridge
+	if err := w.vrf.Up(); err != nil {
+		w.out.Warn("OpenLANWorker.UpVRF %s", err)
+		return
+	}
+	if err := w.vrf.AddSlave(br.L3Name()); err != nil {
+		w.out.Warn("OpenLANWorker.UpVRF %s", err)
+		return
+	}
+
+	w.table = w.vrf.Table()
+}
+
 func (w *OpenLANWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.startTime = time.Now().Unix()
+
 	w.out.Info("OpenLANWorker.Start")
+
 	w.UpBridge(w.cfg.Bridge)
+	w.UpVRF()
 	w.LoadLinks()
+
 	w.WorkerImpl.Start(v)
 }
 

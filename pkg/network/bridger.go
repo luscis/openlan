@@ -33,6 +33,7 @@ type Bridger interface {
 	String() string
 	Stats() DeviceStats
 	CallIptables(value int) error
+	L3Name() string
 }
 
 type bridger struct {
