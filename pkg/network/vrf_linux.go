@@ -1,6 +1,8 @@
 package network
 
 import (
+	"sync"
+
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/vishvananda/netlink"
 	nl "github.com/vishvananda/netlink"
@@ -20,15 +22,44 @@ func GenTable() int {
 	return tableId
 }
 
+type VRFs struct {
+	vrfs map[string]*VRF
+	lock sync.RWMutex
+}
+
+func (s *VRFs) Get(name string) *VRF {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	obj, _ := s.vrfs[name]
+	return obj
+}
+
+func (s *VRFs) Add(name string, obj *VRF) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.vrfs[name] = obj
+}
+
+var vrfs = VRFs{
+	vrfs: make(map[string]*VRF, 1024),
+}
+
 func NewVRF(name string, table int) *VRF {
+	if obj := vrfs.Get(name); obj != nil {
+		return obj
+	}
+
 	if table == 0 {
 		table = GenTable()
 	}
-	return &VRF{
+	obj := &VRF{
 		name:  name,
 		table: table,
 		out:   libol.NewSubLogger(name),
 	}
+	vrfs.Add(name, obj)
+
+	return obj
 }
 
 func (v *VRF) Up() error {
@@ -108,4 +139,8 @@ func (v *VRF) DelSlave(name string) error {
 
 func (v *VRF) Table() int {
 	return v.table
+}
+
+func (v *VRF) Name() string {
+	return v.name
 }

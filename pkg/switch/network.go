@@ -727,8 +727,11 @@ func (w *WorkerImpl) forwardVPN() {
 		}
 		w.setV.Add(rt)
 	}
-
-	w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
+	if w.vrf != nil {
+		w.toForward_r(w.vrf.Name(), vpn.Subnet, w.setV.Name, "From VPN")
+	} else {
+		w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
+	}
 	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 }
 
@@ -760,10 +763,17 @@ func (w *WorkerImpl) forwardSubnet() {
 		}
 		w.setR.Add(rt.Prefix)
 	}
-	w.toForward_r(input, subnet, w.setR.Name, "To route")
+
+	if w.vrf != nil {
+		w.toForward_r(w.vrf.Name(), subnet, w.setR.Name, "To route")
+	} else {
+		w.toForward_r(input, subnet, w.setR.Name, "To route")
+	}
+
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
+
 	w.toMasq_r(subnet, w.setR.Name, "To Masq")
 }
 
