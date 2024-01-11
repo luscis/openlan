@@ -677,6 +677,7 @@ func (w *WorkerImpl) forwardZone(input string) {
 	if w.table == 0 {
 		return
 	}
+
 	w.out.Debug("WorkerImpl.forwardZone %s", input)
 	w.fire.Raw.Pre.AddRule(cn.IPRule{
 		Input:   input,
@@ -690,6 +691,12 @@ func (w *WorkerImpl) forwardZone(input string) {
 		Zone:    uint32(w.table),
 		Comment: "Goto private zone",
 	})
+	w.fire.Raw.Out.AddRule(cn.IPRule{
+		Output:  input,
+		Jump:    cn.CCT,
+		Zone:    uint32(w.table),
+		Comment: "Goto private zone",
+	})
 }
 
 func (w *WorkerImpl) forwardVPN() {
@@ -699,15 +706,14 @@ func (w *WorkerImpl) forwardVPN() {
 	}
 
 	devName := vpn.Device
-
-	w.forwardZone(devName)
-
 	_, port := libol.GetHostPort(vpn.Listen)
 	if vpn.Protocol == "udp" {
 		w.openPort("udp", port, "Open VPN")
 	} else {
 		w.openPort("tcp", port, "Open VPN")
 	}
+
+	w.forwardZone(devName)
 
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(devName, "Accept related")
