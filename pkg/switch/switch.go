@@ -131,7 +131,7 @@ func (v *Switch) Protocol() string {
 func (v *Switch) enablePort(protocol, port string) {
 	v.out.Info("Switch.enablePort %s %s", protocol, port)
 	// allowed forward between source and prefix.
-	v.fire.AddRule(network.IpRule{
+	v.fire.AddRule(network.IPRule{
 		Table:   network.TFilter,
 		Chain:   network.OLCInput,
 		Proto:   protocol,
@@ -175,7 +175,7 @@ func (v *Switch) loadACLs() {
 		}
 		chain := network.NewFireWallChain(acl.Name, network.TMangle, "")
 		for _, rule := range acl.Rules {
-			chain.AddRule(network.IpRule{
+			chain.AddRule(network.IPRule{
 				Source:  rule.SrcIp,
 				Dest:    rule.DstIp,
 				Proto:   rule.Proto,

@@ -13,7 +13,7 @@ func TestFireWallStart(t *testing.T) {
 
 func TestFireWallTableFilter(t *testing.T) {
 	tab := NewFireWallTable("fake")
-	tab.Filter.In.AddRule(IpRule{
+	tab.Filter.In.AddRule(IPRule{
 		Output: "br-fake_1",
 		Input:  "br-fake_1",
 		Source: "192.168.0.1/24",
@@ -23,13 +23,13 @@ func TestFireWallTableFilter(t *testing.T) {
 	tab.Filter.Install()
 
 	tab_1 := NewFireWallTable("fake_1")
-	tab_1.Filter.In.AddRule(IpRule{
+	tab_1.Filter.In.AddRule(IPRule{
 		Output: "br-fake_1",
 		Input:  "br-fake_1",
 		Source: "192.168.1.1",
 		Dest:   "192.168.3.0",
 	})
-	tab_1.Filter.For.AddRule(IpRule{
+	tab_1.Filter.For.AddRule(IPRule{
 		Output: "br-fake_1",
 		Input:  "br-fake_1",
 		Source: "192.168.0.1",

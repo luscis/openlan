@@ -21,7 +21,6 @@ type OpenLANWorker struct {
 	newTime   int64
 	startTime int64
 	links     *Links
-	bridge    cn.Bridger
 }
 
 func NewOpenLANWorker(c *co.Network) *OpenLANWorker {
@@ -38,9 +37,7 @@ func (w *OpenLANWorker) Initialize() {
 	brCfg := w.cfg.Bridge
 	name := w.cfg.Name
 
-	if w.cfg.Namespace != "" {
-		w.vrf = cn.NewVRF(w.cfg.Namespace, 0)
-	}
+	w.br = cn.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
 
 	for _, ht := range w.cfg.Hosts {
 		lease := cache.Network.AddLease(ht.Hostname, ht.Address, name)
@@ -49,8 +46,6 @@ func (w *OpenLANWorker) Initialize() {
 			lease.Network = name
 		}
 	}
-
-	w.bridge = cn.NewBridger(brCfg.Provider, brCfg.Name, brCfg.IPMtu)
 
 	w.WorkerImpl.Initialize()
 }
@@ -73,7 +68,7 @@ func (w *OpenLANWorker) UnLoadLinks() {
 }
 
 func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
-	master := w.bridge
+	master := w.br
 	// new it and configure address
 	master.Open(cfg.Address)
 	// configure stp
@@ -89,11 +84,7 @@ func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 		w.out.Warn("OpenLANWorker.UpBridge: Delay %s", err)
 	}
 	w.connectPeer(cfg)
-	call := 1
-	if w.cfg.Acl == "" {
-		call = 0
-	}
-	if err := master.CallIptables(call); err != nil {
+	if err := master.CallIptables(0); err != nil {
 		w.out.Warn("OpenLANWorker.Start: CallIptables %s", err)
 	}
 }
@@ -135,24 +126,6 @@ func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
 	})
 }
 
-func (w *OpenLANWorker) UpVRF() {
-	if w.vrf == nil {
-		return
-	}
-
-	br := w.bridge
-	if err := w.vrf.Up(); err != nil {
-		w.out.Warn("OpenLANWorker.UpVRF %s", err)
-		return
-	}
-	if err := w.vrf.AddSlave(br.L3Name()); err != nil {
-		w.out.Warn("OpenLANWorker.UpVRF %s", err)
-		return
-	}
-
-	w.table = w.vrf.Table()
-}
-
 func (w *OpenLANWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.startTime = time.Now().Unix()
@@ -160,7 +133,6 @@ func (w *OpenLANWorker) Start(v api.Switcher) {
 	w.out.Info("OpenLANWorker.Start")
 
 	w.UpBridge(w.cfg.Bridge)
-	w.UpVRF()
 	w.LoadLinks()
 
 	w.WorkerImpl.Start(v)
@@ -168,7 +140,7 @@ func (w *OpenLANWorker) Start(v api.Switcher) {
 
 func (w *OpenLANWorker) downBridge(cfg *co.Bridge) {
 	w.closePeer(cfg)
-	_ = w.bridge.Close()
+	_ = w.br.Close()
 }
 
 func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
@@ -229,7 +201,7 @@ func (w *OpenLANWorker) DelLink(addr string) {
 }
 
 func (w *OpenLANWorker) Bridge() cn.Bridger {
-	return w.bridge
+	return w.br
 }
 
 func (w *OpenLANWorker) Reload(v api.Switcher) {

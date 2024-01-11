@@ -18,18 +18,18 @@ const (
 
 type FireWallGlobal struct {
 	lock   sync.Mutex
-	chains IpChains
-	rules  IpRules
+	chains IPChains
+	rules  IPRules
 }
 
 func NewFireWallGlobal(flows []config.FlowRule) *FireWallGlobal {
 	f := &FireWallGlobal{
-		chains: make(IpChains, 0, 8),
-		rules:  make(IpRules, 0, 32),
+		chains: make(IPChains, 0, 8),
+		rules:  make(IPRules, 0, 32),
 	}
 	// Load custom rules.
 	for _, rule := range flows {
-		f.rules = f.rules.Add(IpRule{
+		f.rules = f.rules.Add(IPRule{
 			Table:    rule.Table,
 			Chain:    rule.Chain,
 			Source:   rule.Source,
@@ -51,62 +51,62 @@ func NewFireWallGlobal(flows []config.FlowRule) *FireWallGlobal {
 }
 
 func (f *FireWallGlobal) addOLC() {
-	f.AddChain(IpChain{Table: TFilter, Name: OLCInput})
-	f.AddChain(IpChain{Table: TFilter, Name: OLCForward})
-	f.AddChain(IpChain{Table: TFilter, Name: OLCOutput})
-	f.AddChain(IpChain{Table: TNat, Name: OLCPre})
-	f.AddChain(IpChain{Table: TNat, Name: OLCInput})
-	f.AddChain(IpChain{Table: TNat, Name: OLCPost})
-	f.AddChain(IpChain{Table: TNat, Name: OLCOutput})
-	f.AddChain(IpChain{Table: TMangle, Name: OLCPre})
-	f.AddChain(IpChain{Table: TMangle, Name: OLCInput})
-	f.AddChain(IpChain{Table: TMangle, Name: OLCForward})
-	f.AddChain(IpChain{Table: TMangle, Name: OLCPost})
-	f.AddChain(IpChain{Table: TMangle, Name: OLCOutput})
-	f.AddChain(IpChain{Table: TRaw, Name: OLCPre})
-	f.AddChain(IpChain{Table: TRaw, Name: OLCOutput})
+	f.AddChain(IPChain{Table: TFilter, Name: OLCInput})
+	f.AddChain(IPChain{Table: TFilter, Name: OLCForward})
+	f.AddChain(IPChain{Table: TFilter, Name: OLCOutput})
+	f.AddChain(IPChain{Table: TNat, Name: OLCPre})
+	f.AddChain(IPChain{Table: TNat, Name: OLCInput})
+	f.AddChain(IPChain{Table: TNat, Name: OLCPost})
+	f.AddChain(IPChain{Table: TNat, Name: OLCOutput})
+	f.AddChain(IPChain{Table: TMangle, Name: OLCPre})
+	f.AddChain(IPChain{Table: TMangle, Name: OLCInput})
+	f.AddChain(IPChain{Table: TMangle, Name: OLCForward})
+	f.AddChain(IPChain{Table: TMangle, Name: OLCPost})
+	f.AddChain(IPChain{Table: TMangle, Name: OLCOutput})
+	f.AddChain(IPChain{Table: TRaw, Name: OLCPre})
+	f.AddChain(IPChain{Table: TRaw, Name: OLCOutput})
 }
 
 func (f *FireWallGlobal) jumpOLC() {
 	// Filter Table
-	f.AddRule(IpRule{Order: "-I", Table: TFilter, Chain: CInput, Jump: OLCInput})
-	f.AddRule(IpRule{Order: "-I", Table: TFilter, Chain: CForward, Jump: OLCForward})
-	f.AddRule(IpRule{Order: "-I", Table: TFilter, Chain: COutput, Jump: OLCOutput})
+	f.AddRule(IPRule{Order: "-I", Table: TFilter, Chain: CInput, Jump: OLCInput})
+	f.AddRule(IPRule{Order: "-I", Table: TFilter, Chain: CForward, Jump: OLCForward})
+	f.AddRule(IPRule{Order: "-I", Table: TFilter, Chain: COutput, Jump: OLCOutput})
 
 	// NAT Table
-	f.AddRule(IpRule{Order: "-I", Table: TNat, Chain: CPre, Jump: OLCPre})
-	f.AddRule(IpRule{Order: "-I", Table: TNat, Chain: CInput, Jump: OLCInput})
-	f.AddRule(IpRule{Order: "-I", Table: TNat, Chain: CPost, Jump: OLCPost})
-	f.AddRule(IpRule{Order: "-I", Table: TNat, Chain: COutput, Jump: OLCOutput})
+	f.AddRule(IPRule{Order: "-I", Table: TNat, Chain: CPre, Jump: OLCPre})
+	f.AddRule(IPRule{Order: "-I", Table: TNat, Chain: CInput, Jump: OLCInput})
+	f.AddRule(IPRule{Order: "-I", Table: TNat, Chain: CPost, Jump: OLCPost})
+	f.AddRule(IPRule{Order: "-I", Table: TNat, Chain: COutput, Jump: OLCOutput})
 
 	// Mangle Table
-	f.AddRule(IpRule{Order: "-I", Table: TMangle, Chain: CPre, Jump: OLCPre})
-	f.AddRule(IpRule{Order: "-I", Table: TMangle, Chain: CInput, Jump: OLCInput})
-	f.AddRule(IpRule{Order: "-I", Table: TMangle, Chain: CForward, Jump: OLCForward})
-	f.AddRule(IpRule{Order: "-I", Table: TMangle, Chain: CPost, Jump: OLCPost})
-	f.AddRule(IpRule{Order: "-I", Table: TMangle, Chain: COutput, Jump: OLCOutput})
+	f.AddRule(IPRule{Order: "-I", Table: TMangle, Chain: CPre, Jump: OLCPre})
+	f.AddRule(IPRule{Order: "-I", Table: TMangle, Chain: CInput, Jump: OLCInput})
+	f.AddRule(IPRule{Order: "-I", Table: TMangle, Chain: CForward, Jump: OLCForward})
+	f.AddRule(IPRule{Order: "-I", Table: TMangle, Chain: CPost, Jump: OLCPost})
+	f.AddRule(IPRule{Order: "-I", Table: TMangle, Chain: COutput, Jump: OLCOutput})
 
 	// Raw Table
-	f.AddRule(IpRule{Order: "-I", Table: TRaw, Chain: CPre, Jump: OLCPre})
-	f.AddRule(IpRule{Order: "-I", Table: TRaw, Chain: COutput, Jump: OLCOutput})
+	f.AddRule(IPRule{Order: "-I", Table: TRaw, Chain: CPre, Jump: OLCPre})
+	f.AddRule(IPRule{Order: "-I", Table: TRaw, Chain: COutput, Jump: OLCOutput})
 }
 
 func (f *FireWallGlobal) Initialize() {
-	IptableInit()
+	IPTableInit()
 	// Init chains
 	f.addOLC()
 	f.jumpOLC()
 }
 
-func (f *FireWallGlobal) AddChain(chain IpChain) {
+func (f *FireWallGlobal) AddChain(chain IPChain) {
 	f.chains = f.chains.Add(chain)
 }
 
-func (f *FireWallGlobal) AddRule(rule IpRule) {
+func (f *FireWallGlobal) AddRule(rule IPRule) {
 	f.rules = f.rules.Add(rule)
 }
 
-func (f *FireWallGlobal) InstallRule(rule IpRule) error {
+func (f *FireWallGlobal) InstallRule(rule IPRule) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	order := rule.Order
@@ -163,7 +163,7 @@ func (f *FireWallGlobal) cancel() {
 	}
 }
 
-func (f *FireWallGlobal) CancelRule(rule IpRule) error {
+func (f *FireWallGlobal) CancelRule(rule IPRule) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	if _, err := rule.Opr("-D"); err != nil {
@@ -189,7 +189,7 @@ type FireWallChain struct {
 	lock   sync.Mutex
 	name   string
 	parent string
-	rules  IpRules
+	rules  IPRules
 	table  string
 }
 
@@ -201,7 +201,7 @@ func NewFireWallChain(name, table, parent string) *FireWallChain {
 	}
 }
 
-func (ch *FireWallChain) Chain() IpChain {
+func (ch *FireWallChain) Chain() IPChain {
 	name := ch.name
 	if ch.parent != "" {
 		name = ch.parent + "-" + ch.name
@@ -209,16 +209,16 @@ func (ch *FireWallChain) Chain() IpChain {
 	if len(name) > 28 {
 		name = name[:28]
 	}
-	return IpChain{
+	return IPChain{
 		Table: ch.table,
 		Name:  name,
 		From:  ch.parent,
 	}
 }
 
-func (ch *FireWallChain) Jump() IpRule {
+func (ch *FireWallChain) Jump() IPRule {
 	c := ch.Chain()
-	return IpRule{
+	return IPRule{
 		Order: "-I",
 		Table: c.Table,
 		Chain: c.From,
@@ -226,7 +226,7 @@ func (ch *FireWallChain) Jump() IpRule {
 	}
 }
 
-func (ch *FireWallChain) AddRuleX(rule IpRule) error {
+func (ch *FireWallChain) AddRuleX(rule IPRule) error {
 	chain := ch.Chain()
 	rule.Table = chain.Table
 	rule.Chain = chain.Name
@@ -240,7 +240,7 @@ func (ch *FireWallChain) AddRuleX(rule IpRule) error {
 	return nil
 }
 
-func (ch *FireWallChain) DelRuleX(rule IpRule) error {
+func (ch *FireWallChain) DelRuleX(rule IPRule) error {
 	chain := ch.Chain()
 	rule.Table = chain.Table
 	rule.Chain = chain.Name
@@ -250,7 +250,7 @@ func (ch *FireWallChain) DelRuleX(rule IpRule) error {
 	return nil
 }
 
-func (ch *FireWallChain) AddRule(rule IpRule) {
+func (ch *FireWallChain) AddRule(rule IPRule) {
 	chain := ch.Chain()
 	rule.Table = chain.Table
 	rule.Chain = chain.Name
@@ -339,8 +339,8 @@ type FireWallNATPre struct {
 	*FireWallChain
 }
 
-func (ch *FireWallNATPre) Chain() IpChain {
-	return IpChain{
+func (ch *FireWallNATPre) Chain() IPChain {
+	return IPChain{
 		Table: TNat,
 		Name:  OLCPre + "-" + ch.name,
 		From:  ch.parent,
@@ -449,7 +449,7 @@ type FireWallTable struct {
 }
 
 func NewFireWallTable(name string) *FireWallTable {
-	IptableInit()
+	IPTableInit()
 	return &FireWallTable{
 		Filter: NewFireWallFilter(name),
 		Nat:    NewFireWallNAT(name),

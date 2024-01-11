@@ -17,7 +17,7 @@ type KnockRule struct {
 	protocol    string
 	destination string
 	port        string
-	rule        *cn.IpRule
+	rule        *cn.IPRule
 }
 
 func (r *KnockRule) Id() string {
@@ -32,13 +32,12 @@ func (r *KnockRule) Expire() bool {
 	return false
 }
 
-func (r *KnockRule) Rule() cn.IpRule {
+func (r *KnockRule) Rule() cn.IPRule {
 	if r.rule == nil {
-		r.rule = &cn.IpRule{
+		r.rule = &cn.IPRule{
 			Dest:    r.destination,
 			DstPort: r.port,
 			Proto:   r.protocol,
-			Jump:    "ACCEPT",
 			Comment: "Knock at " + r.createAt.UTC().String(),
 		}
 	}
@@ -74,13 +73,13 @@ func (g *ZGuest) Start() {
 	g.chain.Install()
 }
 
-func (g *ZGuest) addRuleX(rule cn.IpRule) {
+func (g *ZGuest) addRuleX(rule cn.IPRule) {
 	if err := g.chain.AddRuleX(rule); err != nil {
 		g.out.Warn("ZTrust.AddRuleX: %s", err)
 	}
 }
 
-func (g *ZGuest) delRuleX(rule cn.IpRule) {
+func (g *ZGuest) delRuleX(rule cn.IPRule) {
 	if err := g.chain.DelRuleX(rule); err != nil {
 		g.out.Warn("ZTrust.DelRuleX: %s", err)
 	}
@@ -170,7 +169,7 @@ func (z *ZTrust) Chain() string {
 
 func (z *ZTrust) Initialize() {
 	z.chain = cn.NewFireWallChain(z.Chain(), network.TMangle, "")
-	z.chain.AddRule(cn.IpRule{
+	z.chain.AddRule(cn.IPRule{
 		Comment: "ZTrust Deny All",
 		Jump:    "DROP",
 	})
@@ -203,13 +202,13 @@ func (z *ZTrust) Update() {
 	}
 }
 
-func (z *ZTrust) addRuleX(rule cn.IpRule) {
+func (z *ZTrust) addRuleX(rule cn.IPRule) {
 	if err := z.chain.AddRuleX(rule); err != nil {
 		z.out.Warn("ZTrust.AddRuleX: %s", err)
 	}
 }
 
-func (z *ZTrust) delRuleX(rule cn.IpRule) {
+func (z *ZTrust) delRuleX(rule cn.IPRule) {
 	if err := z.chain.DelRuleX(rule); err != nil {
 		z.out.Warn("ZTrust.DelRuleX: %s", err)
 	}
@@ -227,7 +226,7 @@ func (z *ZTrust) AddGuest(name, source string) error {
 
 	guest = NewZGuest(z.network, name, source)
 	guest.Start()
-	z.addRuleX(cn.IpRule{
+	z.addRuleX(cn.IPRule{
 		Source:  guest.source,
 		Comment: "User " + guest.username + "@" + guest.network,
 		Jump:    guest.Chain(),
@@ -246,7 +245,7 @@ func (z *ZTrust) DelGuest(name, source string) error {
 
 	z.out.Info("ZTrust.DelGuest: %s %s", name, source)
 
-	z.delRuleX(cn.IpRule{
+	z.delRuleX(cn.IPRule{
 		Source:  guest.source,
 		Comment: "User " + guest.username + "@" + guest.network,
 		Jump:    guest.Chain(),

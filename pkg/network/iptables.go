@@ -1,8 +1,8 @@
 package network
 
 import (
+	"fmt"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
@@ -20,11 +20,13 @@ const (
 	CPost    = "POSTROUTING"
 	CPre     = "PREROUTING"
 	CMasq    = "MASQUERADE"
+	CMark    = "MARK"
+	CCT      = "CT"
 	CNoTrk   = "NOTRACK"
 	CSnat    = "SNAT"
 )
 
-type IpRule struct {
+type IPRule struct {
 	Table     string
 	Chain     string
 	Source    string
@@ -45,20 +47,31 @@ type IpRule struct {
 	Comment   string
 	Jump      string
 	SetMss    int
+	Mark      uint32
+	SetMark   uint32
+	Zone      uint32
 	Order     string
 	Match     string
 	CtState   string
 	TcpFlag   []string
 }
 
-type IpRules []IpRule
+type IPRules []IPRule
 
-func (ru IpRule) Itoa(value int) string {
-	return strconv.Itoa(value)
+func (ru IPRule) Itoa(value int) string {
+	return fmt.Sprintf("%d", value)
 }
 
-func (ru IpRule) Args() []string {
+func (ru IPRule) Utoa(value uint32) string {
+	return fmt.Sprintf("%d", value)
+}
+
+func (ru IPRule) Args() []string {
 	var args []string
+
+	if ru.Mark > 0 {
+		args = append(args, "-m", "mark", "--mark", ru.Utoa(ru.Mark))
+	}
 
 	if ru.Source != "" {
 		args = append(args, "-s", ru.Source)
@@ -71,6 +84,7 @@ func (ru IpRule) Args() []string {
 		args = append(args, "!")
 		args = append(args, "-m", "set", "--match-set", ru.NoSrcSet, "src")
 	}
+
 	if ru.Dest != "" {
 		args = append(args, "-d", ru.Dest)
 	} else if ru.NoDest != "" {
@@ -82,6 +96,7 @@ func (ru IpRule) Args() []string {
 		args = append(args, "!")
 		args = append(args, "-m", "set", "--match-set", ru.NoDestSet, "dst")
 	}
+
 	if ru.CtState != "" {
 		args = append(args, "-m", "conntrack", "--ctstate", ru.CtState)
 	}
@@ -91,13 +106,14 @@ func (ru IpRule) Args() []string {
 	if ru.Match != "" {
 		args = append(args, "-m", ru.Match)
 	}
+
 	if len(ru.TcpFlag) > 0 {
 		args = append(args, "--tcp-flags", ru.TcpFlag[0], ru.TcpFlag[1])
 	}
-	if len(ru.SrcPort) > 0 {
+	if ru.SrcPort != "" {
 		args = append(args, "--sport", ru.SrcPort)
 	}
-	if len(ru.DstPort) > 0 {
+	if ru.DstPort != "" {
 		if ru.Match == "multiport" {
 			args = append(args, "--dports", ru.DstPort)
 		} else {
@@ -113,46 +129,57 @@ func (ru IpRule) Args() []string {
 	if ru.Comment != "" {
 		args = append(args, "-m", "comment", "--comment", ru.Comment)
 	}
+
 	if ru.Jump != "" {
 		jump := strings.ToUpper(ru.Jump)
-		if jump == "DROP" || jump == "ACCEPT" {
+		if jump == "ACCEPT" || jump == "DROP" {
 			args = append(args, "-j", jump)
+		} else if jump == "MARK" {
+			args = append(args, "-j", "MARK", "--set-mark", ru.Utoa(ru.SetMark))
+		} else if jump == "CT" {
+			args = append(args, "-j", "CT")
+			if ru.Zone > 0 {
+				args = append(args, "--zone", ru.Utoa(ru.Zone))
+			}
 		} else {
 			args = append(args, "-j", ru.Jump)
 		}
+
 		if ru.SetMss > 0 {
 			args = append(args, "--set-mss", ru.Itoa(ru.SetMss))
 		}
 	} else {
 		args = append(args, "-j", "ACCEPT")
 	}
+
 	if ru.ToSource != "" {
 		args = append(args, "--to-source", ru.ToSource)
 	}
 	if ru.ToDest != "" {
 		args = append(args, "--to-destination", ru.ToDest)
 	}
+
 	return args
 }
 
-func (ru IpRule) Exist() bool {
+func (ru IPRule) Exist() bool {
 	table := iptables.Table(ru.Table)
 	chain := ru.Chain
 	args := ru.Args()
 	return iptables.Exists(table, chain, args...)
 }
 
-func (ru IpRule) String() string {
+func (ru IPRule) String() string {
 	elems := append([]string{"-t", ru.Table, "-A", ru.Chain}, ru.Args()...)
 	return strings.Join(elems, " ")
 }
 
-func (ru IpRule) Eq(obj IpRule) bool {
+func (ru IPRule) Eq(obj IPRule) bool {
 	return ru.String() == obj.String()
 }
 
-func (ru IpRule) Opr(opr string) ([]byte, error) {
-	libol.Debug("IpRuleOpr: %s, %v", opr, ru)
+func (ru IPRule) Opr(opr string) ([]byte, error) {
+	libol.Debug("IPRuleOpr: %s, %v", opr, ru)
 	switch runtime.GOOS {
 	case "linux":
 		args := ru.Args()
@@ -163,14 +190,14 @@ func (ru IpRule) Opr(opr string) ([]byte, error) {
 	}
 }
 
-func (rules IpRules) Add(obj IpRule) IpRules {
+func (rules IPRules) Add(obj IPRule) IPRules {
 	if !rules.Has(obj) {
 		return append(rules, obj)
 	}
 	return rules
 }
 
-func (rules IpRules) Has(rule IpRule) bool {
+func (rules IPRules) Has(rule IPRule) bool {
 	for _, r := range rules {
 		if r.Eq(rule) {
 			return true
@@ -179,9 +206,9 @@ func (rules IpRules) Has(rule IpRule) bool {
 	return false
 }
 
-func (rules IpRules) Remove(obj IpRule) IpRules {
+func (rules IPRules) Remove(obj IPRule) IPRules {
 	index := 0
-	news := make(IpRules, 0, 32)
+	news := make(IPRules, 0, 32)
 	find := false
 	for _, item := range rules {
 		if !find && item.Eq(obj) {
@@ -194,16 +221,16 @@ func (rules IpRules) Remove(obj IpRule) IpRules {
 	return news[:index]
 }
 
-type IpChain struct {
+type IPChain struct {
 	Table string
 	Name  string
 	From  string
 }
 
-type IpChains []IpChain
+type IPChains []IPChain
 
-func (ch IpChain) Opr(opr string) ([]byte, error) {
-	libol.Debug("IpChainOpr: %s, %v", opr, ch)
+func (ch IPChain) Opr(opr string) ([]byte, error) {
+	libol.Debug("IPChainOpr: %s, %v", opr, ch)
 	table := iptables.Table(ch.Table)
 	name := ch.Name
 	switch runtime.GOOS {
@@ -226,7 +253,7 @@ func (ch IpChain) Opr(opr string) ([]byte, error) {
 	return nil, nil
 }
 
-func (ch IpChain) Eq(obj IpChain) bool {
+func (ch IPChain) Eq(obj IPChain) bool {
 	if ch.Table != obj.Table {
 		return false
 	}
@@ -236,13 +263,13 @@ func (ch IpChain) Eq(obj IpChain) bool {
 	return true
 }
 
-func (chains IpChains) Add(obj IpChain) IpChains {
+func (chains IPChains) Add(obj IPChain) IPChains {
 	return append(chains, obj)
 }
 
-func (chains IpChains) Pop(obj IpChain) IpChains {
+func (chains IPChains) Pop(obj IPChain) IPChains {
 	index := 0
-	news := make(IpChains, 0, 32)
+	news := make(IPChains, 0, 32)
 	find := false
 	for _, item := range chains {
 		if !find && item.Eq(obj) {
@@ -257,7 +284,7 @@ func (chains IpChains) Pop(obj IpChain) IpChains {
 
 var __iptablesInit__ = false
 
-func IptableInit() {
+func IPTableInit() {
 	if __iptablesInit__ {
 		return
 	}

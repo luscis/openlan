@@ -1,10 +1,11 @@
 package proxy
 
 import (
+	"time"
+
 	"github.com/armon/go-socks5"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"time"
 )
 
 type SocksProxy struct {

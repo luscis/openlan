@@ -30,12 +30,17 @@ func NewLinuxBridge(name string, mtu int) *LinuxBridge {
 	if mtu == 0 {
 		mtu = 1500
 	}
+
 	b := &LinuxBridge{
 		name:  name,
 		ipMtu: mtu,
 		ctl:   NewBrCtl(name, mtu),
 		out:   libol.NewSubLogger(name),
 	}
+
+	xname := libol.GenString(8)
+	b.l3if, b.l2if = GetPair(xname)
+
 	Bridges.Add(b)
 	return b
 }
@@ -162,12 +167,10 @@ func (b *LinuxBridge) CallIptables(value int) error {
 }
 
 func (b *LinuxBridge) Plugin(addr *nl.Addr) error {
-	if b.l2if != "" {
+	if link, _ := nl.LinkByName(b.l2if); link != nil {
 		return nil
 	}
 
-	name := libol.GenString(8)
-	b.l3if, b.l2if = GetPair(name)
 	link := &nl.Veth{
 		LinkAttrs: nl.LinkAttrs{Name: b.l3if},
 		PeerName:  b.l2if,
@@ -190,12 +193,8 @@ func (b *LinuxBridge) Plugin(addr *nl.Addr) error {
 }
 
 func (b *LinuxBridge) Unplugin() error {
-	if b.l2if == "" {
-		return nil
-	}
-
-	link, err := nl.LinkByName(b.l2if)
-	if err != nil {
+	link, _ := nl.LinkByName(b.l2if)
+	if link == nil {
 		return nil
 	}
 

@@ -53,6 +53,7 @@ type WorkerImpl struct {
 	ztrust  *ZTrust
 	vrf     *cn.VRF
 	table   int
+	br      cn.Bridger
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -70,15 +71,22 @@ func (w *WorkerImpl) Provider() string {
 }
 
 func (w *WorkerImpl) Initialize() {
+	cfg := w.cfg
+
+	if cfg.Namespace != "" {
+		w.vrf = cn.NewVRF(cfg.Namespace, 0)
+		w.table = w.vrf.Table()
+	}
+
 	n := models.Network{
-		Name:    w.cfg.Name,
-		IpStart: w.cfg.Subnet.Start,
-		IpEnd:   w.cfg.Subnet.End,
-		Netmask: w.cfg.Subnet.Netmask,
-		IfAddr:  w.cfg.Bridge.Address,
+		Name:    cfg.Name,
+		IpStart: cfg.Subnet.Start,
+		IpEnd:   cfg.Subnet.End,
+		Netmask: cfg.Subnet.Netmask,
+		IfAddr:  cfg.Bridge.Address,
 		Routes:  make([]*models.Route, 0, 2),
 	}
-	for _, rt := range w.cfg.Routes {
+	for _, rt := range cfg.Routes {
 		if rt.NextHop == "" {
 			w.out.Warn("WorkerImpl.Initialize: %s noNextHop", rt.Prefix)
 			continue
@@ -98,15 +106,15 @@ func (w *WorkerImpl) Initialize() {
 	w.updateVPN()
 	w.createVPN()
 
-	if w.cfg.Dhcp == "enable" {
+	if cfg.Dhcp == "enable" {
 		w.dhcp = NewDhcp(&co.Dhcp{
-			Name:   w.cfg.Name,
-			Subnet: w.cfg.Subnet,
-			Bridge: w.cfg.Bridge,
+			Name:   cfg.Name,
+			Subnet: cfg.Subnet,
+			Bridge: cfg.Bridge,
 		})
 	}
 
-	w.fire = cn.NewFireWallTable(w.cfg.Name)
+	w.fire = cn.NewFireWallTable(cfg.Name)
 
 	if out, err := w.setV.Clear(); err != nil {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
@@ -115,8 +123,8 @@ func (w *WorkerImpl) Initialize() {
 		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
 	}
 
-	if w.cfg.ZTrust == "enable" {
-		w.ztrust = NewZTrust(w.cfg.Name, 30)
+	if cfg.ZTrust == "enable" {
+		w.ztrust = NewZTrust(cfg.Name, 30)
 		w.ztrust.Initialize()
 	}
 
@@ -261,11 +269,7 @@ func (w *WorkerImpl) loadRoutes() {
 			nlrt.Priority = rt.Metric
 		}
 		w.out.Debug("WorkerImpl.LoadRoute: %s", nlrt.String())
-		promise := &libol.Promise{
-			First:  time.Second * 2,
-			MaxInt: time.Minute,
-			MinInt: time.Second * 10,
-		}
+		promise := libol.NewPromise()
 		rt_c := rt
 		promise.Go(func() error {
 			if err := nl.RouteReplace(&nlrt); err != nil {
@@ -278,28 +282,48 @@ func (w *WorkerImpl) loadRoutes() {
 	}
 }
 
+func (w *WorkerImpl) loadVRF() {
+	if w.vrf == nil {
+		return
+	}
+
+	if err := w.vrf.Up(); err != nil {
+		w.out.Warn("OpenLANWorker.UpVRF %s", err)
+		return
+	}
+
+	if w.br != nil {
+		if err := w.vrf.AddSlave(w.br.L3Name()); err != nil {
+			w.out.Warn("OpenLANWorker.UpVRF %s", err)
+			return
+		}
+	}
+}
+
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg, vpn := w.GetCfgs()
 	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
+
+	w.loadVRF()
 	w.loadRoutes()
 
 	if cfg.Acl != "" {
-		fire.Mangle.Pre.AddRule(cn.IpRule{
+		fire.Mangle.Pre.AddRule(cn.IPRule{
 			Input: cfg.Bridge.Name,
 			Jump:  cfg.Acl,
 		})
 	}
 
-	fire.Filter.For.AddRule(cn.IpRule{
+	fire.Filter.For.AddRule(cn.IPRule{
 		Input:  cfg.Bridge.Name,
 		Output: cfg.Bridge.Name,
 	})
 
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
-		fire.Mangle.Post.AddRule(cn.IpRule{
+		fire.Mangle.Post.AddRule(cn.IPRule{
 			Output:  cfg.Bridge.Name,
 			Proto:   "tcp",
 			Match:   "tcp",
@@ -308,7 +332,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			SetMss:  cfg.Bridge.Mss,
 		})
 		// connect from local
-		fire.Mangle.In.AddRule(cn.IpRule{
+		fire.Mangle.In.AddRule(cn.IPRule{
 			Input:   cfg.Bridge.Name,
 			Proto:   "tcp",
 			Match:   "tcp",
@@ -329,7 +353,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	if !(w.dhcp == nil) {
 		w.dhcp.Start()
-		fire.Nat.Post.AddRule(cn.IpRule{
+		fire.Nat.Post.AddRule(cn.IPRule{
 			Source:  cfg.Bridge.Address,
 			NoDest:  cfg.Bridge.Address,
 			Jump:    cn.CMasq,
@@ -339,16 +363,46 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	if !(w.vpn == nil) {
 		w.vpn.Start()
+		if !(w.vrf == nil) {
+			promise := libol.NewPromise()
+			promise.Go(func() error {
+				link, err := nl.LinkByName(vpn.Device)
+				if link == nil {
+					w.out.Info("Link %s %s", vpn.Device, err)
+					return err
+				}
+
+				attr := link.Attrs()
+				if err := w.vrf.AddSlave(attr.Name); err != nil {
+					w.out.Info("VRF AddSlave: %s", err)
+					return err
+				}
+
+				_, dest, _ := net.ParseCIDR(vpn.Subnet)
+				rt := &nl.Route{
+					Dst:       dest,
+					Table:     w.table,
+					LinkIndex: attr.Index,
+				}
+				w.out.Debug("WorkerImpl.LoadRoute: %s", rt.String())
+				if err := nl.RouteAdd(rt); err != nil {
+					w.out.Warn("Route add: %s", err)
+					return err
+				}
+
+				return nil
+			})
+		}
 	}
 
 	if !(w.vpn == nil || w.ztrust == nil) {
 		w.ztrust.Start()
-		fire.Mangle.Pre.AddRule(cn.IpRule{
+		fire.Mangle.Pre.AddRule(cn.IPRule{
 			Input:   vpn.Device,
 			CtState: "RELATED,ESTABLISHED",
 			Comment: "Forwarding Accpted",
 		})
-		fire.Mangle.Pre.AddRule(cn.IpRule{
+		fire.Mangle.Pre.AddRule(cn.IPRule{
 			Input:   vpn.Device,
 			Jump:    w.ztrust.Chain(),
 			Comment: "Goto Zero Trust",
@@ -468,7 +522,7 @@ func (w *WorkerImpl) ID() string {
 }
 
 func (w *WorkerImpl) Bridge() cn.Bridger {
-	return nil
+	return w.br
 }
 
 func (w *WorkerImpl) Config() *co.Network {
@@ -508,7 +562,7 @@ func (w *WorkerImpl) toACL(acl, input string) {
 		return
 	}
 	if acl != "" {
-		w.fire.Mangle.Pre.AddRule(cn.IpRule{
+		w.fire.Mangle.Pre.AddRule(cn.IPRule{
 			Input: input,
 			Jump:  acl,
 		})
@@ -518,7 +572,7 @@ func (w *WorkerImpl) toACL(acl, input string) {
 func (w *WorkerImpl) openPort(protocol, port, comment string) {
 	w.out.Info("WorkerImpl.openPort %s %s", protocol, port)
 	// allowed forward between source and prefix.
-	w.fire.Filter.In.AddRule(cn.IpRule{
+	w.fire.Filter.In.AddRule(cn.IPRule{
 		Proto:   protocol,
 		Match:   "multiport",
 		DstPort: port,
@@ -529,7 +583,7 @@ func (w *WorkerImpl) openPort(protocol, port, comment string) {
 func (w *WorkerImpl) toForward_r(input, source, pfxSet, comment string) {
 	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, source, pfxSet)
 	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(cn.IpRule{
+	w.fire.Filter.For.AddRule(cn.IPRule{
 		Input:   input,
 		Source:  source,
 		DestSet: pfxSet,
@@ -540,7 +594,7 @@ func (w *WorkerImpl) toForward_r(input, source, pfxSet, comment string) {
 func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
 	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, srcSet, prefix)
 	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(cn.IpRule{
+	w.fire.Filter.For.AddRule(cn.IPRule{
 		Input:   input,
 		SrcSet:  srcSet,
 		Dest:    prefix,
@@ -550,9 +604,12 @@ func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
 
 func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 	// Enable masquerade from source to prefix.
-	w.fire.Nat.Post.AddRule(cn.IpRule{
+	output := ""
+	w.fire.Nat.Post.AddRule(cn.IPRule{
+		Mark:    uint32(w.table),
 		Source:  source,
 		DestSet: pfxSet,
+		Output:  output,
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
@@ -560,10 +617,13 @@ func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 }
 
 func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
+	output := ""
 	// Enable masquerade from source to prefix.
-	w.fire.Nat.Post.AddRule(cn.IpRule{
+	w.fire.Nat.Post.AddRule(cn.IPRule{
+		Mark:    uint32(w.table),
 		SrcSet:  srcSet,
 		Dest:    prefix,
+		Output:  output,
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
@@ -573,7 +633,7 @@ func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
 func (w *WorkerImpl) toRelated(output, comment string) {
 	w.out.Debug("WorkerImpl.toRelated %s", output)
 	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(cn.IpRule{
+	w.fire.Filter.For.AddRule(cn.IPRule{
 		Output:  output,
 		CtState: "RELATED,ESTABLISHED",
 		Comment: comment,
@@ -613,6 +673,25 @@ func (w *WorkerImpl) updateVPN() {
 	vpn.Routes = routes
 }
 
+func (w *WorkerImpl) forwardZone(input string) {
+	if w.table == 0 {
+		return
+	}
+	w.out.Debug("WorkerImpl.forwardZone %s", input)
+	w.fire.Raw.Pre.AddRule(cn.IPRule{
+		Input:   input,
+		Jump:    cn.CMark,
+		SetMark: uint32(w.table),
+		Comment: "Mark private traffic",
+	})
+	w.fire.Raw.Pre.AddRule(cn.IPRule{
+		Input:   input,
+		Jump:    cn.CCT,
+		Zone:    uint32(w.table),
+		Comment: "Goto private zone",
+	})
+}
+
 func (w *WorkerImpl) forwardVPN() {
 	cfg, vpn := w.GetCfgs()
 	if vpn == nil {
@@ -620,6 +699,9 @@ func (w *WorkerImpl) forwardVPN() {
 	}
 
 	devName := vpn.Device
+
+	w.forwardZone(devName)
+
 	_, port := libol.GetHostPort(vpn.Listen)
 	if vpn.Protocol == "udp" {
 		w.openPort("udp", port, "Open VPN")
@@ -639,21 +721,28 @@ func (w *WorkerImpl) forwardVPN() {
 		}
 		w.setV.Add(rt)
 	}
+
 	w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
 	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 }
 
 func (w *WorkerImpl) forwardSubnet() {
 	cfg, vpn := w.GetCfgs()
-	br := cfg.Bridge
-	ifAddr := strings.SplitN(br.Address, "/", 2)[0]
+
+	input := cfg.Bridge.Name
+	if w.br != nil {
+		input = w.br.L3Name()
+		w.forwardZone(input)
+	}
+
+	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
 	if ifAddr == "" {
 		return
 	}
 
 	subnet := w.Subnet()
 	// Enable MASQUERADE, and FORWARD it.
-	w.toRelated(br.Name, "Accept related")
+	w.toRelated(input, "Accept related")
 	for _, rt := range cfg.Routes {
 		if rt.MultiPath != nil {
 			continue
@@ -665,7 +754,7 @@ func (w *WorkerImpl) forwardSubnet() {
 		}
 		w.setR.Add(rt.Prefix)
 	}
-	w.toForward_r(br.Name, subnet, w.setR.Name, "To route")
+	w.toForward_r(input, subnet, w.setR.Name, "To route")
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
