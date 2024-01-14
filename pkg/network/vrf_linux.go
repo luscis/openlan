@@ -144,3 +144,7 @@ func (v *VRF) Table() int {
 func (v *VRF) Name() string {
 	return v.name
 }
+
+func (v *VRF) Link() nl.Link {
+	return v.link
+}

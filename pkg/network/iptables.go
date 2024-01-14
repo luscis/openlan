@@ -24,6 +24,7 @@ const (
 	CCT      = "CT"
 	CNoTrk   = "NOTRACK"
 	CSnat    = "SNAT"
+	CTcpMss  = "TCPMSS"
 )
 
 type IPRule struct {

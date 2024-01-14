@@ -253,7 +253,7 @@ func (w *WorkerImpl) loadRoutes() {
 			// route's next-hop is local not install again.
 			continue
 		}
-		nlrt := nl.Route{
+		nlr := nl.Route{
 			Dst:   dst,
 			Table: w.table,
 		}
@@ -262,18 +262,18 @@ func (w *WorkerImpl) loadRoutes() {
 				Hops: hop.Weight,
 				Gw:   net.ParseIP(hop.NextHop),
 			}
-			nlrt.MultiPath = append(nlrt.MultiPath, nxhe)
+			nlr.MultiPath = append(nlr.MultiPath, nxhe)
 		}
 		if rt.MultiPath == nil {
-			nlrt.Gw = net.ParseIP(rt.NextHop)
-			nlrt.Priority = rt.Metric
+			nlr.Gw = net.ParseIP(rt.NextHop)
+			nlr.Priority = rt.Metric
 		}
-		w.out.Debug("WorkerImpl.LoadRoute: %s", nlrt.String())
-		promise := libol.NewPromise()
+		w.out.Debug("WorkerImpl.LoadRoute: %s", nlr.String())
 		rt_c := rt
+		promise := libol.NewPromise()
 		promise.Go(func() error {
-			if err := nl.RouteReplace(&nlrt); err != nil {
-				w.out.Warn("WorkerImpl.LoadRoute: %v %s", nlrt, err)
+			if err := nl.RouteReplace(&nlr); err != nil {
+				w.out.Warn("WorkerImpl.LoadRoute: %v %s", nlr, err)
 				return err
 			}
 			w.out.Info("WorkerImpl.LoadRoute: %v success", rt_c.String())
@@ -316,11 +316,6 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		})
 	}
 
-	fire.Filter.For.AddRule(cn.IPRule{
-		Input:  cfg.Bridge.Name,
-		Output: cfg.Bridge.Name,
-	})
-
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
 		fire.Mangle.Post.AddRule(cn.IPRule{
@@ -328,7 +323,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			Proto:   "tcp",
 			Match:   "tcp",
 			TcpFlag: []string{"SYN,RST", "SYN"},
-			Jump:    "TCPMSS",
+			Jump:    cn.CTcpMss,
 			SetMss:  cfg.Bridge.Mss,
 		})
 		// connect from local
@@ -337,7 +332,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			Proto:   "tcp",
 			Match:   "tcp",
 			TcpFlag: []string{"SYN,RST", "SYN"},
-			Jump:    "TCPMSS",
+			Jump:    cn.CTcpMss,
 			SetMss:  cfg.Bridge.Mss,
 		})
 	}
@@ -393,20 +388,20 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 				return nil
 			})
 		}
-	}
 
-	if !(w.vpn == nil || w.ztrust == nil) {
-		w.ztrust.Start()
-		fire.Mangle.Pre.AddRule(cn.IPRule{
-			Input:   vpn.Device,
-			CtState: "RELATED,ESTABLISHED",
-			Comment: "Forwarding Accpted",
-		})
-		fire.Mangle.Pre.AddRule(cn.IPRule{
-			Input:   vpn.Device,
-			Jump:    w.ztrust.Chain(),
-			Comment: "Goto Zero Trust",
-		})
+		if !(w.ztrust == nil) {
+			w.ztrust.Start()
+			fire.Mangle.Pre.AddRule(cn.IPRule{
+				Input:   vpn.Device,
+				CtState: "RELATED,ESTABLISHED",
+				Comment: "Forwarding Accpted",
+			})
+			fire.Mangle.Pre.AddRule(cn.IPRule{
+				Input:   vpn.Device,
+				Jump:    w.ztrust.Chain(),
+				Comment: "Goto Zero Trust",
+			})
+		}
 	}
 
 	fire.Start()
@@ -468,16 +463,16 @@ func (w *WorkerImpl) unloadRoutes() {
 		if err != nil {
 			continue
 		}
-		nlRt := nl.Route{
+		nlr := nl.Route{
 			Dst:   dst,
 			Table: w.table,
 		}
 		if rt.MultiPath == nil {
-			nlRt.Gw = net.ParseIP(rt.NextHop)
-			nlRt.Priority = rt.Metric
+			nlr.Gw = net.ParseIP(rt.NextHop)
+			nlr.Priority = rt.Metric
 		}
-		w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlRt.String())
-		if err := nl.RouteDel(&nlRt); err != nil {
+		w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
+		if err := nl.RouteDel(&nlr); err != nil {
 			w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
 			continue
 		}
@@ -489,12 +484,12 @@ func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 
 	w.fire.Stop()
-
-	if !(w.vpn == nil || w.ztrust == nil) {
-		w.ztrust.Stop()
-	}
+	w.unloadRoutes()
 
 	if !(w.vpn == nil) {
+		if !(w.ztrust == nil) {
+			w.ztrust.Stop()
+		}
 		w.vpn.Stop()
 	}
 
@@ -505,12 +500,10 @@ func (w *WorkerImpl) Stop() {
 	for _, output := range w.outputs {
 		w.DelOutput(w.cfg.Bridge.Name, output)
 	}
-
 	w.outputs = nil
+
 	w.setR.Destroy()
 	w.setV.Destroy()
-
-	w.unloadRoutes()
 }
 
 func (w *WorkerImpl) String() string {
@@ -529,7 +522,7 @@ func (w *WorkerImpl) Config() *co.Network {
 	return w.cfg
 }
 
-func (w *WorkerImpl) Subnet() string {
+func (w *WorkerImpl) Subnet() *net.IPNet {
 	cfg := w.cfg
 
 	ipAddr := cfg.Bridge.Address
@@ -538,7 +531,7 @@ func (w *WorkerImpl) Subnet() string {
 		ipAddr = cfg.Subnet.Start
 	}
 	if ipAddr == "" {
-		return ""
+		return nil
 	}
 
 	addr := ipAddr
@@ -548,10 +541,10 @@ func (w *WorkerImpl) Subnet() string {
 		addr = fmt.Sprintf("%s/%d", ifAddr, prefix)
 	}
 	if _, inet, err := net.ParseCIDR(addr); err == nil {
-		return inet.String()
+		return inet
 	}
 
-	return ""
+	return nil
 }
 
 func (w *WorkerImpl) Reload(v api.Switcher) {
@@ -654,9 +647,9 @@ func (w *WorkerImpl) updateVPN() {
 
 	routes := vpn.Routes
 	routes = append(routes, vpn.Subnet) // add subnet of VPN self.
-	if addr := w.Subnet(); addr != "" {
+	if addr := w.Subnet(); addr != nil {
 		w.out.Info("WorkerImpl.updateVPN subnet %s", addr)
-		routes = append(routes, addr)
+		routes = append(routes, addr.String())
 	}
 
 	for _, rt := range cfg.Routes {
@@ -765,16 +758,16 @@ func (w *WorkerImpl) forwardSubnet() {
 	}
 
 	if w.vrf != nil {
-		w.toForward_r(w.vrf.Name(), subnet, w.setR.Name, "To route")
+		w.toForward_r(w.vrf.Name(), subnet.String(), w.setR.Name, "To route")
 	} else {
-		w.toForward_r(input, subnet, w.setR.Name, "To route")
+		w.toForward_r(input, subnet.String(), w.setR.Name, "To route")
 	}
 
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
 
-	w.toMasq_r(subnet, w.setR.Name, "To Masq")
+	w.toMasq_r(subnet.String(), w.setR.Name, "To Masq")
 }
 
 func (w *WorkerImpl) createVPN() {

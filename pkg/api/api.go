@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net"
+
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
@@ -46,7 +48,7 @@ type Networker interface {
 	Stop()
 	Bridge() cn.Bridger
 	Config() *co.Network
-	Subnet() string
+	Subnet() *net.IPNet
 	Reload(v Switcher)
 	Provider() string
 	ZTruster() ZTruster
