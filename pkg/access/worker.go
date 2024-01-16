@@ -384,7 +384,9 @@ func (w *Worker) OnClose(s *SocketWorker) error {
 
 func (w *Worker) OnSuccess(s *SocketWorker) error {
 	w.out.Info("Worker.OnSuccess")
-	if w.listener.AddAddr != nil {
+	if !w.cfg.RequestAddr {
+		w.out.Info("SocketWorker.AddAddr: notAllowed")
+	} else if w.listener.AddAddr != nil {
 		_ = w.listener.AddAddr(w.ifAddr)
 	}
 	return nil

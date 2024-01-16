@@ -2,13 +2,14 @@ package access
 
 import (
 	"encoding/json"
-	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
 )
 
 type SocketWorkerListener struct {

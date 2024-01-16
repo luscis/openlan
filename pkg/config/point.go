@@ -2,10 +2,11 @@ package config
 
 import (
 	"flag"
-	"github.com/luscis/openlan/pkg/libol"
 	"log"
 	"runtime"
 	"strings"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Interface struct {
@@ -31,7 +32,7 @@ type Point struct {
 	Http        *Http     `json:"http,omitempty"`
 	Crypt       *Crypt    `json:"crypt,omitempty"`
 	PProf       string    `json:"pprof,omitempty"`
-	RequestAddr bool      `json:"requestAddr,omitempty"`
+	RequestAddr bool      `json:"requestAddr"`
 	ByPass      bool      `json:"bypass,omitempty"`
 	SaveFile    string    `json:"-"`
 	Queue       *Queue    `json:"queue,omitempty"`

@@ -180,6 +180,7 @@ func (w *OpenLANWorker) AddLink(c co.Point) {
 
 	c.Alias = w.alias
 	c.Network = w.cfg.Name
+	c.RequestAddr = false
 	c.Interface.Name = cn.Taps.GenName()
 	c.Interface.Bridge = br.Name
 	c.Interface.Address = br.Address

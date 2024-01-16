@@ -2,11 +2,12 @@ package app
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
-	"strings"
 )
 
 type Request struct {
@@ -72,6 +73,9 @@ func findLease(ifAddr string, p *models.Point) *schema.Lease {
 	if ifAddr == "" {
 		if lease == nil { // now to alloc it.
 			lease = cache.Network.NewLease(alias, network)
+		}
+		if lease == nil {
+			return nil
 		}
 		// has static address.
 		lease.Client = p.Client.String()
