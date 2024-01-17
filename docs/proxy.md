@@ -23,7 +23,8 @@ root@openlan:/opt/openlan/etc/openlan# cat > proxy.json << EOF
     "http": [{"listen": "192.168.1.88:11082"}] 
 }
 EOF
-root@cloud: docker restart openlan_proxy_1
+root@openlan::/opt/openlan/etc/openlan# cat proxy.json | python -m json.tool
+root@openlan::/opt/openlan/etc/openlan# docker restart openlan_proxy_1
 ```
 ## Socks Proxy
 ## TCP Reverse Proxy    
@@ -39,6 +40,6 @@ root@openlan:/opt/openlan/etc/openlan# cat > proxy.json << EOF
     ]
 }
 EOF
-root@i:/opt/openlan/etc/openlan# cat proxy.json | python -m json.tool
-root@i:/opt/openlan/etc/openlan# docker restart openlan_proxy_1
+root@openlan:/opt/openlan/etc/openlan# cat proxy.json | python -m json.tool
+root@openlan:/opt/openlan/etc/openlan# docker restart openlan_proxy_1
 ```
