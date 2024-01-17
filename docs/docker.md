@@ -58,19 +58,55 @@ d5543d22db6e        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   1
 a1d86acdb6b4        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   18 seconds ago      Up 18 seconds                           openlan_ovsdb-server_1
 e42f200f6694        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   19 seconds ago      Up 19 seconds                           openlan_confd_1
 [root@example openlan]#
-
-
+```
 
 ## Docker Images upgrade Or Release and reinstall Back up OpenLanVPN
+
+```
 [root@example network]# cd /opt/openlan
 [root@example network]# mkdir var
 [root@example network]# mkdir var/openlan
 [root@example network]# docker cp openlan_switch_1:/var/openlan/openvpn ./
 [root@example network]# docker-compose -f  docker-compose.yml down
 [root@example network]# vi docker-compose.yml
-    find :  services:switch:volumes:
-    add  : - /opt/openlan/var/openlan/openvpn:/var/openlan/openvpn
- =================================================================
+version: "2.3"
+services:
+  confd:
+    restart: always
+    image: "luscis/openlan:v24.01.01.x86_64.deb"
+    privileged: true
+    entrypoint: ["/var/openlan/script/confd.sh", "start"]
+    network_mode: "host"
+    volumes:
+      - /opt/openlan/confd:/var/openlan/confd
+      - /opt/openlan/etc/openlan:/etc/openlan
+        #ports:
+        # - 10000:10000
+        #- 10002:10002
+  ovsdb-server:
+    restart: always
+    image: "luscis/openlan:v24.01.01.x86_64.deb"
+    privileged: true
+    entrypoint: ["/var/openlan/script/ovsdb-server.sh", "start"]
+    #network_mode: "host"
+    network_mode: service:confd
+    volumes:
+      - /opt/openlan/run/openvswitch:/run/openvswitch
+      - /opt/openlan/etc/openvswitch:/etc/openvswitch
+    depends_on:
+      - confd
+  ovs-vswitchd:
+    restart: always
+    image: "luscis/openlan:v24.01.01.x86_64.deb"
+    privileged: true
+    #network_mode: "host"
+    network_mode: service:confd
+    entrypoint: ["/var/openlan/script/ovs-vswitchd.sh", "start"]
+    volumes:
+      - /opt/openlan/run/openvswitch:/run/openvswitch
+    depends_on:
+      - confd
+      - ovsdb-server
   switch:
     restart: always
     image: "luscis/openlan:v24.01.01.x86_64.deb"
@@ -86,12 +122,38 @@ e42f200f6694        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   1
       - /opt/openlan/run/openvswitch:/run/openvswitch
       - /opt/openlan/etc/openvswitch:/etc/openvswitch
       - /opt/openlan/etc/openlan:/etc/openlan
-      - /opt/openlan/var/openlan/openvpn:/var/openlan/openvpn
+      - /opt/openlan/var/openlan/openvpn:/var/openlan/openvpn   # add volume
     depends_on:
       - confd
       - ovsdb-server
       - ovs-vswitchd
-
+  proxy:
+    restart: always
+    image: "luscis/openlan:v24.01.01.x86_64.deb"
+    # privileged: true
+    #network_mode: "host"
+    network_mode: service:confd
+    entrypoint: ["/usr/bin/openlan-proxy", "-conf", "/etc/openlan/proxy.json", "-log:file", "/dev/null"]
+    volumes:
+      - /opt/openlan/etc/openlan:/etc/openlan
+    depends_on:
+      - confd
+      - switch
+  task:
+    restart: always
+    image: "luscis/openlan:v24.01.01.x86_64.deb"
+    # privileged: true
+    #network_mode: "host"
+    network_mode: service:confd
+    entrypoint: ["/var/openlan/script/task.sh"]
+    volumes:
+      - /opt/openlan/confd:/var/openlan/confd
+      - /opt/openlan/run/openvswitch:/run/openvswitch
+      - /opt/openlan/etc/openvswitch:/etc/openvswitch
+      - /opt/openlan/etc/openlan:/etc/openlan
+    depends_on:
+      - confd
+      - switch
 
 [root@example network]# docker-compose -f  docker-compose.yml up -d
 
