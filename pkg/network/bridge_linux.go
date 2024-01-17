@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 	nl "github.com/vishvananda/netlink"
@@ -20,9 +21,15 @@ type LinuxBridge struct {
 }
 
 func GetPair(name string) (string, string) {
-	s0 := fmt.Sprintf("bi-%s", name)
-	s1 := fmt.Sprintf("vi-%s", name)
-
+	s0 := ""
+	s1 := ""
+	if strings.HasPrefix(name, "br-") {
+		s0 = strings.Replace(name, "br-", "hi-", 1)
+		s1 = strings.Replace(name, "br-", "si-", 1)
+	} else {
+		s0 = fmt.Sprintf("hi-%s", name)
+		s1 = fmt.Sprintf("si-%s", name)
+	}
 	return GetName(s0), GetName(s1)
 }
 
@@ -37,9 +44,7 @@ func NewLinuxBridge(name string, mtu int) *LinuxBridge {
 		ctl:   NewBrCtl(name, mtu),
 		out:   libol.NewSubLogger(name),
 	}
-
-	xname := libol.GenString(8)
-	b.l3if, b.l2if = GetPair(xname)
+	b.l3if, b.l2if = GetPair(name)
 
 	Bridges.Add(b)
 	return b
