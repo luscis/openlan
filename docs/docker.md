@@ -79,9 +79,6 @@ services:
     volumes:
       - /opt/openlan/confd:/var/openlan/confd
       - /opt/openlan/etc/openlan:/etc/openlan
-        #ports:
-        # - 10000:10000
-        #- 10002:10002
   ovsdb-server:
     restart: always
     image: "luscis/openlan:v24.01.01.x86_64.deb"
