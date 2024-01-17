@@ -1,26 +1,33 @@
 # Setup Proxy
 
 ```
-              Google--------------Internet---------------Githup
+             Google <------------ Internet -------------> Githup
+                                     ^
                                      |
                                      |      
-                           Central Switch(Singapo)  - 192.168.1.88/24  
+                           Central Switch(Singapo)        - 192.168.1.88
+                                     ^
                                      |
                                      |
-                                   互联网
+                                  Internet
                                      |
                                      |
-                           Central Switch(Shanghai) - 192.168.1.66/24
+                           Central Switch(Shanghai)       - 192.168.1.66
+                                     ^
                                      |
                                      |
-              Curl--------------HTTP Proxy---------------Chrome
+              Curl ------------> HTTP Proxy <------------- Chrome
 ```
 ## Http Proxy
 ```
 root@openlan:/opt/openlan/etc/openlan# cd /opt/openlan/etc/openlan
 root@openlan:/opt/openlan/etc/openlan# cat > proxy.json << EOF
 {
-    "http": [{"listen": "192.168.1.88:11082"}] 
+    "http": [
+        {
+            "listen": "192.168.1.88:11082"
+        }
+    ] 
 }
 EOF
 root@openlan::/opt/openlan/etc/openlan# cat proxy.json | python -m json.tool
