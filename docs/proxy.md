@@ -1,16 +1,19 @@
 # Setup Proxy
 
 ```
-                               Google、Githup
+              Google--------------Internet---------------Githup
                                      |
                                      |      
-                            Central Switch(新加坡)  - 192.168.1.88/24  
+                           Central Switch(Singapo)  - 192.168.1.88/24  
                                      |
                                      |
                                    互联网
                                      |
                                      |
-                             Central Switch(上海) - 192.168.1.66/24
+                           Central Switch(Shanghai) - 192.168.1.66/24
+                                     |
+                                     |
+              Curl--------------HTTP Proxy---------------Chrome
 ```
 ## Http Proxy
 ```
