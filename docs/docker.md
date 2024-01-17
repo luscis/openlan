@@ -60,15 +60,14 @@ e42f200f6694        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   1
 [root@example openlan]#
 ```
 
-## Docker Images upgrade Or Release and reinstall Back up OpenLanVPN
+## Upgrating OpenLAN and backup OpenVPN
 
 ```
-[root@example network]# cd /opt/openlan
-[root@example network]# mkdir var
-[root@example network]# mkdir var/openlan
-[root@example network]# docker cp openlan_switch_1:/var/openlan/openvpn ./
-[root@example network]# docker-compose -f  docker-compose.yml down
-[root@example network]# vi docker-compose.yml
+[root@example openlan]# cd /opt/openlan
+[root@example openlan]# mkdir -p var/openlan
+[root@example openlan]# docker cp openlan_switch_1:/var/openlan/openvpn ./
+[root@example openlan]# docker-compose -f  docker-compose.yml down
+[root@example openlan]# vi docker-compose.yml
 version: "2.3"
 services:
   confd:
@@ -155,6 +154,6 @@ services:
       - confd
       - switch
 
-[root@example network]# docker-compose -f  docker-compose.yml up -d
+[root@example openlan]# docker-compose -f  docker-compose.yml up -d
 
 ```
