@@ -213,3 +213,23 @@ func (b *LinuxBridge) Unplugin() error {
 func (b *LinuxBridge) L3Name() string {
 	return b.l3if
 }
+
+func (b *LinuxBridge) SetMtu(mtu int) error {
+	link, _ := nl.LinkByName(b.l3if)
+	if link == nil {
+		return nil
+	}
+	if err := nl.LinkSetMTU(link, mtu); err != nil {
+		return err
+	}
+
+	link, _ = nl.LinkByName(b.l2if)
+	if link == nil {
+		return nil
+	}
+	if err := nl.LinkSetMTU(link, mtu); err != nil {
+		return err
+	}
+
+	return nil
+}

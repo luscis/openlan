@@ -34,6 +34,7 @@ type Bridger interface {
 	Stats() DeviceStats
 	CallIptables(value int) error
 	L3Name() string
+	SetMtu(mtu int) error
 }
 
 type bridger struct {

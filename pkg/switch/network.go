@@ -170,6 +170,8 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		Network: w.cfg.Name,
 		NewTime: time.Now().Unix(),
 	}
+
+	mtu := 0
 	if values[0] == "gre" {
 		if len(values) < 3 {
 			w.out.Error("WorkerImpl.LinkAdd %s wrong", name)
@@ -180,12 +182,14 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			port.link = co.GenName("gre")
 		}
 		key, _ := strconv.Atoi(values[2])
+
+		mtu = 1460
 		link := &nl.Gretap{
 			IKey: uint32(key),
 			OKey: uint32(key),
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
-				MTU:  1460,
+				MTU:  mtu,
 			},
 			Local:    libol.ParseAddr("0.0.0.0"),
 			Remote:   libol.ParseAddr(values[1]),
@@ -210,13 +214,16 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		if len(values) == 4 {
 			dport, _ = strconv.Atoi(values[3])
 		}
+
 		vni, _ := strconv.Atoi(values[2])
+
+		mtu = 1450
 		link := &nl.Vxlan{
 			VxlanId: vni,
 			LinkAttrs: nl.LinkAttrs{
 				TxQLen: -1,
 				Name:   port.link,
-				MTU:    1450,
+				MTU:    mtu,
 			},
 			Group: libol.ParseAddr(values[1]),
 			Port:  dport,
@@ -229,6 +236,10 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		out.Connection = fmt.Sprintf("%s:%s", values[1], values[2])
 	} else {
 		port.link = name
+	}
+
+	if w.br != nil && mtu > 0 {
+		w.br.SetMtu(mtu)
 	}
 
 	out.Device = port.link
