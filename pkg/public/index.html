@@ -142,7 +142,7 @@
                     <th>UUID</th>
                     <th>Alive</th>
                     <th>Device</th>
-                    <th>User</th>
+                    <th>Segment</th>
                     <th>Protocol</th>
                     <th>Connection</th>
                     <th>Rx|Tx Traffic</th>
@@ -155,9 +155,9 @@
 			    <td>output</td>
 			    <td>{{ prettyTime .AliveTime }}</td>
 			    <td>{{ .Device }}</td>
-			    <td>--</td>
+			    <td>ID:{{ .Segment }}</td>
 			    <td>{{ .Protocol }}</td>
-			    <td><a href="https://{{ getIpAddr .Connection }}:10000">{{ .Connection }}</a></td>
+			    <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
 			    <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
 			    <td>
 				{{ if .RxBytes }}<span class="success">success</span>
@@ -170,8 +170,8 @@
                     <tr>
                         <td>{{ .Name }}</td>
                         <td>{{ prettyTime .AliveTime }}</td>
-                        <td>spi:{{ .Spi }}</td>
-                        <td>--</td>
+                        <td>loopback</td>
+                        <td>ID:{{ .Spi }}</td>
                         <td>esp</td>
                         <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
                         <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
