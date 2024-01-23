@@ -3,7 +3,6 @@ package cswitch
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 	"time"
 
@@ -35,9 +34,12 @@ func NewNetworker(c *co.Network) api.Networker {
 }
 
 type LinuxPort struct {
-	name string // gre:xx, vxlan:xx
-	vlan int
+	cfg  co.Output
 	link string
+}
+
+func (l *LinuxPort) String() string {
+	return fmt.Sprintf("%s:%s:%d", l.cfg.Protocol, l.cfg.Remote, l.cfg.Segment)
 }
 
 type WorkerImpl struct {
@@ -132,121 +134,100 @@ func (w *WorkerImpl) Initialize() {
 	w.forwardVPN()
 }
 
-func (w *WorkerImpl) AddPhysical(bridge string, vlan int, output string) {
-	link, err := nl.LinkByName(output)
-	if err != nil {
-		w.out.Error("WorkerImpl.LinkByName %s %s", output, err)
-		return
-	}
-	slaver := output
-	if vlan > 0 {
-		if err := nl.LinkSetUp(link); err != nil {
-			w.out.Warn("WorkerImpl.LinkSetUp %s %s", output, err)
-		}
-		subLink := &nl.Vlan{
-			LinkAttrs: nl.LinkAttrs{
-				Name:        fmt.Sprintf("%s.%d", output, vlan),
-				ParentIndex: link.Attrs().Index,
-			},
-			VlanId: vlan,
-		}
-		if err := nl.LinkAdd(subLink); err != nil {
-			w.out.Error("WorkerImpl.LinkAdd %s %s", subLink.Name, err)
-			return
-		}
-		slaver = subLink.Name
-	}
+func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 	br := cn.NewBrCtl(bridge, 0)
-	if err := br.AddPort(slaver); err != nil {
+	if err := br.AddPort(output); err != nil {
 		w.out.Warn("WorkerImpl.AddPhysical %s", err)
 	}
 }
 
 func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
-	name := port.name
-	values := strings.SplitN(name, ":", 6)
-
+	cfg := port.cfg
 	out := &models.Output{
-		Network: w.cfg.Name,
-		NewTime: time.Now().Unix(),
+		Network:  w.cfg.Name,
+		NewTime:  time.Now().Unix(),
+		Protocol: cfg.Protocol,
+		Remote:   cfg.Remote,
+		Segment:  cfg.Segment,
 	}
 
 	mtu := 0
-	if values[0] == "gre" {
-		if len(values) < 3 {
-			w.out.Error("WorkerImpl.LinkAdd %s wrong", name)
-			return
-		}
-
+	if cfg.Protocol == "gre" {
 		if port.link == "" {
 			port.link = co.GenName("gre")
 		}
-		key, _ := strconv.Atoi(values[2])
-
 		mtu = 1460
 		link := &nl.Gretap{
-			IKey: uint32(key),
-			OKey: uint32(key),
+			IKey: uint32(cfg.Segment),
+			OKey: uint32(cfg.Segment),
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 				MTU:  mtu,
 			},
 			Local:    libol.ParseAddr("0.0.0.0"),
-			Remote:   libol.ParseAddr(values[1]),
+			Remote:   libol.ParseAddr(cfg.Remote),
 			PMtuDisc: 1,
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
+			w.out.Error("WorkerImpl.LinkAdd %s %s", port.String(), err)
 			return
 		}
-		out.Protocol = "gre"
-		out.Connection = fmt.Sprintf("%s:%s", values[1], values[2])
-	} else if values[0] == "vxlan" {
-		if len(values) < 3 {
-			w.out.Error("WorkerImpl.LinkAdd %s wrong", name)
-			return
-		}
-
+	} else if cfg.Protocol == "vxlan" {
 		if port.link == "" {
 			port.link = co.GenName("vxn")
 		}
 		dport := 8472
-		if len(values) == 4 {
-			dport, _ = strconv.Atoi(values[3])
-		}
-
-		vni, _ := strconv.Atoi(values[2])
-
 		mtu = 1450
 		link := &nl.Vxlan{
-			VxlanId: vni,
+			VxlanId: cfg.Segment,
 			LinkAttrs: nl.LinkAttrs{
 				TxQLen: -1,
 				Name:   port.link,
 				MTU:    mtu,
 			},
-			Group: libol.ParseAddr(values[1]),
+			Group: libol.ParseAddr(cfg.Remote),
 			Port:  dport,
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("WorkerImpl.LinkAdd %s %s", name, err)
+			w.out.Error("WorkerImpl.LinkAdd %s %s", port.String(), err)
 			return
 		}
-		out.Protocol = "vxlan"
-		out.Connection = fmt.Sprintf("%s:%s", values[1], values[2])
 	} else {
-		port.link = name
+		link, err := nl.LinkByName(cfg.Remote)
+		if link == nil {
+			w.out.Error("WorkerImpl.AddOutput %s %s", cfg.Remote, err)
+			return
+		}
+		if err := nl.LinkSetUp(link); err != nil {
+			w.out.Warn("WorkerImpl.AddOutput %s %s", cfg.Remote, err)
+		}
+		if port.link == "" {
+			port.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
+		}
+		subLink := &nl.Vlan{
+			LinkAttrs: nl.LinkAttrs{
+				Name:        port.link,
+				ParentIndex: link.Attrs().Index,
+			},
+			VlanId: cfg.Segment,
+		}
+		if err := nl.LinkAdd(subLink); err != nil {
+			w.out.Error("WorkerImpl.linkAdd %s %s", subLink.Name, err)
+			return
+		}
 	}
 
-	if w.br != nil && mtu > 0 {
-		w.br.SetMtu(mtu)
+	if mtu > 0 {
+		if w.br != nil {
+			w.br.SetMtu(mtu)
+		}
 	}
 
 	out.Device = port.link
 	cache.Output.Add(port.link, out)
 
-	w.out.Info("WorkerImpl.AddOutput %s %s", port.link, port.name)
-	w.AddPhysical(bridge, port.vlan, port.link)
+	w.out.Info("WorkerImpl.AddOutput %s %s", port.link, port.String())
+	w.AddPhysical(bridge, port.link)
 }
 
 func (w *WorkerImpl) loadRoutes() {
@@ -350,8 +331,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	for _, output := range cfg.Outputs {
 		port := &LinuxPort{
-			name: output.Interface,
-			vlan: output.Vlan,
+			cfg: output,
 		}
 		w.AddOutput(cfg.Bridge.Name, port)
 		w.outputs = append(w.outputs, port)
@@ -418,50 +398,48 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	fire.Start()
 }
 
-func (w *WorkerImpl) DelPhysical(bridge string, vlan int, output string) {
-	if vlan > 0 {
-		subLink := &nl.Vlan{
-			LinkAttrs: nl.LinkAttrs{
-				Name: fmt.Sprintf("%s.%d", output, vlan),
-			},
-		}
-		if err := nl.LinkDel(subLink); err != nil {
-			w.out.Error("WorkerImpl.DelPhysical.LinkDel %s %s", subLink.Name, err)
-			return
-		}
-	} else {
-		br := cn.NewBrCtl(bridge, 0)
-		if err := br.DelPort(output); err != nil {
-			w.out.Warn("WorkerImpl.DelPhysical %s", err)
-		}
+func (w *WorkerImpl) DelPhysical(bridge string, output string) {
+	br := cn.NewBrCtl(bridge, 0)
+	if err := br.DelPort(output); err != nil {
+		w.out.Warn("WorkerImpl.DelPhysical %s", err)
 	}
 }
 
 func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
-	w.out.Info("WorkerImpl.DelOutput %s %s", port.link, port.name)
+	cfg := port.cfg
+	w.out.Info("WorkerImpl.DelOutput %s %s", port.link, port.String())
 
 	cache.Output.Del(port.link)
-	w.DelPhysical(bridge, port.vlan, port.link)
+	w.DelPhysical(bridge, port.link)
 
-	values := strings.SplitN(port.name, ":", 6)
-	if values[0] == "gre" {
+	if cfg.Protocol == "gre" {
 		link := &nl.Gretap{
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 			},
 		}
 		if err := nl.LinkDel(link); err != nil {
-			w.out.Error("WorkerImpl.DelOutput.LinkDel %s %s", link.Name, err)
+			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
 			return
 		}
-	} else if values[0] == "vxlan" {
+	} else if cfg.Protocol == "vxlan" {
 		link := &nl.Vxlan{
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 			},
 		}
 		if err := nl.LinkDel(link); err != nil {
-			w.out.Error("WorkerImpl.DelOutput.LinkDel %s %s", link.Name, err)
+			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
+			return
+		}
+	} else {
+		link := &nl.Vlan{
+			LinkAttrs: nl.LinkAttrs{
+				Name: port.link,
+			},
+		}
+		if err := nl.LinkDel(link); err != nil {
+			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
 			return
 		}
 	}

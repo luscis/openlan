@@ -15,12 +15,18 @@
     "dhcp": "enable",
     "outputs": [
         {
-            "vlan": 100,
-            "interface": "vxlan:3.3.3.5:43"
+            "segment": 43,
+            "remote": "3.3.3.5",
+            "protocol": "vxlan"
         },
         {
-            "vlan": 0,
-            "interface": "gre:3.3.3.3:55"
+            "segment": 55,
+            "remote": "3.3.3.3",
+            "protocol": "gre"
+        },
+        {
+            "segment": 23,
+            "remote": "enp2s2"
         }
     ]
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
-var index = 1024
+var index = 99
 
 func GenName(prefix string) string {
 	index += 1

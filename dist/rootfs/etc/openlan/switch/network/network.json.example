@@ -45,5 +45,21 @@
     },
     "acl": "acl-100",
     "dhcp": "enable",
-    "namespace": "example"
+    "namespace": "example",
+    "outputs": [
+        {
+            "segment": 43,
+            "remote": "3.3.3.5",
+            "protocol": "vxlan"
+        },
+        {
+            "segment": 55,
+            "remote": "3.3.3.3",
+            "protocol": "gre"
+        },
+        {
+            "segment": 23,
+            "remote": "enp2s2"
+        }
+    ]
 }

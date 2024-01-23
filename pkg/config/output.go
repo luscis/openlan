@@ -1,7 +1,8 @@
 package config
 
 type Output struct {
-	Vlan      int    `json:"vlan"`
-	Interface string `json:"interface"` // format, like: gre:<addr>, vxlan:<addr>:<vni>
-	Link      string `json:"link"`      // link name
+	Segment  int    `json:"segment"`
+	Protocol string `json:"protocol"` // gre, vxlan, etc.
+	Remote   string `json:"remote"`
+	Link     string `json:"link"` // link name
 }

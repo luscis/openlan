@@ -119,12 +119,13 @@ func NewNetworkSchema(n *Network) schema.Network {
 
 func NewOutputSchema(o *Output) schema.Output {
 	return schema.Output{
-		Network:    o.Network,
-		Protocol:   o.Protocol,
-		Connection: o.Connection,
-		Device:     o.Device,
-		RxBytes:    o.RxBytes,
-		TxBytes:    o.TxBytes,
-		AliveTime:  o.UpTime(),
+		Network:   o.Network,
+		Protocol:  o.Protocol,
+		Remote:    o.Remote,
+		Segment:   o.Segment,
+		Device:    o.Device,
+		RxBytes:   o.RxBytes,
+		TxBytes:   o.TxBytes,
+		AliveTime: o.UpTime(),
 	}
 }
