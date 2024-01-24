@@ -50,6 +50,7 @@
         {
             "segment": 43,
             "remote": "3.3.3.5",
+            "dstport": 8899,
             "protocol": "vxlan"
         },
         {

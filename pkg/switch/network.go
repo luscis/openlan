@@ -177,6 +177,9 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 			port.link = co.GenName("vxn")
 		}
 		dport := 8472
+		if cfg.DstPort > 0 {
+			dport = cfg.DstPort
+		}
 		mtu = 1450
 		link := &nl.Vxlan{
 			VxlanId: cfg.Segment,
