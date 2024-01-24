@@ -161,14 +161,12 @@ func (t *HttpProxy) tunnel(w http.ResponseWriter, conn net.Conn) {
 	t.out.Debug("HttpProxy.tunnel %s exit", conn.RemoteAddr())
 }
 
-func (t *HttpProxy) openConn(remote string) (net.Conn, error) {
-	if strings.HasPrefix(remote, "https://") {
+func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, error) {
+	if protocol == "https" {
 		conf := &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: insecure,
 		}
-		return tls.Dial("tcp", remote[8:], conf)
-	} else if strings.HasPrefix(remote, "http://") {
-		remote = remote[7:]
+		return tls.Dial("tcp", remote, conf)
 	}
 	return net.Dial("tcp", remote)
 }
@@ -234,15 +232,15 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forward := t.cfg.Forward
-	if forward != "" {
-		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, forward)
+	fow := t.cfg.Forward
+	if fow != nil {
+		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, fow.Server)
 	} else {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
 	}
 
-	if forward != "" {
-		conn, err := t.openConn(forward)
+	if fow != nil {
+		conn, err := t.openConn(fow.Protocol, fow.Server, fow.Insecure)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
@@ -255,7 +253,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		conn.Write(dump)
 		t.tunnel(w, conn)
 	} else if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
-		conn, err := t.openConn(r.URL.Host)
+		conn, err := t.openConn("", r.URL.Host, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return

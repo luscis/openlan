@@ -6,18 +6,27 @@ tmp=""
 installer="$0"
 archive=$(grep -a -n "__ARCHIVE_BELOW__:$" $installer | cut -f1 -d:)
 
+OS="linux"
+if type yum > /dev/null; then
+  OS="centos"
+elif type apt > /dev/null; then
+  OS="ubuntu"
+fi
+
 function download() {
   tmp=$(mktemp -d)
   tail -n +$((archive + 1)) $installer | gzip -dc - | tar -xf - -C $tmp
 }
 
 function requires() {
-  if type yum > /dev/null; then
-    yum install -y xl2tpd openssl net-tools iptables iputils openvpn openvswitch dnsmasq bridge-utils iperf3 tcpdump ipset
-  elif type apt > /dev/null; then
-    apt-get install -y xl2tpd net-tools iptables iproute2 openvpn openvswitch-switch dnsmasq bridge-utils iperf3 tcpdump ipset
+  if [ "$OS"x == "centos"x ]; then
+    yum install -y openssl net-tools iptables iputils iperf3 tcpdump
+    yum install -y openvpn openvswitch dnsmasq bridge-utils ipset
+  elif [ "$OS"x == "ubuntu"x ]; then
+    apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
+    apt-get install -y openvpn openvswitch-switch dnsmasq bridge-utils ipset
   else
-    echo "We didn't find any packet tool: yum or apt."
+    echo "We didn't find any packet tool: $OS"
   fi
 }
 
@@ -48,6 +57,14 @@ function post() {
   [ ! -e "/var/openlan/confd/confd.sock" ] || {
     /usr/bin/ovsdb-client convert unix:///var/openlan/confd/confd.sock /var/openlan/confd.schema.json
   }
+
+  if [ "$OS"x == "centos"x ]; then
+    cp -rf /var/openlan/cert/ca.crt /etc/pki/ca-trust/source/anchors/OpenLAN_CA.crt
+    update-ca-trust
+  elif [ "$OS"x == "ubuntu"x ]; then
+    cp -rf /var/openlan/cert/ca.crt /usr/local/share/ca-certificates/OpenLAN_CA.crt
+    update-ca-certificates
+  fi
 }
 
 function finish() {
