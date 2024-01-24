@@ -163,7 +163,10 @@ func (t *HttpProxy) tunnel(w http.ResponseWriter, conn net.Conn) {
 
 func (t *HttpProxy) openConn(remote string) (net.Conn, error) {
 	if strings.HasPrefix(remote, "https://") {
-		return tls.Dial("tcp", remote[8:], nil)
+		conf := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		return tls.Dial("tcp", remote[8:], conf)
 	} else if strings.HasPrefix(remote, "http://") {
 		remote = remote[7:]
 	}
