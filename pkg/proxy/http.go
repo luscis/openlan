@@ -2,10 +2,14 @@ package proxy
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/tls"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"time"
 
@@ -157,6 +161,68 @@ func (t *HttpProxy) tunnel(w http.ResponseWriter, conn net.Conn) {
 	t.out.Debug("HttpProxy.tunnel %s exit", conn.RemoteAddr())
 }
 
+func (t *HttpProxy) openConn(remote string) (net.Conn, error) {
+	if strings.HasPrefix(remote, "https://") {
+		return tls.Dial("tcp", remote[8:], nil)
+	} else if strings.HasPrefix(remote, "http://") {
+		remote = remote[7:]
+	}
+	return net.Dial("tcp", remote)
+}
+
+func (t *HttpProxy) dumpRequest(r *http.Request) ([]byte, error) {
+	var err error
+	var b bytes.Buffer
+
+	reqURI := r.RequestURI
+	if reqURI == "" {
+		reqURI = r.URL.RequestURI()
+	}
+
+	fmt.Fprintf(&b, "%s %s HTTP/%d.%d\r\n", r.Method, reqURI, r.ProtoMajor, r.ProtoMinor)
+
+	host := r.Host
+	if host == "" && r.URL != nil {
+		host = r.URL.Host
+	}
+	if host != "" {
+		fmt.Fprintf(&b, "Host: %s\r\n", host)
+	}
+
+	chunked := len(r.TransferEncoding) > 0 && r.TransferEncoding[0] == "chunked"
+	if len(r.TransferEncoding) > 0 {
+		fmt.Fprintf(&b, "Transfer-Encoding: %s\r\n", strings.Join(r.TransferEncoding, ","))
+	}
+	if r.Close {
+		fmt.Fprintf(&b, "Connection: close\r\n")
+	}
+
+	err = r.Header.WriteSubset(&b, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	io.WriteString(&b, "\r\n")
+
+	if r.Body != nil {
+		var dest io.Writer = &b
+		if chunked {
+			dest = httputil.NewChunkedWriter(dest)
+		}
+		_, err = io.Copy(dest, r.Body)
+		if chunked {
+			dest.(io.Closer).Close()
+			io.WriteString(&b, "\r\n")
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
+}
+
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.out.Debug("HttpProxy.ServeHTTP %v", r)
 	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL.Host)
@@ -164,14 +230,34 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		t.out.Info("HttpProxy.ServeHTTP Required %v Authentication", r.URL.Host)
 		return
 	}
-	t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
-	if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
-		conn, err := net.Dial("tcp", r.URL.Host)
+
+	forward := t.cfg.Forward
+	if forward != "" {
+		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, forward)
+	} else {
+		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
+	}
+
+	if forward != "" {
+		conn, err := t.openConn(forward)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		_, _ = w.Write(connectOkay)
+		dump, err := t.dumpRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		conn.Write(dump)
+		t.tunnel(w, conn)
+	} else if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
+		conn, err := t.openConn(r.URL.Host)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Write(connectOkay)
 		t.tunnel(w, conn)
 	} else { //RFC 7230 - HTTP/1.1: Message Syntax and Routing
 		transport := &http.Transport{}

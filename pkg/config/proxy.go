@@ -28,7 +28,8 @@ type HttpProxy struct {
 	Listen   string   `json:"listen,omitempty"`
 	Auth     Password `json:"auth,omitempty"`
 	Cert     *Cert    `json:"cert,omitempty"`
-	Password string   `json:"password"`
+	Password string   `json:"password,omitempty"`
+	Forward  string   `json:"forward,omitempty"`
 }
 
 func (h *HttpProxy) Correct() {
