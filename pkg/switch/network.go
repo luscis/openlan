@@ -156,7 +156,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		if port.link == "" {
 			port.link = co.GenName("gre")
 		}
-		mtu = 1460
+		mtu = 1450
 		link := &nl.Gretap{
 			IKey: uint32(cfg.Segment),
 			OKey: uint32(cfg.Segment),
