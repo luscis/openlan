@@ -47,6 +47,7 @@ function install() {
 }
 
 function post() {
+  echo "Initlizing ..."
   if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
     sysctl -p /etc/sysctl.d/90-openlan.conf
   fi
@@ -80,7 +81,7 @@ function finish() {
   if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
     systemctl daemon-reload
   fi
-  echo "success"
+  echo "Finished ..."
 }
 
 
