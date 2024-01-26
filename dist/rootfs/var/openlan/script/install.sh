@@ -1,9 +1,14 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 tmp=""
 installer="$0"
+nodeps="no"
+if [ "$1"x == "nodeps"x ]; then
+  nodeps="yes"
+fi
+
 archive=$(grep -a -n "__ARCHIVE_BELOW__:$" $installer | cut -f1 -d:)
 
 OS="linux"
@@ -14,11 +19,13 @@ elif type apt > /dev/null; then
 fi
 
 function download() {
+  echo "Uncompress files ..."
   tmp=$(mktemp -d)
   tail -n +$((archive + 1)) $installer | gzip -dc - | tar -xf - -C $tmp
 }
 
 function requires() {
+  echo "Install dependents ..."
   if [ "$OS"x == "centos"x ]; then
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
     yum install -y openvpn openvswitch dnsmasq bridge-utils ipset
@@ -31,6 +38,7 @@ function requires() {
 }
 
 function install() {
+  echo "Installing files ..."
   local source=$(find $tmp -maxdepth 1 -name 'openlan-*')
   cd $source && {
     /usr/bin/env \cp -rf ./{etc,usr,var} /
@@ -39,6 +47,7 @@ function install() {
 }
 
 function post() {
+  echo "Initlizing ..."
   if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
     sysctl -p /etc/sysctl.d/90-openlan.conf
   fi
@@ -72,12 +81,17 @@ function finish() {
   if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
     systemctl daemon-reload
   fi
-  echo "success"
+  echo "Finished ..."
 }
 
+
 download
-requires
+if [ "$nodeps"x == "no"x ]; then
+  requires
+fi
 install
-post
+if [ "$nodeps"x == "no"x ]; then
+  post
+fi
 finish
 exit 0
