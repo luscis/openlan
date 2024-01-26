@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 tmp=""
 installer="$0"
@@ -19,11 +19,13 @@ elif type apt > /dev/null; then
 fi
 
 function download() {
+  echo "Uncompress files ..."
   tmp=$(mktemp -d)
   tail -n +$((archive + 1)) $installer | gzip -dc - | tar -xf - -C $tmp
 }
 
 function requires() {
+  echo "Install dependents ..."
   if [ "$OS"x == "centos"x ]; then
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
     yum install -y openvpn openvswitch dnsmasq bridge-utils ipset
@@ -36,6 +38,7 @@ function requires() {
 }
 
 function install() {
+  echo "Installing files ..."
   local source=$(find $tmp -maxdepth 1 -name 'openlan-*')
   cd $source && {
     /usr/bin/env \cp -rf ./{etc,usr,var} /
