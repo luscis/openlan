@@ -4,6 +4,11 @@ set -ex
 
 tmp=""
 installer="$0"
+nodeps="no"
+if [ "$1"x == "nodeps"x ]; then
+  nodeps="yes"
+fi
+
 archive=$(grep -a -n "__ARCHIVE_BELOW__:$" $installer | cut -f1 -d:)
 
 OS="linux"
@@ -75,9 +80,14 @@ function finish() {
   echo "success"
 }
 
+
 download
-requires
+if [ "$nodeps"x == "no"x ]; then
+  requires
+fi
 install
-post
+if [ "$nodeps"x == "no"x ]; then
+  post
+fi
 finish
 exit 0
