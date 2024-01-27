@@ -19,9 +19,9 @@ OpenLAN软件包含下面部分：
    ```
 2. 使用bin安装Central Switch软件；
    ```
-   $ wget https://github.com/luscis/openlan/releases/download/v24.01.01/openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
-   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
-   $ ./openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
+   $ wget https://github.com/luscis/openlan/releases/download/v24.01.25/openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
+   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
+   $ ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
    ```
 3. 配置Central Switch服务自启动；
    ```
@@ -113,9 +113,9 @@ OpenLAN软件包含下面部分：
    ```
 2. 使用bin安装Access Point软件；
    ```
-   $ wget https://github.com/luscis/openlan/releases/download/v24.01.01/openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
-   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
-   $ ./openlan-CentOS7.8.2003-v24.01.01.x86_64.bin
+   $ wget https://github.com/luscis/openlan/releases/download/v24.01.25/openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
+   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
+   $ ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin nodeps
    ```
 2. 添加一个新的网络配置；
    ```
