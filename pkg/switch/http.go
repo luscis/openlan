@@ -307,7 +307,7 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	})
 
 	// display esp state
-	for s := range cache.Output.List() {
+	for s := range cache.Output.List("") {
 		if s == nil {
 			break
 		}

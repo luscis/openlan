@@ -108,14 +108,6 @@ func (w *WorkerImpl) Initialize() {
 	w.updateVPN()
 	w.createVPN()
 
-	if cfg.Dhcp == "enable" {
-		w.dhcp = NewDhcp(&co.Dhcp{
-			Name:   cfg.Name,
-			Subnet: cfg.Subnet,
-			Bridge: cfg.Bridge,
-		})
-	}
-
 	w.fire = cn.NewFireWallTable(cfg.Name)
 
 	if out, err := w.setV.Clear(); err != nil {
@@ -128,6 +120,18 @@ func (w *WorkerImpl) Initialize() {
 	if cfg.ZTrust == "enable" {
 		w.ztrust = NewZTrust(cfg.Name, 30)
 		w.ztrust.Initialize()
+	}
+
+	if cfg.Dhcp == "enable" {
+		name := cfg.Bridge.Name
+		if w.br != nil {
+			name = w.br.L3Name()
+		}
+		w.dhcp = NewDhcp(&co.Dhcp{
+			Name:      cfg.Name,
+			Subnet:    cfg.Subnet,
+			Interface: name,
+		})
 	}
 
 	w.forwardSubnet()
@@ -204,19 +208,24 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 		if err := nl.LinkSetUp(link); err != nil {
 			w.out.Warn("WorkerImpl.AddOutput %s %s", cfg.Remote, err)
 		}
-		if port.link == "" {
-			port.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
-		}
-		subLink := &nl.Vlan{
-			LinkAttrs: nl.LinkAttrs{
-				Name:        port.link,
-				ParentIndex: link.Attrs().Index,
-			},
-			VlanId: cfg.Segment,
-		}
-		if err := nl.LinkAdd(subLink); err != nil {
-			w.out.Error("WorkerImpl.linkAdd %s %s", subLink.Name, err)
-			return
+
+		if cfg.Segment > 0 {
+			if port.link == "" {
+				port.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
+			}
+			subLink := &nl.Vlan{
+				LinkAttrs: nl.LinkAttrs{
+					Name:        port.link,
+					ParentIndex: link.Attrs().Index,
+				},
+				VlanId: cfg.Segment,
+			}
+			if err := nl.LinkAdd(subLink); err != nil {
+				w.out.Error("WorkerImpl.linkAdd %s %s", subLink.Name, err)
+				return
+			}
+		} else {
+			port.link = cfg.Remote
 		}
 	}
 
@@ -342,12 +351,6 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	if !(w.dhcp == nil) {
 		w.dhcp.Start()
-		fire.Nat.Post.AddRule(cn.IPRule{
-			Source:  cfg.Bridge.Address,
-			NoDest:  cfg.Bridge.Address,
-			Jump:    cn.CMasq,
-			Comment: "Default Gateway for DHCP",
-		})
 	}
 
 	if !(w.vpn == nil) {
@@ -435,12 +438,13 @@ func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
 			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
 			return
 		}
-	} else {
+	} else if port.cfg.Segment > 0 {
 		link := &nl.Vlan{
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
 			},
 		}
+
 		if err := nl.LinkDel(link); err != nil {
 			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
 			return

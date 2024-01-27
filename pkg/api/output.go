@@ -15,13 +15,17 @@ type Output struct {
 }
 
 func (h Output) Router(router *mux.Router) {
-	router.HandleFunc("/api/output", h.List).Methods("GET")
-	router.HandleFunc("/api/output/{id}", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/{id}/output", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/{id}/output", h.Post).Methods("POST")
 }
 
-func (h Output) List(w http.ResponseWriter, r *http.Request) {
+func (h Output) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	libol.Debug("Output.Get %s")
 	outputs := make([]schema.Output, 0, 1024)
-	for l := range cache.Output.List() {
+	for l := range cache.Output.List(name) {
 		if l == nil {
 			break
 		}
@@ -30,14 +34,6 @@ func (h Output) List(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, outputs)
 }
 
-func (h Output) Get(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	libol.Debug("Output.Get %s", vars["id"])
-	output := cache.Output.Get(vars["id"])
-	if output != nil {
-		ResponseJson(w, models.NewOutputSchema(output))
-	} else {
-		http.Error(w, vars["id"], http.StatusNotFound)
-	}
+func (h Output) Post(w http.ResponseWriter, r *http.Request) {
+	ResponseJson(w, "outputs")
 }

@@ -80,7 +80,7 @@ dhcp-leasefile=%s
 func (d *Dhcp) SaveConf() {
 	cfg := d.cfg
 	data := fmt.Sprintf(d.Tmpl(),
-		cfg.Bridge.Name,
+		cfg.Interface,
 		cfg.Subnet.Start,
 		cfg.Subnet.End,
 		d.LeaseFile(),

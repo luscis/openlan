@@ -29,13 +29,15 @@ func (p *output) Del(key string) {
 	p.outputs.Del(key)
 }
 
-func (p *output) List() <-chan *models.Output {
+func (p *output) List(name string) <-chan *models.Output {
 	c := make(chan *models.Output, 128)
 	go func() {
 		p.outputs.Iter(func(k string, v interface{}) {
 			m := v.(*models.Output)
-			m.Update()
-			c <- m
+			if name == "" || m.Network == name {
+				m.Update()
+				c <- m
+			}
 		})
 		c <- nil //Finish channel by nil.
 	}()
