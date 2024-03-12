@@ -107,6 +107,7 @@ install: env linux ## install packages
 	@mkdir -p $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openudp,openlan} $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LIN_DIR)/usr/bin
+	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
 windows: ## build windows binary

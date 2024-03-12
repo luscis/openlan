@@ -20,6 +20,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +85,13 @@ func (h *Http) PProf(r *mux.Router) {
 	}
 }
 
+func (h *Http) Prome(r *mux.Router) {
+	if r != nil {
+		handler := promhttp.HandlerFor(metrics, promhttp.HandlerOpts{})
+		r.Handle("/metrics", handler)
+	}
+}
+
 func (h *Http) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		libol.Info("Http.Middleware %s %s", r.Method, r.URL.Path)
@@ -128,6 +136,7 @@ func (h *Http) LoadRouter() {
 	router.HandleFunc("/favicon.ico", h.PubFile)
 
 	h.PProf(router)
+	h.Prome(router)
 	router.HandleFunc("/api/index", h.GetIndex).Methods("GET")
 	api.Add(router, h.switcher)
 }
