@@ -72,3 +72,7 @@ services:
     depends_on:
       - confd
       - switch
+  expoter:
+    restart: always
+    image: "prom/node-exporter:v1.7.0"
+    network_mode: service:confd
