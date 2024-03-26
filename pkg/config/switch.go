@@ -62,6 +62,7 @@ type Switch struct {
 	Crypt     *Crypt     `json:"crypt,omitempty"`
 	Network   []*Network `json:"network,omitempty"`
 	Acl       []*ACL     `json:"acl,omitempty"`
+	QosConfig *Qos       `json:"qos,omitempty"`
 	FireWall  []FlowRule `json:"firewall,omitempty"`
 	Queue     Queue      `json:"queue"`
 	PassFile  string     `json:"password"`
@@ -99,6 +100,7 @@ func (s *Switch) Initialize() {
 func (s *Switch) LoadExt() {
 	s.LoadAcl()
 	s.LoadNetwork()
+	s.LoadQos()
 }
 
 func (s *Switch) Correct() {
@@ -195,6 +197,30 @@ func (s *Switch) LoadNetwork() {
 			obj.File = s.Dir("network", obj.Name+".json")
 		}
 	}
+}
+
+func (s *Switch) LoadQos() {
+	files, err := filepath.Glob(s.Dir("qos", "*.json"))
+	if err != nil {
+		libol.Error("Switch.LoadQos %s", err)
+	}
+	s.QosConfig = &Qos{
+		Config: map[string]QosLimit{},
+	}
+	obj := &Qos{
+		Config: map[string]QosLimit{},
+	}
+	for _, k := range files {
+
+		if err := libol.UnmarshalLoad(obj, k); err != nil {
+			libol.Error("Switch.LoadQos %s", err)
+			continue
+		}
+		for k, v := range obj.Config {
+			s.QosConfig.Config[k] = v
+		}
+	}
+
 }
 
 func (s *Switch) LoadAcl() {

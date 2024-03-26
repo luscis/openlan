@@ -23,5 +23,6 @@ func Add(router *mux.Router, switcher Switcher) {
 	Log{}.Router(router)
 	OpenAPI{}.Router(router)
 	ZTrust{}.Router(router)
+	QosApi{}.Router(router)
 	Output{}.Router(router)
 }
