@@ -24,6 +24,7 @@ type Network struct {
 	Dhcp      string        `json:"dhcp,omitempty"`
 	Outputs   []Output      `json:"outputs"`
 	ZTrust    string        `json:"ztrust"`
+	Qos       string        `json:"qos,omitempty"`
 	Namespace string        `json:"namespace"`
 }
 

@@ -47,6 +47,15 @@ type ZTruster interface {
 	ListKnock(name string, call func(obj schema.KnockRule))
 }
 
+// api
+type Qos interface {
+	AddUserQos(name string, inSpeed int64, outSpeed int64) error
+	UpdateUserQos(name string, inSpeed int64, outSpeed int64) error
+	DelUserQos(name string) error
+	ListQosUsers(call func(obj schema.Qos))
+	Save()
+}
+
 type Networker interface {
 	String() string
 	ID() string
@@ -59,6 +68,7 @@ type Networker interface {
 	Reload(v Switcher)
 	Provider() string
 	ZTruster() ZTruster
+	Qos() Qos
 	IfAddr() string
 	ACLer() ACLer
 }

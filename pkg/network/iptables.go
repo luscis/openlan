@@ -28,33 +28,35 @@ const (
 )
 
 type IPRule struct {
-	Table     string
-	Chain     string
-	Source    string
-	SrcSet    string
-	ToSource  string
-	NoSource  string
-	NoSrcSet  string
-	Dest      string
-	DestSet   string
-	ToDest    string
-	NoDest    string
-	NoDestSet string
-	Proto     string
-	DstPort   string
-	SrcPort   string
-	Input     string
-	Output    string
-	Comment   string
-	Jump      string
-	SetMss    int
-	Mark      uint32
-	SetMark   uint32
-	Zone      uint32
-	Order     string
-	Match     string
-	CtState   string
-	TcpFlag   []string
+	Table      string
+	Chain      string
+	Source     string
+	SrcSet     string
+	ToSource   string
+	NoSource   string
+	NoSrcSet   string
+	Dest       string
+	DestSet    string
+	ToDest     string
+	NoDest     string
+	NoDestSet  string
+	Proto      string
+	DstPort    string
+	SrcPort    string
+	Input      string
+	Output     string
+	Comment    string
+	Jump       string
+	Limit      string
+	LimitBurst string
+	SetMss     int
+	Mark       uint32
+	SetMark    uint32
+	Zone       uint32
+	Order      string
+	Match      string
+	CtState    string
+	TcpFlag    []string
 }
 
 type IPRules []IPRule
@@ -129,6 +131,13 @@ func (ru IPRule) Args() []string {
 	}
 	if ru.Comment != "" {
 		args = append(args, "-m", "comment", "--comment", ru.Comment)
+	}
+
+	if ru.Limit != "" {
+		args = append(args, "-m", "limit", "--limit", ru.Limit)
+	}
+	if ru.LimitBurst != "" {
+		args = append(args, "--limit-burst", ru.LimitBurst)
 	}
 
 	if ru.Jump != "" {

@@ -91,6 +91,20 @@ func (u Config) Check(c *cli.Context) error {
 			}
 		}
 	}
+
+	out.Info("%15s: %s", "check", "qos")
+	pattern = filepath.Join(dir, "switch", "qos", "*.json")
+	if files, err := filepath.Glob(pattern); err == nil {
+		for _, file := range files {
+			obj := &config.Qos{}
+			if err := libol.UnmarshalLoad(obj, file); err != nil {
+				out.Warn("%15s: %s", filepath.Base(file), err)
+			} else {
+				out.Info("%15s: %s", filepath.Base(file), "success")
+			}
+		}
+	}
+
 	// Check ACL configurations.
 	out.Info("%15s: %s", "check", "acl")
 	pattern = filepath.Join(dir, "switch", "acl", "*.json")

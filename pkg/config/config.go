@@ -10,6 +10,10 @@ func GetAcl(name string) *ACL {
 	return switcher.GetACL(name)
 }
 
+func GetQos(name string) *Qos {
+	return switcher.GetQos(name)
+}
+
 func Update(obj *Switch) {
 	switcher = obj
 }

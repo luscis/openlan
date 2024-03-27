@@ -62,6 +62,7 @@ type Switch struct {
 	Crypt     *Crypt          `json:"crypt,omitempty"`
 	Network   []*Network      `json:"network,omitempty"`
 	Acl       map[string]*ACL `json:"acl,omitempty"`
+	Qos       map[string]*Qos `json:"qos,omitempty"`
 	FireWall  []FlowRule      `json:"firewall,omitempty"`
 	Queue     Queue           `json:"queue"`
 	PassFile  string          `json:"password"`
@@ -75,6 +76,7 @@ type Switch struct {
 func NewSwitch() *Switch {
 	s := &Switch{
 		Acl: make(map[string]*ACL, 32),
+		Qos: make(map[string]*Qos, 1024),
 	}
 	s.Parse()
 	s.Initialize()
@@ -100,6 +102,7 @@ func (s *Switch) Initialize() {
 
 func (s *Switch) LoadExt() {
 	s.LoadAcl()
+	s.LoadQos()
 	s.LoadNetwork()
 }
 
@@ -206,6 +209,33 @@ func (s *Switch) LoadNetwork() {
 	}
 }
 
+func (s *Switch) LoadQos() {
+	files, err := filepath.Glob(s.Dir("qos", "*.json"))
+	if err != nil {
+		libol.Error("Switch.LoadQos %s", err)
+	}
+
+	for _, k := range files {
+		obj := &Qos{
+			File: k,
+		}
+		if err := libol.UnmarshalLoad(obj, k); err != nil {
+			libol.Error("Switch.LoadQos %s", err)
+			continue
+		}
+
+		s.Qos[obj.Name] = obj
+	}
+	for _, obj := range s.Qos {
+		for _, rule := range obj.Config {
+			rule.Correct()
+		}
+		if obj.File == "" {
+			obj.File = s.Dir("acl", obj.Name+".json")
+		}
+	}
+}
+
 func (s *Switch) LoadAcl() {
 	files, err := filepath.Glob(s.Dir("acl", "*.json"))
 	if err != nil {
@@ -231,12 +261,20 @@ func (s *Switch) Load() error {
 func (s *Switch) Save() {
 	tmp := *s
 	tmp.Acl = nil
+	tmp.Qos = nil
 	tmp.Network = nil
 	if err := libol.MarshalSave(&tmp, tmp.File, true); err != nil {
 		libol.Error("Switch.Save %s", err)
 	}
 	s.SaveAcl()
+	s.SaveQos()
 	s.SaveNetwork()
+}
+
+func (s *Switch) SaveQos() {
+	for _, obj := range s.Qos {
+		obj.Save()
+	}
 }
 
 func (s *Switch) SaveAcl() {
@@ -268,4 +306,8 @@ func (s *Switch) GetNetwork(name string) *Network {
 
 func (s *Switch) GetACL(name string) *ACL {
 	return s.Acl[name]
+}
+
+func (s *Switch) GetQos(name string) *Qos {
+	return s.Qos[name]
 }

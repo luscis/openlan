@@ -53,6 +53,7 @@ type WorkerImpl struct {
 	setV    *cn.IPSet
 	vpn     *OpenVPN
 	ztrust  *ZTrust
+	qos     *QosCtrl
 	vrf     *cn.VRF
 	table   int
 	br      cn.Bridger
@@ -125,6 +126,9 @@ func (w *WorkerImpl) Initialize() {
 		w.ztrust = NewZTrust(cfg.Name, 30)
 		w.ztrust.Initialize()
 	}
+
+	w.qos = NewQosCtrl(w.fire, cfg.Name)
+	w.qos.Initialize()
 
 	if cfg.Dhcp == "enable" {
 		name := cfg.Bridge.Name
@@ -399,6 +403,10 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 				Comment: "Goto Zero Trust",
 			})
 		}
+
+		if !(w.qos == nil) {
+			w.qos.Start()
+		}
 	}
 
 	fire.Start()
@@ -487,6 +495,10 @@ func (w *WorkerImpl) Stop() {
 			w.ztrust.Stop()
 		}
 		w.vpn.Stop()
+
+		if !(w.qos == nil) {
+			w.qos.Stop()
+		}
 	}
 
 	if !(w.dhcp == nil) {
@@ -779,6 +791,10 @@ func (w *WorkerImpl) createVPN() {
 
 func (w *WorkerImpl) ZTruster() api.ZTruster {
 	return w.ztrust
+}
+
+func (w *WorkerImpl) Qos() api.Qos {
+	return w.qos
 }
 
 func (w *WorkerImpl) IfAddr() string {

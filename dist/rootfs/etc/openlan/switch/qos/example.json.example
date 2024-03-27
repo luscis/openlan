@@ -1,0 +1,9 @@
+{
+    "name": "example",
+    "qos":{
+        "hi@example": {
+        	"inSpeed": 125000,
+            "outSpeed":125000
+        }
+    }
+}
