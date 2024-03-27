@@ -196,6 +196,13 @@ func (s *Switch) LoadNetwork() {
 		if obj.File == "" {
 			obj.File = s.Dir("network", obj.Name+".json")
 		}
+		if _, ok := s.Acl[obj.Name]; !ok {
+			obj := &ACL{
+				Name: obj.Name,
+			}
+			obj.Correct(s)
+			s.Acl[obj.Name] = obj
+		}
 	}
 }
 
@@ -212,15 +219,8 @@ func (s *Switch) LoadAcl() {
 			libol.Error("Switch.LoadAcl %s", err)
 			continue
 		}
+		obj.Correct(s)
 		s.Acl[obj.Name] = obj
-	}
-	for _, obj := range s.Acl {
-		for _, rule := range obj.Rules {
-			rule.Correct()
-		}
-		if obj.File == "" {
-			obj.File = s.Dir("acl", obj.Name+".json")
-		}
 	}
 }
 
@@ -246,9 +246,6 @@ func (s *Switch) SaveAcl() {
 }
 
 func (s *Switch) SaveNetwork() {
-	if s.Network == nil {
-		return
-	}
 	for _, obj := range s.Network {
 		obj.Save()
 	}

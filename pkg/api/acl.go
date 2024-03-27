@@ -15,6 +15,7 @@ func (h ACL) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/acl", h.List).Methods("GET")
 	router.HandleFunc("/api/network/{id}/acl", h.Add).Methods("POST")
 	router.HandleFunc("/api/network/{id}/acl", h.Del).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/acl", h.Save).Methods("PUT")
 }
 
 func (h ACL) List(w http.ResponseWriter, r *http.Request) {
@@ -84,4 +85,19 @@ func (h ACL) Del(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h ACL) Save(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusInternalServerError)
+		return
+	}
+	acl := worker.ACLer()
+	acl.Save()
+
+	ResponseJson(w, "success")
 }

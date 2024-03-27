@@ -14,6 +14,15 @@ func (ru *ACL) Save() {
 	}
 }
 
+func (ru *ACL) Correct(sw *Switch) {
+	for _, rule := range ru.Rules {
+		rule.Correct()
+	}
+	if ru.File == "" {
+		ru.File = sw.Dir("acl", ru.Name+".json")
+	}
+}
+
 type ACLRule struct {
 	Name    string `json:"name,omitempty"`
 	SrcIp   string `json:"source,omitempty"`
@@ -25,4 +34,7 @@ type ACLRule struct {
 }
 
 func (ru *ACLRule) Correct() {
+	if ru.Action == "" {
+		ru.Action = "drop"
+	}
 }

@@ -42,7 +42,7 @@ func (u ACLRule) Add(c *cli.Context) error {
 		DstIp:   c.String("destination"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
-		Action:  "DROP",
+		Action:  "drop",
 	}
 
 	clt := u.NewHttp(c.String("token"))
@@ -63,7 +63,7 @@ func (u ACLRule) Remove(c *cli.Context) error {
 		DstIp:   c.String("destination"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
-		Action:  "DROP",
+		Action:  "drop",
 	}
 
 	clt := u.NewHttp(c.String("token"))
@@ -95,6 +95,18 @@ func (u ACLRule) List(c *cli.Context) error {
 	}
 
 	return u.Out(items, c.String("format"), u.Tmpl())
+}
+
+func (u ACLRule) Save(c *cli.Context) error {
+	name := c.String("name")
+	url := u.Url(c.String("url"), name)
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u ACLRule) Commands() *cli.Command {
@@ -132,6 +144,12 @@ func (u ACLRule) Commands() *cli.Command {
 				Usage:   "Display all acl rules",
 				Aliases: []string{"ls"},
 				Action:  u.List,
+			},
+			{
+				Name:    "save",
+				Usage:   "Save all acl rules",
+				Aliases: []string{"sa"},
+				Action:  u.Save,
 			},
 		},
 	}

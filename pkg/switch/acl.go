@@ -162,3 +162,20 @@ func (a *ACL) ListRules(call func(obj schema.ACLRule)) {
 		call(obj)
 	}
 }
+
+func (a *ACL) Save() {
+	cfg := co.GetAcl(a.Name)
+	cfg.Rules = nil
+	for _, rule := range a.Rules {
+		cr := &co.ACLRule{
+			DstIp:   rule.DstIp,
+			SrcIp:   rule.SrcIp,
+			Proto:   rule.Proto,
+			DstPort: rule.DstPort,
+			SrcPort: rule.SrcPort,
+			Action:  rule.Action,
+		}
+		cfg.Rules = append(cfg.Rules, cr)
+	}
+	cfg.Save()
+}

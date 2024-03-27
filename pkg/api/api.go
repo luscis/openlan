@@ -36,6 +36,7 @@ type ACLer interface {
 	AddRule(rule *schema.ACLRule) error
 	DelRule(rule *schema.ACLRule) error
 	ListRules(call func(obj schema.ACLRule))
+	Save()
 }
 
 type ZTruster interface {
