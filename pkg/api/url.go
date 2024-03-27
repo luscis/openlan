@@ -24,4 +24,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	OpenAPI{}.Router(router)
 	ZTrust{}.Router(router)
 	Output{}.Router(router)
+	ACL{}.Router(router)
 }

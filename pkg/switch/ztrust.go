@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/network"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -69,7 +68,7 @@ func (g *ZGuest) Chain() string {
 }
 
 func (g *ZGuest) Start() {
-	g.chain = cn.NewFireWallChain(g.Chain(), network.TMangle, "")
+	g.chain = cn.NewFireWallChain(g.Chain(), cn.TMangle, "")
 	g.chain.Install()
 }
 
@@ -168,7 +167,7 @@ func (z *ZTrust) Chain() string {
 }
 
 func (z *ZTrust) Initialize() {
-	z.chain = cn.NewFireWallChain(z.Chain(), network.TMangle, "")
+	z.chain = cn.NewFireWallChain(z.Chain(), cn.TMangle, "")
 	z.chain.AddRule(cn.IPRule{
 		Comment: "ZTrust Deny All",
 		Jump:    "DROP",

@@ -56,6 +56,7 @@ type WorkerImpl struct {
 	vrf     *cn.VRF
 	table   int
 	br      cn.Bridger
+	acl     *ACL
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -79,6 +80,9 @@ func (w *WorkerImpl) Initialize() {
 		w.vrf = cn.NewVRF(cfg.Namespace, 0)
 		w.table = w.vrf.Table()
 	}
+
+	w.acl = NewACL(cfg.Name)
+	w.acl.Initialize()
 
 	n := models.Network{
 		Name:    cfg.Name,
@@ -313,12 +317,8 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	w.loadVRF()
 	w.loadRoutes()
 
-	if cfg.Acl != "" {
-		fire.Mangle.Pre.AddRule(cn.IPRule{
-			Input: cfg.Bridge.Name,
-			Jump:  cfg.Acl,
-		})
-	}
+	w.acl.Start()
+	w.toACL(cfg.Bridge.Name)
 
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
@@ -498,6 +498,8 @@ func (w *WorkerImpl) Stop() {
 	}
 	w.outputs = nil
 
+	w.acl.Stop()
+
 	w.setR.Destroy()
 	w.setV.Destroy()
 }
@@ -546,16 +548,14 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 func (w *WorkerImpl) Reload(v api.Switcher) {
 }
 
-func (w *WorkerImpl) toACL(acl, input string) {
+func (w *WorkerImpl) toACL(input string) {
 	if input == "" {
 		return
 	}
-	if acl != "" {
-		w.fire.Mangle.Pre.AddRule(cn.IPRule{
-			Input: input,
-			Jump:  acl,
-		})
-	}
+	w.fire.Raw.Pre.AddRule(cn.IPRule{
+		Input: input,
+		Jump:  w.acl.Chain(),
+	})
 }
 
 func (w *WorkerImpl) openPort(protocol, port, comment string) {
@@ -689,7 +689,7 @@ func (w *WorkerImpl) forwardZone(input string) {
 }
 
 func (w *WorkerImpl) forwardVPN() {
-	cfg, vpn := w.GetCfgs()
+	_, vpn := w.GetCfgs()
 	if vpn == nil {
 		return
 	}
@@ -706,7 +706,7 @@ func (w *WorkerImpl) forwardVPN() {
 
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(devName, "Accept related")
-	w.toACL(cfg.Acl, devName)
+	w.toACL(devName)
 
 	for _, rt := range vpn.Routes {
 		if rt == "0.0.0.0/0" {
@@ -783,4 +783,8 @@ func (w *WorkerImpl) ZTruster() api.ZTruster {
 
 func (w *WorkerImpl) IfAddr() string {
 	return strings.SplitN(w.cfg.Bridge.Address, "/", 2)[0]
+}
+
+func (w *WorkerImpl) ACLer() api.ACLer {
+	return w.acl
 }

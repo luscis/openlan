@@ -2,35 +2,12 @@ package v5
 
 import (
 	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
 
 type ACL struct {
 	Cmd
-}
-
-func (u ACL) Url(prefix, name string) string {
-	if name == "" {
-		return prefix + "/api/acl"
-	} else {
-		return prefix + "/api/acl/" + name
-	}
-}
-
-func (u ACL) Add(c *cli.Context) error {
-	return nil
-}
-
-func (u ACL) Remove(c *cli.Context) error {
-	return nil
-}
-
-func (u ACL) List(c *cli.Context) error {
-	return nil
-}
-
-func (u ACL) Apply(c *cli.Context) error {
-	return nil
 }
 
 func (u ACL) Commands(app *api.App) {
@@ -42,32 +19,7 @@ func (u ACL) Commands(app *api.App) {
 			&cli.StringFlag{Name: "name", Aliases: []string{"n"}},
 		},
 		Subcommands: []*cli.Command{
-			{
-				Name:   "add",
-				Usage:  "Add a new acl",
-				Action: u.Add,
-			},
-			{
-				Name:    "remove",
-				Usage:   "Remove an existing acl",
-				Aliases: []string{"ls"},
-				Action:  u.Remove,
-			},
-			{
-				Name:    "list",
-				Usage:   "Display all acl",
-				Aliases: []string{"ls"},
-				Action:  u.List,
-			},
 			rule.Commands(),
-			{
-				Name:  "apply",
-				Usage: "Apply a new acl",
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Aliases: []string{"net"}},
-				},
-				Action: u.Apply,
-			},
 		},
 	})
 }
@@ -76,24 +28,73 @@ type ACLRule struct {
 	Cmd
 }
 
-func (u ACLRule) Url(prefix, acl, name string) string {
-	if name == "" {
-		return prefix + "/api/acl/" + acl
-	} else {
-		return prefix + "/api/acl/" + acl + "/" + name
-	}
+func (u ACLRule) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/acl"
 }
 
 func (u ACLRule) Add(c *cli.Context) error {
+	name := c.String("name")
+	url := u.Url(c.String("url"), name)
+
+	rule := &schema.ACLRule{
+		Proto:   c.String("protocol"),
+		SrcIp:   c.String("source"),
+		DstIp:   c.String("destination"),
+		SrcPort: c.Int("sport"),
+		DstPort: c.Int("dport"),
+		Action:  "DROP",
+	}
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, rule, nil); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (u ACLRule) Remove(c *cli.Context) error {
+	name := c.String("name")
+	url := u.Url(c.String("url"), name)
+
+	rule := &schema.ACLRule{
+		Proto:   c.String("protocol"),
+		SrcIp:   c.String("source"),
+		DstIp:   c.String("destination"),
+		SrcPort: c.Int("sport"),
+		DstPort: c.Int("dport"),
+		Action:  "DROP",
+	}
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, rule, nil); err != nil {
+		return err
+	}
+
 	return nil
 }
 
+func (u ACLRule) Tmpl() string {
+	return `# total {{ len . }}
+{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -4 "protocol"}} {{ps -4 "dport"}} {{ps -4 "sport"}}
+{{- range . }}
+{{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -4 .Proto}} {{pi -4 .DstPort}} {{pi -4 .SrcPort}}
+{{- end }}
+`
+}
+
 func (u ACLRule) List(c *cli.Context) error {
-	return nil
+	name := c.String("name")
+
+	url := u.Url(c.String("url"), name)
+	clt := u.NewHttp(c.String("token"))
+
+	var items []schema.ACLRule
+	if err := clt.GetJSON(url, &items); err != nil {
+		return err
+	}
+
+	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
 func (u ACLRule) Commands() *cli.Command {
@@ -105,11 +106,11 @@ func (u ACLRule) Commands() *cli.Command {
 				Name:  "add",
 				Usage: "Add a new acl rule",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "src", Aliases: []string{"s"}},
-					&cli.StringFlag{Name: "dst", Aliases: []string{"d"}},
-					&cli.StringFlag{Name: "proto", Aliases: []string{"p"}},
-					&cli.StringFlag{Name: "sport", Aliases: []string{"dp"}},
-					&cli.StringFlag{Name: "dport", Aliases: []string{"sp"}},
+					&cli.StringFlag{Name: "source", Aliases: []string{"s"}},
+					&cli.StringFlag{Name: "destination", Aliases: []string{"d"}},
+					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
+					&cli.IntFlag{Name: "sport", Aliases: []string{"dp"}},
+					&cli.IntFlag{Name: "dport", Aliases: []string{"sp"}},
 				},
 				Action: u.Add,
 			},
@@ -118,11 +119,11 @@ func (u ACLRule) Commands() *cli.Command {
 				Usage:   "remove a new acl rule",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "src", Aliases: []string{"s"}},
-					&cli.StringFlag{Name: "dst", Aliases: []string{"d"}},
-					&cli.StringFlag{Name: "proto", Aliases: []string{"p"}},
-					&cli.StringFlag{Name: "sport", Aliases: []string{"dp"}},
-					&cli.StringFlag{Name: "dport", Aliases: []string{"sp"}},
+					&cli.StringFlag{Name: "source", Aliases: []string{"s"}},
+					&cli.StringFlag{Name: "destination", Aliases: []string{"d"}},
+					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
+					&cli.IntFlag{Name: "sport", Aliases: []string{"dp"}},
+					&cli.IntFlag{Name: "dport", Aliases: []string{"sp"}},
 				},
 				Action: u.Remove,
 			},

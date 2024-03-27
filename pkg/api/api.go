@@ -32,6 +32,12 @@ func NewWorkerSchema(s Switcher) schema.Worker {
 	}
 }
 
+type ACLer interface {
+	AddRule(rule *schema.ACLRule) error
+	DelRule(rule *schema.ACLRule) error
+	ListRules(call func(obj schema.ACLRule))
+}
+
 type ZTruster interface {
 	AddGuest(name, source string) error
 	DelGuest(name, source string) error
@@ -53,6 +59,7 @@ type Networker interface {
 	Provider() string
 	ZTruster() ZTruster
 	IfAddr() string
+	ACLer() ACLer
 }
 
 var workers = make(map[string]Networker)
