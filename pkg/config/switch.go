@@ -50,30 +50,32 @@ func (p *Perf) Correct() {
 }
 
 type Switch struct {
-	File      string     `json:"file"`
-	Alias     string     `json:"alias"`
-	Perf      Perf       `json:"limit,omitempty"`
-	Protocol  string     `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.
-	Listen    string     `json:"listen"`
-	Timeout   int        `json:"timeout"`
-	Http      *Http      `json:"http,omitempty"`
-	Log       Log        `json:"log"`
-	Cert      *Cert      `json:"cert,omitempty"`
-	Crypt     *Crypt     `json:"crypt,omitempty"`
-	Network   []*Network `json:"network,omitempty"`
-	Acl       []*ACL     `json:"acl,omitempty"`
-	FireWall  []FlowRule `json:"firewall,omitempty"`
-	Queue     Queue      `json:"queue"`
-	PassFile  string     `json:"password"`
-	Ldap      *LDAP      `json:"ldap,omitempty"`
-	AddrPool  string     `json:"pool,omitempty"`
-	ConfDir   string     `json:"-"`
-	TokenFile string     `json:"-"`
-	L2TP      *L2TP      `json:"l2tp"`
+	File      string          `json:"file"`
+	Alias     string          `json:"alias"`
+	Perf      Perf            `json:"limit,omitempty"`
+	Protocol  string          `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.
+	Listen    string          `json:"listen"`
+	Timeout   int             `json:"timeout"`
+	Http      *Http           `json:"http,omitempty"`
+	Log       Log             `json:"log"`
+	Cert      *Cert           `json:"cert,omitempty"`
+	Crypt     *Crypt          `json:"crypt,omitempty"`
+	Network   []*Network      `json:"network,omitempty"`
+	Acl       map[string]*ACL `json:"acl,omitempty"`
+	FireWall  []FlowRule      `json:"firewall,omitempty"`
+	Queue     Queue           `json:"queue"`
+	PassFile  string          `json:"password"`
+	Ldap      *LDAP           `json:"ldap,omitempty"`
+	AddrPool  string          `json:"pool,omitempty"`
+	ConfDir   string          `json:"-"`
+	TokenFile string          `json:"-"`
+	L2TP      *L2TP           `json:"l2tp"`
 }
 
 func NewSwitch() *Switch {
-	s := Manager.Switch
+	s := &Switch{
+		Acl: make(map[string]*ACL, 32),
+	}
 	s.Parse()
 	s.Initialize()
 	return s
@@ -189,7 +191,7 @@ func (s *Switch) LoadNetwork() {
 		for _, link := range obj.Links {
 			link.Correct()
 		}
-		obj.Correct()
+		obj.Correct(s)
 		obj.Alias = s.Alias
 		if obj.File == "" {
 			obj.File = s.Dir("network", obj.Name+".json")
@@ -210,7 +212,7 @@ func (s *Switch) LoadAcl() {
 			libol.Error("Switch.LoadAcl %s", err)
 			continue
 		}
-		s.Acl = append(s.Acl, obj)
+		s.Acl[obj.Name] = obj
 	}
 	for _, obj := range s.Acl {
 		for _, rule := range obj.Rules {
@@ -238,13 +240,8 @@ func (s *Switch) Save() {
 }
 
 func (s *Switch) SaveAcl() {
-	if s.Acl == nil {
-		return
-	}
 	for _, obj := range s.Acl {
-		if err := libol.MarshalSave(obj, obj.File, true); err != nil {
-			libol.Error("Switch.Save.Acl %s %s", obj.Name, err)
-		}
+		obj.Save()
 	}
 }
 
@@ -270,4 +267,8 @@ func (s *Switch) GetNetwork(name string) *Network {
 		}
 	}
 	return nil
+}
+
+func (s *Switch) GetACL(name string) *ACL {
+	return s.Acl[name]
 }

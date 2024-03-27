@@ -43,7 +43,7 @@ func (n *Network) NewSpecifies() interface{} {
 	return n.Specifies
 }
 
-func (n *Network) Correct() {
+func (n *Network) Correct(sw *Switch) {
 	if n.Bridge == nil {
 		n.Bridge = &Bridge{}
 	}
@@ -94,7 +94,7 @@ func (n *Network) Correct() {
 		n.OpenVPN.Network = n.Name
 		obj := DefaultOpenVPN()
 		n.OpenVPN.Merge(obj)
-		n.OpenVPN.Correct()
+		n.OpenVPN.Correct(sw)
 	}
 }
 

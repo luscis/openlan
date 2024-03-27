@@ -1,14 +1,10 @@
 {
-  "name": "acl-1",
+  "name": "example",
   "rules": [
     {
       "destination": "192.168.77.121",
       "protocol": "tcp",
       "dport": 443,
-      "action": "drop"
-    },
-    {
-      "destination": "192.168.10.0/24",
       "action": "drop"
     },
     {

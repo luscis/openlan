@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
@@ -66,12 +67,36 @@ func (a *ACL) Initialize() {
 
 func (a *ACL) Start() {
 	a.out.Info("ACL.Start")
+	cfg := co.GetAcl(a.Name)
+	if cfg != nil {
+		for _, rule := range cfg.Rules {
+			a.addRule(rule)
+		}
+	}
 	a.chain.Install()
 }
 
 func (a *ACL) Stop() {
 	a.out.Info("ACL.Stop")
 	a.chain.Cancel()
+}
+
+func (a *ACL) addRule(rule *co.ACLRule) {
+	ar := &ACLRule{
+		Proto:   rule.Proto,
+		DstIp:   rule.DstIp,
+		SrcIp:   rule.SrcIp,
+		DstPort: rule.DstPort,
+		SrcPort: rule.SrcPort,
+		Action:  rule.Action,
+	}
+
+	a.out.Info("ACL.addRule %s", ar.Id())
+
+	if _, ok := a.Rules[ar.Id()]; !ok {
+		a.chain.AddRule(ar.Rule())
+		a.Rules[ar.Id()] = ar
+	}
 }
 
 func (a *ACL) AddRule(rule *schema.ACLRule) error {

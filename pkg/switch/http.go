@@ -46,7 +46,7 @@ type Http struct {
 }
 
 func NewHttp(switcher api.Switcher) (h *Http) {
-	c := co.Manager.Switch
+	c := co.Get()
 	h = &Http{
 		switcher:  switcher,
 		listen:    c.Http.Listen,

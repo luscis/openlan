@@ -2,12 +2,13 @@ package app
 
 import (
 	"container/list"
+	"sync"
+	"time"
+
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
-	"sync"
-	"time"
 )
 
 type Online struct {
@@ -19,7 +20,7 @@ type Online struct {
 }
 
 func NewOnline(m Master) *Online {
-	c := config.Manager.Switch
+	c := config.Get()
 	ms := c.Perf.OnLine
 	return &Online{
 		maxSize:  ms,

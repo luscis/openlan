@@ -28,7 +28,7 @@ func ParseUint64(value string) (uint64, error) {
 }
 
 func (o *vpnClient) GetDevice(name string) string {
-	sw := config.Manager.Switch
+	sw := config.Get()
 	if sw == nil {
 		return ""
 	}

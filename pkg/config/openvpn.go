@@ -108,7 +108,7 @@ func (o *OpenVPN) Merge(obj *OpenVPN) {
 
 }
 
-func (o *OpenVPN) Correct() {
+func (o *OpenVPN) Correct(sw *Switch) {
 	if o.Directory == "" {
 		o.Directory = VarDir("openvpn", o.Network)
 	}
@@ -118,7 +118,7 @@ func (o *OpenVPN) Correct() {
 		}
 		o.Device = GenName("tun")
 	}
-	pool := Manager.Switch.AddrPool
+	pool := sw.AddrPool
 	if o.Subnet == "" {
 		_, port := libol.GetHostPort(o.Listen)
 		value, _ := strconv.Atoi(port)

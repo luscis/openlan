@@ -223,7 +223,8 @@ func (c *ConfD) UpdateName(obj *database.NameCache) {
 		}
 		if specObj, ok := spec.(*config.EspSpecifies); ok {
 			if specObj.HasRemote(obj.Name, obj.Address) {
-				cfg.Correct()
+				cs := config.Get()
+				cfg.Correct(cs)
 				w.Reload(c.api)
 			}
 		}

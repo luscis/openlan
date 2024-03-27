@@ -13,8 +13,11 @@ import (
 func main() {
 	log.SetFlags(0)
 	udp := api.GetEnv("ESPUDP", "4500")
+
 	config.SetLocalUdp(udp)
 	c := config.NewSwitch()
+	config.Update(c)
+
 	libol.SetLogger(c.Log.File, c.Log.Verbose)
 	libol.Debug("main %s", c)
 	cache.Init(&c.Perf)

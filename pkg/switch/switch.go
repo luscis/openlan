@@ -103,7 +103,6 @@ type Switch struct {
 	out     *libol.SubLogger
 	confd   *ConfD
 	l2tp    *L2TP
-	acls    []*network.FireWallChain
 }
 
 func NewSwitch(c *co.Switch) *Switch {
@@ -168,26 +167,6 @@ func (v *Switch) preApplication() {
 	}
 }
 
-func (v *Switch) loadACLs() {
-	for _, acl := range v.cfg.Acl {
-		if acl.Name == "" {
-			continue
-		}
-		chain := network.NewFireWallChain(acl.Name, network.TMangle, "")
-		for _, rule := range acl.Rules {
-			chain.AddRule(network.IPRule{
-				Source:  rule.SrcIp,
-				Dest:    rule.DstIp,
-				Proto:   rule.Proto,
-				SrcPort: rule.SrcPort,
-				DstPort: rule.DstPort,
-				Jump:    rule.Action,
-			})
-		}
-		v.acls = append(v.acls, chain)
-	}
-}
-
 func (v *Switch) GetPort(listen string) string {
 	_, port := libol.GetHostPort(listen)
 	return port
@@ -240,7 +219,6 @@ func (v *Switch) Initialize() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	v.loadACLs()
 	v.openPorts()
 	v.preApplication()
 	if v.cfg.Http != nil {
@@ -391,9 +369,6 @@ func (v *Switch) Start() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	for _, l := range v.acls {
-		l.Install()
-	}
 	v.fire.Start()
 	// firstly, start network.
 	for _, w := range v.worker {
@@ -450,9 +425,6 @@ func (v *Switch) Stop() {
 	}
 	v.server.Close()
 	v.fire.Stop()
-	for _, l := range v.acls {
-		l.Cancel()
-	}
 }
 
 func (v *Switch) Alias() string {
@@ -571,7 +543,7 @@ func (v *Switch) OffClient(client libol.SocketClient) {
 }
 
 func (v *Switch) Config() *co.Switch {
-	return co.Manager.Switch
+	return v.cfg
 }
 
 func (v *Switch) leftClient(client libol.SocketClient) {
