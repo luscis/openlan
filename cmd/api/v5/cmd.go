@@ -29,6 +29,7 @@ func Commands(app *api.App) {
 	app.Before = Before
 	User{}.Commands(app)
 	ACL{}.Commands(app)
+	Qos{}.Commands(app)
 	Device{}.Commands(app)
 	Lease{}.Commands(app)
 	Config{}.Commands(app)
