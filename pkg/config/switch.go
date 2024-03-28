@@ -206,6 +206,13 @@ func (s *Switch) LoadNetwork() {
 			obj.Correct(s)
 			s.Acl[obj.Name] = obj
 		}
+		if _, ok := s.Qos[obj.Name]; !ok {
+			obj := &Qos{
+				Name: obj.Name,
+			}
+			obj.Correct(s)
+			s.Qos[obj.Name] = obj
+		}
 	}
 }
 

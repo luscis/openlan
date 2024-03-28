@@ -48,8 +48,8 @@ type ZTruster interface {
 }
 
 type Qoser interface {
-	AddQosUser(name string, inSpeed int64) error
-	UpdateQosUser(name string, inSpeed int64) error
+	AddQosUser(name string, inSpeed float64) error
+	UpdateQosUser(name string, inSpeed float64) error
 	DelQosUser(name string) error
 	ListQosUsers(call func(obj schema.Qos))
 	Save()

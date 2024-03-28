@@ -16,7 +16,7 @@ import (
 
 type QosUser struct {
 	QosChainName string
-	InSpeed      int64 // bits
+	InSpeed      float64 // Mbit
 	Name         string
 	Ip           string
 	Device       string
@@ -30,21 +30,20 @@ func (qr *QosUser) RuleName(dir string) string {
 }
 
 func (qr *QosUser) InLimitPacket() string {
-	//bytes / mtu
-	return strconv.Itoa(int(qr.InSpeed / 1500))
+	//Mbit * 125000 / mtu
+	return strconv.Itoa(int((qr.InSpeed * 125000) / 1300))
 }
 
 func (qr *QosUser) InLimitStr() string {
-	//bytes / mtu
 	return qr.InLimitPacket() + "/s"
 }
 
 func (qr *QosUser) InLimitRule() cn.IPRule {
 	return cn.IPRule{
-		Limit: qr.InLimitStr(),
-		//LimitBurst: qr.InLimitPacket(),
-		Comment: "Qos Limit In " + qr.Name,
-		Jump:    "ACCEPT",
+		Limit:      qr.InLimitStr(),
+		LimitBurst: "100",
+		Comment:    "Qos Limit In " + qr.Name,
+		Jump:       "ACCEPT",
 	}
 }
 
@@ -105,15 +104,16 @@ func (qr *QosUser) Clear(chainIn *cn.FireWallChain) {
 	qr.ClearChainIn(chainIn)
 }
 
-func (qr *QosUser) Update(chainIn *cn.FireWallChain, inSpeed int64, device string, ip string) {
+func (qr *QosUser) Update(chainIn *cn.FireWallChain, inSpeed float64, device string, ip string) {
 
-	ipChange := false
+	changed := false
+	qr.Device = device
 	if qr.Ip != ip {
-		ipChange = true
+		changed = true
 		qr.Ip = ip
 	}
 
-	if ipChange {
+	if changed {
 		qr.ClearChainInJump(chainIn)
 		qr.BuildChainInJump(chainIn)
 	}
@@ -218,7 +218,7 @@ func (q *QosCtrl) FindClient(name string) *schema.VPNClient {
 	return nil
 }
 
-func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed int64) {
+func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed float64) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	client := q.FindClient(name)
@@ -302,13 +302,13 @@ func (q *QosCtrl) Save() {
 	cfg.Save()
 }
 
-func (q *QosCtrl) AddQosUser(name string, inSpeed int64) error {
+func (q *QosCtrl) AddQosUser(name string, inSpeed float64) error {
 
 	q.AddOrUpdateQosUser(name, inSpeed)
 
 	return nil
 }
-func (q *QosCtrl) UpdateQosUser(name string, inSpeed int64) error {
+func (q *QosCtrl) UpdateQosUser(name string, inSpeed float64) error {
 
 	q.AddOrUpdateQosUser(name, inSpeed)
 

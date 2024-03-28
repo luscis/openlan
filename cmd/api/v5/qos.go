@@ -37,8 +37,8 @@ func (qr QosRule) Add(c *cli.Context) error {
 	url := qr.Url(c.String("url"), name)
 
 	rule := &schema.Qos{
-		Name:    c.String("clientname"),
-		InSpeed: c.Int64("inspeed"),
+		Name:    c.String("client"),
+		InSpeed: c.Float64("inspeed"),
 	}
 
 	clt := qr.NewHttp(c.String("token"))
@@ -54,7 +54,7 @@ func (qr QosRule) Remove(c *cli.Context) error {
 	url := qr.Url(c.String("url"), name)
 
 	rule := &schema.Qos{
-		Name: c.String("clientname"),
+		Name: c.String("client"),
 	}
 
 	clt := qr.NewHttp(c.String("token"))
@@ -109,8 +109,8 @@ func (qr QosRule) Commands() *cli.Command {
 				Name:  "add",
 				Usage: "Add a new qos rule for client",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "clientname", Aliases: []string{"cn"}},
-					&cli.StringFlag{Name: "inspeed", Aliases: []string{"is"}},
+					&cli.StringFlag{Name: "client", Aliases: []string{"c"}},
+					&cli.Float64Flag{Name: "inspeed", Aliases: []string{"is"}},
 				},
 				Action: qr.Add,
 			},
@@ -119,7 +119,7 @@ func (qr QosRule) Commands() *cli.Command {
 				Usage:   "remove a qos rule",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "clientname", Aliases: []string{"cn"}},
+					&cli.StringFlag{Name: "client", Aliases: []string{"c"}},
 				},
 				Action: qr.Remove,
 			},
