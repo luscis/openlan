@@ -17,12 +17,10 @@ import (
 type QosUser struct {
 	QosChainName string
 	InSpeed      int64 // bits
-	OutSpeed     int64 // bits
 	Name         string
 	Ip           string
 	Device       string
 	qosChainIn   *cn.FireWallChain
-	qosChainOut  *cn.FireWallChain
 	out          *libol.SubLogger
 }
 
@@ -36,18 +34,9 @@ func (qr *QosUser) InLimitPacket() string {
 	return strconv.Itoa(int(qr.InSpeed / 1500))
 }
 
-func (qr *QosUser) OutLimitPacket() string {
-	//bytes / mtu
-	return strconv.Itoa(int(qr.OutSpeed / 1500))
-}
-
 func (qr *QosUser) InLimitStr() string {
 	//bytes / mtu
 	return qr.InLimitPacket() + "/s"
-}
-func (qr *QosUser) OutLimitStr() string {
-	//bytes / mtu
-	return qr.OutLimitPacket() + "/s"
 }
 
 func (qr *QosUser) InLimitRule() cn.IPRule {
@@ -56,50 +45,6 @@ func (qr *QosUser) InLimitRule() cn.IPRule {
 		//LimitBurst: qr.InLimitPacket(),
 		Comment: "Qos Limit In " + qr.Name,
 		Jump:    "ACCEPT",
-	}
-}
-
-func (qr *QosUser) OutLimitRule() cn.IPRule {
-	return cn.IPRule{
-		Limit:   qr.OutLimitStr(),
-		Comment: "Qos Limit Out " + qr.Name,
-		Jump:    "ACCEPT",
-	}
-}
-
-func (qr *QosUser) BuildChainOut(chain *cn.FireWallChain) {
-	if qr.OutSpeed > 0 {
-		qr.qosChainOut = cn.NewFireWallChain(qr.RuleName("out"), cn.TMangle, "")
-		qr.qosChainOut.AddRule(qr.OutLimitRule())
-		qr.qosChainOut.AddRule(cn.IPRule{
-			Comment: "Qos Default Drop",
-			Jump:    "DROP",
-		})
-		qr.qosChainOut.Install()
-
-		qr.BuildChainOutJump(chain)
-	}
-}
-
-func (qr *QosUser) BuildChainOutJump(chain *cn.FireWallChain) {
-	if qr.Ip != "" {
-		if err := chain.AddRuleX(cn.IPRule{
-			Comment: "Qos Jump",
-			Jump:    qr.RuleName("out"),
-			Dest:    qr.Ip,
-		}); err != nil {
-			qr.out.Warn("Qos.Add Out Rule: %s", err)
-		}
-	}
-}
-
-func (qr *QosUser) ClearChainOutJump(chain *cn.FireWallChain) {
-	if err := chain.DelRuleX(cn.IPRule{
-		Comment: "Qos Jump",
-		Jump:    qr.RuleName("out"),
-		Dest:    qr.Ip,
-	}); err != nil {
-		qr.out.Warn("Qos.Del Out Rule: %s", err)
 	}
 }
 
@@ -139,14 +84,13 @@ func (qr *QosUser) ClearChainInJump(chain *cn.FireWallChain) {
 	}
 }
 
-func (qr *QosUser) Start(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain) {
+func (qr *QosUser) Start(chainIn *cn.FireWallChain) {
 	qr.BuildChainIn(chainIn)
-	qr.BuildChainOut(chainOut)
 }
 
-func (qr *QosUser) ReBuild(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain) {
-	qr.Clear(chainIn, chainOut)
-	qr.Start(chainIn, chainOut)
+func (qr *QosUser) ReBuild(chainIn *cn.FireWallChain) {
+	qr.Clear(chainIn)
+	qr.Start(chainIn)
 }
 
 func (qr *QosUser) ClearChainIn(chain *cn.FireWallChain) {
@@ -156,19 +100,12 @@ func (qr *QosUser) ClearChainIn(chain *cn.FireWallChain) {
 		qr.qosChainIn = nil
 	}
 }
-func (qr *QosUser) ClearChainOut(chain *cn.FireWallChain) {
-	if qr.qosChainOut != nil {
-		qr.ClearChainOutJump(chain)
-		qr.qosChainOut.Cancel()
-		qr.qosChainOut = nil
-	}
-}
-func (qr *QosUser) Clear(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain) {
+
+func (qr *QosUser) Clear(chainIn *cn.FireWallChain) {
 	qr.ClearChainIn(chainIn)
-	qr.ClearChainOut(chainOut)
 }
 
-func (qr *QosUser) Update(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain, inSpeed int64, outSpeed int64, device string, ip string) {
+func (qr *QosUser) Update(chainIn *cn.FireWallChain, inSpeed int64, device string, ip string) {
 
 	ipChange := false
 	if qr.Ip != ip {
@@ -178,8 +115,6 @@ func (qr *QosUser) Update(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain,
 
 	if ipChange {
 		qr.ClearChainInJump(chainIn)
-		qr.ClearChainOutJump(chainOut)
-		qr.BuildChainOutJump(chainOut)
 		qr.BuildChainInJump(chainIn)
 	}
 
@@ -189,21 +124,14 @@ func (qr *QosUser) Update(chainIn *cn.FireWallChain, chainOut *cn.FireWallChain,
 		qr.BuildChainIn(chainIn)
 	}
 
-	if qr.OutSpeed != outSpeed {
-		qr.OutSpeed = outSpeed
-		qr.ClearChainOut(chainOut)
-		qr.BuildChainOut(chainOut)
-	}
-
 }
 
 type QosCtrl struct {
-	Name     string
-	Rules    map[string]*QosUser
-	chainIn  *cn.FireWallChain
-	chainOut *cn.FireWallChain
-	out      *libol.SubLogger
-	lock     sync.Mutex
+	Name    string
+	Rules   map[string]*QosUser
+	chainIn *cn.FireWallChain
+	out     *libol.SubLogger
+	lock    sync.Mutex
 }
 
 func NewQosCtrl(name string) *QosCtrl {
@@ -218,14 +146,9 @@ func (q *QosCtrl) ChainIn() string {
 	return "Qos_" + q.Name + "-in"
 }
 
-func (q *QosCtrl) ChainOut() string {
-	return "Qos_" + q.Name + "-out"
-}
-
 func (q *QosCtrl) Initialize() {
 	//q.Start()
 	q.chainIn = cn.NewFireWallChain(q.ChainIn(), cn.TMangle, "")
-	q.chainOut = cn.NewFireWallChain(q.ChainOut(), cn.TMangle, "")
 
 	qosCfg := config.GetQos(q.Name)
 
@@ -235,7 +158,6 @@ func (q *QosCtrl) Initialize() {
 				QosChainName: q.Name,
 				Name:         name,
 				InSpeed:      limit.InSpeed,
-				OutSpeed:     limit.OutSpeed,
 				Ip:           "",
 				out:          libol.NewSubLogger("Qos_" + name),
 			}
@@ -248,11 +170,10 @@ func (q *QosCtrl) Initialize() {
 func (q *QosCtrl) Start() {
 	q.out.Info("Qos.Start")
 	q.chainIn.Install()
-	q.chainOut.Install()
 
 	if len(q.Rules) > 0 {
 		for _, rule := range q.Rules {
-			rule.Start(q.chainIn, q.chainOut)
+			rule.Start(q.chainIn)
 		}
 	}
 
@@ -263,19 +184,18 @@ func (q *QosCtrl) Stop() {
 	q.out.Info("Qos.Stop")
 	if len(q.Rules) != 0 {
 		for _, rule := range q.Rules {
-			rule.Clear(q.chainIn, q.chainOut)
+			rule.Clear(q.chainIn)
 		}
 	}
 
 	q.chainIn.Cancel()
-	q.chainOut.Cancel()
 }
 
 func (q *QosCtrl) DelUserRule(name string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	if rule, ok := q.Rules[name]; ok {
-		rule.Clear(q.chainIn, q.chainOut)
+		rule.Clear(q.chainIn)
 		delete(q.Rules, name)
 	}
 }
@@ -298,7 +218,7 @@ func (q *QosCtrl) FindClient(name string) *schema.VPNClient {
 	return nil
 }
 
-func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed int64, outSpeed int64) {
+func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed int64) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	client := q.FindClient(name)
@@ -311,18 +231,17 @@ func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed int64, outSpeed int64)
 
 	if rule, ok := q.Rules[name]; ok {
 
-		rule.Update(q.chainIn, q.chainOut, inSpeed, outSpeed, device, ip)
+		rule.Update(q.chainIn, inSpeed, device, ip)
 	} else {
 
 		rule = &QosUser{
 			QosChainName: q.Name,
 			Name:         name,
 			InSpeed:      inSpeed,
-			OutSpeed:     outSpeed,
 			Ip:           ip,
 			out:          libol.NewSubLogger("Qos_" + name),
 		}
-		rule.Start(q.chainIn, q.chainOut)
+		rule.Start(q.chainIn)
 
 		q.Rules[name] = rule
 	}
@@ -350,11 +269,10 @@ func (q *QosCtrl) ClientUpdate() {
 			}
 		}
 		if existClient != nil {
-			rule.Update(q.chainIn, q.chainOut, rule.InSpeed, rule.OutSpeed, existClient.Device, existClient.Address)
+			rule.Update(q.chainIn, rule.InSpeed, existClient.Device, existClient.Address)
 		} else {
 			if rule.Ip != "" {
 				rule.ClearChainInJump(q.chainIn)
-				rule.ClearChainOutJump(q.chainOut)
 				rule.Ip = ""
 			}
 		}
@@ -377,23 +295,22 @@ func (q *QosCtrl) Save() {
 	cfg.Config = make(map[string]*config.QosLimit, 1024)
 	for _, rule := range q.Rules {
 		ql := &config.QosLimit{
-			InSpeed:  rule.InSpeed,
-			OutSpeed: rule.OutSpeed,
+			InSpeed: rule.InSpeed,
 		}
 		cfg.Config[rule.Name] = ql
 	}
 	cfg.Save()
 }
 
-func (q *QosCtrl) AddQosUser(name string, inSpeed int64, outSpeed int64) error {
+func (q *QosCtrl) AddQosUser(name string, inSpeed int64) error {
 
-	q.AddOrUpdateQosUser(name, inSpeed, outSpeed)
+	q.AddOrUpdateQosUser(name, inSpeed)
 
 	return nil
 }
-func (q *QosCtrl) UpdateQosUser(name string, inSpeed int64, outSpeed int64) error {
+func (q *QosCtrl) UpdateQosUser(name string, inSpeed int64) error {
 
-	q.AddOrUpdateQosUser(name, inSpeed, outSpeed)
+	q.AddOrUpdateQosUser(name, inSpeed)
 
 	return nil
 }
@@ -407,11 +324,10 @@ func (q *QosCtrl) ListQosUsers(call func(obj schema.Qos)) {
 
 	for _, rule := range q.Rules {
 		obj := schema.Qos{
-			Name:     rule.Name,
-			Device:   rule.Device,
-			InSpeed:  rule.InSpeed,
-			OutSpeed: rule.OutSpeed,
-			Ip:       rule.Ip,
+			Name:    rule.Name,
+			Device:  rule.Device,
+			InSpeed: rule.InSpeed,
+			Ip:      rule.Ip,
 		}
 		call(obj)
 	}

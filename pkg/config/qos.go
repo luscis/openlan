@@ -15,8 +15,7 @@ func (q *Qos) Save() {
 }
 
 type QosLimit struct {
-	InSpeed  int64 `json:"inSpeed,omitempty"`
-	OutSpeed int64 `json:"outSpeed,omitempty"`
+	InSpeed int64 `json:"inSpeed,omitempty"`
 }
 
 func (ql *QosLimit) Correct() {
