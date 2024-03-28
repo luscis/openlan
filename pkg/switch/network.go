@@ -412,11 +412,6 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 				Jump:    w.qos.ChainIn(),
 				Comment: "Goto Qos ChainIn",
 			})
-			fire.Mangle.Out.AddRule(cn.IPRule{
-				Output:  vpn.Device,
-				Jump:    w.qos.ChainOut(),
-				Comment: "Goto Qos ChainOut",
-			})
 		}
 	}
 

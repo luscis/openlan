@@ -54,7 +54,7 @@ func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if qos != nil {
-		if err := worker.Qoser().AddQosUser(qos.Name, qos.InSpeed, qos.OutSpeed); err != nil {
+		if err := worker.Qoser().AddQosUser(qos.Name, qos.InSpeed); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

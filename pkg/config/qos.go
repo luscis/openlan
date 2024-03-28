@@ -8,6 +8,15 @@ type Qos struct {
 	Config map[string]*QosLimit `json:"qos,omitempty"`
 }
 
+func (q *Qos) Correct(sw *Switch) {
+	for _, rule := range q.Config {
+		rule.Correct()
+	}
+	if q.File == "" {
+		q.File = sw.Dir("qos", q.Name+".json")
+	}
+}
+
 func (q *Qos) Save() {
 	if err := libol.MarshalSave(q, q.File, true); err != nil {
 		libol.Error("Switch.Save.Qos %s %s", q.Name, err)
@@ -15,8 +24,7 @@ func (q *Qos) Save() {
 }
 
 type QosLimit struct {
-	InSpeed  int64 `json:"inSpeed,omitempty"`
-	OutSpeed int64 `json:"outSpeed,omitempty"`
+	InSpeed float64 `json:"inSpeed,omitempty"`
 }
 
 func (ql *QosLimit) Correct() {
