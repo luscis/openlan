@@ -12,7 +12,7 @@ ARCH = $(shell uname -m)
 SD = $(shell pwd)
 BD = "$(SD)/build"
 CD = "$(SD)/build/coverage"
-LIN_DIR ?= "openlan-$(LSB)-$(VER).$(ARCH)"
+LIN_DIR ?= "openlan-$(VER).$(ARCH)"
 WIN_DIR ?= "openlan-windows-$(VER).$(ARCH)"
 MAC_DIR ?= "openlan-darwin-$(VER).$(ARCH)"
 
@@ -37,8 +37,8 @@ bin: linux windows darwin ## build all platform binary
 ## prepare environment
 env: update
 	@mkdir -p $(BD)
-	@go version
-	@gofmt -w -s ./pkg ./cmd
+	go version
+	gofmt -w -s ./pkg ./cmd
 
 update:
 	@git submodule init  2> /dev/null
@@ -48,6 +48,16 @@ vendor:
 	go clean -modcache
 	go mod tidy
 	go mod vendor -v
+
+builder:
+	docker run -d -it --name openlan-builder -v $(SD)/:/opt/openlan debian:buster bash
+	docker exec openlan-builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
+	docker exec openlan-builder wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz
+	docker exec openlan-builder tar -xvf go1.16.linux-amd64.tar.gz -C /usr/local
+	docker exec openlan-builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
+	docker exec openlan-builder git config --global --add safe.directory /opt/openlan
+	docker exec openlan-builder git config --global --add safe.directory /opt/openlan/dist/cert
+
 
 config:
 	cd $(BD) && mkdir -p config/openlan
@@ -59,15 +69,18 @@ config:
 	cd config && tar -cf ../config.tar openlan && cd ..
 	gzip -f config.tar
 
-docker: linux-bin docker-rhel docker-deb ## build docker images
+docker-bin:
+	docker exec openlan-builder bash -c "cd /opt/openlan && make linux-bin"
 
 docker-rhel:
 	cp -rf $(SD)/docker/centos $(BD)
-	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH) --build-arg BIN=$(LIN_DIR).bin -f centos/Dockerfile  .
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).el --build-arg BIN=$(LIN_DIR).bin -f centos/Dockerfile  .
 
 docker-deb:
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f debian/Dockerfile  .
+
+docker: docker-bin docker-deb ## build docker images
 
 docker-compose:
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
@@ -163,12 +176,12 @@ test: ## execute unit test
 ## coverage
 cover: env ## execute unit test and output coverage
 	@rm -rvf $(CD) && mkdir -p $(CD)
-	@go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
-	@go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic
-	@go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
-	@go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
-	@go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
-	@go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
 
 	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
