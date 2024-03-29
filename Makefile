@@ -8,7 +8,6 @@ LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
 VER = $(shell ./dist/version.sh)
 ARCH = $(shell uname -m)
 
-GO = "/usr/local/go/bin/go"
 ## declare directory
 SD = $(shell pwd)
 BD = "$(SD)/build"
@@ -38,24 +37,24 @@ bin: linux windows darwin ## build all platform binary
 ## prepare environment
 env: update
 	@mkdir -p $(BD)
-	$(GO) version
-	$(GO)fmt -w -s ./pkg ./cmd
+	go version
+	gofmt -w -s ./pkg ./cmd
 
 update:
 	@git submodule init  2> /dev/null
 	@git submodule update 2> /dev/null
 
 vendor:
-	$(GO) clean -modcache
-	$(GO) mod tidy
-	$(GO) mod vendor -v
+	go clean -modcache
+	go mod tidy
+	go mod vendor -v
 
 builder:
 	docker run -d -it --name openlan-builder -v $(SD)/:/opt/openlan debian:buster bash
-	docker exec openlan-builder apt update
-	docker exec openlan-builder apt install -y git lsb-release wget make gcc
+	docker exec openlan-builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
 	docker exec openlan-builder wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz
 	docker exec openlan-builder tar -xvf go1.16.linux-amd64.tar.gz -C /usr/local
+	docker exec openlan-builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
 	docker exec openlan-builder git config --global --add safe.directory /opt/openlan
 	docker exec openlan-builder git config --global --add safe.directory /opt/openlan/dist/cert
 
@@ -92,11 +91,11 @@ docker-compose:
 	echo "$ docker-compose up -d"
 
 linux: env ## build linux binary
-	$(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
-	$(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
-	$(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
-	$(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
-	$(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
@@ -125,9 +124,9 @@ install: env linux ## install packages
 
 ## cross build for windows
 windows: ## build windows binary
-	GOOS=windows $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
-	GOOS=windows $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
-	GOOS=windows $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.exe ./cmd/main.go
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
+	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.exe ./cmd/main.go
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -149,9 +148,9 @@ windows-syso: ## build windows syso
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.din ./cmd/point_darwin
-	GOOS=darwin $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.din ./cmd/main.go
-	GOOS=darwin $(GO) build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.din ./cmd/proxy
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.din ./cmd/point_darwin
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.din ./cmd/main.go
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.din ./cmd/proxy
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
@@ -166,27 +165,27 @@ darwin-gzip: env darwin ## build darwin packages
 
 ## unit test
 test: ## execute unit test
-	$(GO) clean -testcache
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/models
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/cache
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/config
-	$(GO) test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/network
+	go clean -testcache
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/models
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/cache
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/config
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/network
 
 ## coverage
 cover: env ## execute unit test and output coverage
 	@rm -rvf $(CD) && mkdir -p $(CD)
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
-	@$(GO) test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
 
 	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
-	$(GO) tool cover -html=coverage.out -o coverage.html
+	go tool cover -html=coverage.out -o coverage.html
 
 clean: ## clean cache
 	rm -rvf ./build
