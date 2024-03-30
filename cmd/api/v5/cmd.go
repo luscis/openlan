@@ -47,4 +47,5 @@ func Commands(app *api.App) {
 	Log{}.Commands(app)
 	Guest{}.Commands(app)
 	Knock{}.Commands(app)
+	Output{}.Commands(app)
 }
