@@ -70,6 +70,8 @@ type Networker interface {
 	Qoser() Qoser
 	IfAddr() string
 	ACLer() ACLer
+	HotAddOutput(segment int, protocol, Remote string)
+	HotDelOutput(device string)
 }
 
 var workers = make(map[string]Networker)
