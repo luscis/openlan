@@ -187,6 +187,7 @@ func (s *Switch) LoadNetwork() {
 		}
 		obj.LoadLink()
 		obj.LoadRoute()
+		obj.LoadOutput()
 		s.Network = append(s.Network, obj)
 	}
 	s.Format()

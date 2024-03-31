@@ -55,6 +55,12 @@ type Qoser interface {
 	Save()
 }
 
+type Outputer interface {
+	AddOutput(segment int, protocol, Remote string)
+	DelOutput(device string)
+	SaveOutput()
+}
+
 type Networker interface {
 	String() string
 	ID() string
@@ -70,6 +76,7 @@ type Networker interface {
 	Qoser() Qoser
 	IfAddr() string
 	ACLer() ACLer
+	Outputer
 }
 
 var workers = make(map[string]Networker)

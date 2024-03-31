@@ -144,6 +144,21 @@ func (u Config) Check(c *cli.Context) error {
 			}
 		}
 	}
+
+	// Check output config
+	out.Info("%15s: %s", "check", "output")
+	pattern = filepath.Join(dir, "switch", "output", "*.json")
+	if files, err := filepath.Glob(pattern); err == nil {
+		for _, file := range files {
+			var obj []config.Output
+			if err := libol.UnmarshalLoad(&obj, file); err != nil {
+				out.Warn("%15s: %s", filepath.Base(file), err)
+			} else {
+				out.Info("%15s: %s", filepath.Base(file), "success")
+			}
+		}
+	}
+
 	return nil
 }
 
