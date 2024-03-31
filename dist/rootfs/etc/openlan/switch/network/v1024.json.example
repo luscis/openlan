@@ -12,21 +12,5 @@
         "startAt": "192.168.55.100",
         "endAt": "192.168.55.130"
     },
-    "dhcp": "enable",
-    "outputs": [
-        {
-            "segment": 43,
-            "remote": "3.3.3.5",
-            "protocol": "vxlan"
-        },
-        {
-            "segment": 55,
-            "remote": "3.3.3.3",
-            "protocol": "gre"
-        },
-        {
-            "segment": 23,
-            "remote": "enp2s2"
-        }
-    ]
+    "dhcp": "enable"
 }
