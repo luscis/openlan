@@ -153,7 +153,7 @@ func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 	}
 }
 
-func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
+func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 	cfg := port.cfg
 	out := &models.Output{
 		Network:  w.cfg.Name,
@@ -210,11 +210,11 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 	} else {
 		link, err := nl.LinkByName(cfg.Remote)
 		if link == nil {
-			w.out.Error("WorkerImpl.AddOutput %s %s", cfg.Remote, err)
+			w.out.Error("WorkerImpl.addOutput %s %s", cfg.Remote, err)
 			return
 		}
 		if err := nl.LinkSetUp(link); err != nil {
-			w.out.Warn("WorkerImpl.AddOutput %s %s", cfg.Remote, err)
+			w.out.Warn("WorkerImpl.addOutput %s %s", cfg.Remote, err)
 		}
 
 		if cfg.Segment > 0 {
@@ -246,7 +246,7 @@ func (w *WorkerImpl) AddOutput(bridge string, port *LinuxPort) {
 	out.Device = port.link
 	cache.Output.Add(port.link, out)
 
-	w.out.Info("WorkerImpl.AddOutput %s %s", port.link, port.String())
+	w.out.Info("WorkerImpl.addOutput %s %s", port.link, port.String())
 	w.AddPhysical(bridge, port.link)
 }
 
@@ -349,7 +349,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 		port := &LinuxPort{
 			cfg: output,
 		}
-		w.AddOutput(cfg.Bridge.Name, port)
+		w.addOutput(cfg.Bridge.Name, port)
 		w.outputs = append(w.outputs, port)
 	}
 
@@ -425,9 +425,9 @@ func (w *WorkerImpl) DelPhysical(bridge string, output string) {
 	}
 }
 
-func (w *WorkerImpl) DelOutput(bridge string, port *LinuxPort) {
+func (w *WorkerImpl) delOutput(bridge string, port *LinuxPort) {
 	cfg := port.cfg
-	w.out.Info("WorkerImpl.DelOutput %s %s", port.link, port.String())
+	w.out.Info("WorkerImpl.delOutput %s %s", port.link, port.String())
 
 	cache.Output.Del(port.link)
 	w.DelPhysical(bridge, port.link)
@@ -513,7 +513,7 @@ func (w *WorkerImpl) Stop() {
 	}
 
 	for _, output := range w.outputs {
-		w.DelOutput(w.cfg.Bridge.Name, output)
+		w.delOutput(w.cfg.Bridge.Name, output)
 	}
 	w.outputs = nil
 
@@ -810,4 +810,50 @@ func (w *WorkerImpl) IfAddr() string {
 
 func (w *WorkerImpl) ACLer() api.ACLer {
 	return w.acl
+}
+
+func (w *WorkerImpl) AddOutput(segment int, protocol, Remote string) {
+	output := co.Output{
+		Segment:  segment,
+		Protocol: protocol,
+		Remote:   Remote,
+	}
+	w.cfg.Outputs = append(w.cfg.Outputs, output)
+	port := &LinuxPort{
+		cfg: output,
+	}
+	w.addOutput(w.cfg.Bridge.Name, port)
+	w.outputs = append(w.outputs, port)
+}
+
+func (w *WorkerImpl) DelOutput(device string) {
+	var linuxport *LinuxPort
+	for _, v := range w.outputs {
+		if v.link == device {
+			linuxport = v
+			break
+		}
+	}
+	if linuxport == nil {
+		return
+	}
+	Outputs := make([]co.Output, 0, len(w.cfg.Outputs))
+	for _, v := range w.cfg.Outputs {
+		if v != linuxport.cfg {
+			Outputs = append(Outputs, v)
+		}
+	}
+	w.cfg.Outputs = Outputs
+	w.delOutput(w.cfg.Bridge.Name, linuxport)
+	outputs := make([]*LinuxPort, 0, len(w.outputs))
+	for _, v := range w.outputs {
+		if v != linuxport {
+			outputs = append(outputs, v)
+		}
+	}
+	w.outputs = outputs
+}
+
+func (w *WorkerImpl) SaveOutput() {
+	w.cfg.SaveOutput()
 }

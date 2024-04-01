@@ -22,7 +22,7 @@ type Network struct {
 	Acl       string        `json:"acl,omitempty"`
 	Specifies interface{}   `json:"specifies,omitempty"`
 	Dhcp      string        `json:"dhcp,omitempty"`
-	Outputs   []Output      `json:"outputs"`
+	Outputs   []Output      `json:"outputs,omitempty"`
 	ZTrust    string        `json:"ztrust"`
 	Qos       string        `json:"qos,omitempty"`
 	Namespace string        `json:"namespace"`
@@ -122,15 +122,26 @@ func (n *Network) LoadRoute() {
 	}
 }
 
+func (n *Network) LoadOutput() {
+	file := n.Dir("output", n.Name+".json")
+	if err := libol.FileExist(file); err == nil {
+		if err := libol.UnmarshalLoad(&n.Outputs, file); err != nil {
+			libol.Error("Network.LoadOutput... %n", err)
+		}
+	}
+}
+
 func (n *Network) Save() {
 	obj := *n
 	obj.Routes = nil
 	obj.Links = nil
+	obj.Outputs = nil
 	if err := libol.MarshalSave(&obj, obj.File, true); err != nil {
 		libol.Error("Network.Save %s %s", obj.Name, err)
 	}
 	n.SaveRoute()
 	n.SaveLink()
+	n.SaveOutput()
 }
 
 func (n *Network) SaveRoute() {
@@ -150,6 +161,16 @@ func (n *Network) SaveLink() {
 	}
 	if err := libol.MarshalSave(n.Links, file, true); err != nil {
 		libol.Error("Network.SaveLink %s %s", n.Name, err)
+	}
+}
+
+func (n *Network) SaveOutput() {
+	file := n.Dir("output", n.Name+".json")
+	if n.Outputs == nil {
+		return
+	}
+	if err := libol.MarshalSave(n.Outputs, file, true); err != nil {
+		libol.Error("Network.SaveOutput %s %s", n.Name, err)
 	}
 }
 

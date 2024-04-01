@@ -36,7 +36,7 @@ OpenLAN软件包含下面部分：
    {
      "protocol": "tcp",
      "crypt": {
-       "algo": "aes-128",          ## 支持xor,aes-128,aes-192等对称加密算法
+       "algorithm": "aes-128",          ## 支持xor,aes-128,aes-192等对称加密算法
        "secret": "ea64d5b0c96c"
      }
    }
