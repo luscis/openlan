@@ -4,8 +4,9 @@ ARG BIN
 
 WORKDIR /root
 
-RUN yum install -y epel-release centos-release-openstack-train \
-    && yum install -y rdma-core libibverbs
+RUN yum update -y && \
+    yum install -y epel-release centos-release-openstack-train && \
+    yum install -y rdma-core libibverbs
 
 ADD ${BIN} /tmp
 RUN DOCKER=yes /tmp/${BIN}

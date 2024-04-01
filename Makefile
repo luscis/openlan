@@ -35,29 +35,20 @@ help: ## show make targets
 bin: linux windows darwin ## build all platform binary
 
 ## prepare environment
-env: update
-	@mkdir -p $(BD)
+env:
+	mkdir -p $(BD)
 	go version
 	gofmt -w -s ./pkg ./cmd
 
-update:
-	@git submodule init  2> /dev/null
-	@git submodule update 2> /dev/null
+update: ## update source code
+	git pull
+	git submodule init
+	git submodule update
 
 vendor:
 	go clean -modcache
 	go mod tidy
 	go mod vendor -v
-
-builder:
-	docker run -d -it --name openlan-builder -v $(SD)/:/opt/openlan debian:buster bash
-	docker exec openlan-builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
-	docker exec openlan-builder wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz
-	docker exec openlan-builder tar -xvf go1.16.linux-amd64.tar.gz -C /usr/local
-	docker exec openlan-builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
-	docker exec openlan-builder git config --global --add safe.directory /opt/openlan
-	docker exec openlan-builder git config --global --add safe.directory /opt/openlan/dist/cert
-
 
 config:
 	cd $(BD) && mkdir -p config/openlan
@@ -69,20 +60,30 @@ config:
 	cd config && tar -cf ../config.tar openlan && cd ..
 	gzip -f config.tar
 
-docker-bin:
-	docker exec openlan-builder bash -c "cd /opt/openlan && make linux-bin"
+builder:
+	docker run -d -it --name openlan_builder -v $(SD)/:/opt/openlan debian:buster bash
+	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
+	docker exec openlan_builder bash -c "wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz && tar -xf go1.16.linux-amd64.tar.gz -C /usr/local"
+	docker exec openlan_builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
+	docker exec openlan_builder git config --global --add safe.directory /opt/openlan
+	docker exec openlan_builder git config --global --add safe.directory /opt/openlan/dist/cert
 
-docker-rhel:
+docker-bin:
+	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
+
+docker-rhel: ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).el --build-arg BIN=$(LIN_DIR).bin -f centos/Dockerfile  .
 
-docker-deb:
+docker-deb: docker-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb --build-arg BIN=$(LIN_DIR).bin -f debian/Dockerfile  .
 
-docker: docker-bin docker-deb ## build docker images
+docker: docker-deb ## build docker images
 
-docker-compose:
+docker-builder: builder ## create a builder
+
+docker-compose: ## create a compose files
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
 	cp -rvf ./dist/rootfs/{var,etc} /tmp/openlan.c && \
 	cp -rvf ./docker/docker-compose.yml /tmp/openlan.c  && \
@@ -108,7 +109,7 @@ linux-bin: linux-gzip ## build linux install binary
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
 	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \
 	chmod +x $(BD)/$(LIN_DIR).bin && \
-	echo "Save to $(BD)/$(LIN_DIR).bin"
+	echo "Save to $(LIN_DIR).bin"
 
 install: env linux ## install packages
 	@mkdir -p $(LIN_DIR)
