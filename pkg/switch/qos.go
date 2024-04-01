@@ -7,7 +7,6 @@ import (
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -20,13 +19,14 @@ type QosUser struct {
 	Name         string
 	Ip           string
 	Device       string
+	uniqueName   string
 	qosChainIn   *cn.FireWallChain
 	out          *libol.SubLogger
 }
 
 func (qr *QosUser) RuleName(dir string) string {
-	nameParts := strings.Split(qr.Name, "@")
-	return "Qos_" + qr.QosChainName + "-" + dir + "-" + nameParts[0]
+
+	return "Qos_" + qr.QosChainName + "-" + dir + "-" + qr.uniqueName
 }
 
 func (qr *QosUser) InLimitPacket() string {
@@ -159,6 +159,7 @@ func (q *QosCtrl) Initialize() {
 				Name:         name,
 				InSpeed:      limit.InSpeed,
 				Ip:           "",
+				uniqueName:   libol.GenString(7),
 				out:          libol.NewSubLogger("Qos_" + name),
 			}
 			q.Rules[name] = qr
@@ -239,6 +240,7 @@ func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed float64) {
 			Name:         name,
 			InSpeed:      inSpeed,
 			Ip:           ip,
+			uniqueName:   libol.GenString(7),
 			out:          libol.NewSubLogger("Qos_" + name),
 		}
 		rule.Start(q.chainIn)
