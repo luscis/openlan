@@ -1,6 +1,6 @@
 FROM debian:buster
 
-ARG BIN
+ARG linux_bin
 
 WORKDIR /root
 
@@ -8,7 +8,7 @@ WORKDIR /root
 RUN apt-get update -y
 
 ADD ${BIN} /tmp
-RUN DOCKER=yes /tmp/${BIN}
+RUN DOCKER=yes /tmp/${linux_bin}
 
 LABEL application="OpenLAN Network Solutions"
 LABEL maintainer="danieldin95@163.com"

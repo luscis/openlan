@@ -62,8 +62,8 @@ config:
 
 builder:
 	docker run -d -it \
-		--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}"
-		-v $(SD)/:/opt/openlan -v $(shell echo ~)/.ssh:/root/.ssh \
+		--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
+		--volume $(SD)/:/opt/openlan --volume $(shell echo ~)/.ssh:/root/.ssh \
 		--name openlan_builder debian:buster bash
 	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
 	docker exec openlan_builder bash -c "wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz && tar -xf go1.16.linux-amd64.tar.gz -C /usr/local"
@@ -78,17 +78,17 @@ docker-rhel: ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && \
 		sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
-		--build-arg BIN=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
-		-f centos/Dockerfile .
+		--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
+		--file centos/Dockerfile .
 
 docker-deb: docker-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && \
 		sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
-		--build-arg BIN=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
-		--build-arg BIN=$(LIN_DIR).bin -f debian/Dockerfile .
+		--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
+		--file debian/Dockerfile .
 
-docker: docker-deb ## build docker images
+docker: docker-deb docker-rhel ## build docker images
 
 docker-builder: builder ## create a builder
 

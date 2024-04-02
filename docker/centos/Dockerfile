@@ -1,6 +1,6 @@
 FROM centos:7
 
-ARG BIN
+ARG linux_bin
 
 WORKDIR /root
 
@@ -9,7 +9,8 @@ RUN yum update -y && \
     yum install -y rdma-core libibverbs
 
 ADD ${BIN} /tmp
-RUN DOCKER=yes /tmp/${BIN}
+RUN DOCKER=yes /tmp/${linux_bin}
+RUN rm -rvf /tmp/* && yum clean dbcache
 
 LABEL application="OpenLAN Network Solutions"
 LABEL maintainer="danieldin95@163.com"
