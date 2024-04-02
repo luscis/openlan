@@ -51,6 +51,13 @@ func OutTable(data interface{}, tmpl string) error {
 			}
 			return fmt.Sprintf(format, args...)
 		},
+		"pf": func(space int, decimals int, args ...interface{}) string {
+			format := "%" + strconv.Itoa(space) + "." + strconv.Itoa(decimals) + "f"
+			if space < 0 {
+				format = "%-" + strconv.Itoa(space) + "." + strconv.Itoa(decimals) + "f"
+			}
+			return fmt.Sprintf(format, args...)
+		},
 		"pt": func(value int64) string {
 			return libol.PrettyTime(value)
 		},
