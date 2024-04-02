@@ -12,6 +12,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	cn "github.com/luscis/openlan/pkg/network"
+	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
 )
 
@@ -812,11 +813,12 @@ func (w *WorkerImpl) ACLer() api.ACLer {
 	return w.acl
 }
 
-func (w *WorkerImpl) AddOutput(segment int, protocol, Remote string) {
+func (w *WorkerImpl) AddOutput(data schema.Output) {
 	output := co.Output{
-		Segment:  segment,
-		Protocol: protocol,
-		Remote:   Remote,
+		Segment:  data.Segment,
+		Protocol: data.Protocol,
+		Remote:   data.Remote,
+		DstPort:  data.DstPort,
 	}
 	w.cfg.Outputs = append(w.cfg.Outputs, output)
 	port := &LinuxPort{

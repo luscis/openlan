@@ -3,7 +3,8 @@ package schema
 type Output struct {
 	Network   string `json:"network"`
 	Protocol  string `json:"protocol"`
-	Remote    string `json:"Remote"`
+	Remote    string `json:"remote"`
+	DstPort   int    `json:"dstPort"`
 	Segment   int    `json:"segment"`
 	Device    string `json:"device"`
 	RxBytes   uint64 `json:"rxBytes"`

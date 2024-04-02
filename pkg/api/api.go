@@ -56,7 +56,7 @@ type Qoser interface {
 }
 
 type Outputer interface {
-	AddOutput(segment int, protocol, Remote string)
+	AddOutput(data schema.Output)
 	DelOutput(device string)
 	SaveOutput()
 }

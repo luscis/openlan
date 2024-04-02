@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -38,6 +37,9 @@ func (h Output) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Output) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
 	output := &schema.Output{}
 	if err := GetData(r, output); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -45,24 +47,22 @@ func (h Output) Post(w http.ResponseWriter, r *http.Request) {
 	}
 	cs := h.Switcher.Config()
 	if cs.Network == nil {
-		http.Error(w, "switch has no network can not add output", http.StatusBadRequest)
+		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	network := cs.GetNetwork(output.Network)
-	if network == nil {
-		http.Error(w, fmt.Sprintf("switch has no network with %s can not add output", output.Network), http.StatusBadRequest)
-		return
-	}
-	worker := GetWorker(output.Network)
+	worker := GetWorker(name)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusBadRequest)
+		http.Error(w, "network not found", http.StatusBadRequest)
 		return
 	}
-	worker.AddOutput(output.Segment, output.Protocol, output.Remote)
+	worker.AddOutput(*output)
 	ResponseMsg(w, 0, "")
 }
 
 func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
 	output := &schema.Output{}
 	if err := GetData(r, output); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -70,17 +70,12 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	cs := h.Switcher.Config()
 	if cs.Network == nil {
-		http.Error(w, "switch has no network can not del output", http.StatusBadRequest)
+		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	network := cs.GetNetwork(output.Network)
-	if network == nil {
-		http.Error(w, fmt.Sprintf("switch has no network with %s can not del output", output.Network), http.StatusBadRequest)
-		return
-	}
-	worker := GetWorker(output.Network)
+	worker := GetWorker(name)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusBadRequest)
+		http.Error(w, "network not found", http.StatusBadRequest)
 		return
 	}
 	worker.DelOutput(output.Device)

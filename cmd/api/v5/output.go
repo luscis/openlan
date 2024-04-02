@@ -25,6 +25,7 @@ func (o Output) Add(c *cli.Context) error {
 		Remote:   c.String("remote"),
 		Segment:  c.Int("segment"),
 		Protocol: c.String("protocol"),
+		DstPort:  c.Int("dstport"),
 	}
 	url := o.Url(c.String("url"), network)
 	clt := o.NewHttp(c.String("token"))
@@ -96,6 +97,7 @@ func (o Output) Commands(app *api.App) {
 					&cli.StringFlag{Name: "remote"},
 					&cli.IntFlag{Name: "segment"},
 					&cli.StringFlag{Name: "protocol"},
+					&cli.StringFlag{Name: "dstport"},
 					//&cli.StringFlag{Name: "connection"},
 					//&cli.StringFlag{Name: "secret"},
 					//&cli.StringFlag{Name: "auth"},
