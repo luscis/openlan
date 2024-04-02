@@ -67,9 +67,9 @@ func (qr QosRule) Remove(c *cli.Context) error {
 
 func (qr QosRule) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "Name"}} {{ps -15 "Device"}} {{ps -15 "ip"}} {{ps -8 "InSpeed"}}
+{{ps -28 "Name"}} {{ps -10 "Device"}} {{ps -15 "Ip"}} {{ps -8 "InSpeed"}}
 {{- range . }}
-{{ps -15 .Name}} {{ps -15 .Device}} {{ps -15 .Ip}} {{pi -8 .InSpeed}}
+{{ps -28 .Name}} {{ps -10 .Device}} {{ps -15 .Ip}} {{pf -8 2 .InSpeed}}
 {{- end }}
 `
 }
