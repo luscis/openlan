@@ -8,7 +8,7 @@ RUN yum update -y && \
     yum install -y epel-release centos-release-openstack-train && \
     yum install -y rdma-core libibverbs
 
-ADD ${BIN} /tmp
+ADD ${linux_bin} /tmp
 RUN DOCKER=yes /tmp/${linux_bin}
 RUN rm -rvf /tmp/* && yum clean dbcache
 
