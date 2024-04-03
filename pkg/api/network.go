@@ -17,6 +17,7 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network", h.List).Methods("GET")
 	router.HandleFunc("/api/network/{id}", h.Get).Methods("GET")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
+	router.HandleFunc("/api/network/{id}/openvpn/restart", h.RestartVPN).Methods("POST")
 }
 
 func (h Network) List(w http.ResponseWriter, r *http.Request) {
@@ -49,4 +50,19 @@ func (h Network) Profile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
+}
+
+func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusInternalServerError)
+		return
+	}
+
+	worker.RestartVpn()
+
+	ResponseJson(w, true)
 }

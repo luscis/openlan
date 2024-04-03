@@ -215,7 +215,7 @@ func (w *EspWorker) Initialize() {
 	w.updateXfrm()
 }
 
-func (w *EspWorker) AddRoute(device, src, remote string) error {
+func (w *EspWorker) addRoute(device, src, remote string) error {
 	link, err := nl.LinkByName(device)
 	if link == nil {
 		return err
@@ -233,7 +233,7 @@ func (w *EspWorker) AddRoute(device, src, remote string) error {
 		Priority:  650,
 		AdvMSS:    w.spec.TcpMss,
 	}
-	w.out.Debug("EspWorker.AddRoute: %s", rte)
+	w.out.Debug("EspWorker.addRoute: %s", rte)
 	if err := nl.RouteReplace(rte); err != nil {
 		return libol.NewErr("%s %s.", err, remote)
 	}
@@ -370,8 +370,8 @@ func (w *EspWorker) upMember() {
 			w.out.Warn("EspWorker.UpDummy %d %s", mem.Spi, err)
 		}
 		for _, po := range mem.Policies {
-			if err := w.AddRoute(w.spec.Name, mem.Address, po.Dest); err != nil {
-				w.out.Warn("EspWorker.AddRoute %d %s", mem.Spi, err)
+			if err := w.addRoute(w.spec.Name, mem.Address, po.Dest); err != nil {
+				w.out.Warn("EspWorker.addRoute %d %s", mem.Spi, err)
 			}
 		}
 	}

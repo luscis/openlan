@@ -45,17 +45,21 @@ func (r *PrefixRoute) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(elems, " "))
 }
 
+func (r *PrefixRoute) CorrectRoute(nexthop string) {
+	if r.Metric == 0 {
+		r.Metric = 660
+	}
+	if r.NextHop == "" {
+		r.NextHop = nexthop
+	}
+	if r.Mode == "" {
+		r.Mode = "snat"
+	}
+}
+
 func CorrectRoutes(routes []PrefixRoute, nexthop string) {
 	for i := range routes {
-		if routes[i].Metric == 0 {
-			routes[i].Metric = 660
-		}
-		if routes[i].NextHop == "" {
-			routes[i].NextHop = nexthop
-		}
-		if routes[i].Mode == "" {
-			routes[i].Mode = "snat"
-		}
+		routes[i].CorrectRoute(nexthop)
 	}
 }
 
