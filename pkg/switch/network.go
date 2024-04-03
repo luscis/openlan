@@ -75,6 +75,21 @@ func (w *WorkerImpl) Provider() string {
 	return w.cfg.Provider
 }
 
+func (w *WorkerImpl) newRoute(rt *co.PrefixRoute) *models.Route {
+	if rt.NextHop == "" {
+		w.out.Warn("WorkerImpl.NewRoute: %s noNextHop", rt.Prefix)
+		return nil
+	}
+	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
+	if rt.Metric > 0 {
+		rte.Metric = rt.Metric
+	}
+	if rt.NextHop != "" {
+		rte.Origin = rt.NextHop
+	}
+	return rte
+}
+
 func (w *WorkerImpl) Initialize() {
 	cfg := w.cfg
 
@@ -95,18 +110,10 @@ func (w *WorkerImpl) Initialize() {
 		Routes:  make([]*models.Route, 0, 2),
 	}
 	for _, rt := range cfg.Routes {
-		if rt.NextHop == "" {
-			w.out.Warn("WorkerImpl.Initialize: %s noNextHop", rt.Prefix)
-			continue
+		nRoute := w.newRoute(&rt)
+		if nRoute != nil {
+			n.Routes = append(n.Routes, nRoute)
 		}
-		rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
-		if rt.Metric > 0 {
-			rte.Metric = rt.Metric
-		}
-		if rt.NextHop != "" {
-			rte.Origin = rt.NextHop
-		}
-		n.Routes = append(n.Routes, rte)
 	}
 
 	cache.Network.Add(&n)
@@ -251,47 +258,54 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 	w.AddPhysical(bridge, port.link)
 }
 
+func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
+	// install routes
+	ifAddr := w.IfAddr()
+
+	dst, err := libol.ParseNet(rt.Prefix)
+	if err != nil {
+		return
+	}
+	if ifAddr == rt.NextHop && rt.MultiPath == nil {
+		// route's next-hop is local not install again.
+		return
+	}
+	nlr := nl.Route{
+		Dst:   dst,
+		Table: w.table,
+	}
+	for _, hop := range rt.MultiPath {
+		nxhe := &nl.NexthopInfo{
+			Hops: hop.Weight,
+			Gw:   net.ParseIP(hop.NextHop),
+		}
+		nlr.MultiPath = append(nlr.MultiPath, nxhe)
+	}
+	if rt.MultiPath == nil {
+		nlr.Gw = net.ParseIP(rt.NextHop)
+		nlr.Priority = rt.Metric
+	}
+	w.out.Debug("WorkerImpl.loadRoute: %s", nlr.String())
+	rt_c := rt
+	promise := libol.NewPromise()
+	promise.Go(func() error {
+		if err := nl.RouteReplace(&nlr); err != nil {
+			w.out.Warn("WorkerImpl.loadRoute: %v %s", nlr, err)
+			return err
+		}
+		w.out.Info("WorkerImpl.loadRoute: %v success", rt_c.String())
+		return nil
+	})
+
+}
+
 func (w *WorkerImpl) loadRoutes() {
 	// install routes
 	cfg := w.cfg
 	w.out.Debug("WorkerImpl.LoadRoute: %v", cfg.Routes)
-	ifAddr := w.IfAddr()
 
 	for _, rt := range cfg.Routes {
-		_, dst, err := net.ParseCIDR(rt.Prefix)
-		if err != nil {
-			continue
-		}
-		if ifAddr == rt.NextHop && rt.MultiPath == nil {
-			// route's next-hop is local not install again.
-			continue
-		}
-		nlr := nl.Route{
-			Dst:   dst,
-			Table: w.table,
-		}
-		for _, hop := range rt.MultiPath {
-			nxhe := &nl.NexthopInfo{
-				Hops: hop.Weight,
-				Gw:   net.ParseIP(hop.NextHop),
-			}
-			nlr.MultiPath = append(nlr.MultiPath, nxhe)
-		}
-		if rt.MultiPath == nil {
-			nlr.Gw = net.ParseIP(rt.NextHop)
-			nlr.Priority = rt.Metric
-		}
-		w.out.Debug("WorkerImpl.LoadRoute: %s", nlr.String())
-		rt_c := rt
-		promise := libol.NewPromise()
-		promise.Go(func() error {
-			if err := nl.RouteReplace(&nlr); err != nil {
-				w.out.Warn("WorkerImpl.LoadRoute: %v %s", nlr, err)
-				return err
-			}
-			w.out.Info("WorkerImpl.LoadRoute: %v success", rt_c.String())
-			return nil
-		})
+		w.loadRoute(rt)
 	}
 }
 
@@ -375,7 +389,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 					return err
 				}
 
-				_, dest, _ := net.ParseCIDR(vpn.Subnet)
+				dest, _ := libol.ParseNet(vpn.Subnet)
 				rt := &nl.Route{
 					Dst:       dest,
 					Table:     w.table,
@@ -467,27 +481,37 @@ func (w *WorkerImpl) delOutput(bridge string, port *LinuxPort) {
 	}
 }
 
+func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
+	dst, err := libol.ParseNet(rt.Prefix)
+	if err != nil {
+		return
+	}
+	nlr := nl.Route{
+		Dst:   dst,
+		Table: w.table,
+	}
+	if rt.MultiPath == nil {
+		nlr.Gw = net.ParseIP(rt.NextHop)
+		nlr.Priority = rt.Metric
+	}
+	w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
+	if err := nl.RouteDel(&nlr); err != nil {
+		w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
+		return
+	}
+	w.out.Info("WorkerImpl.UnLoadRoute: %v", rt.String())
+}
+
 func (w *WorkerImpl) unloadRoutes() {
 	cfg := w.cfg
 	for _, rt := range cfg.Routes {
-		_, dst, err := net.ParseCIDR(rt.Prefix)
-		if err != nil {
-			continue
-		}
-		nlr := nl.Route{
-			Dst:   dst,
-			Table: w.table,
-		}
-		if rt.MultiPath == nil {
-			nlr.Gw = net.ParseIP(rt.NextHop)
-			nlr.Priority = rt.Metric
-		}
-		w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
-		if err := nl.RouteDel(&nlr); err != nil {
-			w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
-			continue
-		}
-		w.out.Info("WorkerImpl.UnLoadRoute: %v", rt.String())
+		w.unloadRoute(rt)
+	}
+}
+
+func (w *WorkerImpl) RestartVpn() {
+	if w.vpn != nil {
+		w.vpn.Restart()
 	}
 }
 
@@ -522,6 +546,7 @@ func (w *WorkerImpl) Stop() {
 
 	w.setR.Destroy()
 	w.setV.Destroy()
+
 }
 
 func (w *WorkerImpl) String() string {
@@ -558,7 +583,7 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 		ifAddr := strings.SplitN(ipAddr, "/", 2)[0]
 		addr = fmt.Sprintf("%s/%d", ifAddr, prefix)
 	}
-	if _, inet, err := net.ParseCIDR(addr); err == nil {
+	if inet, err := libol.ParseNet(addr); err == nil {
 		return inet
 	}
 
@@ -655,6 +680,25 @@ func (w *WorkerImpl) GetCfgs() (*co.Network, *co.OpenVPN) {
 	return cfg, vpn
 }
 
+func (w *WorkerImpl) updateVPNRoute(routes []string, rt co.PrefixRoute) []string {
+	_, vpn := w.GetCfgs()
+	if vpn == nil {
+		return routes
+	}
+
+	addr := rt.Prefix
+	if addr == "0.0.0.0/0" {
+		vpn.Push = append(vpn.Push, "redirect-gateway def1")
+		routes = append(routes, addr)
+		return routes
+	}
+	if inet, err := libol.ParseNet(addr); err == nil {
+		routes = append(routes, inet.String())
+	}
+
+	return routes
+}
+
 func (w *WorkerImpl) updateVPN() {
 	cfg, vpn := w.GetCfgs()
 	if vpn == nil {
@@ -669,15 +713,7 @@ func (w *WorkerImpl) updateVPN() {
 	}
 
 	for _, rt := range cfg.Routes {
-		addr := rt.Prefix
-		if addr == "0.0.0.0/0" {
-			vpn.Push = append(vpn.Push, "redirect-gateway def1")
-			routes = append(routes, addr)
-			continue
-		}
-		if _, inet, err := net.ParseCIDR(addr); err == nil {
-			routes = append(routes, inet.String())
-		}
+		routes = w.updateVPNRoute(routes, rt)
 	}
 	vpn.Routes = routes
 }
@@ -708,6 +744,24 @@ func (w *WorkerImpl) forwardZone(input string) {
 	})
 }
 
+func (w *WorkerImpl) forwardVPNIpSet(rt string) {
+	if rt == "0.0.0.0/0" {
+		w.setV.Add("0.0.0.0/1")
+		w.setV.Add("128.0.0.0/1")
+		return
+	}
+	w.setV.Add(rt)
+}
+
+func (w *WorkerImpl) delForwardVPNIpSet(rt string) {
+	if rt == "0.0.0.0/0" {
+		w.setV.Del("0.0.0.0/1")
+		w.setV.Del("128.0.0.0/1")
+		return
+	}
+	w.setV.Del(rt)
+}
+
 func (w *WorkerImpl) forwardVPN() {
 	_, vpn := w.GetCfgs()
 	if vpn == nil {
@@ -729,12 +783,7 @@ func (w *WorkerImpl) forwardVPN() {
 	w.toACL(devName)
 
 	for _, rt := range vpn.Routes {
-		if rt == "0.0.0.0/0" {
-			w.setV.Add("0.0.0.0/1")
-			w.setV.Add("128.0.0.0/1")
-			break
-		}
-		w.setV.Add(rt)
+		w.forwardVPNIpSet(rt)
 	}
 	if w.vrf != nil {
 		w.toForward_r(w.vrf.Name(), vpn.Subnet, w.setV.Name, "From VPN")
@@ -742,6 +791,33 @@ func (w *WorkerImpl) forwardVPN() {
 		w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
 	}
 	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
+}
+
+func (w *WorkerImpl) forwardSubnetIpSet(rt co.PrefixRoute) bool {
+	if rt.MultiPath != nil {
+		return true
+	}
+	if rt.Prefix == "0.0.0.0/0" {
+		w.setR.Add("0.0.0.0/1")
+		w.setR.Add("128.0.0.0/1")
+		return false
+	}
+	w.setR.Add(rt.Prefix)
+
+	return true
+}
+
+func (w *WorkerImpl) delForwardIpSet(rt co.PrefixRoute) {
+	if rt.MultiPath != nil {
+		return
+	}
+	if rt.Prefix == "0.0.0.0/0" {
+		w.setR.Del("0.0.0.0/1")
+		w.setR.Del("128.0.0.0/1")
+		return
+	}
+	w.setR.Del(rt.Prefix)
+	return
 }
 
 func (w *WorkerImpl) forwardSubnet() {
@@ -762,15 +838,9 @@ func (w *WorkerImpl) forwardSubnet() {
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(input, "Accept related")
 	for _, rt := range cfg.Routes {
-		if rt.MultiPath != nil {
-			continue
-		}
-		if rt.Prefix == "0.0.0.0/0" {
-			w.setR.Add("0.0.0.0/1")
-			w.setR.Add("128.0.0.0/1")
+		if !w.forwardSubnetIpSet(rt) {
 			break
 		}
-		w.setR.Add(rt.Prefix)
 	}
 
 	if w.vrf != nil {
@@ -797,12 +867,181 @@ func (w *WorkerImpl) createVPN() {
 	w.vpn = obj
 }
 
+func (w *WorkerImpl) delCacheRoute(rt co.PrefixRoute) {
+	if rt.NextHop == "" {
+		w.out.Warn("WorkerImpl.DelCacheRoute: %s noNextHop", rt.Prefix)
+		return
+	}
+	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
+	if rt.Metric > 0 {
+		rte.Metric = rt.Metric
+	}
+	if rt.NextHop != "" {
+		rte.Origin = rt.NextHop
+	}
+
+	cache.Network.DelRoute(w.cfg.Name, rt)
+}
+
+func (w *WorkerImpl) addCacheRoute(rt co.PrefixRoute) {
+	if rt.NextHop == "" {
+		w.out.Warn("WorkerImpl.AddCacheRoute: %s ", rt.Prefix)
+		return
+	}
+	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
+	if rt.Metric > 0 {
+		rte.Metric = rt.Metric
+	}
+	if rt.NextHop != "" {
+		rte.Origin = rt.NextHop
+	}
+	cache.Network.AddRoute(w.cfg.Name, rte)
+}
+
+func (w *WorkerImpl) addVPNRoute(rt co.PrefixRoute) {
+
+	vpn := w.cfg.OpenVPN
+	if vpn == nil {
+		return
+	}
+	routes := vpn.Routes
+	vpn.Routes = w.updateVPNRoute(routes, rt)
+}
+
+func (w *WorkerImpl) delVPNRoute(rt co.PrefixRoute) {
+
+	vpn := w.cfg.OpenVPN
+	if vpn == nil {
+		return
+	}
+
+	routes := vpn.Routes
+
+	addr := rt.Prefix
+	if addr == "0.0.0.0/0" {
+		for i, s := range vpn.Push {
+			if s == "redirect-gateway def1" {
+				vpn.Push = append(vpn.Push[:i], vpn.Push[i+1:]...)
+				break
+			}
+		}
+		for i2, r := range routes {
+			if r == addr {
+				routes = append(routes[:i2], routes[i2+1:]...)
+				break
+			}
+		}
+
+		return
+	}
+	if inet, err := libol.ParseNet(addr); err == nil {
+		for i, r := range routes {
+			if r == inet.String() {
+				routes = append(routes[:i], routes[i+1:]...)
+				break
+			}
+		}
+	}
+
+	vpn.Routes = routes
+}
+
+func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
+
+	rt := co.PrefixRoute{
+		Prefix:  route.Prefix,
+		NextHop: route.NextHop,
+		Mode:    route.Mode,
+		Metric:  route.Metric,
+	}
+
+	br := w.cfg.Bridge
+	ipAddr := ""
+	if _i, _, err := net.ParseCIDR(br.Address); err == nil {
+		ipAddr = _i.String()
+	}
+
+	rt.CorrectRoute(ipAddr)
+
+	return rt
+}
+
+func (w *WorkerImpl) findRoute(rt co.PrefixRoute) (co.PrefixRoute, int) {
+	for i, ert := range w.cfg.Routes {
+		if ert.Prefix == rt.Prefix && rt.NextHop == ert.NextHop {
+			return ert, i
+		}
+	}
+	return co.PrefixRoute{}, -1
+}
+
+func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
+
+	rt := w.correctRoute(route)
+
+	if _, index := w.findRoute(rt); index != -1 {
+		w.out.Warn("WorkerImpl.AddRoute: route exist")
+		return nil
+	}
+
+	w.cfg.Routes = append(w.cfg.Routes, rt)
+
+	libol.Info("WorkerImpl.AddRoute: %v", rt)
+
+	w.forwardSubnetIpSet(rt)
+
+	if inet, err := libol.ParseNet(rt.Prefix); err == nil {
+		w.forwardVPNIpSet(inet.String())
+	}
+
+	w.addCacheRoute(rt)
+	w.addVPNRoute(rt)
+	w.loadRoute(rt)
+
+	return nil
+}
+
+func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
+
+	correctRt := w.correctRoute(route)
+
+	delRt, index := w.findRoute(correctRt)
+
+	if index == -1 {
+
+		w.out.Warn("WorkerImpl.DelRoute: route not found")
+		return nil
+	}
+
+	w.cfg.Routes = append(w.cfg.Routes[:index], w.cfg.Routes[index+1:]...)
+
+	w.delForwardIpSet(delRt)
+
+	if inet, err := libol.ParseNet(delRt.Prefix); err == nil {
+		w.delForwardVPNIpSet(inet.String())
+	}
+
+	w.delCacheRoute(delRt)
+	w.delVPNRoute(delRt)
+	w.unloadRoute(delRt)
+
+	return nil
+}
+
+func (w *WorkerImpl) SaveRoute() {
+	w.cfg.SaveRoute()
+}
+
 func (w *WorkerImpl) ZTruster() api.ZTruster {
 	return w.ztrust
 }
 
 func (w *WorkerImpl) Qoser() api.Qoser {
 	return w.qos
+}
+
+func (w *WorkerImpl) Router() api.Router {
+	return w
 }
 
 func (w *WorkerImpl) IfAddr() string {

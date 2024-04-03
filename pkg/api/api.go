@@ -47,6 +47,16 @@ type ZTruster interface {
 	ListKnock(name string, call func(obj schema.KnockRule))
 }
 
+type Router interface {
+	AddRoute(route *schema.PrefixRoute, switcher Switcher) error
+	DelRoute(route *schema.PrefixRoute, switcher Switcher) error
+	SaveRoute()
+}
+
+type Vpner interface {
+	RestartVpn()
+}
+
 type Qoser interface {
 	AddQosUser(name string, inSpeed float64) error
 	UpdateQosUser(name string, inSpeed float64) error
@@ -77,6 +87,8 @@ type Networker interface {
 	IfAddr() string
 	ACLer() ACLer
 	Outputer
+	Router
+	Vpner
 }
 
 var workers = make(map[string]Networker)

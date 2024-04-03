@@ -117,6 +117,17 @@ func NewNetworkSchema(n *Network) schema.Network {
 	return sn
 }
 
+func NewRouteSchema(route *Route) schema.PrefixRoute {
+	pr := schema.PrefixRoute{
+		Prefix:  route.Prefix,
+		NextHop: route.NextHop,
+		Metric:  route.Metric,
+		Mode:    route.Mode,
+		Origin:  route.Origin,
+	}
+	return pr
+}
+
 func NewOutputSchema(o *Output) schema.Output {
 	return schema.Output{
 		Network:   o.Network,

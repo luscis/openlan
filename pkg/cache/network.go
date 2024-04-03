@@ -2,11 +2,11 @@ package cache
 
 import (
 	"encoding/binary"
-	"net"
-
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
+	"net"
 )
 
 type network struct {
@@ -32,7 +32,45 @@ func (w *network) Get(name string) *models.Network {
 	return nil
 }
 
-//TODO add/del route
+// add/del route
+func (w *network) ListRoute(name string) <-chan *models.Route {
+	c := make(chan *models.Route, 128)
+
+	n := w.Get(name)
+
+	if n != nil {
+		go func() {
+			for _, route := range n.Routes {
+				if route != nil {
+					c <- route
+				}
+			}
+			c <- nil //Finish channel by nil.
+		}()
+	} else {
+		c <- nil
+	}
+	return c
+}
+
+func (w *network) DelRoute(name string, rt co.PrefixRoute) {
+	n := w.Get(name)
+	if n != nil {
+		for i, route := range n.Routes {
+			if route.Prefix == rt.Prefix && (route.NextHop == rt.NextHop || route.Origin == rt.NextHop) {
+				n.Routes = append(n.Routes[:i], n.Routes[i+1:]...)
+				break
+			}
+		}
+	}
+}
+
+func (w *network) AddRoute(name string, route *models.Route) {
+	n := w.Get(name)
+	if n != nil && route != nil {
+		n.Routes = append(n.Routes, route)
+	}
+}
 
 func (w *network) List() <-chan *models.Network {
 	c := make(chan *models.Network, 128)

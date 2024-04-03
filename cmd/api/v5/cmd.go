@@ -48,4 +48,5 @@ func Commands(app *api.App) {
 	Guest{}.Commands(app)
 	Knock{}.Commands(app)
 	Output{}.Commands(app)
+	Route{}.Commands(app)
 }

@@ -8,8 +8,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
@@ -251,6 +253,15 @@ func (o *OpenVPN) FileIpp(full bool) string {
 	return filepath.Join(o.Cfg.Directory, name)
 }
 
+func (o *OpenVPN) Pid(full bool) string {
+	if data, err := ioutil.ReadFile(o.FilePid(true)); err != nil {
+		o.out.Debug("OpenVPN.Stop %s", err)
+		return ""
+	} else {
+		return strings.TrimSpace(string(data))
+	}
+}
+
 func (o *OpenVPN) DirectoryClientConfig() string {
 	if o.Cfg == nil {
 		return path.Join(DefaultCurDir, "ccd")
@@ -387,13 +398,52 @@ func (o *OpenVPN) Stop() {
 	if data, err := ioutil.ReadFile(o.FilePid(true)); err != nil {
 		o.out.Debug("OpenVPN.Stop %s", err)
 	} else {
+		killPath, err := exec.LookPath("kill")
+		if err != nil {
+			o.out.Warn("kill cmd not found :", err)
+		}
 		pid := strings.TrimSpace(string(data))
-		cmd := exec.Command("/usr/bin/kill", pid)
+		cmd := exec.Command(killPath, pid)
 		if err := cmd.Run(); err != nil {
 			o.out.Warn("OpenVPN.Stop %s: %s", pid, err)
 		}
 	}
 	o.Clean()
+}
+
+func (o *OpenVPN) Restart() {
+	o.Stop()
+	o.checkAlreadyClose(o.Pid(true))
+	o.Initialize()
+	o.Start()
+}
+
+func (o *OpenVPN) checkAlreadyClose(pid string) {
+	timeout := 10 * time.Second
+
+	if pid != "" {
+		ticker := time.Tick(200 * time.Millisecond)
+		timer := time.After(timeout)
+		pidInt, err := strconv.Atoi(pid)
+		if err != nil {
+			return
+		}
+		for {
+			select {
+			case <-ticker:
+
+				running := libol.IsProcessRunning(pidInt)
+				if !running {
+					o.out.Debug("OpenVPN.CheckAlreadyClose:vpn is close")
+					return
+				}
+			case <-timer:
+				o.out.Warn("OpenVPN.CheckAlreadyClose:vpn close timeout")
+				return
+			}
+		}
+
+	}
 }
 
 func (o *OpenVPN) ProfileTmpl() string {

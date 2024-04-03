@@ -26,4 +26,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	QosApi{}.Router(router)
 	Output{Switcher: switcher}.Router(router)
 	ACL{}.Router(router)
+	Route{Switcher: switcher}.Router(router)
 }
