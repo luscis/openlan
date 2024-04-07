@@ -2,6 +2,7 @@ package cswitch
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -138,6 +139,52 @@ func (v *Switch) enablePort(protocol, port string) {
 		DstPort: port,
 		Comment: "Open Default Ports",
 	})
+}
+
+func (v *Switch) AddNetwork(network string) {
+	for _, nCfg := range v.cfg.Network {
+		name := nCfg.Name
+		if name == network {
+			w := NewNetworker(nCfg)
+			v.worker[name] = w
+			if w.Provider() != "vxlan" {
+				w.Initialize()
+				w.Start(v)
+			}
+		}
+	}
+}
+
+func (v *Switch) DelNetwork(network string) {
+	worker := v.worker[network]
+	file := worker.Config().File
+	if worker.Provider() != "vxlan" {
+		worker.Stop()
+	}
+	cache.Network.Del(network)
+	delete(v.worker, network)
+	Network := make([]*co.Network, 0, len(v.cfg.Network))
+	for _, v := range v.cfg.Network {
+		if v.Name != network {
+			Network = append(Network, v)
+		}
+	}
+	v.cfg.Network = Network
+	if err := os.Remove(file); err != nil {
+		v.out.Error("Error removing file: %s, err: %s", file, err)
+	}
+}
+
+func (v *Switch) SaveNetwork(network string) {
+	if network == "" {
+		for _, obj := range v.cfg.Network {
+			obj.Save()
+		}
+	} else {
+		if obj := v.cfg.GetNetwork(network); obj != nil {
+			obj.Save()
+		}
+	}
 }
 
 func (v *Switch) preNetwork() {

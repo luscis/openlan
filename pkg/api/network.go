@@ -6,16 +6,21 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
 type Network struct {
+	Switcher Switcher
 }
 
 func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network", h.List).Methods("GET")
+	router.HandleFunc("/api/network", h.Post).Methods("POST")
+	router.HandleFunc("/api/network", h.Save).Methods("PUT")
 	router.HandleFunc("/api/network/{id}", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/{id}", h.Delete).Methods("DELETE")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.RestartVPN).Methods("POST")
 }
@@ -39,6 +44,50 @@ func (h Network) Get(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, vars["id"], http.StatusNotFound)
 	}
+}
+
+func (h Network) Post(w http.ResponseWriter, r *http.Request) {
+	network := &schema.Network{}
+	if err := GetData(r, network); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	cs := h.Switcher.Config()
+	file := cs.Dir("network", network.File)
+	if err := libol.FileExist(file); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	cs.AddNetwork(file)
+	if obj := cs.GetNetworkWithFile(file); obj != nil {
+		h.Switcher.AddNetwork(obj.Name)
+	} else {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	network := vars["id"]
+	worker := GetWorker(network)
+	if worker == nil {
+		http.Error(w, "network not found", http.StatusBadRequest)
+		return
+	}
+	h.Switcher.DelNetwork(network)
+	ResponseJson(w, "success")
+}
+
+func (h Network) Save(w http.ResponseWriter, r *http.Request) {
+	network := &schema.Network{}
+	if err := GetData(r, network); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.Switcher.SaveNetwork(network.Name)
+	ResponseJson(w, "success")
 }
 
 func (h Network) Profile(w http.ResponseWriter, r *http.Request) {

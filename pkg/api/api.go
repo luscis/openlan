@@ -17,6 +17,9 @@ type Switcher interface {
 	Server() libol.SocketServer
 	Reload()
 	Save()
+	AddNetwork(network string)
+	DelNetwork(network string)
+	SaveNetwork(network string)
 }
 
 func NewWorkerSchema(s Switcher) schema.Worker {
