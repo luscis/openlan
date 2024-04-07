@@ -2,11 +2,12 @@ package cache
 
 import (
 	"encoding/binary"
+	"net"
+
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
-	"net"
 )
 
 type network struct {
@@ -57,7 +58,7 @@ func (w *network) DelRoute(name string, rt co.PrefixRoute) {
 	n := w.Get(name)
 	if n != nil {
 		for i, route := range n.Routes {
-			if route.Prefix == rt.Prefix && (route.NextHop == rt.NextHop || route.Origin == rt.NextHop) {
+			if route.Prefix == rt.Prefix {
 				n.Routes = append(n.Routes[:i], n.Routes[i+1:]...)
 				break
 			}

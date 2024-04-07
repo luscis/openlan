@@ -753,7 +753,7 @@ func (w *WorkerImpl) forwardZone(input string) {
 	})
 }
 
-func (w *WorkerImpl) forwardVPNIpSet(rt string) {
+func (w *WorkerImpl) addVPNSet(rt string) {
 	if rt == "0.0.0.0/0" {
 		w.setV.Add("0.0.0.0/1")
 		w.setV.Add("128.0.0.0/1")
@@ -762,7 +762,7 @@ func (w *WorkerImpl) forwardVPNIpSet(rt string) {
 	w.setV.Add(rt)
 }
 
-func (w *WorkerImpl) delForwardVPNIpSet(rt string) {
+func (w *WorkerImpl) delVPNSet(rt string) {
 	if rt == "0.0.0.0/0" {
 		w.setV.Del("0.0.0.0/1")
 		w.setV.Del("128.0.0.0/1")
@@ -792,7 +792,7 @@ func (w *WorkerImpl) forwardVPN() {
 	w.toACL(devName)
 
 	for _, rt := range vpn.Routes {
-		w.forwardVPNIpSet(rt)
+		w.addVPNSet(rt)
 	}
 	if w.vrf != nil {
 		w.toForward_r(w.vrf.Name(), vpn.Subnet, w.setV.Name, "From VPN")
@@ -802,7 +802,7 @@ func (w *WorkerImpl) forwardVPN() {
 	w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 }
 
-func (w *WorkerImpl) forwardSubnetIpSet(rt co.PrefixRoute) bool {
+func (w *WorkerImpl) addIpSet(rt co.PrefixRoute) bool {
 	if rt.MultiPath != nil {
 		return true
 	}
@@ -816,7 +816,7 @@ func (w *WorkerImpl) forwardSubnetIpSet(rt co.PrefixRoute) bool {
 	return true
 }
 
-func (w *WorkerImpl) delForwardIpSet(rt co.PrefixRoute) {
+func (w *WorkerImpl) delIpSet(rt co.PrefixRoute) {
 	if rt.MultiPath != nil {
 		return
 	}
@@ -847,7 +847,7 @@ func (w *WorkerImpl) forwardSubnet() {
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(input, "Accept related")
 	for _, rt := range cfg.Routes {
-		if !w.forwardSubnetIpSet(rt) {
+		if !w.addIpSet(rt) {
 			break
 		}
 	}
@@ -908,24 +908,22 @@ func (w *WorkerImpl) addCacheRoute(rt co.PrefixRoute) {
 }
 
 func (w *WorkerImpl) addVPNRoute(rt co.PrefixRoute) {
-
 	vpn := w.cfg.OpenVPN
 	if vpn == nil {
 		return
 	}
+
 	routes := vpn.Routes
 	vpn.Routes = w.updateVPNRoute(routes, rt)
 }
 
 func (w *WorkerImpl) delVPNRoute(rt co.PrefixRoute) {
-
 	vpn := w.cfg.OpenVPN
 	if vpn == nil {
 		return
 	}
 
 	routes := vpn.Routes
-
 	addr := rt.Prefix
 	if addr == "0.0.0.0/0" {
 		for i, s := range vpn.Push {
@@ -956,7 +954,6 @@ func (w *WorkerImpl) delVPNRoute(rt co.PrefixRoute) {
 }
 
 func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
-
 	rt := co.PrefixRoute{
 		Prefix:  route.Prefix,
 		NextHop: route.NextHop,
@@ -964,20 +961,14 @@ func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
 		Metric:  route.Metric,
 	}
 
-	br := w.cfg.Bridge
-	ipAddr := ""
-	if _i, _, err := net.ParseCIDR(br.Address); err == nil {
-		ipAddr = _i.String()
-	}
-
-	rt.CorrectRoute(ipAddr)
+	rt.CorrectRoute(w.IfAddr())
 
 	return rt
 }
 
 func (w *WorkerImpl) findRoute(rt co.PrefixRoute) (co.PrefixRoute, int) {
 	for i, ert := range w.cfg.Routes {
-		if ert.Prefix == rt.Prefix && rt.NextHop == ert.NextHop {
+		if ert.Prefix == rt.Prefix {
 			return ert, i
 		}
 	}
@@ -997,10 +988,9 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 
 	libol.Info("WorkerImpl.AddRoute: %v", rt)
 
-	w.forwardSubnetIpSet(rt)
-
+	w.addIpSet(rt)
 	if inet, err := libol.ParseNet(rt.Prefix); err == nil {
-		w.forwardVPNIpSet(inet.String())
+		w.addVPNSet(inet.String())
 	}
 
 	w.addCacheRoute(rt)
@@ -1015,19 +1005,16 @@ func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 	correctRt := w.correctRoute(route)
 
 	delRt, index := w.findRoute(correctRt)
-
 	if index == -1 {
-
 		w.out.Warn("WorkerImpl.DelRoute: route not found")
 		return nil
 	}
 
 	w.cfg.Routes = append(w.cfg.Routes[:index], w.cfg.Routes[index+1:]...)
 
-	w.delForwardIpSet(delRt)
-
+	w.delIpSet(delRt)
 	if inet, err := libol.ParseNet(delRt.Prefix); err == nil {
-		w.delForwardVPNIpSet(inet.String())
+		w.delVPNSet(inet.String())
 	}
 
 	w.delCacheRoute(delRt)
@@ -1054,7 +1041,8 @@ func (w *WorkerImpl) Router() api.Router {
 }
 
 func (w *WorkerImpl) IfAddr() string {
-	return strings.SplitN(w.cfg.Bridge.Address, "/", 2)[0]
+	br := w.cfg.Bridge
+	return strings.SplitN(br.Address, "/", 2)[0]
 }
 
 func (w *WorkerImpl) ACLer() api.ACLer {
