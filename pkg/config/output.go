@@ -5,5 +5,5 @@ type Output struct {
 	Protocol string `json:"protocol"` // gre, vxlan, etc.
 	Remote   string `json:"remote"`
 	DstPort  int    `json:"dstport,omitempty"`
-	Link     string `json:"link"` // link name
+	Link     string `json:"link,omitempty"` // link name
 }

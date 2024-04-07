@@ -43,6 +43,23 @@ func (l *LinuxPort) String() string {
 	return fmt.Sprintf("%s:%s:%d", l.cfg.Protocol, l.cfg.Remote, l.cfg.Segment)
 }
 
+func (l *LinuxPort) GenName() {
+	if l.link != "" {
+		return
+	}
+
+	cfg := l.cfg
+	if cfg.Protocol == "gre" {
+		l.link = fmt.Sprintf("%s%d", "gre", cfg.Segment)
+	} else if cfg.Protocol == "vxlan" {
+		l.link = fmt.Sprintf("%s%d", "vxlan", cfg.Segment)
+	} else if cfg.Segment > 0 {
+		l.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
+	} else {
+		l.link = cfg.Remote
+	}
+}
+
 type WorkerImpl struct {
 	uuid    string
 	cfg     *co.Network
@@ -172,10 +189,8 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 	}
 
 	mtu := 0
+	port.GenName()
 	if cfg.Protocol == "gre" {
-		if port.link == "" {
-			port.link = co.GenName("gre")
-		}
 		mtu = 1450
 		link := &nl.Gretap{
 			IKey: uint32(cfg.Segment),
@@ -193,9 +208,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 			return
 		}
 	} else if cfg.Protocol == "vxlan" {
-		if port.link == "" {
-			port.link = co.GenName("vxn")
-		}
 		dport := 8472
 		if cfg.DstPort > 0 {
 			dport = cfg.DstPort
@@ -226,9 +238,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 		}
 
 		if cfg.Segment > 0 {
-			if port.link == "" {
-				port.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
-			}
 			subLink := &nl.Vlan{
 				LinkAttrs: nl.LinkAttrs{
 					Name:        port.link,
