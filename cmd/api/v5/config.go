@@ -29,7 +29,7 @@ func (u Config) List(c *cli.Context) error {
 		name := c.String("network")
 		format := c.String("format")
 		if format == "yaml" {
-			cfg.Format()
+			cfg.FormatNetwork()
 		}
 		if len(name) > 0 {
 			obj := cfg.GetNetwork(name)

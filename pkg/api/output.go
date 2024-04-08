@@ -46,7 +46,7 @@ func (h Output) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cs := h.Switcher.Config()
-	if cs.Network == nil {
+	if cs.Network[name] == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
@@ -69,7 +69,7 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cs := h.Switcher.Config()
-	if cs.Network == nil {
+	if cs.Network[name] == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}

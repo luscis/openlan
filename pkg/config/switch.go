@@ -50,33 +50,34 @@ func (p *Perf) Correct() {
 }
 
 type Switch struct {
-	File      string          `json:"file"`
-	Alias     string          `json:"alias"`
-	Perf      Perf            `json:"limit,omitempty"`
-	Protocol  string          `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.
-	Listen    string          `json:"listen"`
-	Timeout   int             `json:"timeout"`
-	Http      *Http           `json:"http,omitempty"`
-	Log       Log             `json:"log"`
-	Cert      *Cert           `json:"cert,omitempty"`
-	Crypt     *Crypt          `json:"crypt,omitempty"`
-	Network   []*Network      `json:"network,omitempty"`
-	Acl       map[string]*ACL `json:"acl,omitempty"`
-	Qos       map[string]*Qos `json:"qos,omitempty"`
-	FireWall  []FlowRule      `json:"firewall,omitempty"`
-	Queue     Queue           `json:"queue"`
-	PassFile  string          `json:"password"`
-	Ldap      *LDAP           `json:"ldap,omitempty"`
-	AddrPool  string          `json:"pool,omitempty"`
-	ConfDir   string          `json:"-"`
-	TokenFile string          `json:"-"`
-	L2TP      *L2TP           `json:"l2tp"`
+	File      string              `json:"file"`
+	Alias     string              `json:"alias"`
+	Perf      Perf                `json:"limit,omitempty"`
+	Protocol  string              `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.
+	Listen    string              `json:"listen"`
+	Timeout   int                 `json:"timeout"`
+	Http      *Http               `json:"http,omitempty"`
+	Log       Log                 `json:"log"`
+	Cert      *Cert               `json:"cert,omitempty"`
+	Crypt     *Crypt              `json:"crypt,omitempty"`
+	Network   map[string]*Network `json:"network,omitempty"`
+	Acl       map[string]*ACL     `json:"acl,omitempty"`
+	Qos       map[string]*Qos     `json:"qos,omitempty"`
+	FireWall  []FlowRule          `json:"firewall,omitempty"`
+	Queue     Queue               `json:"queue"`
+	PassFile  string              `json:"password"`
+	Ldap      *LDAP               `json:"ldap,omitempty"`
+	AddrPool  string              `json:"pool,omitempty"`
+	ConfDir   string              `json:"-"`
+	TokenFile string              `json:"-"`
+	L2TP      *L2TP               `json:"l2tp"`
 }
 
 func NewSwitch() *Switch {
 	s := &Switch{
-		Acl: make(map[string]*ACL, 32),
-		Qos: make(map[string]*Qos, 1024),
+		Acl:     make(map[string]*ACL, 32),
+		Qos:     make(map[string]*Qos, 1024),
+		Network: make(map[string]*Network, 32),
 	}
 	s.Parse()
 	s.Initialize()
@@ -155,7 +156,7 @@ func (s *Switch) Dir(elem ...string) string {
 	return filepath.Join(args...)
 }
 
-func (s *Switch) Format() {
+func (s *Switch) FormatNetwork() {
 	for _, obj := range s.Network {
 		context := obj.Specifies
 		obj.NewSpecifies()
@@ -183,7 +184,7 @@ func (s *Switch) LoadNetworkWithFile(file string) {
 	obj.LoadLink()
 	obj.LoadRoute()
 	obj.LoadOutput()
-	s.Network = append(s.Network, obj)
+	s.Network[obj.Name] = obj
 }
 
 func (s *Switch) CorrectNetwork() {
@@ -215,7 +216,7 @@ func (s *Switch) CorrectNetwork() {
 
 func (s *Switch) AddNetwork(file string) {
 	s.LoadNetworkWithFile(file)
-	s.Format()
+	s.FormatNetwork()
 	s.CorrectNetwork()
 }
 
@@ -227,7 +228,7 @@ func (s *Switch) LoadNetwork() {
 	for _, k := range files {
 		s.LoadNetworkWithFile(k)
 	}
-	s.Format()
+	s.FormatNetwork()
 	s.CorrectNetwork()
 }
 
@@ -318,12 +319,7 @@ func (s *Switch) Reload() {
 }
 
 func (s *Switch) GetNetwork(name string) *Network {
-	for _, obj := range s.Network {
-		if obj.Name == name {
-			return obj
-		}
-	}
-	return nil
+	return s.Network[name]
 }
 
 func (s *Switch) GetNetworkWithFile(file string) *Network {

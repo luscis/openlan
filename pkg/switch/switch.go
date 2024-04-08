@@ -163,13 +163,7 @@ func (v *Switch) DelNetwork(network string) {
 	}
 	cache.Network.Del(network)
 	delete(v.worker, network)
-	Network := make([]*co.Network, 0, len(v.cfg.Network))
-	for _, v := range v.cfg.Network {
-		if v.Name != network {
-			Network = append(Network, v)
-		}
-	}
-	v.cfg.Network = Network
+	delete(v.cfg.Network, network)
 	if err := os.Remove(file); err != nil {
 		v.out.Error("Error removing file: %s, err: %s", file, err)
 	}
