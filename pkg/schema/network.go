@@ -24,8 +24,6 @@ type Subnet struct {
 }
 
 type Network struct {
-	File   string        `json:"file,omitempty"`
-	Name   string        `json:"name"`
-	Subnet Subnet        `json:"subnet"`
-	Routes []PrefixRoute `json:"routes"`
+	Name   string      `json:"name"`
+	Config interface{} `json:"config"`
 }

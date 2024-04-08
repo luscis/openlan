@@ -175,20 +175,23 @@ func (s *Switch) FormatNetwork() {
 	}
 }
 
-func (s *Switch) LoadNetworkWithFile(file string) {
+func (s *Switch) LoadNetworkWithData(data []byte) (*Network, error) {
+	libol.Debug("Switch.LoadNetworkWithData %s", data)
 	obj := &Network{
 		Alias:   s.Alias,
-		File:    file,
 		ConfDir: s.ConfDir,
 	}
-	if err := libol.UnmarshalLoad(obj, file); err != nil {
-		libol.Error("Switch.LoadNetwork %s", err)
-		return
+	if err := libol.Unmarshal(obj, data); err != nil {
+		return nil, err
+	}
+	if _, ok := s.Network[obj.Name]; ok {
+		return nil, libol.NewErr("already existed")
 	}
 	obj.LoadLink()
 	obj.LoadRoute()
 	obj.LoadOutput()
 	s.Network[obj.Name] = obj
+	return obj, nil
 }
 
 func (s *Switch) correctNetworkWithObj(obj *Network) {
@@ -222,11 +225,14 @@ func (s *Switch) CorrectNetwork() {
 	}
 }
 
-func (s *Switch) AddNetwork(file string) {
-	s.LoadNetworkWithFile(file)
-	net := s.GetNetworkWithFile(file)
-	s.formatNetworkWithObj(net)
-	s.correctNetworkWithObj(net)
+func (s *Switch) AddNetwork(data []byte) (string, error) {
+	obj, err := s.LoadNetworkWithData(data)
+	if err != nil {
+		return "", err
+	}
+	s.formatNetworkWithObj(obj)
+	s.correctNetworkWithObj(obj)
+	return obj.Name, nil
 }
 
 func (s *Switch) LoadNetwork() {
@@ -235,7 +241,11 @@ func (s *Switch) LoadNetwork() {
 		libol.Error("Switch.LoadNetwork %s", err)
 	}
 	for _, k := range files {
-		s.LoadNetworkWithFile(k)
+		if data, err := libol.LoadWithoutAnn(k); err != nil {
+			libol.Warn("Switch.LoadNetwork %s", err)
+		} else if _, err := s.LoadNetworkWithData(data); err != nil {
+			libol.Warn("Switch.LoadNetwork %s", err)
+		}
 	}
 	s.FormatNetwork()
 	s.CorrectNetwork()
@@ -329,15 +339,6 @@ func (s *Switch) Reload() {
 
 func (s *Switch) GetNetwork(name string) *Network {
 	return s.Network[name]
-}
-
-func (s *Switch) GetNetworkWithFile(file string) *Network {
-	for _, obj := range s.Network {
-		if obj.File == file {
-			return obj
-		}
-	}
-	return nil
 }
 
 func (s *Switch) GetACL(name string) *ACL {

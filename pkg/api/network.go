@@ -52,17 +52,22 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	cs := h.Switcher.Config()
-	file := cs.Dir("network", network.File)
-	if err := libol.FileExist(file); err != nil {
+	data, err := libol.Marshal(&network.Config, true)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cs.AddNetwork(file)
-	if obj := cs.GetNetworkWithFile(file); obj != nil {
+	cs := h.Switcher.Config()
+	name, err := cs.AddNetwork(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if obj := cs.GetNetwork(name); obj != nil {
 		h.Switcher.AddNetwork(obj.Name)
 	} else {
-		http.Error(w, "Network not found", http.StatusBadRequest)
+		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
 	}
 	ResponseJson(w, "success")

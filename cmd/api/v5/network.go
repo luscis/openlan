@@ -33,9 +33,12 @@ func (u Network) List(c *cli.Context) error {
 
 func (u Network) Add(c *cli.Context) error {
 	file := c.String("file")
-	network := &schema.Network{
-		File: file,
+	network := &schema.Network{}
+
+	if err := libol.UnmarshalLoad(&network.Config, file); err != nil {
+		return err
 	}
+
 	url := u.Url(c.String("url"), "")
 	clt := u.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, network, nil); err != nil {

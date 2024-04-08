@@ -38,13 +38,14 @@ func (u *Route) SetOrigin(value string) {
 }
 
 type Network struct {
-	Name    string   `json:"name"`
-	Tenant  string   `json:"tenant,omitempty"`
-	IfAddr  string   `json:"ifAddr"`
-	IpStart string   `json:"ipStart"`
-	IpEnd   string   `json:"ipEnd"`
-	Netmask string   `json:"netmask"`
-	Routes  []*Route `json:"routes"`
+	Name    string      `json:"name"`
+	Tenant  string      `json:"tenant,omitempty"`
+	IfAddr  string      `json:"ifAddr"`
+	IpStart string      `json:"ipStart"`
+	IpEnd   string      `json:"ipEnd"`
+	Netmask string      `json:"netmask"`
+	Routes  []*Route    `json:"routes"`
+	Config  interface{} `json:"config"`
 }
 
 func NewNetwork(name string, ifAddr string) (this *Network) {

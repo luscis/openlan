@@ -125,6 +125,7 @@ func (w *WorkerImpl) Initialize() {
 		Netmask: cfg.Subnet.Netmask,
 		IfAddr:  cfg.Bridge.Address,
 		Routes:  make([]*models.Route, 0, 2),
+		Config:  cfg,
 	}
 	for _, rt := range cfg.Routes {
 		nRoute := w.newRoute(&rt)
