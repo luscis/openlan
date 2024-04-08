@@ -156,18 +156,22 @@ func (s *Switch) Dir(elem ...string) string {
 	return filepath.Join(args...)
 }
 
+func (s *Switch) formatNetworkWithObj(obj *Network) {
+	context := obj.Specifies
+	obj.NewSpecifies()
+	if obj.Specifies == nil {
+		return
+	}
+	if data, err := libol.Marshal(context, true); err != nil {
+		libol.Warn("Switch.Format %s", err)
+	} else if err := libol.Unmarshal(obj.Specifies, data); err != nil {
+		libol.Warn("Switch.Format %s", err)
+	}
+}
+
 func (s *Switch) FormatNetwork() {
 	for _, obj := range s.Network {
-		context := obj.Specifies
-		obj.NewSpecifies()
-		if obj.Specifies == nil {
-			continue
-		}
-		if data, err := libol.Marshal(context, true); err != nil {
-			libol.Warn("Switch.Format %s", err)
-		} else if err := libol.Unmarshal(obj.Specifies, data); err != nil {
-			libol.Warn("Switch.Format %s", err)
-		}
+		s.formatNetworkWithObj(obj)
 	}
 }
 
@@ -187,37 +191,42 @@ func (s *Switch) LoadNetworkWithFile(file string) {
 	s.Network[obj.Name] = obj
 }
 
-func (s *Switch) CorrectNetwork() {
-	for _, obj := range s.Network {
-		for _, link := range obj.Links {
-			link.Correct()
+func (s *Switch) correctNetworkWithObj(obj *Network) {
+	for _, link := range obj.Links {
+		link.Correct()
+	}
+	obj.Correct(s)
+	obj.Alias = s.Alias
+	if obj.File == "" {
+		obj.File = s.Dir("network", obj.Name+".json")
+	}
+	if _, ok := s.Acl[obj.Name]; !ok {
+		obj := &ACL{
+			Name: obj.Name,
 		}
 		obj.Correct(s)
-		obj.Alias = s.Alias
-		if obj.File == "" {
-			obj.File = s.Dir("network", obj.Name+".json")
+		s.Acl[obj.Name] = obj
+	}
+	if _, ok := s.Qos[obj.Name]; !ok {
+		obj := &Qos{
+			Name: obj.Name,
 		}
-		if _, ok := s.Acl[obj.Name]; !ok {
-			obj := &ACL{
-				Name: obj.Name,
-			}
-			obj.Correct(s)
-			s.Acl[obj.Name] = obj
-		}
-		if _, ok := s.Qos[obj.Name]; !ok {
-			obj := &Qos{
-				Name: obj.Name,
-			}
-			obj.Correct(s)
-			s.Qos[obj.Name] = obj
-		}
+		obj.Correct(s)
+		s.Qos[obj.Name] = obj
+	}
+}
+
+func (s *Switch) CorrectNetwork() {
+	for _, obj := range s.Network {
+		s.correctNetworkWithObj(obj)
 	}
 }
 
 func (s *Switch) AddNetwork(file string) {
 	s.LoadNetworkWithFile(file)
-	s.FormatNetwork()
-	s.CorrectNetwork()
+	net := s.GetNetworkWithFile(file)
+	s.formatNetworkWithObj(net)
+	s.correctNetworkWithObj(net)
 }
 
 func (s *Switch) LoadNetwork() {
