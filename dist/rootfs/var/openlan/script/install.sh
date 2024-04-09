@@ -60,12 +60,6 @@ function post() {
   [ -e "/var/openlan/openvpn/ta.key" ] || {
     openvpn --genkey --secret /var/openlan/openvpn/ta.key
   }
-  [ -e "/etc/openlan/switch/confd.db" ] || {
-    /usr/bin/ovsdb-tool create /etc/openlan/switch/confd.db /var/openlan/confd.schema.json
-  }
-  [ ! -e "/var/openlan/confd/confd.sock" ] || {
-    /usr/bin/ovsdb-client convert unix:///var/openlan/confd/confd.sock /var/openlan/confd.schema.json
-  }
 
   if [ "$OS"x == "centos"x ]; then
     cp -rf /var/openlan/cert/ca.crt /etc/pki/ca-trust/source/anchors/OpenLAN_CA.crt

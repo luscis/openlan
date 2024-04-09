@@ -1,78 +1,19 @@
 version: "2.3"
 services:
-  confd:
-    restart: always
-    image: "luscis/openlan:latest.x86_64"
-    privileged: true
-    entrypoint: ["/var/openlan/script/confd.sh", "start"]
-    network_mode: "host"
-    volumes:
-      - /opt/openlan/confd:/var/openlan/confd
-      - /opt/openlan/etc/openlan:/etc/openlan
-  ovsdb-server:
-    restart: always
-    image: "luscis/openlan:latest.x86_64"
-    privileged: true
-    entrypoint: ["/var/openlan/script/ovsdb-server.sh", "start"]
-    network_mode: service:confd
-    volumes:
-      - /opt/openlan/run/openvswitch:/run/openvswitch
-      - /opt/openlan/etc/openvswitch:/etc/openvswitch
-    depends_on:
-      - confd
-  ovs-vswitchd:
-    restart: always
-    image: "luscis/openlan:latest.x86_64"
-    privileged: true
-    network_mode: service:confd
-    entrypoint: ["/var/openlan/script/ovs-vswitchd.sh", "start"]
-    volumes:
-      - /opt/openlan/run/openvswitch:/run/openvswitch
-    depends_on:
-      - confd
-      - ovsdb-server
   switch:
     restart: always
     image: "luscis/openlan:latest.x86_64"
     privileged: true
-    network_mode: service:confd
+    network_mode: host
     entrypoint: ["/var/openlan/script/switch.sh", "start"]
-    # stop_grace_period: 30s
-    # environment:
-    #   - ESPUDP=4600
     volumes:
-      - /opt/openlan/confd:/var/openlan/confd
-      - /opt/openlan/run/openvswitch:/run/openvswitch
-      - /opt/openlan/etc/openvswitch:/etc/openvswitch
       - /opt/openlan/etc/openlan:/etc/openlan
-    depends_on:
-      - confd
-      - ovsdb-server
-      - ovs-vswitchd
   proxy:
     restart: always
     image: "luscis/openlan:latest.x86_64"
-    network_mode: service:confd
+    network_mode: host
     entrypoint: ["/usr/bin/openlan-proxy", "-conf", "/etc/openlan/proxy.json", "-log:file", "/dev/null"]
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
     depends_on:
-      - confd
       - switch
-  task:
-    restart: always
-    image: "luscis/openlan:latest.x86_64"
-    network_mode: service:confd
-    entrypoint: ["/var/openlan/script/task.sh"]
-    volumes:
-      - /opt/openlan/confd:/var/openlan/confd
-      - /opt/openlan/run/openvswitch:/run/openvswitch
-      - /opt/openlan/etc/openvswitch:/etc/openvswitch
-      - /opt/openlan/etc/openlan:/etc/openlan
-    depends_on:
-      - confd
-      - switch
-  expoter:
-    restart: always
-    image: "prom/node-exporter:v1.7.0"
-    network_mode: service:confd

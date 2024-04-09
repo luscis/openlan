@@ -24,20 +24,24 @@ cat >> /etc/openlan/switch/switch.json << EOF
 EOF
 fi
 
-# wait confd service
-while true; do
-  if [ -e /var/openlan/confd/confd.sock ]; then
-    break
-  fi
-  sleep 5
-done
+if echo $ENABLED | grep -w "confd" -q; then
+  # wait confd service
+  while true; do
+    if [ -e /var/openlan/confd/confd.sock ]; then
+      break
+    fi
+    sleep 5
+  done
+fi
 
-# wait openvswitch service
-while true; do
-  if [ -e /var/run/openvswitch/db.sock ]; then
-    break
-  fi
-  sleep 5
-done
+if echo $ENABLED | grep -w "openvswitch" -q; then
+  # wait openvswitch service
+  while true; do
+    if [ -e /var/run/openvswitch/db.sock ]; then
+      break
+    fi
+    sleep 5
+  done
+fi
 
 exec /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20

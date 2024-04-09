@@ -21,6 +21,9 @@ function stop() {
     [ -e "$OVSDB_PID_FILE" ] && kill "$(cat $OVSDB_PID_FILE)"
 }
 
+## Upgrade database.
+# ovsdb-client convert unix:///var/openlan/confd/confd.sock /var/openlan/confd.schema.json
+
 function start() {
     [ -e "$OVSDB_DATABASE" ] || {
         $OVSDB_TOOL_BIN create $OVSDB_DATABASE $OVSDB_DATABASE_SCH
