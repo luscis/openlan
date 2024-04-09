@@ -21,13 +21,24 @@ func (u Network) Url(prefix, name string) string {
 }
 
 func (u Network) List(c *cli.Context) error {
-	url := u.Url(c.String("url"), "")
+	name := c.String("name")
+	url := u.Url(c.String("url"), name)
 	clt := u.NewHttp(c.String("token"))
-	var items []schema.Network
-	if err := clt.GetJSON(url, &items); err == nil {
-		return u.Out(items, c.String("format"), "")
+
+	if name == "" {
+		var items []schema.Network
+		if err := clt.GetJSON(url, &items); err == nil {
+			return u.Out(items, c.String("format"), "")
+		} else {
+			return err
+		}
 	} else {
-		return err
+		var items schema.Network
+		if err := clt.GetJSON(url, &items); err == nil {
+			return u.Out(items, c.String("format"), "")
+		} else {
+			return err
+		}
 	}
 }
 
@@ -86,6 +97,9 @@ func (u Network) Commands(app *api.App) {
 				Usage:   "Display all network",
 				Aliases: []string{"ls"},
 				Action:  u.List,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "name"},
+				},
 			},
 			{
 				Name:  "add",
