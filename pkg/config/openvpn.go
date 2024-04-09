@@ -10,20 +10,20 @@ import (
 
 type OpenVPN struct {
 	Network   string           `json:"network"`
-	Url       string           `json:"url"`
-	Directory string           `json:"directory"`
+	Url       string           `json:"url,omitempty"`
+	Directory string           `json:"directory,omitempty"`
 	Listen    string           `json:"listen"`
 	Protocol  string           `json:"protocol,omitempty"`
 	Subnet    string           `json:"subnet"`
 	Device    string           `json:"device"`
 	Version   int              `json:"version,omitempty"`
 	Auth      string           `json:"auth,omitempty"` // xauth or cert.
-	DhPem     string           `json:"dhPem"`
-	RootCa    string           `json:"rootCa"`
-	ServerCrt string           `json:"cert"`
-	ServerKey string           `json:"key"`
-	TlsAuth   string           `json:"tlsAuth"`
-	Cipher    string           `json:"cipher"`
+	DhPem     string           `json:"dhPem,omitempty"`
+	RootCa    string           `json:"rootCa,omitempty"`
+	ServerCrt string           `json:"cert,omitempty"`
+	ServerKey string           `json:"key,omitempty"`
+	TlsAuth   string           `json:"tlsAuth,omitempty"`
+	Cipher    string           `json:"cipher,omitempty"`
 	Routes    []string         `json:"-"`
 	Renego    int              `json:"renego,omitempty"`
 	Script    string           `json:"-"`
