@@ -243,8 +243,6 @@ func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
 }
 
 func (w *user) SetCert(cfg *libol.CertConfig) {
-	w.Lock.Lock()
-	defer w.Lock.Unlock()
 	w.Cert = cfg.Crt
 }
 
