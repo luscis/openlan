@@ -109,18 +109,14 @@ func (o *OpenVPN) Merge(obj *OpenVPN) {
 }
 
 func (o *OpenVPN) Correct(sw *Switch) {
-	if o.Directory == "" {
-		o.Directory = VarDir("openvpn", o.Network)
+	o.Directory = VarDir("openvpn", o.Network)
+	if !strings.Contains(o.Listen, ":") {
+		o.Listen += ":1194"
 	}
-	if o.Device == "" {
-		if !strings.Contains(o.Listen, ":") {
-			o.Listen += ":1194"
-		}
-		o.Device = GenName("tun")
-	}
+	_, port := libol.GetHostPort(o.Listen)
+	o.Device = fmt.Sprintf("tun%s", port)
 	pool := sw.AddrPool
 	if o.Subnet == "" {
-		_, port := libol.GetHostPort(o.Listen)
 		value, _ := strconv.Atoi(port)
 		o.Subnet = fmt.Sprintf("%s.%d.0/24", pool, value&0xff)
 	}
