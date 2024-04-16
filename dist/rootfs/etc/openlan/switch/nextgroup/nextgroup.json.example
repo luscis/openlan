@@ -1,0 +1,14 @@
+{
+	"ng1": {
+		"check": "ping",
+		"ping": {
+			"count": 5,
+			"loss": 2
+		},
+		"mode": "active-backup",
+		"nexthop": [
+			"192.168.33.11",
+			"192.168.33.10"
+		]
+	}
+}
