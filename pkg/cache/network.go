@@ -54,6 +54,19 @@ func (w *network) ListRoute(name string) <-chan *models.Route {
 	return c
 }
 
+func (w *network) UpdateRoute(name string, rt co.PrefixRoute, call func(obj *models.Route)) {
+	n := w.Get(name)
+	if n != nil {
+		for _, route := range n.Routes {
+			if route.Prefix == rt.Prefix {
+				call(route)
+				break
+			}
+		}
+	}
+	return
+}
+
 func (w *network) DelRoute(name string, rt co.PrefixRoute) {
 	n := w.Get(name)
 	if n != nil {

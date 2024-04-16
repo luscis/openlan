@@ -61,21 +61,22 @@ func (l *LinuxPort) GenName() {
 }
 
 type WorkerImpl struct {
-	uuid    string
-	cfg     *co.Network
-	out     *libol.SubLogger
-	dhcp    *Dhcp
-	outputs []*LinuxPort
-	fire    *cn.FireWallTable
-	setR    *cn.IPSet
-	setV    *cn.IPSet
-	vpn     *OpenVPN
-	ztrust  *ZTrust
-	qos     *QosCtrl
-	vrf     *cn.VRF
-	table   int
-	br      cn.Bridger
-	acl     *ACL
+	uuid      string
+	cfg       *co.Network
+	out       *libol.SubLogger
+	dhcp      *Dhcp
+	outputs   []*LinuxPort
+	fire      *cn.FireWallTable
+	setR      *cn.IPSet
+	setV      *cn.IPSet
+	vpn       *OpenVPN
+	ztrust    *ZTrust
+	qos       *QosCtrl
+	vrf       *cn.VRF
+	table     int
+	br        cn.Bridger
+	acl       *ACL
+	nextgroup *NextGroup
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -118,6 +119,8 @@ func (w *WorkerImpl) Initialize() {
 	w.acl = NewACL(cfg.Name)
 	w.acl.Initialize()
 
+	w.nextgroup = NewNextGroup(cfg.Name, cfg.NextGroup)
+
 	n := models.Network{
 		Name:    cfg.Name,
 		IpStart: cfg.Subnet.Start,
@@ -142,10 +145,10 @@ func (w *WorkerImpl) Initialize() {
 	w.fire = cn.NewFireWallTable(cfg.Name)
 
 	if out, err := w.setV.Clear(); err != nil {
-		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
+		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
 	}
 	if out, err := w.setR.Clear(); err != nil {
-		w.out.Error("WorkImpl.Initialize: create ipset: %s %s", out, err)
+		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
 	}
 
 	if cfg.ZTrust == "enable" {
@@ -276,7 +279,7 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 	if err != nil {
 		return
 	}
-	if ifAddr == rt.NextHop && rt.MultiPath == nil {
+	if ifAddr == rt.NextHop && rt.MultiPath == nil && rt.NextGroup == "" {
 		// route's next-hop is local not install again.
 		return
 	}
@@ -295,7 +298,13 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		nlr.Gw = net.ParseIP(rt.NextHop)
 		nlr.Priority = rt.Metric
 	}
-	w.out.Debug("WorkerImpl.loadRoute: %s", nlr.String())
+	if rt.NextGroup != "" {
+		w.out.Info("WorkerImpl.loadRoute: %s , ng: %s", nlr.String(), rt.NextGroup)
+		w.nextgroup.LoadRoute(rt.NextGroup, &nlr)
+		return
+	}
+	w.out.Info("WorkerImpl.loadRoute: %s", nlr.String())
+
 	rt_c := rt
 	promise := libol.NewPromise()
 	promise.Go(func() error {
@@ -312,7 +321,7 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 func (w *WorkerImpl) loadRoutes() {
 	// install routes
 	cfg := w.cfg
-	w.out.Debug("WorkerImpl.LoadRoute: %v", cfg.Routes)
+	w.out.Info("WorkerImpl.LoadRoute: %v", cfg.Routes)
 
 	for _, rt := range cfg.Routes {
 		w.loadRoute(rt)
@@ -342,6 +351,8 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
+
+	w.nextgroup.Start()
 
 	w.loadVRF()
 	w.loadRoutes()
@@ -504,6 +515,11 @@ func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
 		nlr.Gw = net.ParseIP(rt.NextHop)
 		nlr.Priority = rt.Metric
 	}
+
+	if rt.NextGroup != "" {
+		w.nextgroup.UnloadRoute(rt.NextGroup, &nlr)
+		return
+	}
 	w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
 	if err := nl.RouteDel(&nlr); err != nil {
 		w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
@@ -529,6 +545,9 @@ func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 
 	w.fire.Stop()
+
+	w.nextgroup.Stop()
+
 	w.unloadRoutes()
 
 	if !(w.vpn == nil) {
@@ -886,7 +905,7 @@ func (w *WorkerImpl) delCacheRoute(rt co.PrefixRoute) {
 	if rt.Metric > 0 {
 		rte.Metric = rt.Metric
 	}
-	if rt.NextHop != "" {
+	if rt.NextGroup == "" && rt.NextHop != "" {
 		rte.Origin = rt.NextHop
 	}
 
@@ -894,17 +913,21 @@ func (w *WorkerImpl) delCacheRoute(rt co.PrefixRoute) {
 }
 
 func (w *WorkerImpl) addCacheRoute(rt co.PrefixRoute) {
+	w.out.Info("WorkerImpl.addCacheRoute: %v ", rt)
 	if rt.NextHop == "" {
 		w.out.Warn("WorkerImpl.AddCacheRoute: %s ", rt.Prefix)
 		return
 	}
+
 	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
 	if rt.Metric > 0 {
 		rte.Metric = rt.Metric
 	}
-	if rt.NextHop != "" {
+
+	if rt.NextGroup == "" && rt.NextHop != "" {
 		rte.Origin = rt.NextHop
 	}
+
 	cache.Network.AddRoute(w.cfg.Name, rte)
 }
 
@@ -987,7 +1010,7 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 
 	w.cfg.Routes = append(w.cfg.Routes, rt)
 
-	libol.Info("WorkerImpl.AddRoute: %v", rt)
+	w.out.Info("WorkerImpl.AddRoute: %v", rt)
 
 	w.addIpSet(rt)
 	if inet, err := libol.ParseNet(rt.Prefix); err == nil {

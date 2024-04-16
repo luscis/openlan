@@ -9,11 +9,17 @@ type Lease struct {
 }
 
 type PrefixRoute struct {
-	Prefix  string `json:"prefix"`
+	Prefix    string      `json:"prefix"`
+	NextHop   string      `json:"nexthop"`
+	Metric    int         `json:"metric"`
+	Mode      string      `json:"mode"`
+	Origin    string      `json:"origin"`
+	MultiPath []MultiPath `json:"multipath,omitempty"`
+}
+
+type MultiPath struct {
 	NextHop string `json:"nexthop"`
-	Metric  int    `json:"metric"`
-	Mode    string `json:"mode"`
-	Origin  string `json:"origin"`
+	Weight  int    `json:"weight"`
 }
 
 type Subnet struct {

@@ -8,11 +8,17 @@ import (
 )
 
 type Route struct {
-	Prefix  string `json:"prefix"`
+	Prefix    string      `json:"prefix"`
+	NextHop   string      `json:"nexthop"`
+	Metric    int         `json:"metric"`
+	Mode      string      `json:"mode"`
+	Origin    string      `json:"origin"`
+	MultiPath []MultiPath `json:"multipath,omitempty"`
+}
+
+type MultiPath struct {
 	NextHop string `json:"nexthop"`
-	Metric  int    `json:"metric"`
-	Mode    string `json:"mode"`
-	Origin  string `json:"origin"`
+	Weight  int    `json:"weight"`
 }
 
 func NewRoute(prefix string, nexthop, mode string) (this *Route) {

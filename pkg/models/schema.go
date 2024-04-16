@@ -102,12 +102,21 @@ func NewNetworkSchema(n *Network) schema.Network {
 }
 
 func NewRouteSchema(route *Route) schema.PrefixRoute {
+	multiPath := make([]schema.MultiPath, 0, len(route.MultiPath))
+
+	for _, mp := range route.MultiPath {
+		multiPath = append(multiPath, schema.MultiPath{
+			NextHop: mp.NextHop,
+			Weight:  mp.Weight,
+		})
+	}
 	pr := schema.PrefixRoute{
-		Prefix:  route.Prefix,
-		NextHop: route.NextHop,
-		Metric:  route.Metric,
-		Mode:    route.Mode,
-		Origin:  route.Origin,
+		Prefix:    route.Prefix,
+		NextHop:   route.NextHop,
+		Metric:    route.Metric,
+		Mode:      route.Mode,
+		Origin:    route.Origin,
+		MultiPath: multiPath,
 	}
 	return pr
 }

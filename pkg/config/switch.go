@@ -190,6 +190,7 @@ func (s *Switch) LoadNetworkWithData(data []byte) (*Network, error) {
 	obj.LoadLink()
 	obj.LoadRoute()
 	obj.LoadOutput()
+	obj.LoadNextGroup()
 	s.Network[obj.Name] = obj
 	return obj, nil
 }

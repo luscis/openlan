@@ -8,24 +8,25 @@ import (
 )
 
 type Network struct {
-	ConfDir   string        `json:"-"`
-	File      string        `json:"file"`
-	Alias     string        `json:"-"`
-	Name      string        `json:"name"`
-	Provider  string        `json:"provider,omitempty"`
-	Bridge    *Bridge       `json:"bridge,omitempty"`
-	Subnet    *Subnet       `json:"subnet,omitempty"`
-	OpenVPN   *OpenVPN      `json:"openvpn,omitempty"`
-	Links     []Point       `json:"links,omitempty"`
-	Hosts     []HostLease   `json:"hosts,omitempty"`
-	Routes    []PrefixRoute `json:"routes,omitempty"`
-	Acl       string        `json:"acl,omitempty"`
-	Specifies interface{}   `json:"specifies,omitempty"`
-	Dhcp      string        `json:"dhcp,omitempty"`
-	Outputs   []Output      `json:"outputs,omitempty"`
-	ZTrust    string        `json:"ztrust,omitempty"`
-	Qos       string        `json:"qos,omitempty"`
-	Namespace string        `json:"namespace,omitempty"`
+	ConfDir   string               `json:"-"`
+	File      string               `json:"file"`
+	Alias     string               `json:"-"`
+	Name      string               `json:"name"`
+	Provider  string               `json:"provider,omitempty"`
+	Bridge    *Bridge              `json:"bridge,omitempty"`
+	Subnet    *Subnet              `json:"subnet,omitempty"`
+	OpenVPN   *OpenVPN             `json:"openvpn,omitempty"`
+	Links     []Point              `json:"links,omitempty"`
+	Hosts     []HostLease          `json:"hosts,omitempty"`
+	Routes    []PrefixRoute        `json:"routes,omitempty"`
+	Acl       string               `json:"acl,omitempty"`
+	Specifies interface{}          `json:"specifies,omitempty"`
+	Dhcp      string               `json:"dhcp,omitempty"`
+	Outputs   []Output             `json:"outputs,omitempty"`
+	ZTrust    string               `json:"ztrust,omitempty"`
+	Qos       string               `json:"qos,omitempty"`
+	Namespace string               `json:"namespace,omitempty"`
+	NextGroup map[string]NextGroup `json:"nextgroup,omitempty"`
 }
 
 func (n *Network) NewSpecifies() interface{} {
@@ -97,6 +98,11 @@ func (n *Network) Correct(sw *Switch) {
 		n.OpenVPN.Merge(obj)
 		n.OpenVPN.Correct(sw)
 	}
+
+	for key, value := range n.NextGroup {
+		value.Correct()
+		n.NextGroup[key] = value
+	}
 }
 
 func (n *Network) Dir(elem ...string) string {
@@ -131,6 +137,15 @@ func (n *Network) LoadOutput() {
 	}
 }
 
+func (n *Network) LoadNextGroup() {
+	file := n.Dir("nextgroup", n.Name+".json")
+	if err := libol.FileExist(file); err == nil {
+		if err := libol.UnmarshalLoad(&n.NextGroup, file); err != nil {
+			libol.Error("Network.LoadNextGroup... %n", err)
+		}
+	}
+}
+
 func (n *Network) Save() {
 	obj := *n
 	obj.Routes = nil
@@ -142,6 +157,7 @@ func (n *Network) Save() {
 	n.SaveRoute()
 	n.SaveLink()
 	n.SaveOutput()
+	n.SaveNextGroup()
 }
 
 func (n *Network) SaveRoute() {
@@ -171,6 +187,16 @@ func (n *Network) SaveOutput() {
 	}
 	if err := libol.MarshalSave(n.Outputs, file, true); err != nil {
 		libol.Error("Network.SaveOutput %s %s", n.Name, err)
+	}
+}
+
+func (n *Network) SaveNextGroup() {
+	file := n.Dir("nextgroup", n.Name+".json")
+	if n.NextGroup == nil {
+		return
+	}
+	if err := libol.MarshalSave(n.NextGroup, file, true); err != nil {
+		libol.Error("Network.SaveNextGroup %s %s", n.Name, err)
 	}
 }
 
