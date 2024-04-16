@@ -129,15 +129,14 @@ func (ru IPRule) Args() []string {
 	if ru.Output != "" {
 		args = append(args, "-o", ru.Output)
 	}
-	if ru.Comment != "" {
-		args = append(args, "-m", "comment", "--comment", ru.Comment)
-	}
-
 	if ru.Limit != "" {
 		args = append(args, "-m", "limit", "--limit", ru.Limit)
 	}
 	if ru.LimitBurst != "" {
 		args = append(args, "--limit-burst", ru.LimitBurst)
+	}
+	if ru.Comment != "" {
+		args = append(args, "-m", "comment", "--comment", ru.Comment)
 	}
 
 	if ru.Jump != "" {

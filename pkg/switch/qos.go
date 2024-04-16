@@ -42,7 +42,7 @@ func (qr *QosUser) InLimitRule() cn.IPRule {
 	return cn.IPRule{
 		Limit:      qr.InLimitStr(),
 		LimitBurst: "100",
-		Comment:    "Qos Limit In " + qr.Name,
+		Comment:    "\"Qos Limit In " + qr.Name + "\"",
 		Jump:       "ACCEPT",
 	}
 }
@@ -52,7 +52,7 @@ func (qr *QosUser) BuildChainIn(chain *cn.FireWallChain) {
 		qr.qosChainIn = cn.NewFireWallChain(qr.RuleName("in"), cn.TMangle, "")
 		qr.qosChainIn.AddRule(qr.InLimitRule())
 		qr.qosChainIn.AddRule(cn.IPRule{
-			Comment: "Qos Default Drop",
+			Comment: "\"Qos Default Drop\"",
 			Jump:    "DROP",
 		})
 		qr.qosChainIn.Install()
@@ -62,9 +62,9 @@ func (qr *QosUser) BuildChainIn(chain *cn.FireWallChain) {
 }
 
 func (qr *QosUser) BuildChainInJump(chain *cn.FireWallChain) {
-	if qr.Ip != "" {
+	if qr.Ip != "" && qr.InSpeed > 0 {
 		if err := chain.AddRuleX(cn.IPRule{
-			Comment: "Qos Jump",
+			Comment: "\"Qos Jump\"",
 			Jump:    qr.RuleName("in"),
 			Source:  qr.Ip,
 		}); err != nil {
@@ -74,12 +74,15 @@ func (qr *QosUser) BuildChainInJump(chain *cn.FireWallChain) {
 }
 
 func (qr *QosUser) ClearChainInJump(chain *cn.FireWallChain) {
-	if err := chain.DelRuleX(cn.IPRule{
-		Comment: "Qos Jump",
-		Jump:    qr.RuleName("in"),
-		Source:  qr.Ip,
-	}); err != nil {
-		qr.out.Warn("Qos.Del In Rule: %s", err)
+	if qr.Ip != "" && qr.InSpeed > 0 {
+		qr.out.Debug("ClearChainInJump: %s", qr.Ip)
+		if err := chain.DelRuleX(cn.IPRule{
+			Comment: "\"Qos Jump\"",
+			Jump:    qr.RuleName("in"),
+			Source:  qr.Ip,
+		}); err != nil {
+			qr.out.Warn("Qos.Del In Rule: %s", err)
+		}
 	}
 }
 
@@ -94,8 +97,12 @@ func (qr *QosUser) ReBuild(chainIn *cn.FireWallChain) {
 
 func (qr *QosUser) ClearChainIn(chain *cn.FireWallChain) {
 	if qr.qosChainIn != nil {
-		qr.ClearChainInJump(chain)
+		qr.out.Debug("qos chain ClearChainIn start")
+		if qr.Ip != "" {
+			qr.ClearChainInJump(chain)
+		}
 		qr.qosChainIn.Cancel()
+
 		qr.qosChainIn = nil
 	}
 }
@@ -105,23 +112,26 @@ func (qr *QosUser) Clear(chainIn *cn.FireWallChain) {
 }
 
 func (qr *QosUser) Update(chainIn *cn.FireWallChain, inSpeed float64, device string, ip string) {
-
-	changed := false
 	qr.Device = device
-	if qr.Ip != ip {
-		changed = true
-		qr.Ip = ip
-	}
 
-	if changed {
-		qr.ClearChainInJump(chainIn)
-		qr.BuildChainInJump(chainIn)
-	}
+	ipChanged := qr.Ip != ip
+	speedChanged := qr.InSpeed != inSpeed
 
-	if qr.InSpeed != inSpeed {
-		qr.InSpeed = inSpeed
+	if speedChanged {
+		// speed will rebuild jump & limit
 		qr.ClearChainIn(chainIn)
+		qr.InSpeed = inSpeed
+		qr.Ip = ip
 		qr.BuildChainIn(chainIn)
+		return
+	}
+
+	if ipChanged {
+		qr.ClearChainInJump(chainIn)
+		qr.Ip = ip
+		qr.BuildChainInJump(chainIn)
+	} else {
+		//ignored
 	}
 
 }
@@ -250,6 +260,8 @@ func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed float64) {
 }
 
 func (q *QosCtrl) ClientUpdate() {
+	q.lock.Lock()
+	defer q.lock.Unlock()
 	clients := make([]schema.VPNClient, 0, 1024)
 	for n := range cache.Network.List() {
 		if n == nil {
@@ -273,10 +285,8 @@ func (q *QosCtrl) ClientUpdate() {
 		if existClient != nil {
 			rule.Update(q.chainIn, rule.InSpeed, existClient.Device, existClient.Address)
 		} else {
-			if rule.Ip != "" {
-				rule.ClearChainInJump(q.chainIn)
-				rule.Ip = ""
-			}
+			rule.ClearChainInJump(q.chainIn)
+			rule.Ip = ""
 		}
 	}
 
