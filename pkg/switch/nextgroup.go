@@ -2,17 +2,18 @@ package cswitch
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/cache"
-	co "github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
-	nl "github.com/vishvananda/netlink"
 	"net"
 	"os/exec"
 	"regexp"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/luscis/openlan/pkg/cache"
+	co "github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/models"
+	nl "github.com/vishvananda/netlink"
 )
 
 type NextGroup struct {
@@ -405,7 +406,7 @@ func (pc *PingCheckStrategy) ping(ip string, count int) (float64, int, error) {
 
 	output, err := libol.Exec(pingPath, ip, "-c", strconv.Itoa(count))
 	if err != nil {
-		pc.out.Error("PingCheckStrategy.Ping: exec ping ip: %s, error: %s", ip, err)
+		pc.out.Debug("PingCheckStrategy.Ping: exec ping ip: %s, error: %s", ip, err)
 		return 0, 0, err
 	}
 
