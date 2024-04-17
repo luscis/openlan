@@ -249,7 +249,11 @@ func (c *NextGroupStrategyImpl) LoadRoute(nlr *nl.Route) {
 	c.routes = append(c.routes, nlr)
 	nlr.MultiPath = c.buildNexthopInfos()
 	nlr.Gw = nil
-	c.updateRoute(nlr)
+	if len(nlr.MultiPath) == 0 {
+		c.out.Debug("ignored if no nexthop")
+	} else {
+		c.updateRoute(nlr)
+	}
 }
 
 func (c *NextGroupStrategyImpl) UnloadRoute(rt *nl.Route) {
