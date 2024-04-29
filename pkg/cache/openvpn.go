@@ -43,7 +43,29 @@ func (o *vpnClient) GetDevice(name string) string {
 	}
 	return ""
 }
+func (o *vpnClient) scanClientStatus(reader io.Reader,
+	clients map[string]*schema.VPNClient) error {
+	if clients == nil {
+		return nil
+	}
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			columns := strings.SplitN(line, ",", 2)
+			for _, client := range clients {
+				if client.Name == columns[0] {
+					client.System = columns[1]
+				}
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
 
+	return nil
+}
 func (o *vpnClient) scanStatus(network string, reader io.Reader,
 	clients map[string]*schema.VPNClient) error {
 	readAt := "header"
@@ -131,6 +153,15 @@ func (o *vpnClient) statusFile(name string) []string {
 	return files
 }
 
+func (o *vpnClient) clientStatusFile(name string) []string {
+	files, err := filepath.Glob(o.Dir(name, "*ivplat.status"))
+	if err != nil {
+		libol.Warn("vpnClient.clientStatusFile %v", err)
+		return []string{}
+	}
+	return files
+}
+
 func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
 	clients := make(map[string]*schema.VPNClient, 32)
 	for _, file := range o.statusFile(network) {
@@ -140,6 +171,17 @@ func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
 			return nil
 		}
 		if err := o.scanStatus(network, reader, clients); err != nil {
+			libol.Warn("vpnClient.readStatus %v", err)
+		}
+		reader.Close()
+	}
+	for _, file := range o.clientStatusFile(network) {
+		reader, err := os.Open(file)
+		if err != nil {
+			libol.Debug("vpnClient.readStatus %v", err)
+			return nil
+		}
+		if err := o.scanClientStatus(reader, clients); err != nil {
 			libol.Warn("vpnClient.readStatus %v", err)
 		}
 		reader.Close()

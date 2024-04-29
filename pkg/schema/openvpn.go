@@ -14,4 +14,5 @@ type VPNClient struct {
 	State     string `json:"state"`
 	AliveTime int64  `json:"aliveTime"`
 	Address   string `json:"address"`
+	System    string `json:"system"`
 }
