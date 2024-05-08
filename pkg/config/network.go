@@ -2,6 +2,7 @@ package config
 
 import (
 	"net"
+	"os"
 	"path/filepath"
 
 	"github.com/luscis/openlan/pkg/libol"
@@ -160,11 +161,19 @@ func (n *Network) Save() {
 	n.SaveNextGroup()
 }
 
+func createFolders(file string) {
+	dir := filepath.Dir(file)
+	err := os.MkdirAll(dir, 0600)
+	if err != nil {
+		libol.Error("Network.createFolders: %v", err)
+	}
+}
 func (n *Network) SaveRoute() {
 	file := n.Dir("route", n.Name+".json")
 	if n.Routes == nil {
 		return
 	}
+	createFolders(file)
 	if err := libol.MarshalSave(n.Routes, file, true); err != nil {
 		libol.Error("Network.SaveRoute %s %s", n.Name, err)
 	}
@@ -175,6 +184,7 @@ func (n *Network) SaveLink() {
 	if n.Links == nil {
 		return
 	}
+	createFolders(file)
 	if err := libol.MarshalSave(n.Links, file, true); err != nil {
 		libol.Error("Network.SaveLink %s %s", n.Name, err)
 	}
@@ -185,6 +195,7 @@ func (n *Network) SaveOutput() {
 	if n.Outputs == nil {
 		return
 	}
+	createFolders(file)
 	if err := libol.MarshalSave(n.Outputs, file, true); err != nil {
 		libol.Error("Network.SaveOutput %s %s", n.Name, err)
 	}
@@ -195,6 +206,7 @@ func (n *Network) SaveNextGroup() {
 	if n.NextGroup == nil {
 		return
 	}
+	createFolders(file)
 	if err := libol.MarshalSave(n.NextGroup, file, true); err != nil {
 		libol.Error("Network.SaveNextGroup %s %s", n.Name, err)
 	}
