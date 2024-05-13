@@ -38,6 +38,10 @@ services:
       - /opt/powerdns/recursor.d:/etc/powerdns/recursor.d
     depends_on:
       - auth
+  admin:
+    image: powerdnsadmin/pda-legacy:latest
+    ports:
+      - "9191:80"
 
 networks:
   default:
