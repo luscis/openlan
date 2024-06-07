@@ -8,6 +8,7 @@ services:
     entrypoint: ["/var/openlan/script/ipsec.sh"]
     volumes:
       - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
+      - /opt/openlan/run/pluto:/run/pluto
   switch:
     restart: always
     image: "luscis/openlan:latest.x86_64"
@@ -17,6 +18,7 @@ services:
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
       - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
+      - /opt/openlan/run/pluto:/run/pluto
     depends_on:
       - ipsec
   proxy:

@@ -6,4 +6,5 @@ type Output struct {
 	Remote   string `json:"remote"`
 	DstPort  int    `json:"dstport,omitempty"`
 	Link     string `json:"link,omitempty"` // link name
+	Secret   string `json:"secret"`
 }

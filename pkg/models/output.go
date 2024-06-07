@@ -8,6 +8,7 @@ type Output struct {
 	Remote   string
 	Segment  int
 	Device   string
+	Secret   string
 	RxBytes  uint64
 	TxBytes  uint64
 	ErrPkt   uint64

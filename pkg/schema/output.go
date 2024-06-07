@@ -6,6 +6,7 @@ type Output struct {
 	Remote    string `json:"remote"`
 	DstPort   int    `json:"dstPort"`
 	Segment   int    `json:"segment"`
+	Secret    string `json:"secret"`
 	Device    string `json:"device"`
 	RxBytes   uint64 `json:"rxBytes"`
 	TxBytes   uint64 `json:"txBytes"`

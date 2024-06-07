@@ -26,6 +26,7 @@ func (o Output) Add(c *cli.Context) error {
 		Segment:  c.Int("segment"),
 		Protocol: c.String("protocol"),
 		DstPort:  c.Int("dstport"),
+		Secret:   c.String("secret"),
 	}
 	url := o.Url(c.String("url"), network)
 	clt := o.NewHttp(c.String("token"))
@@ -99,8 +100,7 @@ func (o Output) Commands(app *api.App) {
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "dstport"},
 					//&cli.StringFlag{Name: "connection"},
-					//&cli.StringFlag{Name: "secret"},
-					//&cli.StringFlag{Name: "auth"},
+					&cli.StringFlag{Name: "secret"},
 				},
 				Action: o.Add,
 			},

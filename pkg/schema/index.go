@@ -9,7 +9,6 @@ type Index struct {
 	OnLines   []OnLine    `json:"online"`
 	Network   []Network   `json:"network"`
 	Clients   []VPNClient `json:"clients"`
-	States    []EspState  `json:"states"`
 	Outputs   []Output    `json:"output"`
 }
 

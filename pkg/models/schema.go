@@ -130,6 +130,7 @@ func NewOutputSchema(o *Output) schema.Output {
 		Device:    o.Device,
 		RxBytes:   o.RxBytes,
 		TxBytes:   o.TxBytes,
+		Secret:    o.Secret,
 		AliveTime: o.UpTime(),
 	}
 }

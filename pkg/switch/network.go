@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/luscis/openlan/pkg/api"
@@ -30,30 +31,34 @@ func NewNetworker(c *co.Network) api.Networker {
 	return obj
 }
 
+func toLinkName(protocol, remote string, segment int) string {
+	if protocol == "gre" {
+		return fmt.Sprintf("%s%d", "gre", segment)
+	}
+	if protocol == "vxlan" {
+		return fmt.Sprintf("%s%d", "vxlan", segment)
+	}
+	if segment > 0 {
+		return fmt.Sprintf("%s.%d", remote, segment)
+	}
+	return remote
+}
+
 type LinuxPort struct {
-	cfg  co.Output
-	link string
+	output co.Output
+	link   string
 }
 
 func (l *LinuxPort) String() string {
-	return fmt.Sprintf("%s:%s:%d", l.cfg.Protocol, l.cfg.Remote, l.cfg.Segment)
+	return fmt.Sprintf("%s:%s:%d", l.output.Protocol, l.output.Remote, l.output.Segment)
 }
 
 func (l *LinuxPort) GenName() {
 	if l.link != "" {
 		return
 	}
-
-	cfg := l.cfg
-	if cfg.Protocol == "gre" {
-		l.link = fmt.Sprintf("%s%d", "gre", cfg.Segment)
-	} else if cfg.Protocol == "vxlan" {
-		l.link = fmt.Sprintf("%s%d", "vxlan", cfg.Segment)
-	} else if cfg.Segment > 0 {
-		l.link = fmt.Sprintf("%s.%d", cfg.Remote, cfg.Segment)
-	} else {
-		l.link = cfg.Remote
-	}
+	out := l.output
+	l.link = toLinkName(out.Protocol, out.Remote, out.Segment)
 }
 
 type WorkerImpl struct {
@@ -179,7 +184,13 @@ func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 }
 
 func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
-	cfg := port.cfg
+	if port.output.Secret != "" {
+		if err := w.addSecConn(port); err != nil {
+			w.out.Error("WorkerImpl.addOutput %s", err)
+		}
+	}
+
+	cfg := port.output
 	out := &models.Output{
 		Network:  w.cfg.Name,
 		NewTime:  time.Now().Unix(),
@@ -189,7 +200,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 	}
 
 	mtu := 0
-	port.GenName()
 	if cfg.Protocol == "gre" {
 		mtu = 1450
 		link := &nl.Gretap{
@@ -379,8 +389,9 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	for _, output := range cfg.Outputs {
 		port := &LinuxPort{
-			cfg: output,
+			output: output,
 		}
+		port.GenName()
 		w.addOutput(cfg.Bridge.Name, port)
 		w.outputs = append(w.outputs, port)
 	}
@@ -458,7 +469,13 @@ func (w *WorkerImpl) DelPhysical(bridge string, output string) {
 }
 
 func (w *WorkerImpl) delOutput(bridge string, port *LinuxPort) {
-	cfg := port.cfg
+	if port.output.Secret != "" {
+		if err := w.delSecConn(port); err != nil {
+			w.out.Error("WorkerImpl.AddOutput %s", err)
+		}
+	}
+
+	cfg := port.output
 	w.out.Info("WorkerImpl.delOutput %s %s", port.link, port.String())
 
 	cache.Output.Del(port.link)
@@ -484,7 +501,7 @@ func (w *WorkerImpl) delOutput(bridge string, port *LinuxPort) {
 			w.out.Error("WorkerImpl.LinkDel %s %s", link.Name, err)
 			return
 		}
-	} else if port.cfg.Segment > 0 {
+	} else if port.output.Segment > 0 {
 		link := &nl.Vlan{
 			LinkAttrs: nl.LinkAttrs{
 				Name: port.link,
@@ -1069,43 +1086,161 @@ func (w *WorkerImpl) ACLer() api.ACLer {
 	return w.acl
 }
 
+const (
+	vxlanConn = `
+conn vxlan{{ .Segment }}-in
+    keyingtries=%forever
+    auto=route
+    ike=aes_gcm256-sha2_256
+    esp=aes_gcm256
+    ikev2=insist
+    type=transport
+    left=%defaultroute
+    right={{ .Remote }}
+    authby=secret
+    leftprotoport=udp/8472
+    rightprotoport=udp
+
+conn vxlan{{ .Segment }}-out
+    keyingtries=%forever
+    auto=route
+    ike=aes_gcm256-sha2_256
+    esp=aes_gcm256
+    ikev2=insist
+    type=transport
+    left=%defaultroute
+    right={{ .Remote }}
+    authby=secret
+    leftprotoport=udp
+    rightprotoport=udp/8472
+`
+	greConn = `
+conn gre{{ .Segment }}
+    keyingtries=%forever
+    auto=route
+    ike=aes_gcm256-sha2_256
+    esp=aes_gcm256
+    ikev2=insist
+    type=transport
+    left=%defaultroute
+    right={{ .Remote }}
+    authby=secret
+    leftprotoport=gre
+    rightprotoport=gre
+`
+	secretConn = `
+%any {{ .Remote }} : PSK "{{ .Secret }}"
+`
+)
+
+func (w *WorkerImpl) addSecConn(port *LinuxPort) error {
+	connTmpl := ""
+	secTmpl := ""
+
+	name := port.link
+	data := port.output
+	if data.Protocol == "vxlan" {
+		connTmpl = vxlanConn
+		secTmpl = secretConn
+	} else if data.Protocol == "gre" {
+		connTmpl = vxlanConn
+		secTmpl = secretConn
+	}
+
+	if secTmpl != "" {
+		file := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)
+		out, err := libol.CreateFile(file)
+		if err != nil || out == nil {
+			return err
+		}
+		defer out.Close()
+		if tmpl, err := template.New("main").Parse(secTmpl); err != nil {
+			return err
+		} else {
+			if err := tmpl.Execute(out, data); err != nil {
+				return err
+			}
+		}
+		libol.Exec("ipsec", "auto", "--rereadsecrets")
+	}
+	if connTmpl != "" {
+		file := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
+		out, err := libol.CreateFile(file)
+		if err != nil || out == nil {
+			return err
+		}
+		defer out.Close()
+		if tmpl, err := template.New("main").Parse(connTmpl); err != nil {
+			return err
+		} else {
+			if err := tmpl.Execute(out, data); err != nil {
+				return err
+			}
+		}
+		if data.Protocol == "vxlan" {
+			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-in")
+			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-out")
+		} else if data.Protocol == "gre" {
+			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name)
+		}
+	}
+
+	return nil
+}
+
 func (w *WorkerImpl) AddOutput(data schema.Output) {
 	output := co.Output{
 		Segment:  data.Segment,
 		Protocol: data.Protocol,
 		Remote:   data.Remote,
 		DstPort:  data.DstPort,
+		Secret:   data.Secret,
 	}
 	w.cfg.Outputs = append(w.cfg.Outputs, output)
 	port := &LinuxPort{
-		cfg: output,
+		output: output,
 	}
+	port.GenName()
 	w.addOutput(w.cfg.Bridge.Name, port)
 	w.outputs = append(w.outputs, port)
 }
 
+// ipsec auto --delete --asynchronous tunx-in-1
+func (w *WorkerImpl) delSecConn(port *LinuxPort) error {
+	data := port.output
+	name := port.link
+
+	if data.Protocol == "vxlan" {
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-in")
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-out")
+	} else if data.Protocol == "gre" {
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name)
+	}
+	return nil
+}
+
 func (w *WorkerImpl) DelOutput(device string) {
-	var linuxport *LinuxPort
+	var port *LinuxPort
 	for _, v := range w.outputs {
 		if v.link == device {
-			linuxport = v
+			port = v
 			break
 		}
 	}
-	if linuxport == nil {
+	if port == nil {
 		return
 	}
 	Outputs := make([]co.Output, 0, len(w.cfg.Outputs))
 	for _, v := range w.cfg.Outputs {
-		if v != linuxport.cfg {
+		if v != port.output {
 			Outputs = append(Outputs, v)
 		}
 	}
 	w.cfg.Outputs = Outputs
-	w.delOutput(w.cfg.Bridge.Name, linuxport)
+	w.delOutput(w.cfg.Bridge.Name, port)
 	outputs := make([]*LinuxPort, 0, len(w.outputs))
 	for _, v := range w.outputs {
-		if v != linuxport {
+		if v != port {
 			outputs = append(outputs, v)
 		}
 	}
