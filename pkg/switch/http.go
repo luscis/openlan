@@ -302,18 +302,6 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 			return body.Clients[i].Name < body.Clients[j].Name
 		})
 	}
-	// display esp state
-	for s := range cache.EspState.List("") {
-		if s == nil {
-			break
-		}
-		body.States = append(body.States, models.NewEspStateSchema(s))
-	}
-	sort.SliceStable(body.States, func(i, j int) bool {
-		ii := body.States[i]
-		jj := body.States[j]
-		return ii.Spi > jj.Spi
-	})
 
 	// display esp state
 	for s := range cache.Output.List("") {

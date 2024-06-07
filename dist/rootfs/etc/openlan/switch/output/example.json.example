@@ -13,5 +13,11 @@
     {
         "segment": 23,
         "remote": "enp2s2"
+    },
+    {
+        "segment": 44,
+        "remote": "3.3.3.6",
+        "protocol": "vxlan",
+        "secret": "swordfish"
     }
 ]

@@ -70,7 +70,6 @@ type Switch struct {
 	AddrPool  string              `json:"pool,omitempty"`
 	ConfDir   string              `json:"-"`
 	TokenFile string              `json:"-"`
-	L2TP      *L2TP               `json:"l2tp"`
 }
 
 func NewSwitch() *Switch {

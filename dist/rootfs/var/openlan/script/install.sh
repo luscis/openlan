@@ -28,10 +28,10 @@ function requires() {
   echo "Install dependents ..."
   if [ "$OS"x == "centos"x ]; then
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
-    yum install -y openvpn openvswitch dnsmasq bridge-utils ipset
+    yum install -y openvpn dnsmasq bridge-utils ipset libreswan procps
   elif [ "$OS"x == "ubuntu"x ]; then
     apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
-    apt-get install -y openvpn openvswitch-switch dnsmasq bridge-utils ipset
+    apt-get install -y openvpn dnsmasq bridge-utils ipset libreswan procps
   else
     echo "We didn't find any packet tool: $OS"
   fi
@@ -42,6 +42,7 @@ function install() {
   local source=$(find $tmp -maxdepth 1 -name 'openlan-*')
   cd $source && {
     /usr/bin/env \cp -rf ./{etc,usr,var} /
+    chmod +x /var/openlan/script/*.sh
     /usr/bin/env find ./ -type f > /usr/share/openlan.db
   }
 }
@@ -68,6 +69,8 @@ function post() {
     cp -rf /var/openlan/cert/ca.crt /usr/local/share/ca-certificates/OpenLAN_CA.crt
     update-ca-certificates
   fi
+  ## Initialize NSS database
+  certutil -N -d sql:/var/lib/ipsec/nss --empty-password
 }
 
 function finish() {

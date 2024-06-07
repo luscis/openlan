@@ -31,12 +31,8 @@ type Network struct {
 
 func (n *Network) NewSpecifies() interface{} {
 	switch n.Provider {
-	case "esp":
-		n.Specifies = &EspSpecifies{}
 	case "vxlan":
 		n.Specifies = &VxLANSpecifies{}
-	case "fabric":
-		n.Specifies = &FabricSpecifies{}
 	case "router":
 		n.Specifies = &RouterSpecifies{}
 	default:
@@ -53,25 +49,6 @@ func (n *Network) Correct(sw *Switch) {
 	br.Network = n.Name
 	br.Correct()
 	switch n.Provider {
-	case "esp":
-		spec := n.Specifies
-		if obj, ok := spec.(*EspSpecifies); ok {
-			obj.Correct()
-			obj.Name = n.Name
-		}
-	case "fabric":
-		// 28 [udp] - 8 [esp] -
-		// 28 [udp] - 8 [vxlan] -
-		// 14 [ethernet] - tcp [40] - 1332 [mss] -
-		// 42 [padding] ~= variable 30-45
-		if br.Mss == 0 {
-			br.Mss = 1332
-		}
-		spec := n.Specifies
-		if obj, ok := spec.(*FabricSpecifies); ok {
-			obj.Correct()
-			obj.Name = n.Name
-		}
 	case "router":
 		spec := n.Specifies
 		if obj, ok := spec.(*RouterSpecifies); ok {
@@ -201,11 +178,4 @@ func (n *Network) SaveNextGroup() {
 }
 
 func (n *Network) Reload() {
-	switch n.Provider {
-	case "esp":
-		spec := n.Specifies
-		if obj, ok := spec.(*EspSpecifies); ok {
-			obj.Correct()
-		}
-	}
 }

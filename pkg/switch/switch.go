@@ -3,8 +3,6 @@ package cswitch
 import (
 	"encoding/json"
 	"os"
-	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -102,8 +100,6 @@ type Switch struct {
 	uuid    string
 	newTime int64
 	out     *libol.SubLogger
-	confd   *ConfD
-	l2tp    *L2TP
 }
 
 func NewSwitch(c *co.Switch) *Switch {
@@ -117,7 +113,6 @@ func NewSwitch(c *co.Switch) *Switch {
 		hooks:   make([]Hook, 0, 64),
 		out:     libol.NewSubLogger(c.Alias),
 	}
-	v.confd = NewConfd(v)
 	return v
 }
 
@@ -215,8 +210,8 @@ func (v *Switch) GetPort(listen string) string {
 
 func (v *Switch) openPorts() {
 	port := v.GetPort(v.cfg.Listen)
-	UdpPorts := []string{"4500", "4500", "8472", "4789", port}
-	TcpPorts := []string{"7471", port}
+	UdpPorts := []string{"500", "4500", "8472", "4789", port}
+	TcpPorts := []string{"10000", port}
 	if v.cfg.Http != nil {
 		TcpPorts = append(TcpPorts, v.GetPort(v.cfg.Http.Listen))
 	}
@@ -287,12 +282,6 @@ func (v *Switch) Initialize() {
 			Crt: cert.CrtFile,
 		})
 	}
-	// Enable L2TP
-	if v.cfg.L2TP != nil {
-		v.l2tp = NewL2TP(v.cfg.L2TP)
-	}
-	// Start confd monitor
-	v.confd.Initialize()
 }
 
 func (v *Switch) onFrame(client libol.SocketClient, frame *libol.FrameMessage) error {
@@ -394,18 +383,6 @@ func (v *Switch) OnClose(client libol.SocketClient) error {
 	return nil
 }
 
-func (v *Switch) openUdp() {
-	args := []string{
-		"-port", strconv.Itoa(co.EspLocalUdp),
-		"-log:file", "/var/openlan/openudp.log",
-	}
-	libol.Info("%s %v", UDPBin, args)
-	cmd := exec.Command(UDPBin, args...)
-	if err := cmd.Run(); err != nil {
-		libol.Error("Switch.OpenUdp %s", err)
-	}
-}
-
 func (v *Switch) Start() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
@@ -429,11 +406,6 @@ func (v *Switch) Start() {
 	if v.http != nil {
 		libol.Go(v.http.Start)
 	}
-	libol.Go(v.confd.Start)
-	if v.l2tp != nil {
-		libol.Go(v.l2tp.Start)
-	}
-	libol.Go(v.openUdp)
 }
 
 func (v *Switch) Stop() {
@@ -442,10 +414,6 @@ func (v *Switch) Stop() {
 
 	v.out.Info("Switch.Stop")
 
-	if v.l2tp != nil {
-		v.l2tp.Stop()
-	}
-	v.confd.Stop()
 	if v.http != nil {
 		v.http.Shutdown()
 	}

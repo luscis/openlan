@@ -19,12 +19,8 @@ import (
 func NewNetworker(c *co.Network) api.Networker {
 	var obj api.Networker
 	switch c.Provider {
-	case "esp":
-		obj = NewESPWorker(c)
 	case "vxlan":
 		obj = NewVxLANWorker(c)
-	case "fabric":
-		obj = NewFabricWorker(c)
 	case "router":
 		obj = NewRouterWorker(c)
 	default:

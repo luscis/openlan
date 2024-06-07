@@ -101,7 +101,6 @@ docker-compose: ## create a compose files
 	echo "$ docker-compose up -d"
 
 linux: env ## build linux binary
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openudp ./cmd/openudp
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
@@ -128,8 +127,8 @@ install: env linux ## install packages
 	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LIN_DIR)/var/openlan/cert
 	@cp -rf $(SD)/pkg/public $(LIN_DIR)/var/openlan
 	@mkdir -p $(LIN_DIR)/usr/bin
-	@cp -rf $(BD)/{openudp,openlan} $(LIN_DIR)/usr/bin
-	@cp -rf $(BD)/{openlan-point,openlan-proxy,openlan-switch} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan,openlan-switch} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan-point,openlan-proxy} $(LIN_DIR)/usr/bin
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows

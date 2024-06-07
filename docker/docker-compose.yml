@@ -1,5 +1,13 @@
 version: "2.3"
 services:
+  ipsec:
+    restart: always
+    image: "luscis/openlan:latest.x86_64"
+    privileged: true
+    network_mode: host
+    entrypoint: ["/var/openlan/script/ipsec.sh"]
+    volumes:
+      - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
   switch:
     restart: always
     image: "luscis/openlan:latest.x86_64"
@@ -8,6 +16,9 @@ services:
     entrypoint: ["/var/openlan/script/switch.sh", "start"]
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
+      - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
+    depends_on:
+      - ipsec
   proxy:
     restart: always
     image: "luscis/openlan:latest.x86_64"
@@ -17,3 +28,7 @@ services:
       - /opt/openlan/etc/openlan:/etc/openlan
     depends_on:
       - switch
+  exporter:
+    restart: always
+    image: "prom/node-exporter:v1.7.0"
+    network_mode: host
