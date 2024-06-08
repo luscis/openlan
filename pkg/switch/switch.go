@@ -211,7 +211,7 @@ func (v *Switch) GetPort(listen string) string {
 func (v *Switch) openPorts() {
 	port := v.GetPort(v.cfg.Listen)
 	UdpPorts := []string{"500", "4500", "8472", "4789", port}
-	TcpPorts := []string{"10000", port}
+	TcpPorts := []string{port}
 	if v.cfg.Http != nil {
 		TcpPorts = append(TcpPorts, v.GetPort(v.cfg.Http.Listen))
 	}

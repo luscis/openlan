@@ -12,9 +12,9 @@ fi
 archive=$(grep -a -n "__ARCHIVE_BELOW__:$" $installer | cut -f1 -d:)
 
 OS="linux"
-if type yum > /dev/null; then
+if type yum 2> /dev/null; then
   OS="centos"
-elif type apt > /dev/null; then
+elif type apt 2> /dev/null; then
   OS="ubuntu"
 fi
 
@@ -40,37 +40,42 @@ function requires() {
 function install() {
   echo "Installing files ..."
   local source=$(find $tmp -maxdepth 1 -name 'openlan-*')
-  cd $source && {
-    /usr/bin/env \cp -rf ./{etc,usr,var} /
-    chmod +x /var/openlan/script/*.sh
-    /usr/bin/env find ./ -type f > /usr/share/openlan.db
-  }
+  pushd $source
+  /usr/bin/env \cp -rf ./{etc,usr,var} /
+  chmod +x /var/openlan/script/*.sh
+  /usr/bin/env find ./ -type f > /usr/share/openlan.db
+  popd
 }
 
 function post() {
-  echo "Initlizing ..."
+  echo "Initializing ..."
   if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
     sysctl -p /etc/sysctl.d/90-openlan.conf
   fi
-  [ -e "/etc/openlan/switch/switch.json" ] || {
-    cp -rf /etc/openlan/switch/switch.json.example /etc/openlan/switch/switch.json
-  }
-  [ -e "/var/openlan/openvpn/dh.pem" ] || {
-    openssl dhparam -out /var/openlan/openvpn/dh.pem 2048
-  }
-  [ -e "/var/openlan/openvpn/ta.key" ] || {
-    openvpn --genkey --secret /var/openlan/openvpn/ta.key
-  }
 
   if [ "$OS"x == "centos"x ]; then
+    ## Prepare openvpn.
+    [ -e "/var/openlan/openvpn/dh.pem" ] || {
+      openssl dhparam -out /var/openlan/openvpn/dh.pem 1024
+    }
+    [ -e "/var/openlan/openvpn/ta.key" ] || {
+      openvpn --genkey --secret /var/openlan/openvpn/ta.key
+    }
+    ## Install CA.
     cp -rf /var/openlan/cert/ca.crt /etc/pki/ca-trust/source/anchors/OpenLAN_CA.crt
     update-ca-trust
   elif [ "$OS"x == "ubuntu"x ]; then
+    ## Prepare openvpn.
+    [ -e "/var/openlan/openvpn/dh.pem" ] || {
+      openssl dhparam -out /var/openlan/openvpn/dh.pem 2048
+    }
+    [ -e "/var/openlan/openvpn/ta.key" ] || {
+      openvpn --genkey > /var/openlan/openvpn/ta.key
+    }
+    ## Install CA.
     cp -rf /var/openlan/cert/ca.crt /usr/local/share/ca-certificates/OpenLAN_CA.crt
     update-ca-certificates
   fi
-  ## Initialize NSS database
-  certutil -N -d sql:/var/lib/ipsec/nss --empty-password
 }
 
 function finish() {

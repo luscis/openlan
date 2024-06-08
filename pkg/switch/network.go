@@ -322,7 +322,6 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		w.out.Info("WorkerImpl.loadRoute: %v success", rt_c.String())
 		return nil
 	})
-
 }
 
 func (w *WorkerImpl) loadRoutes() {
@@ -1014,16 +1013,13 @@ func (w *WorkerImpl) findRoute(rt co.PrefixRoute) (co.PrefixRoute, int) {
 }
 
 func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
-
 	rt := w.correctRoute(route)
-
 	if _, index := w.findRoute(rt); index != -1 {
 		w.out.Warn("WorkerImpl.AddRoute: route exist")
 		return nil
 	}
 
 	w.cfg.Routes = append(w.cfg.Routes, rt)
-
 	w.out.Info("WorkerImpl.AddRoute: %v", rt)
 
 	w.addIpSet(rt)
@@ -1039,9 +1035,7 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 }
 
 func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
-
 	correctRt := w.correctRoute(route)
-
 	delRt, index := w.findRoute(correctRt)
 	if index == -1 {
 		w.out.Warn("WorkerImpl.DelRoute: route not found")
@@ -1049,7 +1043,6 @@ func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 	}
 
 	w.cfg.Routes = append(w.cfg.Routes[:index], w.cfg.Routes[index+1:]...)
-
 	w.delIpSet(delRt)
 	if inet, err := libol.ParseNet(delRt.Prefix); err == nil {
 		w.delVPNSet(inet.String())
@@ -1091,7 +1084,7 @@ const (
 	vxlanConn = `
 conn vxlan{{ .Segment }}-in
     keyingtries=%forever
-    auto=route
+    auto=start
     ike=aes_gcm256-sha2_256
     esp=aes_gcm256
     ikev2=insist
@@ -1104,7 +1097,7 @@ conn vxlan{{ .Segment }}-in
 
 conn vxlan{{ .Segment }}-out
     keyingtries=%forever
-    auto=route
+    auto=start
     ike=aes_gcm256-sha2_256
     esp=aes_gcm256
     ikev2=insist
@@ -1118,7 +1111,7 @@ conn vxlan{{ .Segment }}-out
 	greConn = `
 conn gre{{ .Segment }}
     keyingtries=%forever
-    auto=route
+    auto=start
     ike=aes_gcm256-sha2_256
     esp=aes_gcm256
     ikev2=insist
@@ -1133,6 +1126,35 @@ conn gre{{ .Segment }}
 %any {{ .Remote }} : PSK "{{ .Secret }}"
 `
 )
+
+func (w *WorkerImpl) saveSec(name, tmpl string, data interface{}) error {
+	file := fmt.Sprintf("/etc/ipsec.d/%s", name)
+	out, err := libol.CreateFile(file)
+	if err != nil || out == nil {
+		return err
+	}
+	defer out.Close()
+	if obj, err := template.New("main").Parse(tmpl); err != nil {
+		return err
+	} else {
+		if err := obj.Execute(out, data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *WorkerImpl) startSecConn(name string) {
+	promise := libol.NewPromise()
+	promise.Go(func() error {
+		if out, err := libol.Exec("ipsec", "auto", "--start", "--asynchronous", name); err != nil {
+			w.out.Warn("WorkerImpl.startSecConn: %v %s", out, err)
+			return err
+		}
+		w.out.Info("WorkerImpl.startSecConn: %v success", name)
+		return nil
+	})
+}
 
 func (w *WorkerImpl) addSecConn(port *LinuxPort) error {
 	connTmpl := ""
@@ -1149,40 +1171,22 @@ func (w *WorkerImpl) addSecConn(port *LinuxPort) error {
 	}
 
 	if secTmpl != "" {
-		file := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)
-		out, err := libol.CreateFile(file)
-		if err != nil || out == nil {
+		if err := w.saveSec(name+".secrets", secTmpl, data); err != nil {
+			w.out.Error("WorkerImpl.addSecConn %s", err)
 			return err
-		}
-		defer out.Close()
-		if tmpl, err := template.New("main").Parse(secTmpl); err != nil {
-			return err
-		} else {
-			if err := tmpl.Execute(out, data); err != nil {
-				return err
-			}
 		}
 		libol.Exec("ipsec", "auto", "--rereadsecrets")
 	}
 	if connTmpl != "" {
-		file := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
-		out, err := libol.CreateFile(file)
-		if err != nil || out == nil {
+		if err := w.saveSec(name+".conf", connTmpl, data); err != nil {
+			w.out.Error("WorkerImpl.addSecConn %s", err)
 			return err
-		}
-		defer out.Close()
-		if tmpl, err := template.New("main").Parse(connTmpl); err != nil {
-			return err
-		} else {
-			if err := tmpl.Execute(out, data); err != nil {
-				return err
-			}
 		}
 		if data.Protocol == "vxlan" {
-			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-in")
-			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-out")
+			w.startSecConn(name + "-in")
+			w.startSecConn(name + "-out")
 		} else if data.Protocol == "gre" {
-			libol.Exec("ipsec", "auto", "--start", "--asynchronous", name)
+			w.startSecConn(name)
 		}
 	}
 
