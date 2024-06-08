@@ -24,4 +24,12 @@ cat >> /etc/openlan/switch/switch.json << EOF
 EOF
 fi
 
+# wait ipsec service
+while true; do
+  if ipsec status ; then
+      break
+  fi
+  sleep 5
+done
+
 exec /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20

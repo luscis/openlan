@@ -3,6 +3,7 @@ package cswitch
 import (
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -191,14 +192,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 	}
 
 	cfg := port.output
-	out := &models.Output{
-		Network:  w.cfg.Name,
-		NewTime:  time.Now().Unix(),
-		Protocol: cfg.Protocol,
-		Remote:   cfg.Remote,
-		Segment:  cfg.Segment,
-	}
-
 	mtu := 0
 	if cfg.Protocol == "gre" {
 		mtu = 1450
@@ -270,7 +263,15 @@ func (w *WorkerImpl) addOutput(bridge string, port *LinuxPort) {
 		}
 	}
 
-	out.Device = port.link
+	out := &models.Output{
+		Network:  w.cfg.Name,
+		NewTime:  time.Now().Unix(),
+		Protocol: cfg.Protocol,
+		Remote:   cfg.Remote,
+		Segment:  cfg.Segment,
+		Secret:   cfg.Secret,
+		Device:   port.link,
+	}
 	cache.Output.Add(port.link, out)
 
 	w.out.Info("WorkerImpl.addOutput %s %s", port.link, port.String())
@@ -1205,7 +1206,6 @@ func (w *WorkerImpl) AddOutput(data schema.Output) {
 	w.outputs = append(w.outputs, port)
 }
 
-// ipsec auto --delete --asynchronous tunx-in-1
 func (w *WorkerImpl) delSecConn(port *LinuxPort) error {
 	data := port.output
 	name := port.link
@@ -1215,6 +1215,20 @@ func (w *WorkerImpl) delSecConn(port *LinuxPort) error {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-out")
 	} else if data.Protocol == "gre" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name)
+	}
+
+	cfile := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
+	sfile := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)
+
+	if err := libol.FileExist(cfile); err == nil {
+		if err := os.Remove(cfile); err != nil {
+			w.out.Warn("WorkerImpl.delSecConn %s", err)
+		}
+	}
+	if err := libol.FileExist(sfile); err == nil {
+		if err := os.Remove(sfile); err != nil {
+			w.out.Warn("WorkerImpl.delSecConn %s", err)
+		}
 	}
 	return nil
 }
