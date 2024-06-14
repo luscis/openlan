@@ -14,3 +14,7 @@ set -ex
 
 ## Start pluto
 /usr/libexec/ipsec/pluto --leak-detective --config /etc/ipsec.conf --nofork
+
+## Clear xfrm
+/sbin/ip xfrm policy flush
+/sbin/ip xfrm state flush

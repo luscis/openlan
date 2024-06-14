@@ -31,8 +31,8 @@ type Network struct {
 
 func (n *Network) NewSpecifies() interface{} {
 	switch n.Provider {
-	case "vxlan":
-		n.Specifies = &VxLANSpecifies{}
+	case "ipsec":
+		n.Specifies = &IPSecSpecifies{}
 	case "router":
 		n.Specifies = &RouterSpecifies{}
 	default:
@@ -52,6 +52,12 @@ func (n *Network) Correct(sw *Switch) {
 	case "router":
 		spec := n.Specifies
 		if obj, ok := spec.(*RouterSpecifies); ok {
+			obj.Correct()
+			obj.Name = n.Name
+		}
+	case "ipsec":
+		spec := n.Specifies
+		if obj, ok := spec.(*IPSecSpecifies); ok {
 			obj.Correct()
 			obj.Name = n.Name
 		}
