@@ -23,52 +23,6 @@ func NewIPSecWorker(c *co.Network) *IPSecWorker {
 	return w
 }
 
-// conn vxlan11252
-//     keyexchange=ike
-//     ikev2=no
-//     type=transport
-//     left=%defaultroute
-//     right=45.135.117.235
-//     rightikeport=4501
-//     authby=secret
-
-// conn vxlan11252-c2
-//     auto=start
-//     also=vxlan11252
-//     leftid=@c2.vxlan11252.com
-//     leftprotoport=udp/8472
-//     rightprotoport=udp
-
-// conn vxlan11252-c1
-//     auto=start
-//     also=vxlan11252
-//     leftid=@c1.vxlan11252.com
-//     leftprotoport=udp
-//     rightprotoport=udp/8472
-
-// conn vxlan11252
-//     keyexchange=ike
-//     ikev2=no
-//     type=transport
-//     left=%defaultroute
-//     leftikeport=4501
-//     right=218.94.118.90
-//     authby=secret
-
-// conn vxlan11252-c1
-//     auto=start
-//     also=vxlan11252
-//     rightid=@c1.vxlan11252.com
-//     leftprotoport=udp/8472
-//     rightprotoport=udp
-
-// conn vxlan11252-c2
-//     auto=start
-//     also=vxlan11252
-//     rightid=@c2.vxlan11252.com
-//     leftprotoport=udp
-//     rightprotoport=udp/8472
-
 const (
 	vxlanTmpl = `
 conn {{ .Name }}
@@ -92,20 +46,20 @@ conn {{ .Name }}
     authby=secret
 
 conn {{ .Name }}-c1
-    auto=start
+    auto=add
     also={{ .Name }}
     leftprotoport=udp/8472
     rightprotoport=udp
 
 conn {{ .Name }}-c2
-    auto=start
-    also={{ .Remote }}-{{ .Protocol }}
+    auto=add
+    also={{ .Name }}
     leftprotoport=udp
     rightprotoport=udp/8472
 `
 	greTmpl = `
 conn {{ .Name }}-c1
-    auto=start
+    auto=add
     ikev2=insist
     type=transport
     left={{ .Left }}
@@ -115,7 +69,7 @@ conn {{ .Name }}-c1
     rightprotoport=gre
 `
 	secretTmpl = `
-%any {{ .Remote }} : PSK "{{ .Secret }}"
+%any {{ .Right }} : PSK "{{ .Secret }}"
 `
 )
 
@@ -156,7 +110,7 @@ func (w *IPSecWorker) AddTunnel(tunnel *co.IPSecTunnel) error {
 	connTmpl := ""
 	secTmpl := ""
 
-	name := fmt.Sprintf("%s-%s", tunnel.Right, tunnel.Transport)
+	name := tunnel.Name
 	if tunnel.Transport == "vxlan" {
 		connTmpl = vxlanTmpl
 		secTmpl = secretTmpl
@@ -191,11 +145,13 @@ func (w *IPSecWorker) AddTunnel(tunnel *co.IPSecTunnel) error {
 func (w *IPSecWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.out.Info("IPSecWorker.Start")
+	for _, tunnel := range w.spec.Tunnels {
+		w.AddTunnel(tunnel)
+	}
 }
 
 func (w *IPSecWorker) RemoveTunnel(tunnel *co.IPSecTunnel) error {
-
-	name := fmt.Sprintf("%s-%s", tunnel.Right, tunnel.Transport)
+	name := tunnel.Name
 	if tunnel.Transport == "vxlan" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c2")
@@ -221,6 +177,9 @@ func (w *IPSecWorker) RemoveTunnel(tunnel *co.IPSecTunnel) error {
 
 func (w *IPSecWorker) Stop() {
 	w.out.Info("IPSecWorker.Stop")
+	for _, tunnel := range w.spec.Tunnels {
+		w.RemoveTunnel(tunnel)
+	}
 }
 
 func (w *IPSecWorker) Reload(v api.Switcher) {

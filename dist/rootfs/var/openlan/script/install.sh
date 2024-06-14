@@ -15,7 +15,7 @@ OS="linux"
 if type yum 2> /dev/null; then
   OS="centos"
 elif type apt 2> /dev/null; then
-  OS="ubuntu"
+  OS="debian"
 fi
 
 function download() {
@@ -29,9 +29,11 @@ function requires() {
   if [ "$OS"x == "centos"x ]; then
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
     yum install -y openvpn dnsmasq bridge-utils ipset libreswan procps
-  elif [ "$OS"x == "ubuntu"x ]; then
-    apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
-    apt-get install -y openvpn dnsmasq bridge-utils ipset libreswan procps
+  elif [ "$OS"x == "debian"x ]; then
+    apt install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
+    apt install -y openvpn dnsmasq bridge-utils ipset procps wget
+    wget -O /tmp/libreswan_4.10-1_amd64.deb https://github.com/luscis/packages/raw/main/debian/bullseye/libreswan_4.10-1_amd64.deb
+    apt install -y /tmp/libreswan_4.10-1_amd64.deb
   else
     echo "We didn't find any packet tool: $OS"
   fi
@@ -64,7 +66,7 @@ function post() {
     ## Install CA.
     cp -rf /var/openlan/cert/ca.crt /etc/pki/ca-trust/source/anchors/OpenLAN_CA.crt
     update-ca-trust
-  elif [ "$OS"x == "ubuntu"x ]; then
+  elif [ "$OS"x == "debian"x ]; then
     ## Prepare openvpn.
     [ -e "/var/openlan/openvpn/dh.pem" ] || {
       openssl dhparam -out /var/openlan/openvpn/dh.pem 2048

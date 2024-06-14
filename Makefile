@@ -64,12 +64,19 @@ builder:
 	docker run -d -it \
 		--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
 		--volume $(SD)/:/opt/openlan --volume $(shell echo ~)/.ssh:/root/.ssh \
-		--name openlan_builder debian:buster bash
-	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc"
+		--name openlan_builder debian:bullseye bash
+	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc devscripts"
+	docker exec openlan_builder bash -c "apt install -y net-tools make build-essential libnss3-dev pkg-config libevent-dev libunbound-dev bison flex libsystemd-dev libcurl4-nss-dev libpam0g-dev libcap-ng-dev libldns-dev xmlto"
+	docker exec openlan_builder badh -c "apt install -y htmldoc libaudit-dev libkrb5-dev libldap2-dev libnss3-tools libselinux1-dev man2html"
 	docker exec openlan_builder bash -c "wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz && tar -xf go1.16.linux-amd64.tar.gz -C /usr/local"
 	docker exec openlan_builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
 	docker exec openlan_builder git config --global --add safe.directory /opt/openlan
 	docker exec openlan_builder git config --global --add safe.directory /opt/openlan/dist/cert
+
+## build libreswan
+# wget http://deb.debian.org/debian/pool/main/libr/libreswan/libreswan_4.10.orig.tar.gz
+# tar xvf libreswan_4.10.orig.tar.gz
+# cd libreswan-4.10 && make deb
 
 docker-bin:
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
