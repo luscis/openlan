@@ -344,6 +344,41 @@ func (w *WorkerImpl) loadVRF() {
 	}
 }
 
+func (w *WorkerImpl) SetMss(mss int) {
+	cfg, _ := w.GetCfgs()
+	fire := w.fire
+
+	cfg.Bridge.Mss = mss
+
+	fire.Mangle.Post.AddRule(cn.IPRule{
+		Output:  cfg.Bridge.Name,
+		Proto:   "tcp",
+		Match:   "tcp",
+		TcpFlag: []string{"SYN,RST", "SYN"},
+		Jump:    cn.CTcpMss,
+		SetMss:  mss,
+	})
+	if w.br != nil {
+		fire.Mangle.Post.AddRule(cn.IPRule{
+			Output:  w.br.L3Name(),
+			Proto:   "tcp",
+			Match:   "tcp",
+			TcpFlag: []string{"SYN,RST", "SYN"},
+			Jump:    cn.CTcpMss,
+			SetMss:  mss,
+		})
+	}
+	// connect from local
+	fire.Mangle.In.AddRule(cn.IPRule{
+		Input:   cfg.Bridge.Name,
+		Proto:   "tcp",
+		Match:   "tcp",
+		TcpFlag: []string{"SYN,RST", "SYN"},
+		Jump:    cn.CTcpMss,
+		SetMss:  mss,
+	})
+}
+
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg, vpn := w.GetCfgs()
 	fire := w.fire
@@ -360,23 +395,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
-		fire.Mangle.Post.AddRule(cn.IPRule{
-			Output:  cfg.Bridge.Name,
-			Proto:   "tcp",
-			Match:   "tcp",
-			TcpFlag: []string{"SYN,RST", "SYN"},
-			Jump:    cn.CTcpMss,
-			SetMss:  cfg.Bridge.Mss,
-		})
-		// connect from local
-		fire.Mangle.In.AddRule(cn.IPRule{
-			Input:   cfg.Bridge.Name,
-			Proto:   "tcp",
-			Match:   "tcp",
-			TcpFlag: []string{"SYN,RST", "SYN"},
-			Jump:    cn.CTcpMss,
-			SetMss:  cfg.Bridge.Mss,
-		})
+		w.SetMss(cfg.Bridge.Mss)
 	}
 
 	for _, output := range cfg.Outputs {

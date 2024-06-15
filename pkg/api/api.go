@@ -56,7 +56,7 @@ type Router interface {
 	SaveRoute()
 }
 
-type Vpner interface {
+type VPNer interface {
 	RestartVpn()
 }
 
@@ -89,9 +89,10 @@ type Networker interface {
 	Qoser() Qoser
 	IfAddr() string
 	ACLer() ACLer
+	SetMss(mss int)
 	Outputer
 	Router
-	Vpner
+	VPNer
 }
 
 var workers = make(map[string]Networker)

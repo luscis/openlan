@@ -2,19 +2,9 @@
     "name": "example",
     "bridge": {
         "name": "br-eth0",
-        "address": "172.32.100.40/24"
+        "address": "172.32.100.40/24",
+        "tcpMss": 1360
     },
-    "subnet": {
-        "startAt": "172.32.100.250",
-        "endAt": "172.32.100.254",
-        "netmask": "255.255.255.0"
-    },
-    "hosts": [
-        {
-            "hostname": "pc-99",
-            "address": "172.32.100.99"
-        }
-    ],
     "routes": [
         {
             "prefix": "172.32.10.0/24"
