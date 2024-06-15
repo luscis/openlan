@@ -14,7 +14,7 @@
                 "transport": "gre"
             },
             {
-                "localid": "@con1.ipsec.com",
+                "localid": "con1.ipsec.com",
                 "remote": "3.3.3.1",
                 "remoteport": "4501",
                 "secret": "d7ecd73ccc25",
@@ -23,7 +23,7 @@
             {
                 "localport": "4501",
                 "remote": "3.3.3.2",
-                "remoteid": "@con1.ipsec.com",
+                "remoteid": "con1.ipsec.com",
                 "secret": "d7ecd73ccc25",
                 "transport": "vxlan"
             }

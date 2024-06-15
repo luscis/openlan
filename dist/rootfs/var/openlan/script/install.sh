@@ -2,21 +2,23 @@
 
 set -e
 
-tmp=""
 installer="$0"
 nodeps="no"
 if [ "$1"x == "nodeps"x ]; then
   nodeps="yes"
 fi
 
+tmp=""
+sys="linux"
 archive=$(grep -a -n "__ARCHIVE_BELOW__:$" $installer | cut -f1 -d:)
 
-OS="linux"
-if type yum 2> /dev/null; then
-  OS="centos"
-elif type apt 2> /dev/null; then
-  OS="debian"
-fi
+function find_sys() {
+  if type yum 2> /dev/null; then
+    sys="redhat"
+  elif type apt 2> /dev/null; then
+    sys="debian"
+  fi
+}
 
 function download() {
   echo "Uncompress files ..."
@@ -26,16 +28,21 @@ function download() {
 
 function requires() {
   echo "Install dependents ..."
-  if [ "$OS"x == "centos"x ]; then
+  ## Install packages from repo.
+  if [ "$sys"x == "redhat"x ]; then
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
-    yum install -y openvpn dnsmasq bridge-utils ipset libreswan procps
-  elif [ "$OS"x == "debian"x ]; then
+    yum install -y openvpn dnsmasq bridge-utils ipset procps wget
+  elif [ "$sys"x == "debian"x ]; then
     apt install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
     apt install -y openvpn dnsmasq bridge-utils ipset procps wget
+  fi
+  ## Install libreswan from github.
+  if [ "$sys"x == "redhat"x ]; then
+    wget -O /tmp/libreswan-4.10-1.el7.x86_64.rpm https://github.com/luscis/packages/raw/main/redhat/redhat7/libreswan-4.10-1.el7.x86_64.rpm
+    yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm
+  elif [ "$sys"x == "debian"x ]; then
     wget -O /tmp/libreswan_4.10-1_amd64.deb https://github.com/luscis/packages/raw/main/debian/bullseye/libreswan_4.10-1_amd64.deb
     apt install -y /tmp/libreswan_4.10-1_amd64.deb
-  else
-    echo "We didn't find any packet tool: $OS"
   fi
 }
 
@@ -55,7 +62,7 @@ function post() {
     sysctl -p /etc/sysctl.d/90-openlan.conf
   fi
 
-  if [ "$OS"x == "centos"x ]; then
+  if [ "$sys"x == "redhat"x ]; then
     ## Prepare openvpn.
     [ -e "/var/openlan/openvpn/dh.pem" ] || {
       openssl dhparam -out /var/openlan/openvpn/dh.pem 1024
@@ -66,7 +73,7 @@ function post() {
     ## Install CA.
     cp -rf /var/openlan/cert/ca.crt /etc/pki/ca-trust/source/anchors/OpenLAN_CA.crt
     update-ca-trust
-  elif [ "$OS"x == "debian"x ]; then
+  elif [ "$sys"x == "debian"x ]; then
     ## Prepare openvpn.
     [ -e "/var/openlan/openvpn/dh.pem" ] || {
       openssl dhparam -out /var/openlan/openvpn/dh.pem 2048
@@ -89,6 +96,7 @@ function finish() {
 }
 
 
+find_sys
 download
 if [ "$nodeps"x == "no"x ]; then
   requires

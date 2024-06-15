@@ -8,7 +8,7 @@ RUN yum update -y && yum install -y epel-release
 
 ADD ${linux_bin} /tmp
 RUN DOCKER=yes /tmp/${linux_bin}
-RUN rm -rvf /tmp/* && yum clean dbcache
+RUN rm -rvf /tmp/* && yum clean all
 
 LABEL application="OpenLAN Network Solutions"
 LABEL maintainer="danieldin95@163.com"

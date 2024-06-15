@@ -81,7 +81,7 @@ builder:
 docker-bin:
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
-docker-rhel: ## build image for redhat
+docker-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && \
 		sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \

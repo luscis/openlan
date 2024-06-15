@@ -30,16 +30,10 @@ conn {{ .Name }}
     ikev2=no
     type=transport
     left={{ .Left }}
-{{- if .LeftId }}
-    leftid={{ .LeftId }}
-{{- end }}
 {{- if .LeftPort }}
     leftikeport={{ .LeftPort }}
 {{- end }}
     right={{ .Right }}
-{{- if .RightId }}
-    rightid={{ .RightId }}
-{{- end }}
 {{- if .RightPort }}
     rightikeport={{ .RightPort }}
 {{- end }}
@@ -48,12 +42,24 @@ conn {{ .Name }}
 conn {{ .Name }}-c1
     auto=add
     also={{ .Name }}
+{{- if .LeftId }}
+    leftid=@c1.{{ .LeftId }}
+{{- end }}
+{{- if .RightId }}
+    rightid=@c2.{{ .RightId }}
+{{- end }}
     leftprotoport=udp/8472
     rightprotoport=udp
 
 conn {{ .Name }}-c2
     auto=add
     also={{ .Name }}
+{{- if .LeftId }}
+    leftid=@c2.{{ .LeftId }}
+{{- end }}
+{{- if .RightId }}
+    rightid=@c1.{{ .RightId }}
+{{- end }}
     leftprotoport=udp
     rightprotoport=udp/8472
 `
