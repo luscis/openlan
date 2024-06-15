@@ -8,6 +8,7 @@ import (
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 type IPSecWorker struct {
@@ -112,7 +113,7 @@ func (w *IPSecWorker) startConn(name string) {
 	})
 }
 
-func (w *IPSecWorker) AddTunnel(tunnel *co.IPSecTunnel) error {
+func (w *IPSecWorker) addTunnel(tunnel *co.IPSecTunnel) error {
 	connTmpl := ""
 	secTmpl := ""
 
@@ -152,11 +153,11 @@ func (w *IPSecWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.out.Info("IPSecWorker.Start")
 	for _, tunnel := range w.spec.Tunnels {
-		w.AddTunnel(tunnel)
+		w.addTunnel(tunnel)
 	}
 }
 
-func (w *IPSecWorker) RemoveTunnel(tunnel *co.IPSecTunnel) error {
+func (w *IPSecWorker) removeTunnel(tunnel *co.IPSecTunnel) error {
 	name := tunnel.Name
 	if tunnel.Transport == "vxlan" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
@@ -184,7 +185,7 @@ func (w *IPSecWorker) RemoveTunnel(tunnel *co.IPSecTunnel) error {
 func (w *IPSecWorker) Stop() {
 	w.out.Info("IPSecWorker.Stop")
 	for _, tunnel := range w.spec.Tunnels {
-		w.RemoveTunnel(tunnel)
+		w.removeTunnel(tunnel)
 	}
 }
 
@@ -192,4 +193,30 @@ func (w *IPSecWorker) Reload(v api.Switcher) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)
+}
+
+func (w *IPSecWorker) AddTunnel(data schema.IPSecTunnel) {
+	cfg := &co.IPSecTunnel{
+		Left:      data.Left,
+		Right:     data.Right,
+		Secret:    data.Secret,
+		Transport: data.Transport,
+	}
+	w.spec.AddTunnel(cfg)
+	w.addTunnel(cfg)
+}
+
+func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
+	cfg := &co.IPSecTunnel{
+		Left:      data.Left,
+		Right:     data.Right,
+		Secret:    data.Secret,
+		Transport: data.Transport,
+	}
+	w.removeTunnel(cfg)
+	w.spec.DelTunnel(cfg)
+}
+
+func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
+
 }

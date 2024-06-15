@@ -50,7 +50,7 @@ func (h Output) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	worker := GetWorker(name)
+	worker := Call.GetWorker(name)
 	if worker == nil {
 		http.Error(w, "network not found", http.StatusBadRequest)
 		return
@@ -73,7 +73,7 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	worker := GetWorker(name)
+	worker := Call.GetWorker(name)
 	if worker == nil {
 		http.Error(w, "network not found", http.StatusBadRequest)
 		return
@@ -86,7 +86,7 @@ func (h Output) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return

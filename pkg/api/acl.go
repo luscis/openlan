@@ -22,7 +22,7 @@ func (h ACL) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -41,7 +41,7 @@ func (h ACL) Add(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -66,7 +66,7 @@ func (h ACL) Del(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -91,7 +91,7 @@ func (h ACL) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return

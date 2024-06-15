@@ -76,7 +76,7 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	network := vars["id"]
-	worker := GetWorker(network)
+	worker := Call.GetWorker(network)
 	if worker == nil {
 		http.Error(w, "network not found", http.StatusBadRequest)
 		return
@@ -110,7 +110,7 @@ func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return

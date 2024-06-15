@@ -20,13 +20,15 @@ func NewNetworker(c *co.Network) api.Networker {
 	var obj api.Networker
 	switch c.Provider {
 	case "ipsec":
-		obj = NewIPSecWorker(c)
+		secer := NewIPSecWorker(c)
+		api.Call.SetIPSecer(secer)
+		obj = secer
 	case "router":
 		obj = NewRouterWorker(c)
 	default:
 		obj = NewOpenLANWorker(c)
 	}
-	api.AddWorker(c.Name, obj)
+	api.Call.AddWorker(c.Name, obj)
 	return obj
 }
 

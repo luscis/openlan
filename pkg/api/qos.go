@@ -1,9 +1,10 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/schema"
-	"net/http"
 )
 
 type QosApi struct {
@@ -22,7 +23,7 @@ func (h QosApi) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -47,7 +48,7 @@ func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -75,7 +76,7 @@ func (h QosApi) Del(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -96,7 +97,7 @@ func (h QosApi) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return

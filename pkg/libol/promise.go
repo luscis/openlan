@@ -15,6 +15,15 @@ func NewPromise() *Promise {
 		First:  time.Second * 2,
 		MaxInt: time.Minute,
 		MinInt: time.Second * 10,
+		MaxTry: 10,
+	}
+}
+
+func NewPromiseAlways() *Promise {
+	return &Promise{
+		First:  time.Second * 2,
+		MaxInt: time.Minute,
+		MinInt: time.Second * 10,
 	}
 }
 

@@ -46,7 +46,7 @@ func (h ZTrust) ListGuest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -77,7 +77,7 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -127,7 +127,7 @@ func (h ZTrust) DelGuest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -165,7 +165,7 @@ func (h ZTrust) ListKnock(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return
@@ -195,7 +195,7 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	worker := GetWorker(id)
+	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusInternalServerError)
 		return

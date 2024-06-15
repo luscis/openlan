@@ -35,3 +35,11 @@ func (s *IPSecSpecifies) Correct() {
 		t.Correct()
 	}
 }
+
+func (s *IPSecSpecifies) AddTunnel(data *IPSecTunnel) {
+
+}
+
+func (s *IPSecSpecifies) DelTunnel(data *IPSecTunnel) {
+
+}

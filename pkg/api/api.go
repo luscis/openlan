@@ -95,18 +95,39 @@ type Networker interface {
 	VPNer
 }
 
-var workers = make(map[string]Networker)
-
-func AddWorker(name string, obj Networker) {
-	workers[name] = obj
+type IPSecer interface {
+	AddTunnel(data schema.IPSecTunnel)
+	DelTunnel(data schema.IPSecTunnel)
+	ListTunnels(call func(obj schema.IPSecTunnel))
 }
 
-func GetWorker(name string) Networker {
-	return workers[name]
+type APICall struct {
+	workers map[string]Networker
+	secer   IPSecer
 }
 
-func ListWorker(call func(w Networker)) {
-	for _, worker := range workers {
+func (i *APICall) AddWorker(name string, obj Networker) {
+	i.workers[name] = obj
+}
+
+func (i *APICall) GetWorker(name string) Networker {
+	return i.workers[name]
+}
+
+func (i *APICall) ListWorker(call func(w Networker)) {
+	for _, worker := range i.workers {
 		call(worker)
 	}
+}
+
+func (i *APICall) SetIPSecer(value IPSecer) {
+	i.secer = value
+}
+
+func (i *APICall) GetIPSecer() IPSecer {
+	return i.secer
+}
+
+var Call = &APICall{
+	workers: make(map[string]Networker),
 }
