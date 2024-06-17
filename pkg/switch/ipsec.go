@@ -113,35 +113,35 @@ func (w *IPSecWorker) startConn(name string) {
 	})
 }
 
-func (w *IPSecWorker) addTunnel(tunnel *co.IPSecTunnel) error {
+func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 	connTmpl := ""
 	secTmpl := ""
 
-	name := tunnel.Name
-	if tunnel.Transport == "vxlan" {
+	name := tun.Name
+	if tun.Transport == "vxlan" {
 		connTmpl = vxlanTmpl
 		secTmpl = secretTmpl
-	} else if tunnel.Transport == "gre" {
+	} else if tun.Transport == "gre" {
 		connTmpl = greTmpl
 		secTmpl = secretTmpl
 	}
 
 	if secTmpl != "" {
-		if err := w.saveSec(name+".secrets", secTmpl, tunnel); err != nil {
+		if err := w.saveSec(name+".secrets", secTmpl, tun); err != nil {
 			w.out.Error("WorkerImpl.AddTunnel %s", err)
 			return err
 		}
 		libol.Exec("ipsec", "auto", "--rereadsecrets")
 	}
 	if connTmpl != "" {
-		if err := w.saveSec(name+".conf", connTmpl, tunnel); err != nil {
+		if err := w.saveSec(name+".conf", connTmpl, tun); err != nil {
 			w.out.Error("WorkerImpl.AddTunnel %s", err)
 			return err
 		}
-		if tunnel.Transport == "vxlan" {
+		if tun.Transport == "vxlan" {
 			w.startConn(name + "-c1")
 			w.startConn(name + "-c2")
-		} else if tunnel.Transport == "gre" {
+		} else if tun.Transport == "gre" {
 			w.startConn(name + "-c1")
 		}
 	}
@@ -152,17 +152,17 @@ func (w *IPSecWorker) addTunnel(tunnel *co.IPSecTunnel) error {
 func (w *IPSecWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.out.Info("IPSecWorker.Start")
-	for _, tunnel := range w.spec.Tunnels {
-		w.addTunnel(tunnel)
+	for _, tun := range w.spec.Tunnels {
+		w.addTunnel(tun)
 	}
 }
 
-func (w *IPSecWorker) removeTunnel(tunnel *co.IPSecTunnel) error {
-	name := tunnel.Name
-	if tunnel.Transport == "vxlan" {
+func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
+	name := tun.Name
+	if tun.Transport == "vxlan" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c2")
-	} else if tunnel.Transport == "gre" {
+	} else if tun.Transport == "gre" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
 	}
 
@@ -184,8 +184,8 @@ func (w *IPSecWorker) removeTunnel(tunnel *co.IPSecTunnel) error {
 
 func (w *IPSecWorker) Stop() {
 	w.out.Info("IPSecWorker.Stop")
-	for _, tunnel := range w.spec.Tunnels {
-		w.removeTunnel(tunnel)
+	for _, tun := range w.spec.Tunnels {
+		w.removeTunnel(tun)
 	}
 }
 
@@ -198,12 +198,18 @@ func (w *IPSecWorker) Reload(v api.Switcher) {
 func (w *IPSecWorker) AddTunnel(data schema.IPSecTunnel) {
 	cfg := &co.IPSecTunnel{
 		Left:      data.Left,
+		LeftPort:  data.LeftPort,
+		LeftId:    data.LeftId,
 		Right:     data.Right,
+		RightPort: data.RightPort,
+		RightId:   data.RightId,
 		Secret:    data.Secret,
 		Transport: data.Transport,
 	}
-	w.spec.AddTunnel(cfg)
-	w.addTunnel(cfg)
+	cfg.Correct()
+	if w.spec.AddTunnel(cfg) {
+		w.addTunnel(cfg)
+	}
 }
 
 func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
@@ -213,10 +219,24 @@ func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
 		Secret:    data.Secret,
 		Transport: data.Transport,
 	}
-	w.removeTunnel(cfg)
-	w.spec.DelTunnel(cfg)
+	cfg.Correct()
+	if _, removed := w.spec.DelTunnel(cfg); removed {
+		w.removeTunnel(cfg)
+	}
 }
 
 func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
-
+	for _, tun := range w.spec.Tunnels {
+		obj := schema.IPSecTunnel{
+			Left:      tun.Left,
+			LeftId:    tun.LeftId,
+			LeftPort:  tun.LeftPort,
+			Right:     tun.Right,
+			RightId:   tun.RightId,
+			RightPort: tun.RightPort,
+			Secret:    tun.Secret,
+			Transport: tun.Transport,
+		}
+		call(obj)
+	}
 }

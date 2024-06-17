@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -34,7 +33,7 @@ func (u Link) List(c *cli.Context) error {
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
-	name := c.String("network")
+	name := c.String("name")
 	if len(name) > 0 {
 		tmp := items[:0]
 		for _, obj := range items {
@@ -47,21 +46,17 @@ func (u Link) List(c *cli.Context) error {
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
-func (u Link) Commands(app *api.App) {
-	app.Command(&cli.Command{
-		Name:    "link",
-		Aliases: []string{"ln"},
-		Usage:   "Link connect to others",
+func (u Link) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "link",
+		Usage: "Link connect to others",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
 				Usage:   "Display all links",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
-				},
-				Action: u.List,
+				Action:  u.List,
 			},
 		},
-	})
+	}
 }

@@ -24,4 +24,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	Output{Switcher: switcher}.Router(router)
 	ACL{}.Router(router)
 	Route{Switcher: switcher}.Router(router)
+	IPSec{}.Router(router)
 }

@@ -70,7 +70,7 @@ type Qoser interface {
 
 type Outputer interface {
 	AddOutput(data schema.Output)
-	DelOutput(device string)
+	DelOutput(data schema.Output)
 	SaveOutput()
 }
 

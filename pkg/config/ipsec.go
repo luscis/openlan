@@ -6,10 +6,10 @@ type IPSecTunnel struct {
 	Name      string `json:"-"`
 	Left      string `json:"local"`
 	LeftId    string `json:"localid"`
-	LeftPort  string `json:"localport"`
+	LeftPort  int    `json:"localport"`
 	Right     string `json:"remote"`
 	RightId   string `json:"remoteid"`
-	RightPort string `json:"remoteport"`
+	RightPort int    `json:"remoteport"`
 	Transport string `json:"transport"`
 	Secret    string `json:"secret"`
 }
@@ -36,10 +36,27 @@ func (s *IPSecSpecifies) Correct() {
 	}
 }
 
-func (s *IPSecSpecifies) AddTunnel(data *IPSecTunnel) {
-
+func (s *IPSecSpecifies) FindTunnel(value *IPSecTunnel) (*IPSecTunnel, int) {
+	for index, obj := range s.Tunnels {
+		if obj.Id() == value.Id() {
+			return obj, index
+		}
+	}
+	return nil, -1
 }
 
-func (s *IPSecSpecifies) DelTunnel(data *IPSecTunnel) {
+func (s *IPSecSpecifies) AddTunnel(value *IPSecTunnel) bool {
+	_, find := s.FindTunnel(value)
+	if find == -1 {
+		s.Tunnels = append(s.Tunnels, value)
+	}
+	return find == -1
+}
 
+func (s *IPSecSpecifies) DelTunnel(value *IPSecTunnel) (*IPSecTunnel, bool) {
+	obj, find := s.FindTunnel(value)
+	if find != -1 {
+		s.Tunnels = append(s.Tunnels[:find], s.Tunnels[find+1:]...)
+	}
+	return obj, find != -1
 }

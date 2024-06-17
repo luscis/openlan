@@ -86,20 +86,26 @@ func (u Network) Save(c *cli.Context) error {
 }
 
 func (u Network) Commands(app *api.App) {
+	point := Point{}
+	client := VPNClient{}
+	route := Route{}
+	link := Link{}
 	openvpn := OpenVpn{}
+	output := Output{}
+	qos := Qos{}
 	app.Command(&cli.Command{
 		Name:    "network",
 		Aliases: []string{"net"},
-		Usage:   "Logical network",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "name", Value: ""},
+		},
+		Usage: "Logical network",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
 				Usage:   "Display all network",
 				Aliases: []string{"ls"},
 				Action:  u.List,
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
-				},
 			},
 			{
 				Name:  "add",
@@ -113,60 +119,21 @@ func (u Network) Commands(app *api.App) {
 				Name:    "remove",
 				Usage:   "Remove the network",
 				Aliases: []string{"rm"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
-				},
-				Action: u.Remove,
+				Action:  u.Remove,
 			},
 			{
 				Name:    "save",
 				Usage:   "Save the network",
 				Aliases: []string{"sa"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name", Value: ""},
-				},
-				Action: u.Save,
+				Action:  u.Save,
 			},
+			point.Commands(),
+			qos.Commands(),
+			client.Commands(),
 			openvpn.Commands(),
+			output.Commands(),
+			route.Commands(),
+			link.Commands(),
 		},
 	})
-}
-
-type OpenVpn struct {
-	Cmd
-}
-
-func (o OpenVpn) Url(prefix, name string) string {
-	return prefix + "/api/network/" + name + "/openvpn/restart"
-}
-
-func (o OpenVpn) Restart(c *cli.Context) error {
-	network := c.String("network")
-	url := o.Url(c.String("url"), network)
-
-	clt := o.NewHttp(c.String("token"))
-	if err := clt.PostJSON(url, nil, nil); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o OpenVpn) Commands() *cli.Command {
-	return &cli.Command{
-		Name:    "openvpn",
-		Usage:   "control openvpn",
-		Aliases: []string{"ov"},
-		Subcommands: []*cli.Command{
-			{
-				Name:    "restart",
-				Usage:   "restart openvpn for the network",
-				Aliases: []string{"ro"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-				},
-				Action: o.Restart,
-			},
-		},
-	}
 }

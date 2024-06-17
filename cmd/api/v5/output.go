@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
@@ -16,7 +15,7 @@ func (o Output) Url(prefix, name string) string {
 }
 
 func (o Output) Add(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	if len(network) == 0 {
 		return libol.NewErr("invalid network")
 	}
@@ -37,7 +36,7 @@ func (o Output) Add(c *cli.Context) error {
 }
 
 func (o Output) Remove(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	if len(network) == 0 {
 		return libol.NewErr("invalid network")
 	}
@@ -54,7 +53,7 @@ func (o Output) Remove(c *cli.Context) error {
 }
 
 func (o Output) Save(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	url := o.Url(c.String("url"), network)
 
 	clt := o.NewHttp(c.String("token"))
@@ -75,7 +74,7 @@ func (o Output) Tmpl() string {
 }
 
 func (o Output) List(c *cli.Context) error {
-	url := o.Url(c.String("url"), c.String("network"))
+	url := o.Url(c.String("url"), c.String("name"))
 	clt := o.NewHttp(c.String("token"))
 	var items []schema.Output
 	if err := clt.GetJSON(url, &items); err != nil {
@@ -84,23 +83,19 @@ func (o Output) List(c *cli.Context) error {
 	return o.Out(items, c.String("format"), o.Tmpl())
 }
 
-func (o Output) Commands(app *api.App) {
-	app.Command(&cli.Command{
-		Name:    "output",
-		Aliases: []string{"op"},
-		Usage:   "Output configuration",
+func (o Output) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "output",
+		Usage: "Output configuration",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
 				Usage: "Add an output for the network",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
-					&cli.StringFlag{Name: "remote"},
+					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.IntFlag{Name: "segment"},
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "dstport"},
-					//&cli.StringFlag{Name: "connection"},
-					&cli.StringFlag{Name: "secret"},
 				},
 				Action: o.Add,
 			},
@@ -109,8 +104,7 @@ func (o Output) Commands(app *api.App) {
 				Usage:   "Remove an output from the network",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
-					&cli.StringFlag{Name: "device"},
+					&cli.StringFlag{Name: "device", Required: true},
 				},
 				Action: o.Remove,
 			},
@@ -118,20 +112,14 @@ func (o Output) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all outputs of the network",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-				},
-				Action: o.List,
+				Action:  o.List,
 			},
 			{
 				Name:    "save",
 				Usage:   "Save all outputs",
 				Aliases: []string{"sa"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-				},
-				Action: o.Save,
+				Action:  o.Save,
 			},
 		},
-	})
+	}
 }

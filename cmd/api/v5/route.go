@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
@@ -16,7 +15,7 @@ func (r Route) Url(prefix, name string) string {
 }
 
 func (r Route) Add(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	if len(network) == 0 {
 		return libol.NewErr("invalid network")
 	}
@@ -35,7 +34,7 @@ func (r Route) Add(c *cli.Context) error {
 }
 
 func (r Route) Remove(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	if len(network) == 0 {
 		return libol.NewErr("invalid network")
 	}
@@ -54,7 +53,7 @@ func (r Route) Remove(c *cli.Context) error {
 }
 
 func (r Route) Save(c *cli.Context) error {
-	network := c.String("network")
+	network := c.String("name")
 	url := r.Url(c.String("url"), network)
 
 	clt := r.NewHttp(c.String("token"))
@@ -75,7 +74,7 @@ func (r Route) Tmpl() string {
 }
 
 func (r Route) List(c *cli.Context) error {
-	url := r.Url(c.String("url"), c.String("network"))
+	url := r.Url(c.String("url"), c.String("name"))
 	clt := r.NewHttp(c.String("token"))
 	var items []schema.PrefixRoute
 	if err := clt.GetJSON(url, &items); err != nil {
@@ -84,18 +83,16 @@ func (r Route) List(c *cli.Context) error {
 	return r.Out(items, c.String("format"), r.Tmpl())
 }
 
-func (r Route) Commands(app *api.App) {
-	app.Command(&cli.Command{
-		Name:    "route",
-		Aliases: []string{"op"},
-		Usage:   "Route configuration",
+func (r Route) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "route",
+		Usage: "Route configuration",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
 				Usage: "Add a route for the network",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-					&cli.StringFlag{Name: "prefix"},
+					&cli.StringFlag{Name: "prefix", Required: true},
 					&cli.StringFlag{Name: "nexthop"},
 					&cli.IntFlag{Name: "metric"},
 					&cli.StringFlag{Name: "mode"},
@@ -107,8 +104,7 @@ func (r Route) Commands(app *api.App) {
 				Usage:   "Remove a route from the network",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-					&cli.StringFlag{Name: "prefix"},
+					&cli.StringFlag{Name: "prefix", Required: true},
 					&cli.StringFlag{Name: "nexthop"},
 				},
 				Action: r.Remove,
@@ -117,20 +113,14 @@ func (r Route) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all outputs of the network",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-				},
-				Action: r.List,
+				Action:  r.List,
 			},
 			{
 				Name:    "save",
 				Usage:   "Save all routes",
 				Aliases: []string{"sa"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network", Required: true},
-				},
-				Action: r.Save,
+				Action:  r.Save,
 			},
 		},
-	})
+	}
 }

@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -28,13 +27,13 @@ func (u VPNClient) Tmpl() string {
 }
 
 func (u VPNClient) List(c *cli.Context) error {
-	url := u.Url(c.String("url"), c.String("network"))
+	url := u.Url(c.String("url"), c.String("name"))
 	clt := u.NewHttp(c.String("token"))
 	var items []schema.VPNClient
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
-	name := c.String("network")
+	name := c.String("name")
 	if len(name) > 0 {
 		tmp := items[:0]
 		for _, obj := range items {
@@ -47,21 +46,52 @@ func (u VPNClient) List(c *cli.Context) error {
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
-func (u VPNClient) Commands(app *api.App) {
-	app.Command(&cli.Command{
-		Name:    "client",
-		Aliases: []string{"cl"},
-		Usage:   "Connected client by OpenVPN",
+func (u VPNClient) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "client",
+		Usage: "Clients by OpenVPN",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
 				Usage:   "Display all clients",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "network"},
-				},
-				Action: u.List,
+				Action:  u.List,
 			},
 		},
-	})
+	}
+}
+
+type OpenVpn struct {
+	Cmd
+}
+
+func (o OpenVpn) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/openvpn/restart"
+}
+
+func (o OpenVpn) Restart(c *cli.Context) error {
+	network := c.String("name")
+	url := o.Url(c.String("url"), network)
+
+	clt := o.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o OpenVpn) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "openvpn",
+		Usage: "Control OpenVPN",
+		Subcommands: []*cli.Command{
+			{
+				Name:    "restart",
+				Usage:   "restart openvpn for the network",
+				Aliases: []string{"ro"},
+				Action:  o.Restart,
+			},
+		},
+	}
 }

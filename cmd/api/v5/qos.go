@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -10,18 +9,15 @@ type Qos struct {
 	Cmd
 }
 
-func (q Qos) Commands(app *api.App) {
+func (q Qos) Commands() *cli.Command {
 	rule := QosRule{}
-	app.Command(&cli.Command{
+	return &cli.Command{
 		Name:  "qos",
-		Usage: "qos for client in network",
-		Flags: []cli.Flag{
-			&cli.StringFlag{Name: "name", Aliases: []string{"n"}},
-		},
+		Usage: "QoS for client in network",
 		Subcommands: []*cli.Command{
 			rule.Commands(),
 		},
-	})
+	}
 }
 
 type QosRule struct {

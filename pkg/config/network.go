@@ -22,7 +22,7 @@ type Network struct {
 	Acl       string               `json:"acl,omitempty"`
 	Specifies interface{}          `json:"specifies,omitempty"`
 	Dhcp      string               `json:"dhcp,omitempty"`
-	Outputs   []Output             `json:"outputs,omitempty"`
+	Outputs   []*Output            `json:"outputs,omitempty"`
 	ZTrust    string               `json:"ztrust,omitempty"`
 	Qos       string               `json:"qos,omitempty"`
 	Namespace string               `json:"namespace,omitempty"`
@@ -184,4 +184,57 @@ func (n *Network) SaveNextGroup() {
 }
 
 func (n *Network) Reload() {
+}
+
+func (n *Network) FindRoute(value PrefixRoute) (PrefixRoute, int) {
+	for i, obj := range n.Routes {
+		if value.Prefix == obj.Prefix {
+			return obj, i
+		}
+	}
+	return PrefixRoute{}, -1
+}
+
+func (n *Network) AddRoute(value PrefixRoute) bool {
+	_, index := n.FindRoute(value)
+	if index == -1 {
+		n.Routes = append(n.Routes, value)
+	}
+	return index == -1
+}
+
+func (n *Network) DelRoute(value PrefixRoute) (PrefixRoute, bool) {
+	obj, index := n.FindRoute(value)
+	if index != -1 {
+		n.Routes = append(n.Routes[:index], n.Routes[index+1:]...)
+	}
+	return obj, index != -1
+}
+
+func (n *Network) FindOutput(value *Output) (*Output, int) {
+	for i, obj := range n.Outputs {
+		if value.Link != "" && value.Link == obj.Link {
+			return obj, i
+		}
+		if value.Link == "" && value.Id() == obj.Id() {
+			return obj, i
+		}
+	}
+	return nil, -1
+}
+
+func (n *Network) AddOutput(value *Output) bool {
+	_, index := n.FindOutput(value)
+	if index == -1 {
+		n.Outputs = append(n.Outputs, value)
+	}
+	return index == -1
+}
+
+func (n *Network) DelOutput(value *Output) (*Output, bool) {
+	obj, index := n.FindOutput(value)
+	if index != -1 {
+		n.Outputs = append(n.Outputs[:index], n.Outputs[index+1:]...)
+	}
+	return obj, index != -1
 }

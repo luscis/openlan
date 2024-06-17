@@ -78,7 +78,7 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network not found", http.StatusBadRequest)
 		return
 	}
-	worker.DelOutput(output.Device)
+	worker.DelOutput(*output)
 	ResponseMsg(w, 0, "")
 }
 
