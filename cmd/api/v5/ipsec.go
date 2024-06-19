@@ -25,8 +25,12 @@ type IPSecTunnel struct {
 	Cmd
 }
 
-func (o IPSecTunnel) Url(prefix string) string {
-	return prefix + "/api/network/ipsec/tunnel"
+func (o IPSecTunnel) Url(prefix string, action string) string {
+	url := prefix + "/api/network/ipsec/tunnel"
+	if action != "" {
+		url += "/" + action
+	}
+	return url
 }
 
 func (o IPSecTunnel) Add(c *cli.Context) error {
@@ -39,7 +43,7 @@ func (o IPSecTunnel) Add(c *cli.Context) error {
 		LeftPort:  c.Int("localport"),
 		RightPort: c.Int("remoteport"),
 	}
-	url := o.Url(c.String("url"))
+	url := o.Url(c.String("url"), "")
 	clt := o.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, output, nil); err != nil {
 		return err
@@ -52,7 +56,7 @@ func (o IPSecTunnel) Remove(c *cli.Context) error {
 		Right:     c.String("remote"),
 		Transport: c.String("transport"),
 	}
-	url := o.Url(c.String("url"))
+	url := o.Url(c.String("url"), "")
 	clt := o.NewHttp(c.String("token"))
 	if err := clt.DeleteJSON(url, output, nil); err != nil {
 		return err
@@ -60,17 +64,30 @@ func (o IPSecTunnel) Remove(c *cli.Context) error {
 	return nil
 }
 
+func (o IPSecTunnel) Restart(c *cli.Context) error {
+	output := &schema.IPSecTunnel{
+		Right:     c.String("remote"),
+		Transport: c.String("transport"),
+	}
+	url := o.Url(c.String("url"), "restart")
+	clt := o.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, output, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o IPSecTunnel) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "Right"}} {{ps -15 "Transport"}} {{ps -15 "Secret"}} {{ps -15 "Port"}} {{ps -15 "Connection"}} 
+{{ps -15 "Remote"}} {{ps -15 "Transport"}} {{ps -15 "Secret"}} {{ps -15 "Connection"}}
 {{- range . }}
-{{ps -15 .Right}} {{ps -15 .Transport }} {{ps -15 .Secret}} {{.LeftPort}}-{{.RightPort}} {{.LeftId}}-{{.RightId}}
+{{ps -15 .Right}} {{ps -15 .Transport }} {{ps -15 .Secret}} [{{.LeftId}}]{{.LeftPort}} -> [{{.RightId}}]{{.RightPort}}
 {{- end }}
 `
 }
 
 func (o IPSecTunnel) List(c *cli.Context) error {
-	url := o.Url(c.String("url"))
+	url := o.Url(c.String("url"), "")
 	clt := o.NewHttp(c.String("token"))
 	var items []schema.IPSecTunnel
 	if err := clt.GetJSON(url, &items); err != nil {
@@ -87,7 +104,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
-				Usage: "Add a tunnel for the network",
+				Usage: "Add a ipsec tunnel",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.StringFlag{Name: "remoteid"},
@@ -101,7 +118,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 			},
 			{
 				Name:    "remove",
-				Usage:   "Remove a tunnel from the network",
+				Usage:   "Remove a ipsec tunnel",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
@@ -110,8 +127,17 @@ func (o IPSecTunnel) Commands() *cli.Command {
 				Action: o.Remove,
 			},
 			{
+				Name:  "restart",
+				Usage: "restart a ipsec tunnel",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "remote", Required: true},
+					&cli.StringFlag{Name: "transport", Required: true},
+				},
+				Action: o.Restart,
+			},
+			{
 				Name:    "list",
-				Usage:   "Display all tunnel of the network",
+				Usage:   "Display all ipsec tunnel",
 				Aliases: []string{"ls"},
 				Flags:   []cli.Flag{},
 				Action:  o.List,

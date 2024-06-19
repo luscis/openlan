@@ -98,6 +98,7 @@ type Networker interface {
 type IPSecer interface {
 	AddTunnel(data schema.IPSecTunnel)
 	DelTunnel(data schema.IPSecTunnel)
+	RestartTunnel(data schema.IPSecTunnel)
 	ListTunnels(call func(obj schema.IPSecTunnel))
 }
 

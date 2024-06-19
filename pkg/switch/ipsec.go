@@ -113,6 +113,16 @@ func (w *IPSecWorker) startConn(name string) {
 	})
 }
 
+func (w *IPSecWorker) restartTunnel(tun *co.IPSecTunnel) {
+	name := tun.Name
+	if tun.Transport == "vxlan" {
+		w.startConn(name + "-c1")
+		w.startConn(name + "-c2")
+	} else if tun.Transport == "gre" {
+		w.startConn(name + "-c1")
+	}
+}
+
 func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 	connTmpl := ""
 	secTmpl := ""
@@ -138,12 +148,7 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 			w.out.Error("WorkerImpl.AddTunnel %s", err)
 			return err
 		}
-		if tun.Transport == "vxlan" {
-			w.startConn(name + "-c1")
-			w.startConn(name + "-c2")
-		} else if tun.Transport == "gre" {
-			w.startConn(name + "-c1")
-		}
+		w.restartTunnel(tun)
 	}
 
 	return nil
@@ -160,12 +165,11 @@ func (w *IPSecWorker) Start(v api.Switcher) {
 func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	name := tun.Name
 	if tun.Transport == "vxlan" {
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c2")
+		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c1")
+		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c2")
 	} else if tun.Transport == "gre" {
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
+		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c1")
 	}
-
 	cfile := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
 	sfile := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)
 
@@ -222,6 +226,19 @@ func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
 	cfg.Correct()
 	if _, removed := w.spec.DelTunnel(cfg); removed {
 		w.removeTunnel(cfg)
+	}
+}
+
+func (w *IPSecWorker) RestartTunnel(data schema.IPSecTunnel) {
+	cfg := &co.IPSecTunnel{
+		Left:      data.Left,
+		Right:     data.Right,
+		Secret:    data.Secret,
+		Transport: data.Transport,
+	}
+	cfg.Correct()
+	if _, index := w.spec.FindTunnel(cfg); index != -1 {
+		w.restartTunnel(cfg)
 	}
 }
 

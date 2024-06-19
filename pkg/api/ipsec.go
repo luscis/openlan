@@ -16,6 +16,7 @@ func (h IPSec) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/ipsec/tunnel", h.Get).Methods("GET")
 	router.HandleFunc("/api/network/ipsec/tunnel", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/ipsec/tunnel", h.Delete).Methods("DELETE")
+	router.HandleFunc("/api/network/ipsec/tunnel/restart", h.Restart).Methods("PUT")
 }
 
 func (h IPSec) Get(w http.ResponseWriter, r *http.Request) {
@@ -56,5 +57,19 @@ func (h IPSec) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Call.secer.DelTunnel(*tun)
+	ResponseMsg(w, 0, "")
+}
+
+func (h IPSec) Restart(w http.ResponseWriter, r *http.Request) {
+	tun := &schema.IPSecTunnel{}
+	if err := GetData(r, tun); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if Call.secer == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.secer.RestartTunnel(*tun)
 	ResponseMsg(w, 0, "")
 }
