@@ -19,6 +19,9 @@ func (s *IPSecTunnel) Correct() {
 		s.Left = "%defaultroute"
 	}
 	s.Name = s.Id()
+	if s.RightId == "" {
+		s.RightId = s.Right
+	}
 }
 
 func (s *IPSecTunnel) Id() string {

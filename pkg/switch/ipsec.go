@@ -51,10 +51,10 @@ conn {{ .Name }}-c1
     auto=add
     also={{ .Name }}
 {{- if .LeftId }}
-    leftid=@c1.{{ .LeftId }}
+    leftid=@c1.{{ .LeftId }}.{{ .Transport }}
 {{- end }}
 {{- if .RightId }}
-    rightid=@c2.{{ .RightId }}
+    rightid=@c2.{{ .RightId }}.{{ .Transport }}
 {{- end }}
     leftprotoport=udp/8472
     rightprotoport=udp
@@ -63,10 +63,10 @@ conn {{ .Name }}-c2
     auto=add
     also={{ .Name }}
 {{- if .LeftId }}
-    leftid=@c2.{{ .LeftId }}
+    leftid=@c2.{{ .LeftId }}.{{ .Transport }}
 {{- end }}
 {{- if .RightId }}
-    rightid=@c1.{{ .RightId }}
+    rightid=@c1.{{ .RightId }}.{{ .Transport }}
 {{- end }}
     leftprotoport=udp
     rightprotoport=udp/8472
@@ -81,11 +81,11 @@ conn {{ .Name }}-c1
     leftikeport={{ .LeftPort }}
 {{- end }}
 {{- if .LeftId }}
-    leftid=@{{ .LeftId }}
+    leftid=@{{ .LeftId }}.{{ .Transport }}
 {{- end }}
     right={{ .Right }}
 {{- if .RightId }}
-    rightid=@{{ .RightId }}
+    rightid=@{{ .RightId }}.{{ .Transport }}
 {{- end }}
 {{- if .RightPort }}
     rightikeport={{ .RightPort }}
@@ -95,7 +95,7 @@ conn {{ .Name }}-c1
     rightprotoport=gre
 `
 	secretTmpl = `
-%any {{ .Right }} : PSK "{{ .Secret }}"
+%any {{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"
 `
 )
 
