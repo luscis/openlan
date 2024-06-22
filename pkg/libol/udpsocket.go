@@ -63,7 +63,7 @@ func (k *UdpServer) Accept() {
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
-	promise.Done(func() error {
+	promise.Do(func() error {
 		if err := k.Listen(); err != nil {
 			Warn("UdpServer.Accept: %s", err)
 			return err

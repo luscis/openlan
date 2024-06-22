@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	OpenVPNBin    = "openvpn"
-	DefaultCurDir = "/var/openlan/openvpn/default"
+	OpenVPNBin = "openvpn"
+	VPNCurDir  = "/var/openlan/openvpn/default"
 )
 
 type OpenVPNData struct {
@@ -193,7 +193,7 @@ func (o *OpenVPN) Path() string {
 
 func (o *OpenVPN) Directory() string {
 	if o.Cfg == nil {
-		return DefaultCurDir
+		return VPNCurDir
 	}
 	return o.Cfg.Directory
 }
@@ -301,14 +301,14 @@ func (o *OpenVPN) Pid(full bool) string {
 
 func (o *OpenVPN) DirectoryClientConfig() string {
 	if o.Cfg == nil {
-		return path.Join(DefaultCurDir, "ccd")
+		return path.Join(VPNCurDir, "ccd")
 	}
 	return path.Join(o.Cfg.Directory, "ccd")
 }
 
 func (o *OpenVPN) ClientIvplatDir() string {
 	if o.Cfg == nil {
-		return DefaultCurDir
+		return VPNCurDir
 	}
 	return o.Cfg.Directory
 }

@@ -1,9 +1,10 @@
 package libol
 
 import (
-	"github.com/xtaci/kcp-go/v5"
 	"net"
 	"time"
+
+	"github.com/xtaci/kcp-go/v5"
 )
 
 type KcpConfig struct {
@@ -91,7 +92,7 @@ func (k *KcpServer) Accept() {
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
-	promise.Done(func() error {
+	promise.Do(func() error {
 		if err := k.Listen(); err != nil {
 			Warn("KcpServer.Accept: %s", err)
 			return err

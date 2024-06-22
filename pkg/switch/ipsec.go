@@ -3,12 +3,19 @@ package cswitch
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"text/template"
 
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
+)
+
+const (
+	IPSecBin    = "/usr/sbin/ipsec"
+	IPSecEtcDir = "/etc/ipsec.d"
+	IPSecLogDir = "/var/openlan/ipsec"
 )
 
 type IPSecWorker struct {
@@ -94,10 +101,13 @@ conn {{ .Name }}-c1
 
 func (w *IPSecWorker) Initialize() {
 	w.out.Info("IPSecWorker.Initialize")
+	if err := os.Mkdir(IPSecLogDir, 0600); err != nil {
+		w.out.Warn("IPSecWorker.Initialize %s", err)
+	}
 }
 
 func (w *IPSecWorker) saveSec(name, tmpl string, data interface{}) error {
-	file := fmt.Sprintf("/etc/ipsec.d/%s", name)
+	file := fmt.Sprintf("%s/%s", IPSecEtcDir, name)
 	out, err := libol.CreateFile(file)
 	if err != nil || out == nil {
 		return err
@@ -114,14 +124,22 @@ func (w *IPSecWorker) saveSec(name, tmpl string, data interface{}) error {
 }
 
 func (w *IPSecWorker) startConn(name string) {
-	promise := libol.NewPromise()
-	promise.Go(func() error {
-		if out, err := libol.Exec("ipsec", "auto", "--start", "--asynchronous", name); err != nil {
-			w.out.Warn("IPSecWorker.startConn: %v %s", out, err)
-			return err
+	logFile := fmt.Sprintf("%s/%s.log", IPSecLogDir, name)
+	logto, err := libol.CreateFile(logFile)
+	if err != nil {
+		w.out.Warn("IPSecWorker.startConn %s", err)
+		return
+	}
+	libol.Go(func() {
+		defer logto.Close()
+		cmd := exec.Command(IPSecBin, "auto", "--start", name)
+		cmd.Stdout = logto
+		cmd.Stderr = logto
+		if err := cmd.Run(); err != nil {
+			w.out.Warn("IPSecWorker.startConn: %s", err)
+			return
 		}
 		w.out.Info("IPSecWorker.startConn: %v success", name)
-		return nil
 	})
 }
 
@@ -182,8 +200,8 @@ func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	} else if tun.Transport == "gre" {
 		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
 	}
-	cfile := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
-	sfile := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)
+	cfile := fmt.Sprintf("%s/%s.conf", IPSecEtcDir, name)
+	sfile := fmt.Sprintf("%s/%s.secrets", IPSecEtcDir, name)
 
 	if err := libol.FileExist(cfile); err == nil {
 		if err := os.Remove(cfile); err != nil {

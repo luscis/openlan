@@ -1,11 +1,12 @@
 package proxy
 
 import (
-	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
 	"io"
 	"net"
 	"time"
+
+	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type TcpProxy struct {
@@ -62,7 +63,7 @@ func (t *TcpProxy) Start() {
 		MaxInt: time.Minute,
 		MinInt: time.Second * 10,
 	}
-	promise.Done(func() error {
+	promise.Do(func() error {
 		var err error
 		listen, err = net.Listen("tcp", t.listen)
 		if err != nil {

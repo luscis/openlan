@@ -172,7 +172,7 @@ func (h *Http) Start() {
 		MaxInt: time.Minute,
 		MinInt: time.Second * 10,
 	}
-	promise.Done(func() error {
+	promise.Go(func() error {
 		if h.keyFile == "" || h.crtFile == "" {
 			if err := h.server.ListenAndServe(); err != nil {
 				libol.Error("Http.Start on %s: %s", h.listen, err)

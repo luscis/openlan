@@ -66,7 +66,7 @@ func (t *TcpServer) Accept() {
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
-	promise.Done(func() error {
+	promise.Do(func() error {
 		if err := t.Listen(); err != nil {
 			Warn("TcpServer.Accept: %s", err)
 			return err

@@ -27,7 +27,7 @@ func NewPromiseAlways() *Promise {
 	}
 }
 
-func (p *Promise) Done(call func() error) {
+func (p *Promise) Do(call func() error) {
 	for {
 		p.Count++
 		if p.MaxTry > 0 && p.Count > p.MaxTry {
@@ -45,6 +45,13 @@ func (p *Promise) Done(call func() error) {
 
 func (p *Promise) Go(call func() error) {
 	Go(func() {
-		p.Done(call)
+		p.Do(call)
+	})
+}
+
+func (p *Promise) Goto(call func() error, close func()) {
+	Go(func() {
+		p.Do(call)
+		close()
 	})
 }

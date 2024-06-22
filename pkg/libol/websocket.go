@@ -3,11 +3,12 @@ package libol
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"golang.org/x/net/websocket"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
+
+	"golang.org/x/net/websocket"
 )
 
 type wsConn struct {
@@ -101,7 +102,7 @@ func (t *WebServer) Accept() {
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
-	promise.Done(func() error {
+	promise.Do(func() error {
 		if t.webCfg.Cert == nil {
 			if err := t.listener.ListenAndServe(); err != nil {
 				Error("WebServer.Accept on %s: %s", t.address, err)
