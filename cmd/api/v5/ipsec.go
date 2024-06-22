@@ -107,11 +107,11 @@ func (o IPSecTunnel) Commands() *cli.Command {
 				Usage: "Add a ipsec tunnel",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
-					&cli.StringFlag{Name: "remoteid"},
+					&cli.StringFlag{Name: "remoteid", Required: true},
 					&cli.IntFlag{Name: "remoteport"},
 					&cli.StringFlag{Name: "protocol", Required: true},
 					&cli.StringFlag{Name: "secret", Required: true},
-					&cli.StringFlag{Name: "localid"},
+					&cli.StringFlag{Name: "localid", Required: true},
 					&cli.IntFlag{Name: "localport"},
 				},
 				Action: o.Add,

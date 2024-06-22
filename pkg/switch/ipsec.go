@@ -95,7 +95,7 @@ conn {{ .Name }}-c1
     rightprotoport=gre
 `
 	secretTmpl = `
-%any {{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"
+%any @{{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"
 `
 )
 
