@@ -37,7 +37,7 @@ func (o IPSecTunnel) Add(c *cli.Context) error {
 	output := &schema.IPSecTunnel{
 		Right:     c.String("remote"),
 		Secret:    c.String("secret"),
-		Transport: c.String("transport"),
+		Transport: c.String("protocol"),
 		LeftId:    c.String("localid"),
 		RightId:   c.String("remoteid"),
 		LeftPort:  c.Int("localport"),
@@ -54,7 +54,7 @@ func (o IPSecTunnel) Add(c *cli.Context) error {
 func (o IPSecTunnel) Remove(c *cli.Context) error {
 	output := &schema.IPSecTunnel{
 		Right:     c.String("remote"),
-		Transport: c.String("transport"),
+		Transport: c.String("protocol"),
 	}
 	url := o.Url(c.String("url"), "")
 	clt := o.NewHttp(c.String("token"))
@@ -67,7 +67,7 @@ func (o IPSecTunnel) Remove(c *cli.Context) error {
 func (o IPSecTunnel) Restart(c *cli.Context) error {
 	output := &schema.IPSecTunnel{
 		Right:     c.String("remote"),
-		Transport: c.String("transport"),
+		Transport: c.String("protocol"),
 	}
 	url := o.Url(c.String("url"), "restart")
 	clt := o.NewHttp(c.String("token"))
@@ -79,7 +79,7 @@ func (o IPSecTunnel) Restart(c *cli.Context) error {
 
 func (o IPSecTunnel) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "Remote"}} {{ps -15 "Transport"}} {{ps -15 "Secret"}} {{ps -15 "Connection"}}
+{{ps -15 "Remote"}} {{ps -15 "Protocol"}} {{ps -15 "Secret"}} {{ps -15 "Connection"}}
 {{- range . }}
 {{ps -15 .Right}} {{ps -15 .Transport }} {{ps -15 .Secret}} [{{.LeftId}}]{{.LeftPort}} -> [{{.RightId}}]{{.RightPort}}
 {{- end }}
@@ -109,7 +109,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.StringFlag{Name: "remoteid"},
 					&cli.IntFlag{Name: "remoteport"},
-					&cli.StringFlag{Name: "transport", Required: true},
+					&cli.StringFlag{Name: "protocol", Required: true},
 					&cli.StringFlag{Name: "secret", Required: true},
 					&cli.StringFlag{Name: "localid"},
 					&cli.IntFlag{Name: "localport"},
@@ -122,7 +122,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
-					&cli.StringFlag{Name: "transport", Required: true},
+					&cli.StringFlag{Name: "protocol", Required: true},
 				},
 				Action: o.Remove,
 			},
@@ -131,7 +131,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 				Usage: "restart a ipsec tunnel",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
-					&cli.StringFlag{Name: "transport", Required: true},
+					&cli.StringFlag{Name: "protocol", Required: true},
 				},
 				Action: o.Restart,
 			},

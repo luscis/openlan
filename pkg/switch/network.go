@@ -229,7 +229,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		Protocol: port.Protocol,
 		Remote:   port.Remote,
 		Segment:  port.Segment,
-		Secret:   port.Secret,
 		Device:   port.Link,
 	}
 	cache.Output.Add(port.Link, out)
@@ -1034,7 +1033,6 @@ func (w *WorkerImpl) AddOutput(data schema.Output) {
 		Protocol: data.Protocol,
 		Remote:   data.Remote,
 		DstPort:  data.DstPort,
-		Secret:   data.Secret,
 	}
 	if !w.cfg.AddOutput(output) {
 		w.out.Info("WorkerImple.AddOutput %s already existed", output.Id())

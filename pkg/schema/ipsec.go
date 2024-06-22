@@ -7,6 +7,6 @@ type IPSecTunnel struct {
 	Right     string `json:"remote"`
 	RightId   string `json:"remoteid"`
 	RightPort int    `json:"remoteport"`
-	Transport string `json:"transport"`
+	Transport string `json:"protocol"`
 	Secret    string `json:"secret"`
 }

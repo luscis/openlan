@@ -67,10 +67,22 @@ conn {{ .Name }}-c2
 	greTmpl = `
 conn {{ .Name }}-c1
     auto=add
-    ikev2=insist
+    ikev2=no
     type=transport
     left={{ .Left }}
+{{- if .LeftPort }}
+    leftikeport={{ .LeftPort }}
+{{- end }}
+{{- if .LeftId }}
+    leftid=@{{ .LeftId }}
+{{- end }}
     right={{ .Right }}
+{{- if .RightId }}
+    rightid=@{{ .RightId }}
+{{- end }}
+{{- if .RightPort }}
+    rightikeport={{ .RightPort }}
+{{- end }}
     authby=secret
     leftprotoport=gre
     rightprotoport=gre
@@ -165,10 +177,10 @@ func (w *IPSecWorker) Start(v api.Switcher) {
 func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	name := tun.Name
 	if tun.Transport == "vxlan" {
-		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c1")
-		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c2")
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c2")
 	} else if tun.Transport == "gre" {
-		libol.Exec("ipsec", "auto", "--start", "--asynchronous", name+"-c1")
+		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
 	}
 	cfile := fmt.Sprintf("/etc/ipsec.d/%s.conf", name)
 	sfile := fmt.Sprintf("/etc/ipsec.d/%s.secrets", name)

@@ -5,12 +5,12 @@ import "fmt"
 type IPSecTunnel struct {
 	Name      string `json:"-"`
 	Left      string `json:"local"`
-	LeftId    string `json:"localid"`
-	LeftPort  int    `json:"localport"`
+	LeftId    string `json:"localid,omitempty"`
+	LeftPort  int    `json:"localport,omitempty"`
 	Right     string `json:"remote"`
-	RightId   string `json:"remoteid"`
-	RightPort int    `json:"remoteport"`
-	Transport string `json:"transport"`
+	RightId   string `json:"remoteid,omitempty"`
+	RightPort int    `json:"remoteport,omitempty"`
+	Transport string `json:"protocol"`
 	Secret    string `json:"secret"`
 }
 
