@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
@@ -10,7 +8,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(0)
 	c := config.NewSwitch()
 	config.Update(c)
 

@@ -57,9 +57,8 @@ func (l *logger) Write(level int, format string, v ...interface{}) {
 	if !ok {
 		str = "NULL"
 	}
-	now := time.Now()
 	if level >= l.Level {
-		log.Printf(fmt.Sprintf("%s %s|%s", now.Format(time.RFC3339), str, format), v...)
+		log.Printf(fmt.Sprintf("%s|%s", str, format), v...)
 	}
 	if level >= INFO {
 		l.Save(str, format, v...)
@@ -70,7 +69,7 @@ func (l *logger) Save(level string, format string, v ...interface{}) {
 	m := fmt.Sprintf(format, v...)
 	now := time.Now()
 	if l.FileLog != nil {
-		l.FileLog.Printf("%s %s|%s\n", now.Format(time.RFC3339), level, m)
+		l.FileLog.Printf("%s|%s\n", level, m)
 	}
 	l.Lock.Lock()
 	defer l.Lock.Unlock()
@@ -238,4 +237,8 @@ func (s *SubLogger) Error(format string, v ...interface{}) {
 
 func (s *SubLogger) Fatal(format string, v ...interface{}) {
 	s.logger.Write(FATAL, s.Fmt(format), v...)
+}
+
+func init() {
+	log.SetFlags(log.LstdFlags)
 }
