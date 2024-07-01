@@ -69,7 +69,7 @@ func (o Output) Tmpl() string {
 	return `# total {{ len . }}
 {{ps -24 "network"}} {{ps -15 "protocol"}} {{ps -15 "Remote"}} {{ps -15 "segment"}} {{ps -15 "device"}}
 {{- range . }}
-{{ps -24 .Network}} {{ps -15 .Protocol}} {{ps -15 .Remote}} {{pi -15 .Segment }} {{ps -15 .Device}}
+{{ps -24 .Network}} {{ps -15 .Protocol}} {{ps -15 .Remote}} {{ if .Segment }} {{pi -15 .Segment }} {{ else }} {{ps -15 .Secret}}  {{ end }} {{ps -15 .Device}}
 {{- end }}
 `
 }
