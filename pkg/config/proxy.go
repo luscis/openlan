@@ -24,9 +24,11 @@ type SocksProxy struct {
 }
 
 type HttpForward struct {
-	Protocol string `json:"protocol,omitempty"`
-	Server   string `json:"server,omitempty"`
-	Insecure bool   `json:"insecure,omitempty"`
+	Protocol string   `json:"protocol,omitempty"`
+	Server   string   `json:"server,omitempty"`
+	Insecure bool     `json:"insecure,omitempty"`
+	Match    []string `json:"match,omitempty"`
+	Secret   string   `json:"secret,omitempty"`
 }
 
 type HttpProxy struct {

@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"regexp"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ var (
 	connectOkay = []byte("HTTP/1.1 200 Connection established\r\n\r\n")
 )
 
-func parseBasicAuth(auth string) (username, password string, ok bool) {
+func decodeBasicAuth(auth string) (username, password string, ok bool) {
 	const prefix = "Basic "
 	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
 		return
@@ -43,6 +44,10 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 		return
 	}
 	return cs[:s], cs[s+1:], true
+}
+
+func encodeBasicAuth(value string) string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(value))
 }
 
 func NewHttpProxy(cfg *config.HttpProxy) *HttpProxy {
@@ -103,7 +108,7 @@ func (t *HttpProxy) CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	auth := r.Header.Get("Proxy-Authorization")
-	user, password, ok := parseBasicAuth(auth)
+	user, password, ok := decodeBasicAuth(auth)
 	if !ok || !t.isAuth(user, password) {
 		w.Header().Set("Proxy-Authenticate", "Basic")
 		http.Error(w, "Proxy Authentication Required", http.StatusProxyAuthRequired)
@@ -171,7 +176,7 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 	return net.Dial("tcp", remote)
 }
 
-func (t *HttpProxy) dumpRequest(r *http.Request) ([]byte, error) {
+func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error) {
 	var err error
 	var b bytes.Buffer
 
@@ -183,13 +188,10 @@ func (t *HttpProxy) dumpRequest(r *http.Request) ([]byte, error) {
 	fmt.Fprintf(&b, "%s %s HTTP/%d.%d\r\n", r.Method, reqURI, r.ProtoMajor, r.ProtoMinor)
 
 	host := r.Host
-	if host == "" && r.URL != nil {
-		host = r.URL.Host
+	fmt.Fprintf(&b, "Host: %s\r\n", host)
+	if secret != "" {
+		fmt.Fprintf(&b, "Proxy-Authorization: %s\r\n", encodeBasicAuth(secret))
 	}
-	if host != "" {
-		fmt.Fprintf(&b, "Host: %s\r\n", host)
-	}
-
 	chunked := len(r.TransferEncoding) > 0 && r.TransferEncoding[0] == "chunked"
 	if len(r.TransferEncoding) > 0 {
 		fmt.Fprintf(&b, "Transfer-Encoding: %s\r\n", strings.Join(r.TransferEncoding, ","))
@@ -224,6 +226,20 @@ func (t *HttpProxy) dumpRequest(r *http.Request) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+func (t *HttpProxy) Match(value string, rules []string) bool {
+	if len(rules) == 0 {
+		return true
+	}
+	for _, rule := range rules {
+		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(value) {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.out.Debug("HttpProxy.ServeHTTP %v", r)
 	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL.Host)
@@ -233,26 +249,24 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fow := t.cfg.Forward
-	if fow != nil {
+	if fow != nil && t.Match(r.Host, fow.Match) {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, fow.Server)
-	} else {
-		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
-	}
-
-	if fow != nil {
 		conn, err := t.openConn(fow.Protocol, fow.Server, fow.Insecure)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		dump, err := t.dumpRequest(r)
+		dump, err := t.cloneRequest(r, fow.Secret)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		conn.Write(dump)
 		t.tunnel(w, conn)
-	} else if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
+		return
+	}
+	t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
+	if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
 		conn, err := t.openConn("", r.URL.Host, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)

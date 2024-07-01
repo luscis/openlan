@@ -78,8 +78,15 @@ builder:
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-docker-bin:
+
+docker-bin: ## binary by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
+
+docker-darwin: ## binary for MacOS by Docker
+	docker exec openlan_builder bash -c "cd /opt/openlan && make darwin"
+
+docker-windows: ## binary for Windows by Docker
+	docker exec openlan_builder bash -c "cd /opt/openlan && make windows"
 
 docker-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
@@ -164,16 +171,16 @@ windows-syso: ## build windows syso
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.din ./cmd/point_darwin
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.din ./cmd/main.go
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.din ./cmd/proxy
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.dar ./cmd/point_darwin
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.dar ./cmd/main.go
+	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@rm -rf $(MAC_DIR).tar.gz
 
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(MAC_DIR)/point.json
-	@cp -rf $(BD)/openlan-point.din $(MAC_DIR)
+	@cp -rf $(BD)/openlan-point.dar $(MAC_DIR)
 
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	@rm -rf $(MAC_DIR)
