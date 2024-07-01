@@ -12,6 +12,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
+	nl "github.com/vishvananda/netlink"
 )
 
 const (
@@ -26,7 +27,8 @@ type Link struct {
 	uuid   string
 }
 
-func NewLink(uuid string, cfg *co.Point) *Link {
+func NewLink(cfg *co.Point) *Link {
+	uuid := libol.GenString(13)
 	return &Link{
 		uuid: uuid,
 		cfg:  cfg,
@@ -79,12 +81,12 @@ func (l *Link) LogFile() string {
 	return filepath.Join(OlapDir, l.uuid+".log")
 }
 
-func (l *Link) Start() {
+func (l *Link) Start() error {
 	file := l.ConfFile()
 	log, err := libol.CreateFile(l.LogFile())
 	if err != nil {
 		l.out.Warn("Link.Start %s", err)
-		return
+		return nil
 	}
 	libol.Go(func() {
 		args := []string{
@@ -100,6 +102,7 @@ func (l *Link) Start() {
 			l.out.Error("Link.Start %s: %s", l.uuid, err)
 		}
 	})
+	return nil
 }
 
 func (l *Link) Clean() {
@@ -115,17 +118,19 @@ func (l *Link) Clean() {
 	}
 }
 
-func (l *Link) Stop() {
+func (l *Link) Stop() error {
 	if data, err := ioutil.ReadFile(l.PidFile()); err != nil {
 		l.out.Debug("Link.Stop %s", err)
 	} else {
 		pid := strings.TrimSpace(string(data))
-		cmd := exec.Command("/usr/bin/kill", pid)
+		cmd := exec.Command("kill", pid)
 		if err := cmd.Run(); err != nil {
 			l.out.Warn("Link.Stop %s: %s", pid, err)
+			return err
 		}
 	}
 	l.Clean()
+	return nil
 }
 
 type Links struct {
@@ -152,6 +157,24 @@ func (ls *Links) Remove(addr string) *Link {
 		p.Stop()
 		delete(ls.links, addr)
 		return p
+	}
+	return nil
+}
+
+type LinuxLink struct {
+	link nl.Link
+}
+
+func (ll *LinuxLink) Start() error {
+	if err := nl.LinkAdd(ll.link); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ll *LinuxLink) Stop() error {
+	if err := nl.LinkDel(ll.link); err != nil {
+		return err
 	}
 	return nil
 }

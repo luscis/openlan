@@ -7,7 +7,7 @@ services:
     network_mode: host
     entrypoint: ["/var/openlan/script/ipsec.sh"]
     volumes:
-      - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
+      - /opt/openlan/etc/ipsec.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
   switch:
     restart: always
@@ -17,7 +17,7 @@ services:
     entrypoint: ["/var/openlan/script/switch.sh", "start"]
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
-      - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
+      - /opt/openlan/etc/ipsec.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
     depends_on:
       - ipsec

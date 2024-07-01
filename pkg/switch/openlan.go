@@ -176,7 +176,6 @@ func (w *OpenLANWorker) UpTime() int64 {
 
 func (w *OpenLANWorker) AddLink(c co.Point) {
 	br := w.cfg.Bridge
-	uuid := libol.GenString(13)
 
 	c.Alias = w.alias
 	c.Network = w.cfg.Name
@@ -188,9 +187,9 @@ func (w *OpenLANWorker) AddLink(c co.Point) {
 	c.Interface.IPMtu = br.IPMtu
 	c.Log.File = "/dev/null"
 
-	l := NewLink(uuid, &c)
+	l := NewLink(&c)
 	l.Initialize()
-	cache.Link.Add(uuid, l.Model())
+	cache.Link.Add(l.uuid, l.Model())
 	w.links.Add(l)
 	l.Start()
 }
