@@ -16,15 +16,15 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/config"
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 )
 
 type HttpProxy struct {
-	users    map[string]string
+	pass     map[string]string
 	out      *libol.SubLogger
 	server   *http.Server
-	cfg      *config.HttpProxy
+	cfg      *co.HttpProxy
 	api      *mux.Router
 	requests int
 	startat  time.Time
@@ -66,12 +66,12 @@ func encodeJson(w http.ResponseWriter, v interface{}) {
 	}
 }
 
-func NewHttpProxy(cfg *config.HttpProxy) *HttpProxy {
+func NewHttpProxy(cfg *co.HttpProxy) *HttpProxy {
 	h := &HttpProxy{
-		out:   libol.NewSubLogger(cfg.Listen),
-		cfg:   cfg,
-		users: make(map[string]string),
-		api:   mux.NewRouter(),
+		out:  libol.NewSubLogger(cfg.Listen),
+		cfg:  cfg,
+		pass: make(map[string]string),
+		api:  mux.NewRouter(),
 	}
 
 	h.server = &http.Server{
@@ -80,7 +80,7 @@ func NewHttpProxy(cfg *config.HttpProxy) *HttpProxy {
 	}
 	auth := cfg.Auth
 	if auth != nil && auth.Username != "" {
-		h.users[auth.Username] = auth.Password
+		h.pass[auth.Username] = auth.Password
 	}
 
 	h.loadUrl()
@@ -116,7 +116,7 @@ func (t *HttpProxy) loadPass() {
 		}
 		user := columns[0]
 		pass := columns[1]
-		t.users[user] = pass
+		t.pass[user] = pass
 	}
 	if err := scanner.Err(); err != nil {
 		libol.Warn("HttpProxy.LoadPass scaner %v", err)
@@ -124,14 +124,14 @@ func (t *HttpProxy) loadPass() {
 }
 
 func (t *HttpProxy) isAuth(username, password string) bool {
-	if p, ok := t.users[username]; ok {
+	if p, ok := t.pass[username]; ok {
 		return p == password
 	}
 	return false
 }
 
 func (t *HttpProxy) CheckAuth(w http.ResponseWriter, r *http.Request) bool {
-	if len(t.users) == 0 {
+	if len(t.pass) == 0 {
 		return true
 	}
 	auth := r.Header.Get("Proxy-Authorization")
@@ -144,7 +144,7 @@ func (t *HttpProxy) CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (t *HttpProxy) route(w http.ResponseWriter, p *http.Response) {
+func (t *HttpProxy) toDirect(w http.ResponseWriter, p *http.Response) {
 	defer p.Body.Close()
 	for key, value := range p.Header {
 		if key == "Proxy-Authorization" {
@@ -160,7 +160,7 @@ func (t *HttpProxy) route(w http.ResponseWriter, p *http.Response) {
 	_, _ = io.Copy(w, p.Body)
 }
 
-func (t *HttpProxy) tunnel(w http.ResponseWriter, conn net.Conn) {
+func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn) {
 	src, bio, err := w.(http.Hijacker).Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -253,7 +253,7 @@ func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error)
 	return b.Bytes(), nil
 }
 
-func (t *HttpProxy) Match(value string, rules []string) bool {
+func (t *HttpProxy) isMatch(value string, rules []string) bool {
 	if len(rules) == 0 {
 		return true
 	}
@@ -265,6 +265,19 @@ func (t *HttpProxy) Match(value string, rules []string) bool {
 		}
 	}
 	return false
+}
+
+func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
+	via := t.cfg.Forward
+	if via != nil && t.isMatch(r.URL.Host, via.Match) {
+		return via
+	}
+	for _, via := range t.cfg.Backends {
+		if via != nil && t.isMatch(r.URL.Host, via.Match) {
+			return via
+		}
+	}
+	return nil
 }
 
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -280,25 +293,25 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.requests += 1
-	fow := t.cfg.Forward
-	if fow != nil && t.Match(r.URL.Host, fow.Match) {
-		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, fow.Server)
-		conn, err := t.openConn(fow.Protocol, fow.Server, fow.Insecure)
+	via := t.findForward(r)
+	if via != nil {
+		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, via.Server)
+		conn, err := t.openConn(via.Protocol, via.Server, via.Insecure)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		dump, err := t.cloneRequest(r, fow.Secret)
+		dump, err := t.cloneRequest(r, via.Secret)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		conn.Write(dump)
-		t.tunnel(w, conn)
+		t.toTunnel(w, conn)
 		return
 	}
-	t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
 
+	t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
 	if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
 		conn, err := t.openConn("", r.URL.Host, true)
 		if err != nil {
@@ -306,7 +319,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write(connectOkay)
-		t.tunnel(w, conn)
+		t.toTunnel(w, conn)
 	} else { //RFC 7230 - HTTP/1.1: Message Syntax and Routing
 		transport := &http.Transport{}
 		p, err := transport.RoundTrip(r)
@@ -315,7 +328,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer transport.CloseIdleConnections()
-		t.route(w, p)
+		t.toDirect(w, p)
 	}
 }
 

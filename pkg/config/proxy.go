@@ -32,12 +32,13 @@ type HttpForward struct {
 }
 
 type HttpProxy struct {
-	ConfDir  string       `json:"-"`
-	Listen   string       `json:"listen,omitempty"`
-	Auth     *Password    `json:"auth,omitempty"`
-	Cert     *Cert        `json:"cert,omitempty"`
-	Password string       `json:"password,omitempty"`
-	Forward  *HttpForward `json:"forward,omitempty"`
+	ConfDir  string         `json:"-"`
+	Listen   string         `json:"listen,omitempty"`
+	Auth     *Password      `json:"auth,omitempty"`
+	Cert     *Cert          `json:"cert,omitempty"`
+	Password string         `json:"password,omitempty"`
+	Forward  *HttpForward   `json:"forward,omitempty"`
+	Backends []*HttpForward `json:"backends,omitempty"`
 }
 
 func (h *HttpProxy) Correct() {
