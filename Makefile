@@ -83,10 +83,10 @@ docker-bin: ## binary by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
 docker-darwin: ## binary for MacOS by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make darwin"
+	docker exec openlan_builder bash -c "cd /opt/openlan && make darwin-gzip"
 
 docker-windows: ## binary for Windows by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make windows"
+	docker exec openlan_builder bash -c "cd /opt/openlan && make windows-gzip"
 
 docker-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
@@ -117,7 +117,7 @@ docker-compose: ## create a compose files
 linux: env ## build linux binary
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point_linux
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-gzip: install ## build linux packages
@@ -147,44 +147,27 @@ install: env linux ## install packages
 
 ## cross build for windows
 windows: ## build windows binary
-	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.exe ./cmd/point_windows
 	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
-	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.exe ./cmd/main.go
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
-	@rm -rf $(WIN_DIR).tar.gz
-
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(WIN_DIR)/point.json
-	@cp -rf $(BD)/openlan-point.exe $(WIN_DIR)
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.example $(WIN_DIR)/proxy.json
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.local $(WIN_DIR)/proxy.json
 	@cp -rf $(BD)/openlan-proxy.exe $(WIN_DIR)
-
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
-	@rm -rf $(WIN_DIR)
-	gzip -f $(BD)/$(WIN_DIR).tar
-
-windows-syso: ## build windows syso
-	rsrc -manifest ./cmd/point_windows/main.manifest -ico ./cmd/point_windows/main.ico  -o ./cmd/point_windows/main.syso
+	gzip -f $(BD)/$(WIN_DIR).tar && rm -rf $(WIN_DIR)
 
 ## cross build for osx
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point.dar ./cmd/point_darwin
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan.dar ./cmd/main.go
 	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
-	@rm -rf $(MAC_DIR).tar.gz
-
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/point.json.example $(MAC_DIR)/point.json
-	@cp -rf $(BD)/openlan-point.dar $(MAC_DIR)
-
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.local $(MAC_DIR)/proxy.json
+	@cp -rf $(BD)/openlan-proxy.dar $(MAC_DIR)
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
-	@rm -rf $(MAC_DIR)
-	gzip -f $(BD)/$(MAC_DIR).tar
+	gzip -f $(BD)/$(MAC_DIR).tar && rm -rf $(MAC_DIR)
 
 ## unit test
 test: ## execute unit test
