@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -14,15 +15,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 )
 
 type HttpProxy struct {
-	users  map[string]string
-	out    *libol.SubLogger
-	server *http.Server
-	cfg    *config.HttpProxy
+	users    map[string]string
+	out      *libol.SubLogger
+	server   *http.Server
+	cfg      *config.HttpProxy
+	api      *mux.Router
+	requests int
+	startat  time.Time
 }
 
 var (
@@ -50,26 +55,48 @@ func encodeBasicAuth(value string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(value))
 }
 
+func encodeJson(w http.ResponseWriter, v interface{}) {
+	str, err := json.Marshal(v)
+	if err == nil {
+		libol.Debug("ResponseJson: %s", str)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(str)
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func NewHttpProxy(cfg *config.HttpProxy) *HttpProxy {
 	h := &HttpProxy{
 		out:   libol.NewSubLogger(cfg.Listen),
 		cfg:   cfg,
 		users: make(map[string]string),
+		api:   mux.NewRouter(),
 	}
+
 	h.server = &http.Server{
 		Addr:    cfg.Listen,
 		Handler: h,
 	}
 	auth := cfg.Auth
-	if auth.Username != "" {
+	if auth != nil && auth.Username != "" {
 		h.users[auth.Username] = auth.Password
 	}
-	h.LoadPass()
+
+	h.loadUrl()
+	h.loadPass()
 
 	return h
 }
 
-func (t *HttpProxy) LoadPass() {
+func (t *HttpProxy) loadUrl() {
+	if strings.HasPrefix(t.cfg.Listen, "127.") {
+		t.api.HandleFunc("/", t.GetStats)
+		t.api.HandleFunc("/config", t.GetConfig)
+	}
+}
+
+func (t *HttpProxy) loadPass() {
 	file := t.cfg.Password
 	if file == "" {
 		return
@@ -241,15 +268,20 @@ func (t *HttpProxy) Match(value string, rules []string) bool {
 }
 
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t.out.Debug("HttpProxy.ServeHTTP %v", r)
-	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL.Host)
+	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL)
+
 	if !t.CheckAuth(w, r) {
-		t.out.Info("HttpProxy.ServeHTTP Required %v Authentication", r.URL.Host)
+		t.out.Info("HttpProxy.ServeHTTP Required %v Authentication", r.URL)
+		return
+	}
+	if r.URL.Host == "" {
+		t.api.ServeHTTP(w, r)
 		return
 	}
 
+	t.requests += 1
 	fow := t.cfg.Forward
-	if fow != nil && t.Match(r.Host, fow.Match) {
+	if fow != nil && t.Match(r.URL.Host, fow.Match) {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, fow.Server)
 		conn, err := t.openConn(fow.Protocol, fow.Server, fow.Insecure)
 		if err != nil {
@@ -266,6 +298,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t.out.Info("HttpProxy.ServeHTTP %s %s -> %s", r.Method, r.RemoteAddr, r.URL.Host)
+
 	if r.Method == "CONNECT" { //RFC-7231 Tunneling TCP based protocols through Web Proxy servers
 		conn, err := t.openConn("", r.URL.Host, true)
 		if err != nil {
@@ -302,6 +335,7 @@ func (t *HttpProxy) Start() {
 		MinInt: time.Second * 10,
 	}
 	promise.Go(func() error {
+		t.startat = time.Now()
 		if crt == nil || crt.KeyFile == "" {
 			if err := t.server.ListenAndServe(); err != nil {
 				t.out.Warn("HttpProxy.start %s", err)
@@ -316,4 +350,19 @@ func (t *HttpProxy) Start() {
 		t.server.Shutdown(nil)
 		return nil
 	})
+}
+
+func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
+	data := &struct {
+		Requests int
+		StartAt  time.Time
+	}{
+		Requests: t.requests,
+		StartAt:  t.startat,
+	}
+	encodeJson(w, data)
+}
+
+func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
+	encodeJson(w, t.cfg)
 }

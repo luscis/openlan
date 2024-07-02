@@ -19,8 +19,8 @@ type ShadowProxy struct {
 }
 
 type SocksProxy struct {
-	Listen string   `json:"listen,omitempty"`
-	Auth   Password `json:"auth,omitempty"`
+	Listen string    `json:"listen,omitempty"`
+	Auth   *Password `json:"auth,omitempty"`
 }
 
 type HttpForward struct {
@@ -34,7 +34,7 @@ type HttpForward struct {
 type HttpProxy struct {
 	ConfDir  string       `json:"-"`
 	Listen   string       `json:"listen,omitempty"`
-	Auth     Password     `json:"auth,omitempty"`
+	Auth     *Password    `json:"auth,omitempty"`
 	Cert     *Cert        `json:"cert,omitempty"`
 	Password string       `json:"password,omitempty"`
 	Forward  *HttpForward `json:"forward,omitempty"`

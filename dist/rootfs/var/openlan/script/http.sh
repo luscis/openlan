@@ -20,7 +20,10 @@ for block in $(cat block.list | sed 's/||//'); do
   echo "          \"$block\","
 done
 
+## add google.com and atlassian.net.
 cat << EOF
+          "google.com",
+          "atlassian.net",
           "x.y.z"
         ]
       }
