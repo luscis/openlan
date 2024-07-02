@@ -1,18 +1,18 @@
 {
-    "http": [
-        {
-            "listen": "127.0.0.1:1080",
-            "forward": {
-                "protocol": "http",
-                "server": "192.168.100.11:10443",
-                "secret": "<name>:<password>",
-                "match": [
-                    "google.com",
-                    "github.com",
-                    "youtube.com",
-                    "facebook.com"
-                ]
-            }
-        }
-    ]
+  "http": [
+    {
+      "listen": "127.0.0.1:1080",
+      "forward": {
+        "protocol": "http",
+        "server": "192.168.100.11:10443",
+        "secret": "<name>:<password>",
+        "match": [
+          "facebook.com",
+          "github.com",
+          "youtube.com",
+          "google.com"
+        ]
+      }
+    }
+  ]
 }

@@ -1,39 +1,39 @@
 {
-    "name": "example",
-    "bridge": {
-        "name": "br-eth0",
-        "address": "172.32.100.40/24",
-        "tcpMss": 1360
-    },
-    "routes": [
-        {
-            "prefix": "172.32.10.0/24"
-        }
+  "name": "example",
+  "bridge": {
+    "name": "br-eth0",
+    "address": "172.32.100.40/24",
+    "tcpMss": 1360
+  },
+  "routes": [
+    {
+      "prefix": "172.32.10.0/24"
+    }
+  ],
+  "links": [
+    {
+      "protocol": "tls",
+      "connection": "hi.openlan.net",
+      "username": "hi",
+      "password": "1f4ee82b5eb6"
+    }
+  ],
+  "openvpn": {
+    "protocol": "tcp",
+    "listen": "0.0.0.0:3295",
+    "subnet": "172.32.195.0/24",
+    "push": [
+      "dhcp-option DNS 8.8.8.8"
     ],
-    "links": [
-        {
-            "protocol": "tls",
-            "connection": "hi.openlan.net",
-            "username": "hi",
-            "password": "1f4ee82b5eb6"
-        }
-    ],
-    "openvpn": {
-        "protocol": "tcp",
-        "listen": "0.0.0.0:3295",
-        "subnet": "172.32.195.0/24",
-        "push": [
-            "dhcp-option DNS 8.8.8.8"
-        ],
-        "clients": [
-            {
-                "name": "hi",
-                "address": "172.32.195.233",
-                "netmask": "172.32.195.234"
-            }
-        ]
-    },
-    "acl": "acl-100",
-    "dhcp": "enable",
-    "namespace": "example"
+    "clients": [
+      {
+        "name": "hi",
+        "address": "172.32.195.233",
+        "netmask": "172.32.195.234"
+      }
+    ]
+  },
+  "acl": "acl-100",
+  "dhcp": "enable",
+  "namespace": "example"
 }

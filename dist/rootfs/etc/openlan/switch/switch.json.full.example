@@ -1,19 +1,19 @@
 {
-    "protocol": "tls",
-    "listen": "0.0.0.0:10002",
-    "http": {
-        "listen": "0.0.0.0:10000"
-    },
-    "crypt": {
-        "algorithm": "aes-128",
-        "secret": "cb2ff088a34d"
-    },
-    "ldap": {
-        "server": "ldap-server.net:389",
-        "bindDN": "cn=admin,dc=openlan,dc=com",
-        "bindPass": "your-passowrd",
-        "baseDN": "dc=openlan,dc=com",
-        "attribute": "cn",
-        "filter": "(cn=%s)"
-    }
+  "protocol": "tcp",
+  "listen": "0.0.0.0:10002",
+  "http": {
+    "listen": "0.0.0.0:10000"
+  },
+  "crypt": {
+    "algorithm": "aes-128",
+    "secret": "cb2ff088a34d"
+  },
+  "ldap": {
+    "server": "ldap-server.net:389",
+    "bindDN": "cn=admin,dc=openlan,dc=com",
+    "bindPass": "your-passowrd",
+    "baseDN": "dc=openlan,dc=com",
+    "attribute": "cn",
+    "filter": "(cn=%s)"
+  }
 }

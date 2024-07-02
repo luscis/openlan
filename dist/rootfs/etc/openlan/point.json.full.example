@@ -1,16 +1,16 @@
 {
-    "interface": {
-        "address": "172.32.100.10/24"
-    },
-    "connection": "who.openlan.net",
-    "username": "hi@default",
-    "password": "1f4ee82b5eb6",
-    "protocol": "tls",
-    "cert": {
-        "insecure": true
-    },
-    "crypt": {
-        "algorithm": "aes-256",
-        "secret": "1f4ee82b5eb6"
-    }
+  "interface": {
+    "address": "172.32.100.10/24"
+  },
+  "connection": "who.openlan.net",
+  "username": "hi@default",
+  "password": "1f4ee82b5eb6",
+  "protocol": "tls",
+  "cert": {
+    "insecure": true
+  },
+  "crypt": {
+    "algorithm": "aes-256",
+    "secret": "1f4ee82b5eb6"
+  }
 }

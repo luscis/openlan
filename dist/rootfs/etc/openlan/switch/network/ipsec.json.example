@@ -1,32 +1,32 @@
 {
-    "name": "ipsec",
-    "provider": "ipsec",
-    "specifies": {
-        "tunnels": [
-            {
-                "remote": "3.3.2.1",
-                "secret": "d7ecd73ccc25",
-                "protocol": "gre"
-            },
-            {
-                "remote": "3.3.2.2",
-                "secret": "d7ecd73ccc25",
-                "protocol": "gre"
-            },
-            {
-                "localid": "con1.ipsec.com",
-                "remote": "3.3.3.1",
-                "remoteport": "4501",
-                "secret": "d7ecd73ccc25",
-                "protocol": "vxlan"
-            },
-            {
-                "localport": "4501",
-                "remote": "3.3.3.2",
-                "remoteid": "con1.ipsec.com",
-                "secret": "d7ecd73ccc25",
-                "protocol": "vxlan"
-            }
-         ]
-    }
+  "name": "ipsec",
+  "provider": "ipsec",
+  "specifies": {
+    "tunnels": [
+      {
+        "remote": "3.3.2.1",
+        "secret": "d7ecd73ccc25",
+        "protocol": "gre"
+      },
+      {
+        "remote": "3.3.2.2",
+        "secret": "d7ecd73ccc25",
+        "protocol": "gre"
+      },
+      {
+        "localid": "con1.ipsec.com",
+        "remote": "3.3.3.1",
+        "remoteport": "4501",
+        "secret": "d7ecd73ccc25",
+        "protocol": "vxlan"
+      },
+      {
+        "localport": "4501",
+        "remote": "3.3.3.2",
+        "remoteid": "con1.ipsec.com",
+        "secret": "d7ecd73ccc25",
+        "protocol": "vxlan"
+      }
+     ]
+  }
 }
