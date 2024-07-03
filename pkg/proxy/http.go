@@ -13,6 +13,7 @@ import (
 	"net/http/httputil"
 	"regexp"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -104,6 +105,7 @@ func (t *HttpProxy) loadUrl() {
 	if strings.HasPrefix(t.cfg.Listen, "127.") {
 		t.api.HandleFunc("/", t.GetStats)
 		t.api.HandleFunc("/config", t.GetConfig)
+		t.api.HandleFunc("/pac", t.GetPac)
 	}
 }
 
@@ -400,4 +402,40 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 
 func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
 	encodeJson(w, t.cfg)
+}
+
+var httpPacTmpl = `
+function FindProxyForURL(url, host) {
+	if (isPlainHostName(host))
+		return "DIRECT";
+{{- range .Rules }}
+	if (shExpMatch(host, "(^|*\.){{ . }}"))
+		return "PROXY {{ $.Local }}";
+{{- end }}
+	return "DIRECT";
+}`
+
+func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
+	data := &struct {
+		Local string
+		Rules []string
+	}{
+		Local: t.cfg.Listen,
+	}
+
+	for _, via := range t.cfg.Backends {
+		for _, rule := range via.Match {
+			data.Rules = append(data.Rules, rule)
+		}
+	}
+
+	if tmpl, err := template.New("main").Parse(httpPacTmpl); err == nil {
+		w.Header().Set("Cache-Control", "max-age=60")
+		w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
