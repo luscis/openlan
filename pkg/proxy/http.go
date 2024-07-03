@@ -20,14 +20,24 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
+type HttpRecord struct {
+	Count  int
+	LastAt time.Time
+}
+
+func (r *HttpRecord) Update() {
+	r.Count += 1
+	r.LastAt = time.Now()
+}
+
 type HttpProxy struct {
 	pass     map[string]string
 	out      *libol.SubLogger
 	server   *http.Server
 	cfg      *co.HttpProxy
 	api      *mux.Router
-	requests int
 	startat  time.Time
+	requests map[string]*HttpRecord
 }
 
 var (
@@ -68,10 +78,11 @@ func encodeJson(w http.ResponseWriter, v interface{}) {
 
 func NewHttpProxy(cfg *co.HttpProxy) *HttpProxy {
 	h := &HttpProxy{
-		out:  libol.NewSubLogger(cfg.Listen),
-		cfg:  cfg,
-		pass: make(map[string]string),
-		api:  mux.NewRouter(),
+		out:      libol.NewSubLogger(cfg.Listen),
+		cfg:      cfg,
+		pass:     make(map[string]string),
+		api:      mux.NewRouter(),
+		requests: make(map[string]*HttpRecord),
 	}
 
 	h.server = &http.Server{
@@ -280,6 +291,15 @@ func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
 	return nil
 }
 
+func (t *HttpProxy) doRecord(r *http.Request) {
+	record, ok := t.requests[r.URL.Host]
+	if !ok {
+		record = &HttpRecord{}
+		t.requests[r.URL.Host] = record
+	}
+	record.Update()
+}
+
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL)
 
@@ -292,7 +312,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.requests += 1
+	t.doRecord(r)
 	via := t.findForward(r)
 	if via != nil {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, via.Server)
@@ -367,9 +387,11 @@ func (t *HttpProxy) Start() {
 
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
-		Requests int
 		StartAt  time.Time
+		Total    int
+		Requests map[string]*HttpRecord
 	}{
+		Total:    len(t.requests),
 		Requests: t.requests,
 		StartAt:  t.startat,
 	}
