@@ -147,7 +147,7 @@ install: env linux ## install packages
 
 ## cross build for windows
 windows: ## build windows binary
-	GOOS=windows go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
+	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -160,7 +160,8 @@ windows-gzip: env windows ## build windows packages
 osx: darwin
 
 darwin: env ## build darwin binary
-	GOOS=darwin go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
+	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
+	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.arm64.dar ./cmd/proxy
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)

@@ -429,13 +429,15 @@ func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if tmpl, err := template.New("main").Parse(httpPacTmpl); err == nil {
-		w.Header().Set("Cache-Control", "max-age=60")
+	if tmpl, err := template.New("main").Parse(httpPacTmpl); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		expired := time.Now().Add(1 * time.Minute)
 		w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
+		w.Header().Set("Cache-Control", "max-age=60")
+		w.Header().Set("Expires", expired.UTC().Format(http.TimeFormat))
 		if err := tmpl.Execute(w, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
