@@ -387,6 +387,37 @@ func (t *HttpProxy) Start() {
 	})
 }
 
+var httpStatsTmpl = `
+<table>
+  <tr>
+    <td style="border: 1px solid black;">Configuration:</td>
+    <td style="border: 1px solid black;"><a href="/config">json</a></td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid black;">StartAt:</td>
+    <td style="border: 1px solid black;">{{ .StartAt }}</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid black;">Total:</td>
+    <td style="border: 1px solid black;">{{ .Total }}</td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <th style="border: 1px solid black;">Domain</th>
+    <th style="border: 1px solid black;">Count</th>
+    <th style="border: 1px solid black;">LastAt</th>
+  </tr>
+  {{- range $k, $v := .Requests }}
+  <tr>
+    <td style="border: 1px solid black;">{{ $k }}</td>
+    <td style="border: 1px solid black;">{{ $v.Count }}</td>
+    <td style="border: 1px solid black;">{{ $v.LastAt }}</td>
+  </tr>
+  {{- end }}
+</table>`
+
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
 		StartAt  time.Time
@@ -397,7 +428,13 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 		Requests: t.requests,
 		StartAt:  t.startat,
 	}
-	encodeJson(w, data)
+	if tmpl, err := template.New("main").Parse(httpStatsTmpl); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
 
 func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
