@@ -69,8 +69,7 @@ conn {{ .Name }}-c2
     rightid=@c1.{{ .RightId }}.{{ .Transport }}
 {{- end }}
     leftprotoport=udp
-    rightprotoport=udp/8472
-`,
+    rightprotoport=udp/8472`,
 	"gre": `
 conn {{ .Name }}-c1
     auto=add
@@ -92,11 +91,9 @@ conn {{ .Name }}-c1
 {{- end }}
     authby=secret
     leftprotoport=gre
-    rightprotoport=gre
-`,
+    rightprotoport=gre`,
 	"secret": `
-%any @{{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"
-`,
+%any @{{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"`,
 }
 
 func (w *IPSecWorker) Initialize() {

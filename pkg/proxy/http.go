@@ -23,12 +23,12 @@ import (
 
 type HttpRecord struct {
 	Count  int
-	LastAt time.Time
+	LastAt string
 }
 
 func (r *HttpRecord) Update() {
 	r.Count += 1
-	r.LastAt = time.Now()
+	r.LastAt = time.Now().Local().String()
 }
 
 type HttpProxy struct {
@@ -389,57 +389,71 @@ func (t *HttpProxy) Start() {
 
 var httpTmpl = map[string]string{
 	"stats": `
-<table>
-  <tr>
-    <td style="border: 1px solid black;">Configuration:</td>
-    <td style="border: 1px solid black;"><a href="/config">json</a></td>
-  </tr>
-  <tr>
-    <td style="border: 1px solid black;">StartAt:</td>
-    <td style="border: 1px solid black;">{{ .StartAt }}</td>
-  </tr>
-  <tr>
-    <td style="border: 1px solid black;">Total:</td>
-    <td style="border: 1px solid black;">{{ .Total }}</td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <th style="border: 1px solid black;">Domain</th>
-    <th style="border: 1px solid black;">Count</th>
-    <th style="border: 1px solid black;">LastAt</th>
-  </tr>
-  {{- range $k, $v := .Requests }}
-  <tr>
-    <td style="border: 1px solid black;">{{ $k }}</td>
-    <td style="border: 1px solid black;">{{ $v.Count }}</td>
-    <td style="border: 1px solid black;">{{ $v.LastAt }}</td>
-  </tr>
-  {{- end }}
-</table>`,
-
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>OpenLAN Proxy</title>
+    <style>
+      body {
+        background-color: #121212;
+        color: #e0e0e0;
+      }
+      table, a {
+        color: #e0e0e0;
+      }
+      td, th {
+        border: 1px solid #9E9E9E;;
+        border-radius: 2px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+    <tr>
+      <td>Configuration:</td><td><a href="/config">display</a></td>
+    </tr>
+    <tr>
+      <td>StartAt:</td><td>{{ .StartAt }}</td>
+    </tr>
+    <tr>
+      <td>Total:</td><td>{{ .Total }}</td>
+    </tr>
+    </table>
+    <table>
+    <tr>
+      <th>Domain</th><th>Count</th><th>LastAt</th>
+    </tr>
+    {{- range $k, $v := .Requests }}
+    <tr>
+      <td>{{ $k }}</td><td>{{ $v.Count }}</td><td>{{ $v.LastAt }}</td>
+    </tr>
+    {{- end }}
+    </table>
+  <body>
+</html>`,
 	"pac": `
 function FindProxyForURL(url, host) {
-	if (isPlainHostName(host))
-		return "DIRECT";
+    if (isPlainHostName(host))
+        return "DIRECT";
 {{- range .Rules }}
-	if (shExpMatch(host, "(^|*\.){{ . }}"))
-		return "PROXY {{ $.Local }}";
+    if (shExpMatch(host, "(^|*\.){{ . }}"))
+        return "PROXY {{ $.Local }}";
 {{- end }}
-	return "DIRECT";
+    return "DIRECT";
 }`,
 }
 
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
-		StartAt  time.Time
+		StartAt  string
 		Total    int
 		Requests map[string]*HttpRecord
 	}{
 		Total:    len(t.requests),
 		Requests: t.requests,
-		StartAt:  t.startat,
+		StartAt:  t.startat.Local().String(),
 	}
 	if tmpl, err := template.New("main").Parse(httpTmpl["stats"]); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
