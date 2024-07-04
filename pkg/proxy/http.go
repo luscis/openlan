@@ -387,7 +387,8 @@ func (t *HttpProxy) Start() {
 	})
 }
 
-var httpStatsTmpl = `
+var httpTmpl = map[string]string{
+	"stats": `
 <table>
   <tr>
     <td style="border: 1px solid black;">Configuration:</td>
@@ -416,7 +417,19 @@ var httpStatsTmpl = `
     <td style="border: 1px solid black;">{{ $v.LastAt }}</td>
   </tr>
   {{- end }}
-</table>`
+</table>`,
+
+	"pac": `
+function FindProxyForURL(url, host) {
+	if (isPlainHostName(host))
+		return "DIRECT";
+{{- range .Rules }}
+	if (shExpMatch(host, "(^|*\.){{ . }}"))
+		return "PROXY {{ $.Local }}";
+{{- end }}
+	return "DIRECT";
+}`,
+}
 
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
@@ -428,7 +441,7 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 		Requests: t.requests,
 		StartAt:  t.startat,
 	}
-	if tmpl, err := template.New("main").Parse(httpStatsTmpl); err != nil {
+	if tmpl, err := template.New("main").Parse(httpTmpl["stats"]); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		if err := tmpl.Execute(w, data); err != nil {
@@ -440,17 +453,6 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
 	encodeJson(w, t.cfg)
 }
-
-var httpPacTmpl = `
-function FindProxyForURL(url, host) {
-	if (isPlainHostName(host))
-		return "DIRECT";
-{{- range .Rules }}
-	if (shExpMatch(host, "(^|*\.){{ . }}"))
-		return "PROXY {{ $.Local }}";
-{{- end }}
-	return "DIRECT";
-}`
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
@@ -466,7 +468,7 @@ func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if tmpl, err := template.New("main").Parse(httpPacTmpl); err != nil {
+	if tmpl, err := template.New("main").Parse(httpTmpl["pac"]); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		expired := time.Now().Add(1 * time.Minute)

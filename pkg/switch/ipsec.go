@@ -31,8 +31,8 @@ func NewIPSecWorker(c *co.Network) *IPSecWorker {
 	return w
 }
 
-const (
-	vxlanTmpl = `
+var ipsecTmpl = map[string]string{
+	"vxlan": `
 conn {{ .Name }}
     keyexchange=ike
     ikev2=no
@@ -70,8 +70,8 @@ conn {{ .Name }}-c2
 {{- end }}
     leftprotoport=udp
     rightprotoport=udp/8472
-`
-	greTmpl = `
+`,
+	"gre": `
 conn {{ .Name }}-c1
     auto=add
     ikev2=no
@@ -93,11 +93,11 @@ conn {{ .Name }}-c1
     authby=secret
     leftprotoport=gre
     rightprotoport=gre
-`
-	secretTmpl = `
+`,
+	"secret": `
 %any @{{ .RightId }}.{{ .Transport }} : PSK "{{ .Secret }}"
-`
-)
+`,
+}
 
 func (w *IPSecWorker) Initialize() {
 	w.out.Info("IPSecWorker.Initialize")
@@ -159,11 +159,11 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 
 	name := tun.Name
 	if tun.Transport == "vxlan" {
-		connTmpl = vxlanTmpl
-		secTmpl = secretTmpl
+		connTmpl = ipsecTmpl["vxlan"]
+		secTmpl = ipsecTmpl["secret"]
 	} else if tun.Transport == "gre" {
-		connTmpl = greTmpl
-		secTmpl = secretTmpl
+		connTmpl = ipsecTmpl["gre"]
+		secTmpl = ipsecTmpl["secret"]
 	}
 
 	if secTmpl != "" {
