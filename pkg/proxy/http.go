@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -25,6 +26,7 @@ import (
 type HttpRecord struct {
 	Count  int
 	LastAt string
+	Domain string
 }
 
 func (r *HttpRecord) Update() {
@@ -445,9 +447,9 @@ var httpTmpl = map[string]string{
     <tr>
       <td>Domain</td><td>Count</td><td>LastAt</td>
     </tr>
-    {{- range $k, $v := .Requests }}
+    {{- range .Requests }}
     <tr>
-      <td>{{ $k }}</td><td>{{ $v.Count }}</td><td>{{ $v.LastAt }}</td>
+      <td>{{ .Domain }}</td><td>{{ .Count }}</td><td>{{ .LastAt }}</td>
     </tr>
     {{- end }}
     </table>
@@ -469,12 +471,25 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
 		StartAt  string
 		Total    int
-		Requests map[string]*HttpRecord
+		Requests []*HttpRecord
 	}{
-		Total:    len(t.requests),
-		Requests: t.requests,
-		StartAt:  t.startat.Local().String(),
+		Total:   len(t.requests),
+		StartAt: t.startat.Local().String(),
 	}
+
+	for name, record := range t.requests {
+		data.Requests = append(data.Requests, &HttpRecord{
+			Domain: name,
+			Count:  record.Count,
+			LastAt: record.LastAt,
+		})
+	}
+
+	sort.SliceStable(data.Requests, func(i, j int) bool {
+		ii := data.Requests[i]
+		jj := data.Requests[j]
+		return ii.LastAt > jj.LastAt
+	})
 
 	if t.findQuery(r, "format") == "yaml" {
 		encodeYaml(w, data)
