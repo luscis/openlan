@@ -19,6 +19,7 @@ import (
 	"github.com/gorilla/mux"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"gopkg.in/yaml.v2"
 )
 
 type HttpRecord struct {
@@ -74,6 +75,27 @@ func encodeJson(w http.ResponseWriter, v interface{}) {
 		_, _ = w.Write(str)
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func encodeYaml(w http.ResponseWriter, v interface{}) {
+	str, err := yaml.Marshal(v)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/x-yaml")
+		_, _ = w.Write(str)
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func encodeText(w http.ResponseWriter, tmpl string, v interface{}) {
+	obj := template.New("main")
+	if tmpl, err := obj.Parse(tmpl); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		if err := tmpl.Execute(w, v); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -395,15 +417,13 @@ var httpTmpl = map[string]string{
     <meta charset="UTF-8">
     <title>OpenLAN Proxy</title>
     <style>
-      body {
-        background-color: #121212;
-        color: #e0e0e0;
-      }
-      table, a {
-        color: #e0e0e0;
+      body, table, a {
+        background-color: #1d1d1d;
+        color: #bababa;
+        font-size: small;
       }
       td, th {
-        border: 1px solid #9E9E9E;;
+        border: 1px solid #424242;
         border-radius: 2px;
         text-align: center;
       }
@@ -412,18 +432,18 @@ var httpTmpl = map[string]string{
   <body>
     <table>
     <tr>
+      <td>Total:</td><td>{{ .Total }}</td>
+    </tr>
+    <tr>
       <td>Configuration:</td><td><a href="/config">display</a></td>
     </tr>
     <tr>
       <td>StartAt:</td><td>{{ .StartAt }}</td>
     </tr>
-    <tr>
-      <td>Total:</td><td>{{ .Total }}</td>
-    </tr>
     </table>
     <table>
     <tr>
-      <th>Domain</th><th>Count</th><th>LastAt</th>
+      <td>Domain</td><td>Count</td><td>LastAt</td>
     </tr>
     {{- range $k, $v := .Requests }}
     <tr>
@@ -455,17 +475,22 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 		Requests: t.requests,
 		StartAt:  t.startat.Local().String(),
 	}
-	if tmpl, err := template.New("main").Parse(httpTmpl["stats"]); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	if t.findQuery(r, "format") == "yaml" {
+		encodeYaml(w, data)
+	} else if t.findQuery(r, "format") == "json" {
+		encodeJson(w, data)
 	} else {
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		encodeText(w, httpTmpl["stats"], data)
 	}
 }
 
 func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
-	encodeJson(w, t.cfg)
+	if t.findQuery(r, "format") == "yaml" {
+		encodeYaml(w, t.cfg)
+	} else {
+		encodeJson(w, t.cfg)
+	}
 }
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
@@ -482,15 +507,14 @@ func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if tmpl, err := template.New("main").Parse(httpTmpl["pac"]); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else {
-		expired := time.Now().Add(1 * time.Minute)
-		w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
-		w.Header().Set("Cache-Control", "max-age=60")
-		w.Header().Set("Expires", expired.UTC().Format(http.TimeFormat))
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+	w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
+	encodeText(w, httpTmpl["pac"], data)
+}
+
+func (t *HttpProxy) findQuery(r *http.Request, name string) string {
+	query := r.URL.Query()
+	if values, ok := query[name]; ok {
+		return values[0]
 	}
+	return ""
 }
