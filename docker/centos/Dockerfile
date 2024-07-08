@@ -4,6 +4,9 @@ ARG linux_bin
 
 WORKDIR /root
 
+# mirrorlist for centos7 is EOF.
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/*.repo
 RUN yum update -y && yum install -y epel-release
 
 ADD ${linux_bin} /tmp
