@@ -24,14 +24,22 @@ import (
 )
 
 type HttpRecord struct {
-	Count  int
-	LastAt string
-	Domain string
+	Count    int
+	LastAt   string
+	CreateAt string
+	Domain   string
 }
 
 func (r *HttpRecord) Update() {
+	if r.Count == 0 {
+		r.CreateAt = time.Now().Local().String()
+	}
 	r.Count += 1
 	r.LastAt = time.Now().Local().String()
+}
+
+func NotFound(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Oops!", http.StatusNotFound)
 }
 
 type HttpProxy struct {
@@ -126,11 +134,12 @@ func NewHttpProxy(cfg *co.HttpProxy) *HttpProxy {
 }
 
 func (t *HttpProxy) loadUrl() {
-	if strings.HasPrefix(t.cfg.Listen, "127.") {
+	if strings.HasPrefix(t.cfg.Listen, "127.0.0.") {
 		t.api.HandleFunc("/", t.GetStats)
 		t.api.HandleFunc("/config", t.GetConfig)
 		t.api.HandleFunc("/pac", t.GetPac)
 	}
+	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
 }
 
 func (t *HttpProxy) loadPass() {
@@ -235,9 +244,11 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 		conf := &tls.Config{
 			InsecureSkipVerify: insecure,
 		}
-		return tls.Dial("tcp", remote, conf)
+		dialer := &net.Dialer{Timeout: 10 * time.Second}
+		return tls.DialWithDialer(dialer, "tcp", remote, conf)
+
 	}
-	return net.Dial("tcp", remote)
+	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
 
 func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error) {
@@ -445,11 +456,12 @@ var httpTmpl = map[string]string{
     </table>
     <table>
     <tr>
-      <td>Domain</td><td>Count</td><td>LastAt</td>
+      <td>Domain</td><td>Count</td><td>LastAt</td><td>CreateAt</td>
     </tr>
     {{- range .Requests }}
     <tr>
-      <td>{{ .Domain }}</td><td>{{ .Count }}</td><td>{{ .LastAt }}</td>
+      <td>{{ .Domain }}</td><td>{{ .Count }}</td>
+      <td>{{ .LastAt }}</td><td>{{ .CreateAt }}</td>
     </tr>
     {{- end }}
     </table>
@@ -479,9 +491,10 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	for name, record := range t.requests {
 		data.Requests = append(data.Requests, &HttpRecord{
-			Domain: name,
-			Count:  record.Count,
-			LastAt: record.LastAt,
+			Domain:   name,
+			Count:    record.Count,
+			LastAt:   record.LastAt,
+			CreateAt: record.CreateAt,
 		})
 	}
 

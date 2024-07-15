@@ -24,13 +24,11 @@ import (
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
-	libol.Info("NotFound %s %s", r.Method, r.URL.Path)
-	http.Error(w, "oops!!!", http.StatusNotFound)
+	http.Error(w, "Oops!", http.StatusNotFound)
 }
 
 func NotAllowed(w http.ResponseWriter, r *http.Request) {
-	libol.Info("NotAllowed %s %s", r.Method, r.URL.Path)
-	http.Error(w, "oops!!!", http.StatusMethodNotAllowed)
+	http.Error(w, "Oops!", http.StatusMethodNotAllowed)
 }
 
 type Http struct {
