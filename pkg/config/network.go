@@ -8,25 +8,25 @@ import (
 )
 
 type Network struct {
-	ConfDir   string               `json:"-"`
-	File      string               `json:"file"`
-	Alias     string               `json:"-"`
-	Name      string               `json:"name"`
-	Provider  string               `json:"provider,omitempty"`
-	Bridge    *Bridge              `json:"bridge,omitempty"`
-	Subnet    *Subnet              `json:"subnet,omitempty"`
-	OpenVPN   *OpenVPN             `json:"openvpn,omitempty"`
-	Links     []Point              `json:"links,omitempty"`
-	Hosts     []HostLease          `json:"hosts,omitempty"`
-	Routes    []PrefixRoute        `json:"routes,omitempty"`
-	Acl       string               `json:"acl,omitempty"`
-	Specifies interface{}          `json:"specifies,omitempty"`
-	Dhcp      string               `json:"dhcp,omitempty"`
-	Outputs   []*Output            `json:"outputs,omitempty"`
-	ZTrust    string               `json:"ztrust,omitempty"`
-	Qos       string               `json:"qos,omitempty"`
-	Namespace string               `json:"namespace,omitempty"`
-	NextGroup map[string]NextGroup `json:"nextgroup,omitempty"`
+	ConfDir   string              `json:"-"`
+	File      string              `json:"file"`
+	Alias     string              `json:"-"`
+	Name      string              `json:"name"`
+	Provider  string              `json:"provider,omitempty"`
+	Bridge    *Bridge             `json:"bridge,omitempty"`
+	Subnet    *Subnet             `json:"subnet,omitempty"`
+	OpenVPN   *OpenVPN            `json:"openvpn,omitempty"`
+	Links     []Point             `json:"links,omitempty"`
+	Hosts     []HostLease         `json:"hosts,omitempty"`
+	Routes    []PrefixRoute       `json:"routes,omitempty"`
+	Acl       string              `json:"acl,omitempty"`
+	Specifies interface{}         `json:"specifies,omitempty"`
+	Dhcp      string              `json:"dhcp,omitempty"`
+	Outputs   []*Output           `json:"outputs,omitempty"`
+	ZTrust    string              `json:"ztrust,omitempty"`
+	Qos       string              `json:"qos,omitempty"`
+	Namespace string              `json:"namespace,omitempty"`
+	FindHop   map[string]*FindHop `json:"findhop,omitempty"`
 }
 
 func (n *Network) NewSpecifies() interface{} {
@@ -82,9 +82,9 @@ func (n *Network) Correct(sw *Switch) {
 		n.OpenVPN.Correct(sw)
 	}
 
-	for key, value := range n.NextGroup {
+	for key, value := range n.FindHop {
 		value.Correct()
-		n.NextGroup[key] = value
+		n.FindHop[key] = value
 	}
 }
 
@@ -95,37 +95,29 @@ func (n *Network) Dir(elem ...string) string {
 
 func (n *Network) LoadLink() {
 	file := n.Dir("link", n.Name+".json")
-	if err := libol.FileExist(file); err == nil {
-		if err := libol.UnmarshalLoad(&n.Links, file); err != nil {
-			libol.Error("Network.LoadLink... %n", err)
-		}
+	if err := libol.UnmarshalLoad(&n.Links, file); err != nil {
+		libol.Error("Network.LoadLink... %n", err)
 	}
 }
 
 func (n *Network) LoadRoute() {
 	file := n.Dir("route", n.Name+".json")
-	if err := libol.FileExist(file); err == nil {
-		if err := libol.UnmarshalLoad(&n.Routes, file); err != nil {
-			libol.Error("Network.LoadRoute... %n", err)
-		}
+	if err := libol.UnmarshalLoad(&n.Routes, file); err != nil {
+		libol.Error("Network.LoadRoute... %n", err)
 	}
 }
 
 func (n *Network) LoadOutput() {
 	file := n.Dir("output", n.Name+".json")
-	if err := libol.FileExist(file); err == nil {
-		if err := libol.UnmarshalLoad(&n.Outputs, file); err != nil {
-			libol.Error("Network.LoadOutput... %n", err)
-		}
+	if err := libol.UnmarshalLoad(&n.Outputs, file); err != nil {
+		libol.Error("Network.LoadOutput... %n", err)
 	}
 }
 
-func (n *Network) LoadNextGroup() {
-	file := n.Dir("nextgroup", n.Name+".json")
-	if err := libol.FileExist(file); err == nil {
-		if err := libol.UnmarshalLoad(&n.NextGroup, file); err != nil {
-			libol.Error("Network.LoadNextGroup... %n", err)
-		}
+func (n *Network) LoadFindHop() {
+	file := n.Dir("findhop", n.Name+".json")
+	if err := libol.UnmarshalLoad(&n.FindHop, file); err != nil {
+		libol.Error("Network.LoadFindHop... %n", err)
 	}
 }
 
@@ -140,7 +132,7 @@ func (n *Network) Save() {
 	n.SaveRoute()
 	n.SaveLink()
 	n.SaveOutput()
-	n.SaveNextGroup()
+	n.SaveFindHop()
 }
 
 func (n *Network) SaveRoute() {
@@ -173,13 +165,13 @@ func (n *Network) SaveOutput() {
 	}
 }
 
-func (n *Network) SaveNextGroup() {
-	file := n.Dir("nextgroup", n.Name+".json")
-	if n.NextGroup == nil {
+func (n *Network) SaveFindHop() {
+	file := n.Dir("findhop", n.Name+".json")
+	if n.FindHop == nil {
 		return
 	}
-	if err := libol.MarshalSave(n.NextGroup, file, true); err != nil {
-		libol.Error("Network.SaveNextGroup %s %s", n.Name, err)
+	if err := libol.MarshalSave(n.FindHop, file, true); err != nil {
+		libol.Error("Network.SaveFindHop %s %s", n.Name, err)
 	}
 }
 

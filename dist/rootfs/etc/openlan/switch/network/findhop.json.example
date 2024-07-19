@@ -11,8 +11,8 @@
   },
   "routes": [
     {
-      "prefix": "172.32.10.0/24"
-      "nextgroup": "ng1"
+      "prefix": "172.32.10.0/24",
+      "findhop": "hop1"
     }
   ],
   "openvpn": {

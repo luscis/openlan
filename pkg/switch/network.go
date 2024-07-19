@@ -41,21 +41,21 @@ func SplitCombined(value string) (string, string) {
 }
 
 type WorkerImpl struct {
-	uuid      string
-	cfg       *co.Network
-	out       *libol.SubLogger
-	dhcp      *Dhcp
-	fire      *cn.FireWallTable
-	setR      *cn.IPSet
-	setV      *cn.IPSet
-	vpn       *OpenVPN
-	ztrust    *ZTrust
-	qos       *QosCtrl
-	vrf       *cn.VRF
-	table     int
-	br        cn.Bridger
-	acl       *ACL
-	nextgroup *NextGroup
+	uuid    string
+	cfg     *co.Network
+	out     *libol.SubLogger
+	dhcp    *Dhcp
+	fire    *cn.FireWallTable
+	setR    *cn.IPSet
+	setV    *cn.IPSet
+	vpn     *OpenVPN
+	ztrust  *ZTrust
+	qos     *QosCtrl
+	vrf     *cn.VRF
+	table   int
+	br      cn.Bridger
+	acl     *ACL
+	findhop *FindHop
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -98,7 +98,7 @@ func (w *WorkerImpl) Initialize() {
 	w.acl = NewACL(cfg.Name)
 	w.acl.Initialize()
 
-	w.nextgroup = NewNextGroup(cfg.Name, cfg.NextGroup)
+	w.findhop = NewFindHop(cfg.Name, cfg.FindHop)
 
 	n := models.Network{
 		Name:    cfg.Name,
@@ -294,7 +294,7 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 	if err != nil {
 		return
 	}
-	if ifAddr == rt.NextHop && rt.MultiPath == nil && rt.NextGroup == "" {
+	if ifAddr == rt.NextHop && rt.MultiPath == nil && rt.FindHop == "" {
 		// route's next-hop is local not install again.
 		return
 	}
@@ -313,9 +313,9 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		nlr.Gw = net.ParseIP(rt.NextHop)
 		nlr.Priority = rt.Metric
 	}
-	if rt.NextGroup != "" {
-		w.out.Info("WorkerImpl.loadRoute: %s , ng: %s", nlr.String(), rt.NextGroup)
-		w.nextgroup.LoadRoute(rt.NextGroup, &nlr)
+	if rt.FindHop != "" {
+		w.out.Info("WorkerImpl.loadRoute: %s, findhop: %s", nlr.String(), rt.FindHop)
+		w.findhop.LoadRoute(rt.FindHop, &nlr)
 		return
 	}
 	w.out.Info("WorkerImpl.loadRoute: %s", nlr.String())
@@ -401,7 +401,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	w.out.Info("WorkerImpl.Start")
 
-	w.nextgroup.Start()
+	w.findhop.Start()
 
 	w.loadVRF()
 	w.loadRoutes()
@@ -520,8 +520,8 @@ func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
 		nlr.Priority = rt.Metric
 	}
 
-	if rt.NextGroup != "" {
-		w.nextgroup.UnloadRoute(rt.NextGroup, &nlr)
+	if rt.FindHop != "" {
+		w.findhop.UnloadRoute(rt.FindHop, &nlr)
 		return
 	}
 	w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
@@ -549,7 +549,7 @@ func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 
 	w.fire.Stop()
-	w.nextgroup.Stop()
+	w.findhop.Stop()
 
 	w.unloadRoutes()
 	if !(w.vpn == nil) {
@@ -905,7 +905,7 @@ func (w *WorkerImpl) delCacheRoute(rt co.PrefixRoute) {
 	if rt.Metric > 0 {
 		rte.Metric = rt.Metric
 	}
-	if rt.NextGroup == "" && rt.NextHop != "" {
+	if rt.FindHop == "" && rt.NextHop != "" {
 		rte.Origin = rt.NextHop
 	}
 
@@ -924,7 +924,7 @@ func (w *WorkerImpl) addCacheRoute(rt co.PrefixRoute) {
 		rte.Metric = rt.Metric
 	}
 
-	if rt.NextGroup == "" && rt.NextHop != "" {
+	if rt.FindHop == "" && rt.NextHop != "" {
 		rte.Origin = rt.NextHop
 	}
 

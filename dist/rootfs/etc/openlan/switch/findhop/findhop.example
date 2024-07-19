@@ -1,7 +1,7 @@
 {
-  "ng1": {
+  "hop1": {
     "check": "ping",
-    "ping": {
+    "params": {
       "count": 5,
       "loss": 2
     },

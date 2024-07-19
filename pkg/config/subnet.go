@@ -30,7 +30,7 @@ type PrefixRoute struct {
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 	Metric    int         `json:"metric"`
 	Mode      string      `json:"forward,omitempty"` // route or snat
-	NextGroup string      `json:"nextgroup,omitempty"`
+	FindHop   string      `json:"findhop,omitempty"`
 }
 
 func (r *PrefixRoute) String() string {
@@ -60,7 +60,6 @@ func (r *PrefixRoute) CorrectRoute(nexthop string) {
 	if r.Mode == "" {
 		r.Mode = "snat"
 	}
-
 }
 
 func CorrectRoutes(routes []PrefixRoute, nexthop string) {

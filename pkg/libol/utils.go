@@ -155,7 +155,7 @@ func Unmarshal(v interface{}, contents []byte) error {
 
 func UnmarshalLoad(v interface{}, file string) error {
 	if err := FileExist(file); err != nil {
-		return NewErr("%s %s", file, err)
+		return nil
 	}
 	contents, err := LoadWithoutAnn(file)
 	if err != nil {
