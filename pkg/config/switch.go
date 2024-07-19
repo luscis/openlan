@@ -50,7 +50,7 @@ func (p *Perf) Correct() {
 }
 
 type Switch struct {
-	File      string              `json:"file"`
+	File      string              `json:"-"`
 	Alias     string              `json:"alias"`
 	Perf      Perf                `json:"limit,omitempty"`
 	Protocol  string              `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.

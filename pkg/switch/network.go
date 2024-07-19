@@ -99,24 +99,24 @@ func (w *WorkerImpl) Initialize() {
 	w.acl.Initialize()
 
 	w.findhop = NewFindHop(cfg.Name, cfg.FindHop)
-
-	n := models.Network{
-		Name:    cfg.Name,
-		IpStart: cfg.Subnet.Start,
-		IpEnd:   cfg.Subnet.End,
-		Netmask: cfg.Subnet.Netmask,
-		IfAddr:  cfg.Bridge.Address,
-		Routes:  make([]*models.Route, 0, 2),
-		Config:  cfg,
-	}
-	for _, rt := range cfg.Routes {
-		nRoute := w.newRoute(&rt)
-		if nRoute != nil {
-			n.Routes = append(n.Routes, nRoute)
+	if cfg.Subnet != nil {
+		n := models.Network{
+			Name:    cfg.Name,
+			IpStart: cfg.Subnet.Start,
+			IpEnd:   cfg.Subnet.End,
+			Netmask: cfg.Subnet.Netmask,
+			IfAddr:  cfg.Bridge.Address,
+			Routes:  make([]*models.Route, 0, 2),
+			Config:  cfg,
 		}
+		for _, rt := range cfg.Routes {
+			nRoute := w.newRoute(&rt)
+			if nRoute != nil {
+				n.Routes = append(n.Routes, nRoute)
+			}
+		}
+		cache.Network.Add(&n)
 	}
-
-	cache.Network.Add(&n)
 
 	w.updateVPN()
 	w.createVPN()

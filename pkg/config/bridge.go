@@ -1,7 +1,7 @@
 package config
 
 type Bridge struct {
-	Network  string `json:"network"`
+	Network  string `json:"network,omitempty"`
 	Peer     string `json:"peer,omitempty"`
 	Name     string `json:"name,omitempty"`
 	IPMtu    int    `json:"mtu,omitempty"`

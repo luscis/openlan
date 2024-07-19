@@ -3,9 +3,9 @@ package config
 import "github.com/luscis/openlan/pkg/libol"
 
 type ACL struct {
-	File  string     `json:"file"`
+	File  string     `json:"-"`
 	Name  string     `json:"name"`
-	Rules []*ACLRule `json:"rules"`
+	Rules []*ACLRule `json:"rules,omitempty"`
 }
 
 func (ru *ACL) Save() {

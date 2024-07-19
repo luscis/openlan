@@ -3,6 +3,7 @@ package cswitch
 import (
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
+	nl "github.com/vishvananda/netlink"
 )
 
 type RouterWorker struct {
@@ -38,12 +39,58 @@ func (w *RouterWorker) Forward() {
 	w.toMasq_s(w.setR.Name, "", "To Masq")
 }
 
+func (w *RouterWorker) addAddress() error {
+	spec := w.spec
+	if spec.Loopback == "" {
+		return nil
+	}
+	link, err := nl.LinkByName("lo")
+	if err != nil {
+		w.out.Warn("addAddress: %s", err)
+		return err
+	}
+	addr, err := nl.ParseAddr(spec.Loopback)
+	if err != nil {
+		w.out.Warn("addAddress: %s", err)
+		return err
+	}
+	if err := nl.AddrAdd(link, addr); err != nil {
+		w.out.Warn("addAddress: %s", err)
+		return err
+	}
+	return nil
+}
+
 func (w *RouterWorker) Start(v api.Switcher) {
 	w.uuid = v.UUID()
 	w.WorkerImpl.Start(v)
+	w.addAddress()
+}
+
+func (w *RouterWorker) delAddress() error {
+	spec := w.spec
+	if spec.Loopback == "" {
+		return nil
+	}
+	link, err := nl.LinkByName("lo")
+	if err != nil {
+		w.out.Warn("delAddress: %s", err)
+		return err
+	}
+	addr, err := nl.ParseAddr(spec.Loopback)
+	if err != nil {
+		w.out.Warn("delAddress: %s", err)
+		return err
+	}
+	if err := nl.AddrDel(link, addr); err != nil {
+		w.out.Warn("delAddress: %s", err)
+		return err
+	}
+	return nil
 }
 
 func (w *RouterWorker) Stop() {
+	w.delAddress()
 	w.WorkerImpl.Stop()
 }
 

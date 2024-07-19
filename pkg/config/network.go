@@ -9,7 +9,7 @@ import (
 
 type Network struct {
 	ConfDir   string              `json:"-"`
-	File      string              `json:"file"`
+	File      string              `json:"-"`
 	Alias     string              `json:"-"`
 	Name      string              `json:"name"`
 	Provider  string              `json:"provider,omitempty"`
@@ -42,12 +42,11 @@ func (n *Network) NewSpecifies() interface{} {
 }
 
 func (n *Network) Correct(sw *Switch) {
+	ipAddr := ""
+	ipMask := ""
 	if n.Bridge == nil {
 		n.Bridge = &Bridge{}
 	}
-	br := n.Bridge
-	br.Network = n.Name
-	br.Correct()
 	switch n.Provider {
 	case "router":
 		spec := n.Specifies
@@ -61,15 +60,17 @@ func (n *Network) Correct(sw *Switch) {
 			obj.Correct()
 			obj.Name = n.Name
 		}
+	default:
+		br := n.Bridge
+		br.Network = n.Name
+		br.Correct()
+		if _i, _n, err := net.ParseCIDR(br.Address); err == nil {
+			ipAddr = _i.String()
+			ipMask = net.IP(_n.Mask).String()
+		}
 	}
 	if n.Subnet == nil {
 		n.Subnet = &Subnet{}
-	}
-	ipAddr := ""
-	ipMask := ""
-	if _i, _n, err := net.ParseCIDR(br.Address); err == nil {
-		ipAddr = _i.String()
-		ipMask = net.IP(_n.Mask).String()
 	}
 	if n.Subnet.Netmask == "" {
 		n.Subnet.Netmask = ipMask
