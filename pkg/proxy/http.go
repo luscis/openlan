@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -50,6 +51,7 @@ type HttpProxy struct {
 	api      *mux.Router
 	startat  time.Time
 	requests map[string]*HttpRecord
+	lock     sync.RWMutex
 }
 
 var (
@@ -329,6 +331,8 @@ func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
 }
 
 func (t *HttpProxy) doRecord(r *http.Request) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	record, ok := t.requests[r.URL.Host]
 	if !ok {
 		record = &HttpRecord{}
@@ -480,6 +484,7 @@ function FindProxyForURL(url, host) {
 }
 
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
+	t.lock.RLock()
 	data := &struct {
 		StartAt  string
 		Total    int
@@ -488,7 +493,6 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 		Total:   len(t.requests),
 		StartAt: t.startat.Local().String(),
 	}
-
 	for name, record := range t.requests {
 		data.Requests = append(data.Requests, &HttpRecord{
 			Domain:   name,
@@ -497,6 +501,7 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 			CreateAt: record.CreateAt,
 		})
 	}
+	t.lock.RUnlock()
 
 	sort.SliceStable(data.Requests, func(i, j int) bool {
 		ii := data.Requests[i]
