@@ -22,6 +22,7 @@ func (r Route) Add(c *cli.Context) error {
 	pr := &schema.PrefixRoute{
 		Prefix:  c.String("prefix"),
 		NextHop: c.String("nexthop"),
+		FindHop: c.String("findhop"),
 		Metric:  c.Int("metric"),
 		Mode:    c.String("mode"),
 	}
@@ -39,10 +40,7 @@ func (r Route) Remove(c *cli.Context) error {
 		return libol.NewErr("invalid network")
 	}
 	pr := &schema.PrefixRoute{
-		Prefix:  c.String("prefix"),
-		NextHop: c.String("nexthop"),
-		Metric:  c.Int("metric"),
-		Mode:    c.String("mode"),
+		Prefix: c.String("prefix"),
 	}
 	url := r.Url(c.String("url"), network)
 	clt := r.NewHttp(c.String("token"))
@@ -66,9 +64,9 @@ func (r Route) Save(c *cli.Context) error {
 
 func (r Route) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -25 "prefix"}} {{ps -25 "nexthop"}} {{ps -8 "metric"}} {{ps -8 "mode"}} {{ps -15 "origin"}}
+{{ps -25 "prefix"}} {{ps -25 "nexthop"}} {{ps -8 "metric"}} {{ps -8 "mode"}}
 {{- range . }}
-{{ps -25 .Prefix}} {{ps -25 .NextHop}} {{pi -8 .Metric }} {{ps -8 .Mode}} {{ps -15 .Origin}}
+{{ps -25 .Prefix}} {{ if .FindHop }}{{ps -25 .FindHop}}{{ else }}{{ps -25 .NextHop}}{{ end }} {{pi -8 .Metric }} {{ps -8 .Mode}}
 {{- end }}
 `
 }
@@ -94,6 +92,7 @@ func (r Route) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "prefix", Required: true},
 					&cli.StringFlag{Name: "nexthop"},
+					&cli.StringFlag{Name: "findhop"},
 					&cli.IntFlag{Name: "metric"},
 					&cli.StringFlag{Name: "mode"},
 				},
@@ -105,7 +104,6 @@ func (r Route) Commands() *cli.Command {
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "prefix", Required: true},
-					&cli.StringFlag{Name: "nexthop"},
 				},
 				Action: r.Remove,
 			},

@@ -53,6 +53,7 @@ type ZTruster interface {
 type Router interface {
 	AddRoute(route *schema.PrefixRoute, switcher Switcher) error
 	DelRoute(route *schema.PrefixRoute, switcher Switcher) error
+	ListRoute(call func(obj schema.PrefixRoute))
 	SaveRoute()
 }
 

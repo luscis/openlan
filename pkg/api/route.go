@@ -4,8 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/cache"
-	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -26,12 +24,15 @@ func (rt Route) List(w http.ResponseWriter, r *http.Request) {
 
 	routes := make([]schema.PrefixRoute, 0, 1024)
 
-	for u := range cache.Network.ListRoute(id) {
-		if u == nil {
-			break
-		}
-		routes = append(routes, models.NewRouteSchema(u))
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusInternalServerError)
+		return
 	}
+
+	worker.ListRoute(func(obj schema.PrefixRoute) {
+		routes = append(routes, obj)
+	})
 	ResponseJson(w, routes)
 }
 
@@ -57,7 +58,6 @@ func (rt Route) Add(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ResponseJson(w, true)
-
 }
 
 func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +82,6 @@ func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ResponseJson(w, true)
-
 }
 
 func (rt Route) Save(w http.ResponseWriter, r *http.Request) {

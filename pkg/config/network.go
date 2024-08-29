@@ -188,6 +188,12 @@ func (n *Network) FindRoute(value PrefixRoute) (PrefixRoute, int) {
 	return PrefixRoute{}, -1
 }
 
+func (n *Network) ListRoute(call func(value PrefixRoute)) {
+	for _, obj := range n.Routes {
+		call(obj)
+	}
+}
+
 func (n *Network) AddRoute(value PrefixRoute) bool {
 	_, index := n.FindRoute(value)
 	if index == -1 {

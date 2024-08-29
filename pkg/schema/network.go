@@ -11,9 +11,9 @@ type Lease struct {
 type PrefixRoute struct {
 	Prefix    string      `json:"prefix"`
 	NextHop   string      `json:"nexthop"`
+	FindHop   string      `json:"findhop"`
 	Metric    int         `json:"metric"`
 	Mode      string      `json:"mode"`
-	Origin    string      `json:"origin"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 }
 

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
@@ -96,7 +95,7 @@ func (ng *FindHop) DelFindHop(name string, cfg co.FindHop) {
 
 func (ng *FindHop) LoadRoute(findhop string, nlr *nl.Route) {
 	if driver, ok := ng.drivers[findhop]; ok {
-		ng.out.Debug("FindHop.loadRoute: %v", nlr)
+		ng.out.Info("FindHop.loadRoute: %v", nlr)
 		driver.LoadRoute(nlr)
 	} else {
 		ng.out.Error("FindHop.loadRoute: checker not found %s", findhop)
@@ -210,15 +209,8 @@ func (c *FindHopDriverImpl) buildNexthopInfos() []*nl.NexthopInfo {
 func (c *FindHopDriverImpl) updateRoute(nlr *nl.Route) {
 	c.out.Debug("FindHopDriverImpl.updateRoute: %v ", nlr)
 	multiPath := c.buildNexthopInfos()
-	modelMultiPath := c.modelMultiPath()
 
 	nlr.MultiPath = multiPath
-
-	cache.Network.UpdateRoute(c.Network, co.PrefixRoute{
-		Prefix: nlr.Dst.String(),
-	}, func(obj *models.Route) {
-		obj.MultiPath = modelMultiPath
-	})
 
 	promise := libol.NewPromise()
 	promise.Go(func() error {

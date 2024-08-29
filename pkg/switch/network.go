@@ -106,14 +106,7 @@ func (w *WorkerImpl) Initialize() {
 			IpEnd:   cfg.Subnet.End,
 			Netmask: cfg.Subnet.Netmask,
 			IfAddr:  cfg.Bridge.Address,
-			Routes:  make([]*models.Route, 0, 2),
 			Config:  cfg,
-		}
-		for _, rt := range cfg.Routes {
-			nRoute := w.newRoute(&rt)
-			if nRoute != nil {
-				n.Routes = append(n.Routes, nRoute)
-			}
 		}
 		cache.Network.Add(&n)
 	}
@@ -314,7 +307,6 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		nlr.Priority = rt.Metric
 	}
 	if rt.FindHop != "" {
-		w.out.Info("WorkerImpl.loadRoute: %s, findhop: %s", nlr.String(), rt.FindHop)
 		w.findhop.LoadRoute(rt.FindHop, &nlr)
 		return
 	}
@@ -896,41 +888,6 @@ func (w *WorkerImpl) createVPN() {
 	w.vpn = obj
 }
 
-func (w *WorkerImpl) delCacheRoute(rt co.PrefixRoute) {
-	if rt.NextHop == "" {
-		w.out.Warn("WorkerImpl.DelCacheRoute: %s noNextHop", rt.Prefix)
-		return
-	}
-	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
-	if rt.Metric > 0 {
-		rte.Metric = rt.Metric
-	}
-	if rt.FindHop == "" && rt.NextHop != "" {
-		rte.Origin = rt.NextHop
-	}
-
-	cache.Network.DelRoute(w.cfg.Name, rt)
-}
-
-func (w *WorkerImpl) addCacheRoute(rt co.PrefixRoute) {
-	w.out.Info("WorkerImpl.addCacheRoute: %v ", rt)
-	if rt.NextHop == "" {
-		w.out.Warn("WorkerImpl.AddCacheRoute: %s ", rt.Prefix)
-		return
-	}
-
-	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
-	if rt.Metric > 0 {
-		rte.Metric = rt.Metric
-	}
-
-	if rt.FindHop == "" && rt.NextHop != "" {
-		rte.Origin = rt.NextHop
-	}
-
-	cache.Network.AddRoute(w.cfg.Name, rte)
-}
-
 func (w *WorkerImpl) addVPNRoute(rt co.PrefixRoute) {
 	vpn := w.cfg.OpenVPN
 	if vpn == nil {
@@ -988,6 +945,19 @@ func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
 	return rt
 }
 
+func (w *WorkerImpl) ListRoute(call func(obj schema.PrefixRoute)) {
+	w.cfg.ListRoute(func(obj co.PrefixRoute) {
+		data := schema.PrefixRoute{
+			Prefix:  obj.Prefix,
+			NextHop: obj.NextHop,
+			FindHop: obj.FindHop,
+			Mode:    obj.Mode,
+			Metric:  obj.Metric,
+		}
+		call(data)
+	})
+}
+
 func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
 	rt := w.correctRoute(route)
 	if !w.cfg.AddRoute(rt) {
@@ -1000,8 +970,6 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 	if inet, err := libol.ParseNet(rt.Prefix); err == nil {
 		w.addVPNSet(inet.String())
 	}
-
-	w.addCacheRoute(rt)
 	w.addVPNRoute(rt)
 	w.loadRoute(rt)
 	return nil
@@ -1019,8 +987,6 @@ func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 	if inet, err := libol.ParseNet(delRt.Prefix); err == nil {
 		w.delVPNSet(inet.String())
 	}
-
-	w.delCacheRoute(delRt)
 	w.delVPNRoute(delRt)
 	w.unloadRoute(delRt)
 	return nil
