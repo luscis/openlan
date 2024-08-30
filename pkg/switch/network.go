@@ -98,7 +98,7 @@ func (w *WorkerImpl) Initialize() {
 	w.acl = NewACL(cfg.Name)
 	w.acl.Initialize()
 
-	w.findhop = NewFindHop(cfg.Name, cfg.FindHop)
+	w.findhop = NewFindHop(cfg.Name, cfg)
 	if cfg.Subnet != nil {
 		n := models.Network{
 			Name:    cfg.Name,
@@ -307,7 +307,7 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		nlr.Priority = rt.Metric
 	}
 	if rt.FindHop != "" {
-		w.findhop.LoadRoute(rt.FindHop, &nlr)
+		w.findhop.LoadHop(rt.FindHop, &nlr)
 		return
 	}
 	w.out.Info("WorkerImpl.loadRoute: %s", nlr.String())
@@ -513,7 +513,7 @@ func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
 	}
 
 	if rt.FindHop != "" {
-		w.findhop.UnloadRoute(rt.FindHop, &nlr)
+		w.findhop.UnloadHop(rt.FindHop, &nlr)
 		return
 	}
 	w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
@@ -578,7 +578,7 @@ func (w *WorkerImpl) ID() string {
 	return w.uuid
 }
 
-func (w *WorkerImpl) Bridge() cn.Bridger {
+func (w *WorkerImpl) Bridger() cn.Bridger {
 	return w.br
 }
 
@@ -938,6 +938,7 @@ func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
 	rt := co.PrefixRoute{
 		Prefix:  route.Prefix,
 		NextHop: route.NextHop,
+		FindHop: route.FindHop,
 		Mode:    route.Mode,
 		Metric:  route.Metric,
 	}
@@ -965,7 +966,7 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 		return nil
 	}
 
-	w.out.Info("WorkerImpl.AddRoute: %v", rt)
+	w.out.Info("WorkerImpl.AddRoute: %s", rt.String())
 	w.addIpSet(rt)
 	if inet, err := libol.ParseNet(rt.Prefix); err == nil {
 		w.addVPNSet(inet.String())
@@ -996,14 +997,6 @@ func (w *WorkerImpl) SaveRoute() {
 	w.cfg.SaveRoute()
 }
 
-func (w *WorkerImpl) ZTruster() api.ZTruster {
-	return w.ztrust
-}
-
-func (w *WorkerImpl) Qoser() api.Qoser {
-	return w.qos
-}
-
 func (w *WorkerImpl) Router() api.Router {
 	return w
 }
@@ -1011,10 +1004,6 @@ func (w *WorkerImpl) Router() api.Router {
 func (w *WorkerImpl) IfAddr() string {
 	br := w.cfg.Bridge
 	return strings.SplitN(br.Address, "/", 2)[0]
-}
-
-func (w *WorkerImpl) ACLer() api.ACLer {
-	return w.acl
 }
 
 func (w *WorkerImpl) AddOutput(data schema.Output) {
@@ -1045,4 +1034,19 @@ func (w *WorkerImpl) DelOutput(data schema.Output) {
 
 func (w *WorkerImpl) SaveOutput() {
 	w.cfg.SaveOutput()
+}
+func (w *WorkerImpl) ZTruster() api.ZTruster {
+	return w.ztrust
+}
+
+func (w *WorkerImpl) Qoser() api.Qoser {
+	return w.qos
+}
+
+func (w *WorkerImpl) ACLer() api.ACLer {
+	return w.acl
+}
+
+func (w *WorkerImpl) FindHoper() api.FindHoper {
+	return w.findhop
 }

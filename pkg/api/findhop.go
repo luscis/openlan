@@ -7,36 +7,36 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type Route struct {
+type FindHop struct {
 	Switcher Switcher
 }
 
-func (rt Route) Router(router *mux.Router) {
-	router.HandleFunc("/api/network/{id}/route", rt.List).Methods("GET")
-	router.HandleFunc("/api/network/{id}/route", rt.Add).Methods("POST")
-	router.HandleFunc("/api/network/{id}/route", rt.Del).Methods("DELETE")
-	router.HandleFunc("/api/network/{id}/route", rt.Save).Methods("PUT")
+func (rt FindHop) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/findhop", rt.List).Methods("GET")
+	router.HandleFunc("/api/network/{id}/findhop", rt.Add).Methods("POST")
+	router.HandleFunc("/api/network/{id}/findhop", rt.Del).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/findhop", rt.Save).Methods("PUT")
 }
 
-func (rt Route) List(w http.ResponseWriter, r *http.Request) {
+func (rt FindHop) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-
-	routes := make([]schema.PrefixRoute, 0, 1024)
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
+	routes := make([]schema.FindHop, 0, 1024)
+	hoper := worker.FindHoper()
 
-	worker.ListRoute(func(obj schema.PrefixRoute) {
+	hoper.ListHop(func(obj schema.FindHop) {
 		routes = append(routes, obj)
 	})
 	ResponseJson(w, routes)
 }
 
-func (rt Route) Add(w http.ResponseWriter, r *http.Request) {
+func (rt FindHop) Add(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -46,13 +46,14 @@ func (rt Route) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pr := &schema.PrefixRoute{}
-	if err := GetData(r, pr); err != nil {
+	data := schema.FindHop{}
+	if err := GetData(r, &data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := worker.AddRoute(pr, rt.Switcher); err != nil {
+	hoper := worker.FindHoper()
+	if err := hoper.AddHop(data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -60,7 +61,7 @@ func (rt Route) Add(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, true)
 }
 
-func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
+func (rt FindHop) Del(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -70,13 +71,14 @@ func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pr := &schema.PrefixRoute{}
-	if err := GetData(r, pr); err != nil {
+	data := schema.FindHop{}
+	if err := GetData(r, &data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := worker.DelRoute(pr, rt.Switcher); err != nil {
+	hoper := worker.FindHoper()
+	if err := hoper.DelHop(data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -84,7 +86,7 @@ func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, true)
 }
 
-func (rt Route) Save(w http.ResponseWriter, r *http.Request) {
+func (rt FindHop) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -94,7 +96,8 @@ func (rt Route) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	worker.SaveRoute()
+	hoper := worker.FindHoper()
+	hoper.SaveHop()
 
 	ResponseJson(w, true)
 

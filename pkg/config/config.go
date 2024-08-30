@@ -21,3 +21,7 @@ func Update(obj *Switch) {
 func Get() *Switch {
 	return switcher
 }
+
+func GetNetwork(name string) *Network {
+	return switcher.GetNetwork(name)
+}

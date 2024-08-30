@@ -42,7 +42,7 @@ func (h Output) Post(w http.ResponseWriter, r *http.Request) {
 
 	output := &schema.Output{}
 	if err := GetData(r, output); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	cs := h.Switcher.Config()
@@ -65,7 +65,7 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 
 	output := &schema.Output{}
 	if err := GetData(r, output); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	cs := h.Switcher.Config()

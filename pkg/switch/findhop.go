@@ -7,31 +7,35 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
+	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
 )
 
 type FindHop struct {
-	Network string
-	cfg     map[string]*co.FindHop
+	name    string
+	cfg     *co.Network
 	drivers map[string]FindHopDriver
 	out     *libol.SubLogger
+	lock    sync.RWMutex
 }
 
-func NewFindHop(network string, cfg map[string]*co.FindHop) *FindHop {
+func NewFindHop(name string, cfg *co.Network) *FindHop {
 	drivers := make(map[string]FindHopDriver, 32)
-	for key, ng := range cfg {
-		drv := newCheckDriver(key, network, ng)
+	for key, ng := range cfg.FindHop {
+		drv := newCheckDriver(key, name, ng)
 		if drv != nil {
 			drivers[key] = drv
 		}
 	}
 	return &FindHop{
-		Network: network,
+		name:    name,
 		cfg:     cfg,
 		drivers: drivers,
 		out:     libol.NewSubLogger("findhop"),
@@ -47,7 +51,7 @@ func newCheckDriver(name string, network string, cfg *co.FindHop) FindHopDriver 
 }
 
 func (ng *FindHop) Start() {
-	ng.out.Info("FindHop.Start: findhop, drivers size: %d", len(ng.drivers))
+	ng.out.Info("FindHop.Start: drivers size: %d", len(ng.drivers))
 	if len(ng.drivers) > 0 {
 		for _, checker := range ng.drivers {
 			checker.Start()
@@ -64,51 +68,110 @@ func (ng *FindHop) Stop() {
 }
 
 // for add findhop dynamicly
-func (ng *FindHop) AddFindHop(name string, cfg *co.FindHop) {
+func (ng *FindHop) addHop(name string, cfg *co.FindHop) error {
 	if _, ok := ng.drivers[name]; ok {
-		ng.out.Error("FindHop.addFindHop: checker already exists %s", name)
-		return
+		ng.out.Error("FindHop.addHop: checker already exists %s", name)
+		return nil
 	}
-	driver := newCheckDriver(name, ng.Network, cfg)
-	if driver != nil {
-		ng.drivers[name] = driver
-	} else {
-		ng.out.Error("FindHop.AddFindHop: don't support this driver %s", name)
+	driver := newCheckDriver(name, ng.name, cfg)
+	if driver == nil {
+		return libol.NewErr("FindHop.AddHop: don't support this driver %s", name)
 	}
+	ng.drivers[name] = driver
 	driver.Start()
+	return nil
 }
 
 // for del findhop dynamicly
-func (ng *FindHop) DelFindHop(name string, cfg co.FindHop) {
+func (ng *FindHop) removeHop(name string) error {
 	if driver, ok := ng.drivers[name]; !ok {
-		ng.out.Error("FindHop.addFindHop: checker not exists %s", name)
-		return
+		ng.out.Error("FindHop.addHop: checker not exists %s", name)
+		return nil
 	} else {
 		if driver.HasRoute() {
-			ng.out.Error("FindHop.delFindHop: checker has route %s", name)
-			return
+			return libol.NewErr("FindHop.delHop: checker has route %s", name)
 		}
 		driver.Stop()
 		delete(ng.drivers, name)
 	}
+	return nil
 }
 
-func (ng *FindHop) LoadRoute(findhop string, nlr *nl.Route) {
+func (ng *FindHop) LoadHop(findhop string, nlr *nl.Route) {
+	ng.lock.RLock()
+	defer ng.lock.RUnlock()
 	if driver, ok := ng.drivers[findhop]; ok {
-		ng.out.Info("FindHop.loadRoute: %v", nlr)
+		ng.out.Info("FindHop.LoadHop: %s via %s", nlr.String(), findhop)
 		driver.LoadRoute(nlr)
 	} else {
-		ng.out.Error("FindHop.loadRoute: checker not found %s", findhop)
+		ng.out.Error("FindHop.LoadHop: checker not found %s", findhop)
 	}
 }
 
-func (ng *FindHop) UnloadRoute(findhop string, nlr *nl.Route) {
+func (ng *FindHop) UnloadHop(findhop string, nlr *nl.Route) {
+	ng.lock.RLock()
+	defer ng.lock.RUnlock()
 	if driver, ok := ng.drivers[findhop]; ok {
-		ng.out.Debug("FindHop.unloadRoute: %v", nlr)
+		ng.out.Info("FindHop.UnloadHop: %s via %s", nlr.String(), findhop)
 		driver.UnloadRoute(nlr)
 	} else {
-		ng.out.Error("FindHop.unloadRoute: checker not found %s", findhop)
+		ng.out.Error("FindHop.UnloadHop: checker not found %s", findhop)
 	}
+}
+
+func (ng *FindHop) AddHop(data schema.FindHop) error {
+	ng.lock.Lock()
+	defer ng.lock.Unlock()
+	cc := &co.FindHop{
+		Name:    data.Name,
+		Mode:    data.Mode,
+		NextHop: strings.Split(data.NextHop, ","),
+		Check:   data.Check,
+	}
+	cc.Correct()
+	if ng.cfg.AddFindHop(cc) {
+		return ng.addHop(data.Name, cc)
+	}
+	return nil
+}
+
+func (ng *FindHop) DelHop(data schema.FindHop) error {
+	ng.lock.Lock()
+	defer ng.lock.Unlock()
+	cc := &co.FindHop{
+		Name: data.Name,
+	}
+	if err := ng.removeHop(data.Name); err == nil {
+		ng.cfg.DelFindHop(cc)
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (ng *FindHop) ListHop(call func(obj schema.FindHop)) {
+	ng.lock.RLock()
+	defer ng.lock.RUnlock()
+	for name, drv := range ng.drivers {
+		cc := drv.Config()
+		avas := make([]string, 0)
+		for _, ava := range cc.Available {
+			avas = append(avas, ava.NextHop)
+		}
+		call(schema.FindHop{
+			Name:      name,
+			Mode:      cc.Mode,
+			NextHop:   strings.Join(cc.NextHop, ","),
+			Check:     cc.Check,
+			Available: strings.Join(avas, ","),
+		})
+	}
+}
+
+func (ng *FindHop) SaveHop() {
+	ng.lock.RLock()
+	defer ng.lock.RUnlock()
+	ng.cfg.SaveFindHop()
 }
 
 type FindHopDriver interface {
@@ -120,40 +183,39 @@ type FindHopDriver interface {
 	LoadRoute(route *nl.Route)
 	UnloadRoute(route *nl.Route)
 	HasRoute() bool
+	Config() *co.FindHop
 }
 
-type FindHopDriverImpl struct {
+type FindHopImpl struct {
 	Network string
 	routes  []*nl.Route
 	cfg     *co.FindHop
 	out     *libol.SubLogger
 }
 
-func (c *FindHopDriverImpl) Name() string {
+func (c *FindHopImpl) Name() string {
 	return "common"
 }
 
-func (c *FindHopDriverImpl) Start() {
-
+func (c *FindHopImpl) Start() {
 }
 
-func (c *FindHopDriverImpl) Stop() {
-
+func (c *FindHopImpl) Stop() {
 }
 
-func (c *FindHopDriverImpl) HasRoute() bool {
+func (c *FindHopImpl) HasRoute() bool {
 	return len(c.routes) > 0
 }
 
-func (c *FindHopDriverImpl) Check(ipList []string) []co.MultiPath {
+func (c *FindHopImpl) Check(ipList []string) []co.MultiPath {
 	return nil
 }
 
-func (c *FindHopDriverImpl) UpdateAvailable(mp []co.MultiPath) bool {
+func (c *FindHopImpl) UpdateAvailable(mp []co.MultiPath) bool {
 	if c.cfg.Mode == "load-balance" {
 		if !compareMultiPaths(mp, c.cfg.Available) {
 			c.cfg.Available = mp
-			c.out.Info("FindHopDriverImpl.UpdateAvailable: available %v", c.cfg.Available)
+			c.out.Info("FindHopImpl.UpdateAvailable: available %v", c.cfg.Available)
 			return true
 		}
 	} else {
@@ -167,21 +229,21 @@ func (c *FindHopDriverImpl) UpdateAvailable(mp []co.MultiPath) bool {
 		}
 		if !newPath.CompareEqual(oldPath) {
 			c.cfg.Available = []co.MultiPath{newPath}
-			c.out.Info("FindHopDriverImpl.UpdateAvailable: available %v", c.cfg.Available)
+			c.out.Info("FindHopImpl.UpdateAvailable: available %v", c.cfg.Available)
 			return true
 		}
 	}
 	return false
 }
 
-func (c *FindHopDriverImpl) ReloadRoute() {
-	c.out.Debug("FindHopDriverImpl.ReloadRoute: route reload %d", len(c.routes))
+func (c *FindHopImpl) ReloadRoute() {
+	c.out.Debug("FindHopImpl.ReloadRoute: route reload %d", len(c.routes))
 	for _, rt := range c.routes {
 		c.updateRoute(rt)
 	}
 }
 
-func (c *FindHopDriverImpl) modelMultiPath() []models.MultiPath {
+func (c *FindHopImpl) modelMultiPath() []models.MultiPath {
 	var modelMultiPath []models.MultiPath
 	for _, mp := range c.cfg.Available {
 		modelMultiPath = append(modelMultiPath, models.MultiPath{
@@ -192,7 +254,7 @@ func (c *FindHopDriverImpl) modelMultiPath() []models.MultiPath {
 	return modelMultiPath
 }
 
-func (c *FindHopDriverImpl) buildNexthopInfos() []*nl.NexthopInfo {
+func (c *FindHopImpl) buildNexthopInfos() []*nl.NexthopInfo {
 	multiPath := make([]*nl.NexthopInfo, 0, len(c.cfg.Available))
 	if len(c.cfg.Available) > 0 {
 		for _, mr := range c.cfg.Available {
@@ -206,8 +268,8 @@ func (c *FindHopDriverImpl) buildNexthopInfos() []*nl.NexthopInfo {
 	return multiPath
 }
 
-func (c *FindHopDriverImpl) updateRoute(nlr *nl.Route) {
-	c.out.Debug("FindHopDriverImpl.updateRoute: %v ", nlr)
+func (c *FindHopImpl) updateRoute(nlr *nl.Route) {
+	c.out.Debug("FindHopImpl.updateRoute: %v ", nlr)
 	multiPath := c.buildNexthopInfos()
 
 	nlr.MultiPath = multiPath
@@ -215,16 +277,16 @@ func (c *FindHopDriverImpl) updateRoute(nlr *nl.Route) {
 	promise := libol.NewPromise()
 	promise.Go(func() error {
 		if err := nl.RouteReplace(nlr); err != nil {
-			c.out.Warn("FindHopDriverImpl.updateRoute: %v %s", nlr, err)
+			c.out.Warn("FindHopImpl.updateRoute: %s %s", nlr.String(), err)
 			return err
 		}
-		c.out.Info("FindHopDriverImpl.updateRoute: %s success", nlr.String())
+		c.out.Info("FindHopImpl.updateRoute: %s success", nlr.String())
 		return nil
 	})
 }
 
-func (c *FindHopDriverImpl) LoadRoute(nlr *nl.Route) {
-	c.out.Debug("FindHopDriverImpl.LoadRoute: %v", nlr)
+func (c *FindHopImpl) LoadRoute(nlr *nl.Route) {
+	c.out.Debug("FindHopImpl.LoadRoute: %v", nlr)
 	c.routes = append(c.routes, nlr)
 	nlr.MultiPath = c.buildNexthopInfos()
 	nlr.Gw = nil
@@ -235,12 +297,12 @@ func (c *FindHopDriverImpl) LoadRoute(nlr *nl.Route) {
 	}
 }
 
-func (c *FindHopDriverImpl) UnloadRoute(rt *nl.Route) {
-	c.out.Debug("FindHopDriverImpl.UnLoadRoute: %v", rt)
+func (c *FindHopImpl) UnloadRoute(rt *nl.Route) {
+	c.out.Debug("FindHopImpl.UnLoadRoute: %v", rt)
 	//find route in routes
 	var nlr *nl.Route
 	for i, r := range c.routes {
-		if r.Dst == rt.Dst && r.Table == rt.Table {
+		if r.Dst.String() == rt.Dst.String() && r.Table == rt.Table {
 			nlr = r
 			c.routes = append(c.routes[:i], c.routes[i+1:]...)
 			break
@@ -249,10 +311,14 @@ func (c *FindHopDriverImpl) UnloadRoute(rt *nl.Route) {
 
 	if nlr != nil {
 		if err := nl.RouteDel(nlr); err != nil {
-			c.out.Warn("FindHopDriverImpl.UnLoadRoute: %s", err)
+			c.out.Warn("FindHopImpl.UnLoadRoute: %s", err)
 			return
 		}
 	}
+}
+
+func (c *FindHopImpl) Config() *co.FindHop {
+	return c.cfg
 }
 
 type PingResult struct {
@@ -262,7 +328,7 @@ type PingResult struct {
 }
 
 type PingDriver struct {
-	*FindHopDriverImpl
+	*FindHopImpl
 	CfgName    string
 	Running    bool
 	PingParams *co.PingParams
@@ -271,7 +337,7 @@ type PingDriver struct {
 func NewPingDriver(name string, network string, cfg *co.FindHop) *PingDriver {
 	return &PingDriver{
 		CfgName: name,
-		FindHopDriverImpl: &FindHopDriverImpl{
+		FindHopImpl: &FindHopImpl{
 			Network: network,
 			cfg:     cfg,
 			out:     libol.NewSubLogger(cfg.Check + "_" + name),

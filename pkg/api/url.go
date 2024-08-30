@@ -25,4 +25,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	ACL{}.Router(router)
 	Route{Switcher: switcher}.Router(router)
 	IPSec{}.Router(router)
+	FindHop{}.Router(router)
 }

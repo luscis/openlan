@@ -35,7 +35,7 @@ func (h IPSec) Get(w http.ResponseWriter, r *http.Request) {
 func (h IPSec) Post(w http.ResponseWriter, r *http.Request) {
 	tun := &schema.IPSecTunnel{}
 	if err := GetData(r, tun); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if Call.secer == nil {
@@ -49,7 +49,7 @@ func (h IPSec) Post(w http.ResponseWriter, r *http.Request) {
 func (h IPSec) Delete(w http.ResponseWriter, r *http.Request) {
 	tun := &schema.IPSecTunnel{}
 	if err := GetData(r, tun); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if Call.secer == nil {
@@ -63,7 +63,7 @@ func (h IPSec) Delete(w http.ResponseWriter, r *http.Request) {
 func (h IPSec) Restart(w http.ResponseWriter, r *http.Request) {
 	tun := &schema.IPSecTunnel{}
 	if err := GetData(r, tun); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if Call.secer == nil {

@@ -1,14 +1,15 @@
 package cswitch
 
 import (
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
-	"strconv"
-	"sync"
-	"time"
 )
 
 //125000 ~ 1Mb/s
@@ -229,7 +230,7 @@ func (q *QosCtrl) FindClient(name string) *schema.VPNClient {
 	return nil
 }
 
-func (q *QosCtrl) AddOrUpdateQosUser(name string, inSpeed float64) {
+func (q *QosCtrl) AddOrUpdateQos(name string, inSpeed float64) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	client := q.FindClient(name)
@@ -293,16 +294,14 @@ func (q *QosCtrl) ClientUpdate() {
 }
 
 func (q *QosCtrl) Update() {
-
 	for {
 		q.ClientUpdate()
 
 		time.Sleep(time.Second * 5)
 	}
-
 }
 
-func (q *QosCtrl) Save() {
+func (q *QosCtrl) SaveQos() {
 	cfg := config.GetQos(q.Name)
 	cfg.Config = make(map[string]*config.QosLimit, 1024)
 	for _, rule := range q.Rules {
@@ -314,25 +313,25 @@ func (q *QosCtrl) Save() {
 	cfg.Save()
 }
 
-func (q *QosCtrl) AddQosUser(name string, inSpeed float64) error {
+func (q *QosCtrl) AddQos(name string, inSpeed float64) error {
 
-	q.AddOrUpdateQosUser(name, inSpeed)
-
-	return nil
-}
-func (q *QosCtrl) UpdateQosUser(name string, inSpeed float64) error {
-
-	q.AddOrUpdateQosUser(name, inSpeed)
+	q.AddOrUpdateQos(name, inSpeed)
 
 	return nil
 }
-func (q *QosCtrl) DelQosUser(name string) error {
+func (q *QosCtrl) UpdateQos(name string, inSpeed float64) error {
+
+	q.AddOrUpdateQos(name, inSpeed)
+
+	return nil
+}
+func (q *QosCtrl) DelQos(name string) error {
 
 	q.DelUserRule(name)
 	return nil
 }
 
-func (q *QosCtrl) ListQosUsers(call func(obj schema.Qos)) {
+func (q *QosCtrl) ListQos(call func(obj schema.Qos)) {
 
 	for _, rule := range q.Rules {
 		obj := schema.Qos{

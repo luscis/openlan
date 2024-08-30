@@ -48,12 +48,12 @@ func (h ZTrust) ListGuest(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	ztrust := worker.ZTruster()
 	if ztrust == nil {
-		http.Error(w, "ZTrust disabled", http.StatusInternalServerError)
+		http.Error(w, "ZTrust disabled", http.StatusBadRequest)
 		return
 	}
 
@@ -79,18 +79,18 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	ztrust := worker.ZTruster()
 	if ztrust == nil {
-		http.Error(w, "ZTrust disabled", http.StatusInternalServerError)
+		http.Error(w, "ZTrust disabled", http.StatusBadRequest)
 		return
 	}
 
 	guest := &schema.ZGuest{}
 	if err := GetData(r, guest); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 	if err := ztrust.AddGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -129,18 +129,18 @@ func (h ZTrust) DelGuest(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	ztrust := worker.ZTruster()
 	if ztrust == nil {
-		http.Error(w, "ZTrust disabled", http.StatusInternalServerError)
+		http.Error(w, "ZTrust disabled", http.StatusBadRequest)
 		return
 	}
 
 	guest := &schema.ZGuest{}
 	if err := GetData(r, guest); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h ZTrust) DelGuest(w http.ResponseWriter, r *http.Request) {
 	if err := ztrust.DelGuest(guest.Name, guest.Address); err == nil {
 		ResponseJson(w, "success")
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -167,12 +167,12 @@ func (h ZTrust) ListKnock(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	ztrust := worker.ZTruster()
 	if ztrust == nil {
-		http.Error(w, "ZTrust disabled", http.StatusInternalServerError)
+		http.Error(w, "ZTrust disabled", http.StatusBadRequest)
 		return
 	}
 
@@ -197,18 +197,18 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	ztrust := worker.ZTruster()
 	if ztrust == nil {
-		http.Error(w, "ZTrust disabled", http.StatusInternalServerError)
+		http.Error(w, "ZTrust disabled", http.StatusBadRequest)
 		return
 	}
 
 	rule := &schema.KnockRule{}
 	if err := GetData(r, rule); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -223,7 +223,7 @@ func (h ZTrust) AddKnock(w http.ResponseWriter, r *http.Request) {
 	if err := ztrust.Knock(user, rule.Protocol, rule.Dest, rule.Port, rule.Age); err == nil {
 		ResponseJson(w, "success")
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }

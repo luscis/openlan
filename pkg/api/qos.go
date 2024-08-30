@@ -25,12 +25,12 @@ func (h QosApi) List(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 
 	var qos = worker.Qoser()
-	qos.ListQosUsers(func(obj schema.Qos) {
+	qos.ListQos(func(obj schema.Qos) {
 		qosList = append(qosList, obj)
 	})
 
@@ -41,7 +41,7 @@ func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
 
 	qos := &schema.Qos{}
 	if err := GetData(r, qos); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -50,13 +50,13 @@ func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 
 	if qos != nil {
-		if err := worker.Qoser().AddQosUser(qos.Name, qos.InSpeed); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := worker.Qoser().AddQos(qos.Name, qos.InSpeed); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		ResponseJson(w, true)
@@ -69,7 +69,7 @@ func (h QosApi) Del(w http.ResponseWriter, r *http.Request) {
 
 	qos := &schema.Qos{}
 	if err := GetData(r, qos); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -78,13 +78,13 @@ func (h QosApi) Del(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 
 	if qos != nil {
-		if err := worker.Qoser().DelQosUser(qos.Name); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := worker.Qoser().DelQos(qos.Name); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		ResponseJson(w, true)
@@ -99,11 +99,11 @@ func (h QosApi) Save(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	qos := worker.Qoser()
-	qos.Save()
+	qos.SaveQos()
 
 	ResponseJson(w, "success")
 }

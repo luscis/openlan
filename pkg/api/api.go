@@ -39,7 +39,7 @@ type ACLer interface {
 	AddRule(rule *schema.ACLRule) error
 	DelRule(rule *schema.ACLRule) error
 	ListRules(call func(obj schema.ACLRule))
-	Save()
+	SaveRule()
 }
 
 type ZTruster interface {
@@ -62,11 +62,11 @@ type VPNer interface {
 }
 
 type Qoser interface {
-	AddQosUser(name string, inSpeed float64) error
-	UpdateQosUser(name string, inSpeed float64) error
-	DelQosUser(name string) error
-	ListQosUsers(call func(obj schema.Qos))
-	Save()
+	AddQos(name string, inSpeed float64) error
+	UpdateQos(name string, inSpeed float64) error
+	DelQos(name string) error
+	ListQos(call func(obj schema.Qos))
+	SaveQos()
 }
 
 type Outputer interface {
@@ -75,25 +75,37 @@ type Outputer interface {
 	SaveOutput()
 }
 
-type Networker interface {
+type FindHoper interface {
+	AddHop(data schema.FindHop) error
+	DelHop(data schema.FindHop) error
+	ListHop(call func(obj schema.FindHop))
+	SaveHop()
+}
+
+type Super interface {
 	String() string
 	ID() string
 	Initialize()
 	Start(v Switcher)
 	Stop()
-	Bridge() cn.Bridger
+	Reload(v Switcher)
+}
+
+type Networker interface {
+	Super
 	Config() *co.Network
 	Subnet() *net.IPNet
-	Reload(v Switcher)
 	Provider() string
-	ZTruster() ZTruster
-	Qoser() Qoser
 	IfAddr() string
-	ACLer() ACLer
 	SetMss(mss int)
 	Outputer
 	Router
 	VPNer
+	Bridger() cn.Bridger
+	ZTruster() ZTruster
+	Qoser() Qoser
+	ACLer() ACLer
+	FindHoper() FindHoper
 }
 
 type IPSecer interface {

@@ -49,7 +49,7 @@ func (h Network) Get(w http.ResponseWriter, r *http.Request) {
 func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 	network := &schema.Network{}
 	if err := GetData(r, network); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	data, err := libol.Marshal(&network.Config, true)
@@ -88,7 +88,7 @@ func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
 func (h Network) Save(w http.ResponseWriter, r *http.Request) {
 	network := &schema.Network{}
 	if err := GetData(r, network); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	h.Switcher.SaveNetwork(network.Name)
@@ -112,7 +112,7 @@ func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 

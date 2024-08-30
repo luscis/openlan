@@ -200,10 +200,6 @@ func (w *OpenLANWorker) DelLink(addr string) {
 	}
 }
 
-func (w *OpenLANWorker) Bridge() cn.Bridger {
-	return w.br
-}
-
 func (w *OpenLANWorker) Reload(v api.Switcher) {
 	w.Stop()
 	w.Initialize()

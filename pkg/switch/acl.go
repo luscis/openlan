@@ -163,7 +163,7 @@ func (a *ACL) ListRules(call func(obj schema.ACLRule)) {
 	}
 }
 
-func (a *ACL) Save() {
+func (a *ACL) SaveRule() {
 	cfg := co.GetAcl(a.Name)
 	cfg.Rules = nil
 	for _, rule := range a.Rules {

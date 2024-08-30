@@ -24,7 +24,7 @@ func (h ACL) List(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	acl := worker.ACLer()
@@ -43,21 +43,21 @@ func (h ACL) Add(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	acl := worker.ACLer()
 
 	rule := &schema.ACLRule{}
 	if err := GetData(r, rule); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := acl.AddRule(rule); err == nil {
 		ResponseJson(w, "success")
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -68,21 +68,21 @@ func (h ACL) Del(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	acl := worker.ACLer()
 
 	rule := &schema.ACLRule{}
 	if err := GetData(r, rule); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := acl.DelRule(rule); err == nil {
 		ResponseJson(w, "success")
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
@@ -93,11 +93,11 @@ func (h ACL) Save(w http.ResponseWriter, r *http.Request) {
 
 	worker := Call.GetWorker(id)
 	if worker == nil {
-		http.Error(w, "Network not found", http.StatusInternalServerError)
+		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
 	acl := worker.ACLer()
-	acl.Save()
+	acl.SaveRule()
 
 	ResponseJson(w, "success")
 }

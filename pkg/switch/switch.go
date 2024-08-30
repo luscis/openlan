@@ -453,7 +453,7 @@ func (v *Switch) GetBridge(tenant string) (network.Bridger, error) {
 	if !ok {
 		return nil, libol.NewErr("bridge %s notFound", tenant)
 	}
-	return w.Bridge(), nil
+	return w.Bridger(), nil
 }
 
 func (v *Switch) NewTap(tenant string) (network.Taper, error) {
@@ -496,7 +496,7 @@ func (v *Switch) FreeTap(dev network.Taper) error {
 	if !ok {
 		return libol.NewErr("bridge %s notFound", tenant)
 	}
-	br := w.Bridge()
+	br := w.Bridger()
 	_ = br.DelSlave(dev.Name())
 	v.out.Info("Switch.FreeTap: %s", name)
 	return nil

@@ -31,7 +31,7 @@ func (h PProf) Add(w http.ResponseWriter, r *http.Request) {
 
 	pp := &schema.PProf{}
 	if err := GetData(r, pp); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

@@ -237,3 +237,25 @@ func (n *Network) DelOutput(value *Output) (*Output, bool) {
 	}
 	return obj, index != -1
 }
+
+func (n *Network) FindFindHop(value *FindHop) *FindHop {
+	return n.FindHop[value.Name]
+}
+
+func (n *Network) AddFindHop(value *FindHop) bool {
+	older := n.FindFindHop(value)
+	if older == nil {
+		n.FindHop[value.Name] = value
+		return true
+	}
+	return false
+}
+
+func (n *Network) DelFindHop(value *FindHop) (*FindHop, bool) {
+	older := n.FindFindHop(value)
+	if older != nil {
+		delete(n.FindHop, value.Name)
+		return older, true
+	}
+	return value, false
+}

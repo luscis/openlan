@@ -41,6 +41,9 @@ func (r *PrefixRoute) String() string {
 	if len(r.NextHop) > 0 {
 		elems = append(elems, fmt.Sprintf("Nexthop: %s", r.NextHop))
 	}
+	if len(r.FindHop) > 0 {
+		elems = append(elems, fmt.Sprintf("Findhop: %s", r.FindHop))
+	}
 	if len(r.Mode) > 0 {
 		elems = append(elems, fmt.Sprintf("Forward: %s", r.Mode))
 	}

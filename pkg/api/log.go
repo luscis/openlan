@@ -24,7 +24,7 @@ func (l Log) List(w http.ResponseWriter, r *http.Request) {
 func (l Log) Add(w http.ResponseWriter, r *http.Request) {
 	log := &schema.Log{}
 	if err := GetData(r, log); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

@@ -50,7 +50,7 @@ func (h User) Get(w http.ResponseWriter, r *http.Request) {
 func (h User) Add(w http.ResponseWriter, r *http.Request) {
 	user := &schema.User{}
 	if err := GetData(r, user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -87,7 +87,7 @@ func UserCheck(user, pass string) error {
 func (h User) Check(w http.ResponseWriter, r *http.Request) {
 	user := &schema.User{}
 	if err := GetData(r, user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := UserCheck(user.Name, user.Password); err == nil {

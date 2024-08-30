@@ -93,6 +93,7 @@ func (u Network) Commands(app *api.App) {
 	openvpn := OpenVpn{}
 	output := Output{}
 	qos := Qos{}
+	findhop := FindHop{}
 	app.Command(&cli.Command{
 		Name:    "network",
 		Aliases: []string{"net"},
@@ -134,6 +135,7 @@ func (u Network) Commands(app *api.App) {
 			output.Commands(),
 			route.Commands(),
 			link.Commands(),
+			findhop.Commands(),
 		},
 	})
 }

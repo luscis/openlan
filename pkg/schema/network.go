@@ -33,3 +33,11 @@ type Network struct {
 	Name   string      `json:"name"`
 	Config interface{} `json:"config"`
 }
+
+type FindHop struct {
+	Name      string `json:"name"`
+	Mode      string `json:"mode"`
+	Check     string `json:"check"`
+	NextHop   string `json:"nexthop"`
+	Available string `json:"available"`
+}

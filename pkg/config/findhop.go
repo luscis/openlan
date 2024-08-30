@@ -1,6 +1,7 @@
 package config
 
 type FindHop struct {
+	Name      string      `json:"-"`
 	Check     string      `json:"check"`
 	Params    PingParams  `json:"params"`
 	Mode      string      `json:"mode,omitempty"`
