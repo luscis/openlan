@@ -34,7 +34,7 @@ function requires() {
     yum install -y openvpn dnsmasq bridge-utils ipset procps wget
   elif [ "$sys"x == "debian"x ]; then
     apt install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
-    apt install -y openvpn dnsmasq bridge-utils ipset procps wget
+    apt install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping
   fi
   ## Install libreswan from github.
   if [ "$sys"x == "redhat"x ]; then
