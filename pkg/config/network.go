@@ -239,6 +239,9 @@ func (n *Network) DelOutput(value *Output) (*Output, bool) {
 }
 
 func (n *Network) FindFindHop(value *FindHop) *FindHop {
+	if n.FindHop == nil {
+		n.FindHop = make(map[string]*FindHop)
+	}
 	return n.FindHop[value.Name]
 }
 
