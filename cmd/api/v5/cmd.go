@@ -38,6 +38,5 @@ func Commands(app *api.App) {
 	IPSec{}.Commands(app)
 	Version{}.Commands(app)
 	Log{}.Commands(app)
-	Guest{}.Commands(app)
-	Knock{}.Commands(app)
+	ZTrust{}.Commands(app)
 }

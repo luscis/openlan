@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/luscis/openlan/cmd/api"
-	"github.com/luscis/openlan/cmd/api/v5"
-	"github.com/luscis/openlan/cmd/api/v6"
 	"log"
 	"os"
+
+	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/cmd/api/v5"
 )
 
 func main() {
@@ -18,8 +18,6 @@ func main() {
 	app.New()
 
 	switch api.Version {
-	case "v6":
-		v6.Commands(app)
 	default:
 		v5.Commands(app)
 	}

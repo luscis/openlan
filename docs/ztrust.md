@@ -2,11 +2,8 @@
 
 ## Enable ztrust on a network
 ```
-$ cat /etc/openlan/switch/network/example.json
-{
-	...
-	"ztrust": "enable"
-}
+$ openlan ztrust --network example enable
+$ openlan network --name example sa
 $
 $ systemctl restart openlan-switch
 $
@@ -24,8 +21,8 @@ $
 ```
 $ export TOKEN="daniel@example:<password>"
 $ export URL="https://<your-central-switch-address>:10000"
-$ openlan guest add
-$ openlan guest ls
+$ openlan ztrust guest add
+$ openlan ztrust guest ls
 # total 1
 username                 address
 daniel@example          169.254.15.6
@@ -34,9 +31,9 @@ $
 
 ## Knock a host service
 ```
-$ openlan knock add --protocol icmp --socket 192.168.20.10
-$ openlan knock add --protocol tcp --socket 192.168.20.10:22
-$ openlan knock ls
+$ openlan ztrust knock add --protocol icmp --socket 192.168.20.10
+$ openlan ztrust knock add --protocol tcp --socket 192.168.20.10:22
+$ openlan ztrust knock ls
 # total 2
 username                 protocol socket                   age  createAt
 daniel@example          tcp      192.168.20.10:22         57   2024-01-02 12:42:06 +0000 UTC

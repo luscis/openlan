@@ -16,6 +16,8 @@ type ZTrust struct {
 
 func (h ZTrust) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/ztrust", h.List).Methods("GET")
+	router.HandleFunc("/api/network/{id}/ztrust/enable", h.Enable).Methods("POST")
+	router.HandleFunc("/api/network/{id}/ztrust/disable", h.Disable).Methods("POST")
 	router.HandleFunc("/api/network/{id}/guest", h.ListGuest).Methods("GET")
 	router.HandleFunc("/api/network/{id}/guest/{user}", h.ListGuest).Methods("GET")
 	router.HandleFunc("/api/network/{id}/guest/{user}", h.AddGuest).Methods("POST")
@@ -40,6 +42,32 @@ func (h ZTrust) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	libol.Info("ZTrust.GET %s", vars["id"])
 	ResponseJson(w, "TODO")
+}
+
+func (h ZTrust) Enable(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	worker.DoZTrust()
+	ResponseJson(w, "success")
+}
+
+func (h ZTrust) Disable(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	worker.UndoZTrust()
+	ResponseJson(w, "success")
 }
 
 func (h ZTrust) ListGuest(w http.ResponseWriter, r *http.Request) {

@@ -89,6 +89,8 @@ type Super interface {
 	Start(v Switcher)
 	Stop()
 	Reload(v Switcher)
+	DoZTrust()
+	UndoZTrust()
 }
 
 type Networker interface {

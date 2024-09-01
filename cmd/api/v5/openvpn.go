@@ -61,15 +61,15 @@ func (u VPNClient) Commands() *cli.Command {
 	}
 }
 
-type OpenVpn struct {
+type OpenVPN struct {
 	Cmd
 }
 
-func (o OpenVpn) Url(prefix, name string) string {
+func (o OpenVPN) Url(prefix, name string) string {
 	return prefix + "/api/network/" + name + "/openvpn/restart"
 }
 
-func (o OpenVpn) Restart(c *cli.Context) error {
+func (o OpenVPN) Restart(c *cli.Context) error {
 	network := c.String("name")
 	url := o.Url(c.String("url"), network)
 
@@ -81,16 +81,15 @@ func (o OpenVpn) Restart(c *cli.Context) error {
 	return nil
 }
 
-func (o OpenVpn) Commands() *cli.Command {
+func (o OpenVPN) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "openvpn",
 		Usage: "Control OpenVPN",
 		Subcommands: []*cli.Command{
 			{
-				Name:    "restart",
-				Usage:   "restart openvpn for the network",
-				Aliases: []string{"ro"},
-				Action:  o.Restart,
+				Name:   "restart",
+				Usage:  "restart openvpn for the network",
+				Action: o.Restart,
 			},
 		},
 	}

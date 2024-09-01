@@ -123,10 +123,8 @@ func (w *WorkerImpl) Initialize() {
 		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
 	}
 
-	if cfg.ZTrust == "enable" {
-		w.ztrust = NewZTrust(cfg.Name, 30)
-		w.ztrust.Initialize()
-	}
+	w.ztrust = NewZTrust(cfg.Name, 30)
+	w.ztrust.Initialize()
 
 	w.qos = NewQosCtrl(cfg.Name)
 	w.qos.Initialize()
@@ -352,13 +350,12 @@ func (w *WorkerImpl) loadVRF() {
 	}
 }
 
-func (w *WorkerImpl) SetMss(mss int) {
+func (w *WorkerImpl) setMss() {
 	cfg, _ := w.GetCfgs()
-	fire := w.fire
 
-	cfg.Bridge.Mss = mss
-
-	fire.Mangle.Post.AddRule(cn.IPRule{
+	mss := cfg.Bridge.Mss
+	w.fire.Mangle.Post.AddRuleX(cn.IPRule{
+		Order:   "-I",
 		Output:  cfg.Bridge.Name,
 		Proto:   "tcp",
 		Match:   "tcp",
@@ -367,7 +364,8 @@ func (w *WorkerImpl) SetMss(mss int) {
 		SetMss:  mss,
 	})
 	if w.br != nil {
-		fire.Mangle.Post.AddRule(cn.IPRule{
+		w.fire.Mangle.Post.AddRuleX(cn.IPRule{
+			Order:   "-I",
 			Output:  w.br.L3Name(),
 			Proto:   "tcp",
 			Match:   "tcp",
@@ -377,7 +375,8 @@ func (w *WorkerImpl) SetMss(mss int) {
 		})
 	}
 	// connect from local
-	fire.Mangle.In.AddRule(cn.IPRule{
+	w.fire.Mangle.In.AddRuleX(cn.IPRule{
+		Order:   "-I",
 		Input:   cfg.Bridge.Name,
 		Proto:   "tcp",
 		Match:   "tcp",
@@ -387,13 +386,52 @@ func (w *WorkerImpl) SetMss(mss int) {
 	})
 }
 
+func (w *WorkerImpl) SetMss(mss int) {
+	cfg, _ := w.GetCfgs()
+	if cfg.Bridge.Mss != mss {
+		cfg.Bridge.Mss = mss
+		w.setMss()
+	}
+}
+
+func (w *WorkerImpl) doTrust() {
+	_, vpn := w.GetCfgs()
+	w.fire.Mangle.Pre.AddRuleX(cn.IPRule{
+		Input:   vpn.Device,
+		Jump:    w.ztrust.Chain(),
+		Comment: "Goto Zero Trust",
+	})
+}
+
+func (w *WorkerImpl) DoZTrust() {
+	cfg, _ := w.GetCfgs()
+	if cfg.ZTrust != "enable" {
+		cfg.ZTrust = "enable"
+		w.doTrust()
+	}
+}
+
+func (w *WorkerImpl) undoTrust() {
+	_, vpn := w.GetCfgs()
+	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
+		Input:   vpn.Device,
+		Jump:    w.ztrust.Chain(),
+		Comment: "Goto Zero Trust",
+	})
+}
+
+func (w *WorkerImpl) UndoZTrust() {
+	cfg, _ := w.GetCfgs()
+	if cfg.ZTrust == "enable" {
+		cfg.ZTrust = "disable"
+		w.undoTrust()
+	}
+}
+
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg, vpn := w.GetCfgs()
-	fire := w.fire
 
 	w.out.Info("WorkerImpl.Start")
-
-	w.findhop.Start()
 
 	w.loadVRF()
 	w.loadRoutes()
@@ -401,18 +439,9 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	w.acl.Start()
 	w.toACL(cfg.Bridge.Name)
 
-	if cfg.Bridge.Mss > 0 {
-		// forward to remote
-		w.SetMss(cfg.Bridge.Mss)
-	}
-
 	for _, output := range cfg.Outputs {
 		output.GenName()
 		w.addOutput(cfg.Bridge.Name, output)
-	}
-
-	if !(w.dhcp == nil) {
-		w.dhcp.Start()
 	}
 
 	if !(w.vpn == nil) {
@@ -448,32 +477,31 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 			})
 		}
 
-		if !(w.ztrust == nil) {
-			w.ztrust.Start()
-			fire.Mangle.Pre.AddRule(cn.IPRule{
-				Input:   vpn.Device,
-				CtState: "RELATED,ESTABLISHED",
-				Comment: "Forwarding Accpted",
-			})
-			fire.Mangle.Pre.AddRule(cn.IPRule{
-				Input:   vpn.Device,
-				Jump:    w.ztrust.Chain(),
-				Comment: "Goto Zero Trust",
-			})
-		}
-
-		if !(w.qos == nil) {
-			w.qos.Start()
-
-			fire.Mangle.In.AddRule(cn.IPRule{
-				Input:   vpn.Device,
-				Jump:    w.qos.ChainIn(),
-				Comment: "Goto Qos ChainIn",
-			})
-		}
+		w.fire.Mangle.In.AddRule(cn.IPRule{
+			Input:   vpn.Device,
+			Jump:    w.qos.ChainIn(),
+			Comment: "Goto Qos ChainIn",
+		})
+		w.qos.Start()
+		w.ztrust.Start()
 	}
 
-	fire.Start()
+	w.fire.Start()
+	if cfg.Bridge.Mss > 0 {
+		// forward to remote
+		w.setMss()
+	}
+
+	w.findhop.Start()
+
+	if !(w.dhcp == nil) {
+		w.dhcp.Start()
+	}
+	if !(w.vpn == nil) {
+		if cfg.ZTrust == "enable" {
+			w.doTrust()
+		}
+	}
 }
 
 func (w *WorkerImpl) DelPhysical(bridge string, output string) {
@@ -542,15 +570,13 @@ func (w *WorkerImpl) Stop() {
 
 	w.fire.Stop()
 	w.findhop.Stop()
+	w.acl.Stop()
 
 	w.unloadRoutes()
+
 	if !(w.vpn == nil) {
-		if !(w.ztrust == nil) {
-			w.ztrust.Stop()
-		}
-		if !(w.qos == nil) {
-			w.qos.Stop()
-		}
+		w.ztrust.Stop()
+		w.qos.Stop()
 		w.vpn.Stop()
 	}
 	if !(w.dhcp == nil) {
@@ -563,8 +589,6 @@ func (w *WorkerImpl) Stop() {
 	for _, output := range w.cfg.Outputs {
 		w.delOutput(w.cfg.Bridge.Name, output)
 	}
-
-	w.acl.Stop()
 
 	w.setR.Destroy()
 	w.setV.Destroy()

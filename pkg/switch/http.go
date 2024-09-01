@@ -195,27 +195,32 @@ func (h *Http) Shutdown() {
 }
 
 func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
-	token, pass, ok := r.BasicAuth()
-	libol.Debug("Http.IsAuth token: %s, pass: %s", token, pass)
+	user, pass, ok := r.BasicAuth()
+	libol.Debug("Http.IsAuth token: %s, pass: %s", user, pass)
 	if !ok {
 		return false
 	}
-	if token == h.adminToken {
+	if user == h.adminToken {
 		return true
 	}
 
 	elements := strings.SplitN(r.URL.Path, "/", 8)
-	if len(elements) > 3 {
+	if len(elements) > 4 {
 		if elements[2] == "network" {
-			zone := elements[3]
-			if !strings.HasSuffix(token, "@"+zone) {
+			network := elements[3]
+			if !strings.HasSuffix(user, "@"+network) {
 				return false
 			}
-			if api.UserCheck(token, pass) == nil {
-				return true
+			zone := elements[4]
+			if api.UserCheck(user, pass) == nil {
+				// user can URL: /1/2/3/<ovpn|guest>.
+				if zone == "ovpn" || zone == "guest" {
+					return true
+				}
 			}
 		}
 	}
+	// open URL: /<openvpn-api>/<rest>.
 	if elements[1] == "openvpn-api" || elements[1] == "rest" {
 		return true
 	}

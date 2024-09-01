@@ -86,14 +86,6 @@ func (u Network) Save(c *cli.Context) error {
 }
 
 func (u Network) Commands(app *api.App) {
-	point := Point{}
-	client := VPNClient{}
-	route := Route{}
-	link := Link{}
-	openvpn := OpenVpn{}
-	output := Output{}
-	qos := Qos{}
-	findhop := FindHop{}
 	app.Command(&cli.Command{
 		Name:    "network",
 		Aliases: []string{"net"},
@@ -128,14 +120,14 @@ func (u Network) Commands(app *api.App) {
 				Aliases: []string{"sa"},
 				Action:  u.Save,
 			},
-			point.Commands(),
-			qos.Commands(),
-			client.Commands(),
-			openvpn.Commands(),
-			output.Commands(),
-			route.Commands(),
-			link.Commands(),
-			findhop.Commands(),
+			Point{}.Commands(),
+			Qos{}.Commands(),
+			VPNClient{}.Commands(),
+			OpenVPN{}.Commands(),
+			Output{}.Commands(),
+			Route{}.Commands(),
+			Link{}.Commands(),
+			FindHop{}.Commands(),
 		},
 	})
 }

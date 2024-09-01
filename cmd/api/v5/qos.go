@@ -10,12 +10,11 @@ type Qos struct {
 }
 
 func (q Qos) Commands() *cli.Command {
-	rule := QosRule{}
 	return &cli.Command{
 		Name:  "qos",
 		Usage: "QoS for client in network",
 		Subcommands: []*cli.Command{
-			rule.Commands(),
+			QosRule{}.Commands(),
 		},
 	}
 }

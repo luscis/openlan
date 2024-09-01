@@ -169,6 +169,10 @@ func (z *ZTrust) Chain() string {
 func (z *ZTrust) Initialize() {
 	z.chain = cn.NewFireWallChain(z.Chain(), cn.TMangle, "")
 	z.chain.AddRule(cn.IPRule{
+		CtState: "RELATED,ESTABLISHED",
+		Comment: "Forwarding Accpted",
+	})
+	z.chain.AddRule(cn.IPRule{
 		Comment: "ZTrust Deny All",
 		Jump:    "DROP",
 	})
@@ -196,7 +200,6 @@ func (z *ZTrust) Update() {
 		for _, guest := range z.guests {
 			guest.Clear()
 		}
-
 		time.Sleep(time.Second * 3)
 	}
 }
