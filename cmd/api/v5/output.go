@@ -87,7 +87,7 @@ func (o Output) List(c *cli.Context) error {
 func (o Output) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "output",
-		Usage: "Output configuration",
+		Usage: "Output links",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

@@ -49,7 +49,7 @@ func (u VPNClient) List(c *cli.Context) error {
 func (u VPNClient) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "client",
-		Usage: "Clients by OpenVPN",
+		Usage: "OpenVPN's client",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

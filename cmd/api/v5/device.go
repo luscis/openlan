@@ -39,9 +39,8 @@ func (u Device) List(c *cli.Context) error {
 
 func (u Device) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "device",
-		Aliases: []string{"dev"},
-		Usage:   "linux network device",
+		Name:  "device",
+		Usage: "linux network device",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

@@ -49,9 +49,8 @@ func (u Lease) List(c *cli.Context) error {
 
 func (u Lease) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "lease",
-		Aliases: []string{"le"},
-		Usage:   "DHCP address lease",
+		Name:  "lease",
+		Usage: "Address lease",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

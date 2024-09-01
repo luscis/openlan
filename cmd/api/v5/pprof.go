@@ -2,6 +2,7 @@ package v5
 
 import (
 	"fmt"
+
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
@@ -53,9 +54,8 @@ func (u PProf) List(c *cli.Context) error {
 
 func (u PProf) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "pprof",
-		Aliases: []string{"pp"},
-		Usage:   "Configure pprof tool",
+		Name:  "pprof",
+		Usage: "Debug pprof tool",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

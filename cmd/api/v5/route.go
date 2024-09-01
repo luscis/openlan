@@ -84,7 +84,7 @@ func (r Route) List(c *cli.Context) error {
 func (r Route) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "route",
-		Usage: "Route configuration",
+		Usage: "Prefix route",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

@@ -12,7 +12,7 @@ type Qos struct {
 func (q Qos) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "qos",
-		Usage: "QoS for client in network",
+		Usage: "QoS for client",
 		Subcommands: []*cli.Command{
 			QosRule{}.Commands(),
 		},

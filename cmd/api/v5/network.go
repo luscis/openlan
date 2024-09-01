@@ -87,8 +87,7 @@ func (u Network) Save(c *cli.Context) error {
 
 func (u Network) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "network",
-		Aliases: []string{"net"},
+		Name: "network",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "name", Value: ""},
 		},
@@ -110,13 +109,13 @@ func (u Network) Commands(app *api.App) {
 			},
 			{
 				Name:    "remove",
-				Usage:   "Remove the network",
+				Usage:   "Remove a network",
 				Aliases: []string{"rm"},
 				Action:  u.Remove,
 			},
 			{
 				Name:    "save",
-				Usage:   "Save the network",
+				Usage:   "Save a network",
 				Aliases: []string{"sa"},
 				Action:  u.Save,
 			},

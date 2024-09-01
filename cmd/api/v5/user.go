@@ -151,9 +151,8 @@ func (u User) Check(c *cli.Context) error {
 func (u User) Commands(app *api.App) {
 	lease := time.Now().AddDate(1, 0, 0)
 	app.Command(&cli.Command{
-		Name:    "user",
-		Aliases: []string{"us"},
-		Usage:   "User authentication",
+		Name:  "user",
+		Usage: "Access users",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

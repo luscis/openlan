@@ -2,6 +2,7 @@ package v5
 
 import (
 	"fmt"
+
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/urfave/cli/v2"
 )
@@ -28,9 +29,8 @@ func (u Server) List(c *cli.Context) error {
 
 func (u Server) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "server",
-		Aliases: []string{"sr"},
-		Usage:   "Socket server status",
+		Name:  "server",
+		Usage: "Socket server status",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

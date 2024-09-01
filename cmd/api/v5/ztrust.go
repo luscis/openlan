@@ -125,11 +125,11 @@ func (u Guest) List(c *cli.Context) error {
 func (u Guest) Commands(user string) *cli.Command {
 	return &cli.Command{
 		Name:  "guest",
-		Usage: "zTrust Guest configuration",
+		Usage: "zTrust Guest",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
-				Usage: "Add a zGuest",
+				Usage: "Add a guest",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "user", Value: user},
 					&cli.StringFlag{Name: "address"},
@@ -138,7 +138,7 @@ func (u Guest) Commands(user string) *cli.Command {
 			},
 			{
 				Name:    "remove",
-				Usage:   "Remove an existing zGuest",
+				Usage:   "Remove an existing guest",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "user", Value: user},
@@ -147,7 +147,7 @@ func (u Guest) Commands(user string) *cli.Command {
 			},
 			{
 				Name:    "list",
-				Usage:   "Display all zGuests",
+				Usage:   "Display all guests",
 				Aliases: []string{"ls"},
 				Action:  u.List,
 			},
@@ -225,7 +225,7 @@ func (u Knock) List(c *cli.Context) error {
 func (u Knock) Commands(user string) *cli.Command {
 	return &cli.Command{
 		Name:  "knock",
-		Usage: "Knock configuration",
+		Usage: "Knock rules",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

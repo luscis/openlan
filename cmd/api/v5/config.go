@@ -2,12 +2,13 @@ package v5
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
-	"path/filepath"
 )
 
 type Config struct {
@@ -188,9 +189,8 @@ func (u Config) Save(c *cli.Context) error {
 
 func (u Config) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "config",
-		Aliases: []string{"cfg"},
-		Usage:   "Switch configuration",
+		Name:  "config",
+		Usage: "Switch configuration",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
