@@ -146,7 +146,7 @@ func (s *Switch) Correct() {
 		s.Protocol = "tcp"
 	}
 	if s.AddrPool == "" {
-		s.AddrPool = "169.254"
+		s.AddrPool = "240.240"
 	}
 }
 
