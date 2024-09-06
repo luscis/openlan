@@ -9,6 +9,11 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
+type Rater interface {
+	AddRate(device string, mbit int)
+	DelRate(device string)
+}
+
 type Switcher interface {
 	UUID() string
 	UpTime() int64
@@ -20,6 +25,7 @@ type Switcher interface {
 	AddNetwork(network string)
 	DelNetwork(network string)
 	SaveNetwork(network string)
+	Rater
 }
 
 func NewWorkerSchema(s Switcher) schema.Worker {
@@ -89,8 +95,6 @@ type Super interface {
 	Start(v Switcher)
 	Stop()
 	Reload(v Switcher)
-	DoZTrust()
-	UndoZTrust()
 }
 
 type Networker interface {
@@ -108,6 +112,8 @@ type Networker interface {
 	Qoser() Qoser
 	ACLer() ACLer
 	FindHoper() FindHoper
+	DoZTrust()
+	UndoZTrust()
 }
 
 type IPSecer interface {

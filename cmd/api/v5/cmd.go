@@ -39,4 +39,5 @@ func Commands(app *api.App) {
 	Version{}.Commands(app)
 	Log{}.Commands(app)
 	ZTrust{}.Commands(app)
+	Rate{}.Commands(app)
 }

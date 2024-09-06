@@ -14,7 +14,6 @@ func Add(router *mux.Router, switcher Switcher) {
 	Device{}.Router(router)
 	VPNClient{}.Router(router)
 	PProf{}.Router(router)
-	VxLAN{}.Router(router)
 	Config{Switcher: switcher}.Router(router)
 	Version{}.Router(router)
 	Log{}.Router(router)
@@ -26,4 +25,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	Route{Switcher: switcher}.Router(router)
 	IPSec{}.Router(router)
 	FindHop{}.Router(router)
+	Rate{Switcher: switcher}.Router(router)
 }

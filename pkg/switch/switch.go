@@ -2,6 +2,7 @@ package cswitch
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -598,4 +599,22 @@ func (v *Switch) Reload() {
 
 func (v *Switch) Save() {
 	v.cfg.Save()
+}
+
+func (v *Switch) AddRate(device string, mbit int) {
+	kbits := fmt.Sprintf("%dMbit", mbit)
+	burst := "64Kb"
+	latency := "400ms"
+
+	out, err := libol.Exec("tc", "qdisc", "add", "dev", device, "root", "tbf", "rate", kbits, "burst", burst, "latency", latency)
+	if err != nil {
+		v.out.Warn("Switch.AddRate: %s %d %s", device, mbit, out)
+	}
+}
+
+func (v *Switch) DelRate(device string) {
+	out, err := libol.Exec("tc", "qdisc", "del", "dev", device, "root")
+	if err != nil {
+		v.out.Warn("Switch.AddRate: %s %s", device, out)
+	}
 }
