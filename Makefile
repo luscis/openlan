@@ -43,7 +43,7 @@ env: update
 update: ## update source code
 	git pull
 	git submodule init
-	git submodule update
+	git submodule update --remote --merge
 
 vendor:
 	go clean -modcache

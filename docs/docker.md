@@ -66,7 +66,7 @@ e42f200f6694        luscis/openlan:v24.01.01.x86_64   "/var/openlan/scri..."   1
 [root@example openlan]# cd /opt/openlan
 [root@example openlan]# mkdir -p var/openlan
 [root@example openlan]# docker cp openlan_switch_1:/var/openlan/openvpn ./
-[root@example openlan]# docker-compose -f  docker-compose.yml down
+[root@example openlan]# docker-compose down
 [root@example openlan]# vi docker-compose.yml
 version: "2.3"
 services:
@@ -151,6 +151,6 @@ services:
       - confd
       - switch
 
-[root@example openlan]# docker-compose -f  docker-compose.yml up -d
+[root@example openlan]# docker-compose up -d
 
 ```
