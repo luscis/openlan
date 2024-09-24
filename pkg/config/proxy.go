@@ -25,7 +25,7 @@ type SocksProxy struct {
 }
 
 type HttpForward struct {
-	Protocol string   `json:"protocol,omitempty"`
+	Protocol string   `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 	Server   string   `json:"server,omitempty"`
 	Insecure bool     `json:"insecure,omitempty"`
 	Match    []string `json:"match,omitempty"`
@@ -35,11 +35,11 @@ type HttpForward struct {
 type HttpProxy struct {
 	ConfDir  string         `json:"-" yaml:"-"`
 	Listen   string         `json:"listen,omitempty"`
-	Auth     *Password      `json:"auth,omitempty"`
-	Cert     *Cert          `json:"cert,omitempty"`
-	Password string         `json:"password,omitempty"`
-	Forward  *HttpForward   `json:"forward,omitempty"`
-	Backends []*HttpForward `json:"backends,omitempty"`
+	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Cert     *Cert          `json:"cert,omitempty" yaml:"cert,omitempty"`
+	Password string         `json:"password,omitempty" yaml:"password,omitempty"`
+	Forward  *HttpForward   `json:"forward,omitempty" yaml:"forward,omitempty"`
+	Backends []*HttpForward `json:"backends,omitempty" yaml:"backend,omitempty"`
 }
 
 func (h *HttpProxy) Correct() {
