@@ -33,7 +33,7 @@ type HttpForward struct {
 }
 
 type HttpProxy struct {
-	ConfDir  string         `json:"-"`
+	ConfDir  string         `json:"-" yaml:"-"`
 	Listen   string         `json:"listen,omitempty"`
 	Auth     *Password      `json:"auth,omitempty"`
 	Cert     *Cert          `json:"cert,omitempty"`
@@ -51,20 +51,65 @@ func (h *HttpProxy) Correct() {
 	}
 }
 
+func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {
+	for i, rule := range to.Match {
+		if rule == domain {
+			return i
+		}
+	}
+	return -1
+}
+
+func (h *HttpProxy) FindBackend(remote string) *HttpForward {
+	if remote == "" || remote == "null" {
+		return h.Forward
+	}
+	for _, to := range h.Backends {
+		if to.Server == remote {
+			return to
+		}
+	}
+	return nil
+}
+
+func (h *HttpProxy) AddMatch(domain, remote string) int {
+	to := h.FindBackend(remote)
+	if to == nil {
+		return -1
+	}
+	index := h.FindMatch(domain, to)
+	if index == -1 {
+		to.Match = append(to.Match, domain)
+	}
+	return 0
+}
+
+func (h *HttpProxy) DelMatch(domain, remote string) int {
+	to := h.FindBackend(remote)
+	if to == nil {
+		return -1
+	}
+	index := h.FindMatch(domain, to)
+	if index > -1 {
+		to.Match = append(to.Match[:index], to.Match[index+1:]...)
+	}
+	return index
+}
+
 type TcpProxy struct {
 	Listen string   `json:"listen,omitempty"`
 	Target []string `json:"target,omitempty"`
 }
 
 type Proxy struct {
-	Conf    string         `json:"-"`
-	ConfDir string         `json:"-"`
+	Conf    string         `json:"-" yaml:"-"`
+	ConfDir string         `json:"-" yaml:"-"`
 	Log     Log            `json:"log"`
-	Socks   []*SocksProxy  `json:"socks,omitempty"`
-	Http    []*HttpProxy   `json:"http,omitempty"`
-	Tcp     []*TcpProxy    `json:"tcp,omitempty"`
-	Shadow  []*ShadowProxy `json:"shadow,omitempty"`
-	PProf   string         `json:"pprof"`
+	Socks   []*SocksProxy  `json:"socks,omitempty" yaml:"socks,omitempty"`
+	Http    []*HttpProxy   `json:"http,omitempty" yaml:"http,omitempty"`
+	Tcp     []*TcpProxy    `json:"tcp,omitempty" yaml:"tcp,omitempty"`
+	Shadow  []*ShadowProxy `json:"shadow,omitempty" yaml:"shadow,omitempty"`
+	PProf   string         `json:"pprof,omitempty" yaml:"pprof,omitempty"`
 }
 
 func NewProxy() *Proxy {
@@ -104,4 +149,10 @@ func (p *Proxy) Correct() {
 
 func (p *Proxy) Load() error {
 	return libol.UnmarshalLoad(p, p.Conf)
+}
+
+func (h *Proxy) Save() {
+	if err := libol.MarshalSave(&h, h.Conf, true); err != nil {
+		libol.Error("Proxy.Save %s %s", h.Conf, err)
+	}
 }

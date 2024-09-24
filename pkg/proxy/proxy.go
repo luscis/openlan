@@ -1,11 +1,19 @@
 package proxy
 
 import (
+	"os"
+
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/proxy/ss"
-	"os"
 )
+
+type Proxyer interface {
+	Initialize()
+	Start()
+	Stop()
+	Save()
+}
 
 type Proxy struct {
 	cfg    *config.Proxy
@@ -43,7 +51,7 @@ func (p *Proxy) Initialize() {
 		if c == nil || c.Listen == "" {
 			continue
 		}
-		h := NewHttpProxy(c)
+		h := NewHttpProxy(c, p)
 		p.http[c.Listen] = h
 	}
 	for _, c := range p.cfg.Shadow {
@@ -85,6 +93,10 @@ func (p *Proxy) Stop() {
 	for _, s := range p.shadow {
 		s.Stop()
 	}
+}
+
+func (p *Proxy) Save() {
+	p.cfg.Save()
 }
 
 func init() {

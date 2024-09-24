@@ -44,6 +44,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 type HttpProxy struct {
+	proxer   Proxyer
 	pass     map[string]string
 	out      *libol.SubLogger
 	server   *http.Server
@@ -93,7 +94,7 @@ func encodeJson(w http.ResponseWriter, v interface{}) {
 func encodeYaml(w http.ResponseWriter, v interface{}) {
 	str, err := yaml.Marshal(v)
 	if err == nil {
-		w.Header().Set("Content-Type", "application/x-yaml")
+		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write(str)
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -111,13 +112,14 @@ func encodeText(w http.ResponseWriter, tmpl string, v interface{}) {
 	}
 }
 
-func NewHttpProxy(cfg *co.HttpProxy) *HttpProxy {
+func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 	h := &HttpProxy{
 		out:      libol.NewSubLogger(cfg.Listen),
 		cfg:      cfg,
 		pass:     make(map[string]string),
 		api:      mux.NewRouter(),
 		requests: make(map[string]*HttpRecord),
+		proxer:   px,
 	}
 
 	h.server = &http.Server{
@@ -137,9 +139,11 @@ func NewHttpProxy(cfg *co.HttpProxy) *HttpProxy {
 
 func (t *HttpProxy) loadUrl() {
 	if strings.HasPrefix(t.cfg.Listen, "127.0.0.") {
-		t.api.HandleFunc("/", t.GetStats)
-		t.api.HandleFunc("/config", t.GetConfig)
-		t.api.HandleFunc("/pac", t.GetPac)
+		t.api.HandleFunc("/", t.GetStats).Methods("GET")
+		t.api.HandleFunc("/config", t.GetConfig).Methods("GET")
+		t.api.HandleFunc("/config/match/{rule}/to/{remote}", t.AddMatch).Methods("POST")
+		t.api.HandleFunc("/config/match/{rule}/to/{remote}", t.DelMatch).Methods("DELETE")
+		t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
 	}
 	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
 }
@@ -318,6 +322,9 @@ func (t *HttpProxy) isMatch(value string, rules []string) bool {
 }
 
 func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	via := t.cfg.Forward
 	if via != nil && t.isMatch(r.URL.Host, via.Match) {
 		return via
@@ -333,6 +340,7 @@ func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
 func (t *HttpProxy) doRecord(r *http.Request) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+
 	record, ok := t.requests[r.URL.Host]
 	if !ok {
 		record = &HttpRecord{}
@@ -519,11 +527,48 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
-	if t.findQuery(r, "format") == "yaml" {
-		encodeYaml(w, t.cfg)
-	} else {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	if t.findQuery(r, "format") == "json" {
 		encodeJson(w, t.cfg)
+	} else {
+		encodeYaml(w, t.cfg)
 	}
+}
+
+func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	rule := vars["rule"]
+	remote := vars["remote"]
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	if t.cfg.AddMatch(rule, remote) > -1 {
+		encodeYaml(w, "success")
+	} else {
+		encodeYaml(w, "failed")
+	}
+	t.proxer.Save()
+}
+
+func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	rule := vars["rule"]
+	remote := vars["remote"]
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	if t.cfg.DelMatch(rule, remote) > -1 {
+		encodeYaml(w, "success")
+	} else {
+		encodeYaml(w, "failed")
+	}
+	t.proxer.Save()
 }
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
