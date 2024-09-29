@@ -428,6 +428,38 @@ func (w *WorkerImpl) UndoZTrust() {
 	}
 }
 
+func (w *WorkerImpl) letVPN2VRF() {
+	_, vpn := w.GetCfgs()
+	promise := libol.NewPromise()
+	promise.Go(func() error {
+		link, err := nl.LinkByName(vpn.Device)
+		if link == nil {
+			w.out.Info("Link %s %s", vpn.Device, err)
+			return err
+		}
+
+		attr := link.Attrs()
+		if err := w.vrf.AddSlave(attr.Name); err != nil {
+			w.out.Info("VRF AddSlave: %s", err)
+			return err
+		}
+
+		dest, _ := libol.ParseNet(vpn.Subnet)
+		rt := &nl.Route{
+			Dst:       dest,
+			Table:     w.table,
+			LinkIndex: attr.Index,
+		}
+		w.out.Debug("WorkerImpl.LoadRoute: %s", rt.String())
+		if err := nl.RouteAdd(rt); err != nil {
+			w.out.Warn("Route add: %s", err)
+			return err
+		}
+
+		return nil
+	})
+}
+
 func (w *WorkerImpl) Start(v api.Switcher) {
 	cfg, vpn := w.GetCfgs()
 
@@ -447,36 +479,8 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	if !(w.vpn == nil) {
 		w.vpn.Start()
 		if !(w.vrf == nil) {
-			promise := libol.NewPromise()
-			promise.Go(func() error {
-				link, err := nl.LinkByName(vpn.Device)
-				if link == nil {
-					w.out.Info("Link %s %s", vpn.Device, err)
-					return err
-				}
-
-				attr := link.Attrs()
-				if err := w.vrf.AddSlave(attr.Name); err != nil {
-					w.out.Info("VRF AddSlave: %s", err)
-					return err
-				}
-
-				dest, _ := libol.ParseNet(vpn.Subnet)
-				rt := &nl.Route{
-					Dst:       dest,
-					Table:     w.table,
-					LinkIndex: attr.Index,
-				}
-				w.out.Debug("WorkerImpl.LoadRoute: %s", rt.String())
-				if err := nl.RouteAdd(rt); err != nil {
-					w.out.Warn("Route add: %s", err)
-					return err
-				}
-
-				return nil
-			})
+			w.letVPN2VRF()
 		}
-
 		w.fire.Mangle.In.AddRule(cn.IPRule{
 			Input:   vpn.Device,
 			Jump:    w.qos.ChainIn(),
@@ -559,9 +563,12 @@ func (w *WorkerImpl) unloadRoutes() {
 	}
 }
 
-func (w *WorkerImpl) RestartVpn() {
+func (w *WorkerImpl) RestartVPN() {
 	if w.vpn != nil {
 		w.vpn.Restart()
+		if !(w.vrf == nil) {
+			w.letVPN2VRF()
+		}
 	}
 }
 

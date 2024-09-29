@@ -64,7 +64,7 @@ type Router interface {
 }
 
 type VPNer interface {
-	RestartVpn()
+	RestartVPN()
 }
 
 type Qoser interface {

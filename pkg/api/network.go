@@ -116,7 +116,7 @@ func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	worker.RestartVpn()
+	worker.RestartVPN()
 
 	ResponseJson(w, true)
 }
