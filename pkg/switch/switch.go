@@ -602,11 +602,25 @@ func (v *Switch) Save() {
 }
 
 func (v *Switch) AddRate(device string, mbit int) {
-	kbits := fmt.Sprintf("%dMbit", mbit)
+	rate := fmt.Sprintf("%dMbit", mbit)
 	burst := "64Kb"
 	latency := "400ms"
 
-	out, err := libol.Exec("tc", "qdisc", "add", "dev", device, "root", "tbf", "rate", kbits, "burst", burst, "latency", latency)
+	// Egress limit.
+	out, err := libol.Exec("tc", "qdisc", "add", "dev", device, "root",
+		"tbf", "rate", rate, "burst", burst, "latency", latency)
+	if err != nil {
+		v.out.Warn("Switch.AddRate: %s %d %s", device, mbit, out)
+	}
+
+	// Ingress limit.
+	out, err = libol.Exec("tc", "qdisc", "add", "dev", device, "ingress")
+	if err != nil {
+		v.out.Warn("Switch.AddRate: %s %s", device, out)
+	}
+	out, err = libol.Exec("tc", "filter", "add", "dev", device, "parent", "ffff:",
+		"protocol", "ip", "prio", "1", "u32", "match", "u32", "0", "0",
+		"police", "rate", rate, "burst", burst, "drop", "flowid", ":1")
 	if err != nil {
 		v.out.Warn("Switch.AddRate: %s %d %s", device, mbit, out)
 	}
@@ -614,6 +628,10 @@ func (v *Switch) AddRate(device string, mbit int) {
 
 func (v *Switch) DelRate(device string) {
 	out, err := libol.Exec("tc", "qdisc", "del", "dev", device, "root")
+	if err != nil {
+		v.out.Warn("Switch.AddRate: %s %s", device, out)
+	}
+	out, err = libol.Exec("tc", "qdisc", "del", "dev", device, "ingress")
 	if err != nil {
 		v.out.Warn("Switch.AddRate: %s %s", device, out)
 	}
