@@ -33,16 +33,6 @@ func (u VPNClient) List(c *cli.Context) error {
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
-	name := c.String("name")
-	if len(name) > 0 {
-		tmp := items[:0]
-		for _, obj := range items {
-			if obj.Network == name {
-				tmp = append(tmp, obj)
-			}
-		}
-		items = tmp
-	}
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
