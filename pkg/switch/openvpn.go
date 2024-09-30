@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -126,6 +127,20 @@ sed -i "/^$common_name,/d" "$log_file"
 `
 )
 
+func GetOpenVPNVersion() int {
+	if out, err := libol.Exec(OpenVPNBin, "--version"); err == nil {
+		re := regexp.MustCompile(`(?i)^openvpn (\d+\.\d+\.\d+)`)
+		if match := re.FindStringSubmatch(out); len(match) > 1 {
+			version := match[1]
+			parts := strings.SplitN(version, ".", 3)
+			major, _ := strconv.Atoi(parts[0])
+			minor, _ := strconv.Atoi(parts[1])
+			return major*10 + minor
+		}
+	}
+	return 0
+}
+
 func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 	cfg := obj.Cfg
 	data := &OpenVPNData{
@@ -144,9 +159,10 @@ func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 		Renego:   cfg.Renego,
 		Push:     cfg.Push,
 	}
-	if cfg.Version > 23 {
+	if cfg.Version > 24 {
 		data.CertNot = false
 	}
+
 	addr, _ := libol.IPNetwork(cfg.Subnet)
 	data.Server = strings.ReplaceAll(addr, "/", " ")
 	for _, rt := range cfg.Routes {
@@ -361,6 +377,7 @@ func (o *OpenVPN) writeClientConfig() error {
 func createExecutableFile(path string) (*os.File, error) {
 	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 }
+
 func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
 	// make client dir and config file
 	cid := o.ClientIvplatDir()
@@ -428,7 +445,13 @@ func (o *OpenVPN) Initialize() {
 	if !o.ValidConf() {
 		return
 	}
+
 	o.Clean()
+	if o.Cfg.Version == 0 {
+		o.Cfg.Version = GetOpenVPNVersion()
+	}
+	o.out.Info("OpenVPN.Initialize version: %d", o.Cfg.Version)
+
 	if err := os.Mkdir(o.Directory(), 0600); err != nil {
 		o.out.Info("OpenVPN.Initialize %s", err)
 	}
@@ -541,6 +564,7 @@ func (o *OpenVPN) ProfileTmpl() string {
 	if o.Cfg.Auth == "cert" {
 		tmplStr = certClientProfile
 	}
+
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"client.tmpl")
 	_ = ioutil.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
@@ -553,6 +577,7 @@ func (o *OpenVPN) Profile() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var out bytes.Buffer
 	if err := tmpl.Execute(&out, data); err == nil {
 		return out.Bytes(), nil
