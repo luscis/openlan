@@ -82,6 +82,10 @@ builder:
 docker-bin: ## binary by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
+
+docker-test: ## test by Docker
+	docker exec openlan_builder bash -c "cd /opt/openlan && make test"
+
 docker-darwin: ## binary for MacOS by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make darwin-gzip"
 

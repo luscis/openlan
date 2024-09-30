@@ -127,18 +127,21 @@ sed -i "/^$common_name,/d" "$log_file"
 `
 )
 
-func GetOpenVPNVersion() int {
-	if out, err := libol.Exec(OpenVPNBin, "--version"); err == nil {
-		re := regexp.MustCompile(`(?i)^openvpn (\d+\.\d+\.\d+)`)
-		if match := re.FindStringSubmatch(out); len(match) > 1 {
-			version := match[1]
-			parts := strings.SplitN(version, ".", 3)
-			major, _ := strconv.Atoi(parts[0])
-			minor, _ := strconv.Atoi(parts[1])
-			return major*10 + minor
-		}
+func parseOpenVPNVersion(input string) int {
+	re := regexp.MustCompile(`(?i)^openvpn (\d+\.\d+\.\d+)`)
+	if match := re.FindStringSubmatch(input); len(match) > 1 {
+		version := match[1]
+		parts := strings.SplitN(version, ".", 3)
+		major, _ := strconv.Atoi(parts[0])
+		minor, _ := strconv.Atoi(parts[1])
+		return major*10 + minor
 	}
 	return 0
+}
+
+func GetOpenVPNVersion() int {
+	out, _ := libol.Exec(OpenVPNBin, "--version")
+	return parseOpenVPNVersion(out)
 }
 
 func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
