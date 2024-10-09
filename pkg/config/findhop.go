@@ -7,6 +7,7 @@ type FindHop struct {
 	Mode      string      `json:"mode,omitempty"`
 	NextHop   []string    `json:"nexthop"`
 	Available []MultiPath `json:"available,omitempty"`
+	Vrf       string      `json:"-" yaml:"-"`
 }
 
 func (ng *FindHop) Correct() {

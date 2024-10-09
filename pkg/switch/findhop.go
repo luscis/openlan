@@ -28,8 +28,9 @@ type FindHop struct {
 
 func NewFindHop(name string, cfg *co.Network) *FindHop {
 	drivers := make(map[string]FindHopDriver, 32)
-	for key, ng := range cfg.FindHop {
-		drv := newCheckDriver(key, name, ng)
+	for key, obj := range cfg.FindHop {
+		obj.Vrf = cfg.Namespace
+		drv := newCheckDriver(key, name, obj)
 		if drv != nil {
 			drivers[key] = drv
 		}
@@ -50,78 +51,79 @@ func newCheckDriver(name string, network string, cfg *co.FindHop) FindHopDriver 
 	return nil
 }
 
-func (ng *FindHop) Start() {
-	ng.out.Info("FindHop.Start: drivers size: %d", len(ng.drivers))
-	if len(ng.drivers) > 0 {
-		for _, checker := range ng.drivers {
+func (h *FindHop) Start() {
+	h.out.Info("FindHop.Start: drivers size: %d", len(h.drivers))
+	if len(h.drivers) > 0 {
+		for _, checker := range h.drivers {
 			checker.Start()
 		}
 	}
 }
 
-func (ng *FindHop) Stop() {
-	if len(ng.drivers) > 0 {
-		for _, driver := range ng.drivers {
+func (h *FindHop) Stop() {
+	if len(h.drivers) > 0 {
+		for _, driver := range h.drivers {
 			driver.Stop()
 		}
 	}
 }
 
 // for add findhop dynamicly
-func (ng *FindHop) addHop(name string, cfg *co.FindHop) error {
-	if _, ok := ng.drivers[name]; ok {
-		ng.out.Error("FindHop.addHop: checker already exists %s", name)
+func (h *FindHop) addHop(name string, cfg *co.FindHop) error {
+	if _, ok := h.drivers[name]; ok {
+		h.out.Error("FindHop.addHop: checker already exists %s", name)
 		return nil
 	}
-	driver := newCheckDriver(name, ng.name, cfg)
+	cfg.Vrf = h.cfg.Namespace
+	driver := newCheckDriver(name, h.name, cfg)
 	if driver == nil {
 		return libol.NewErr("FindHop.AddHop: don't support this driver %s", name)
 	}
-	ng.drivers[name] = driver
+	h.drivers[name] = driver
 	driver.Start()
 	return nil
 }
 
 // for del findhop dynamicly
-func (ng *FindHop) removeHop(name string) error {
-	if driver, ok := ng.drivers[name]; !ok {
-		ng.out.Error("FindHop.addHop: checker not exists %s", name)
+func (h *FindHop) removeHop(name string) error {
+	if driver, ok := h.drivers[name]; !ok {
+		h.out.Error("FindHop.addHop: checker not exists %s", name)
 		return nil
 	} else {
 		if driver.HasRoute() {
 			return libol.NewErr("FindHop.delHop: checker has route %s", name)
 		}
 		driver.Stop()
-		delete(ng.drivers, name)
+		delete(h.drivers, name)
 	}
 	return nil
 }
 
-func (ng *FindHop) LoadHop(findhop string, nlr *nl.Route) {
-	ng.lock.RLock()
-	defer ng.lock.RUnlock()
-	if driver, ok := ng.drivers[findhop]; ok {
-		ng.out.Info("FindHop.LoadHop: %s via %s", nlr.String(), findhop)
+func (h *FindHop) LoadHop(findhop string, nlr *nl.Route) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	if driver, ok := h.drivers[findhop]; ok {
+		h.out.Info("FindHop.LoadHop: %s via %s", nlr.String(), findhop)
 		driver.LoadRoute(nlr)
 	} else {
-		ng.out.Error("FindHop.LoadHop: checker not found %s", findhop)
+		h.out.Error("FindHop.LoadHop: checker not found %s", findhop)
 	}
 }
 
-func (ng *FindHop) UnloadHop(findhop string, nlr *nl.Route) {
-	ng.lock.RLock()
-	defer ng.lock.RUnlock()
-	if driver, ok := ng.drivers[findhop]; ok {
-		ng.out.Info("FindHop.UnloadHop: %s via %s", nlr.String(), findhop)
+func (h *FindHop) UnloadHop(findhop string, nlr *nl.Route) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	if driver, ok := h.drivers[findhop]; ok {
+		h.out.Info("FindHop.UnloadHop: %s via %s", nlr.String(), findhop)
 		driver.UnloadRoute(nlr)
 	} else {
-		ng.out.Error("FindHop.UnloadHop: checker not found %s", findhop)
+		h.out.Error("FindHop.UnloadHop: checker not found %s", findhop)
 	}
 }
 
-func (ng *FindHop) AddHop(data schema.FindHop) error {
-	ng.lock.Lock()
-	defer ng.lock.Unlock()
+func (h *FindHop) AddHop(data schema.FindHop) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
 	cc := &co.FindHop{
 		Name:    data.Name,
 		Mode:    data.Mode,
@@ -129,30 +131,30 @@ func (ng *FindHop) AddHop(data schema.FindHop) error {
 		Check:   data.Check,
 	}
 	cc.Correct()
-	if ng.cfg.AddFindHop(cc) {
-		return ng.addHop(data.Name, cc)
+	if h.cfg.AddFindHop(cc) {
+		return h.addHop(data.Name, cc)
 	}
 	return nil
 }
 
-func (ng *FindHop) DelHop(data schema.FindHop) error {
-	ng.lock.Lock()
-	defer ng.lock.Unlock()
+func (h *FindHop) DelHop(data schema.FindHop) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
 	cc := &co.FindHop{
 		Name: data.Name,
 	}
-	if err := ng.removeHop(data.Name); err == nil {
-		ng.cfg.DelFindHop(cc)
+	if err := h.removeHop(data.Name); err == nil {
+		h.cfg.DelFindHop(cc)
 		return nil
 	} else {
 		return err
 	}
 }
 
-func (ng *FindHop) ListHop(call func(obj schema.FindHop)) {
-	ng.lock.RLock()
-	defer ng.lock.RUnlock()
-	for name, drv := range ng.drivers {
+func (h *FindHop) ListHop(call func(obj schema.FindHop)) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	for name, drv := range h.drivers {
 		cc := drv.Config()
 		avas := make([]string, 0)
 		for _, ava := range cc.Available {
@@ -168,10 +170,10 @@ func (ng *FindHop) ListHop(call func(obj schema.FindHop)) {
 	}
 }
 
-func (ng *FindHop) SaveHop() {
-	ng.lock.RLock()
-	defer ng.lock.RUnlock()
-	ng.cfg.SaveFindHop()
+func (h *FindHop) SaveHop() {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	h.cfg.SaveFindHop()
 }
 
 type FindHopDriver interface {
@@ -447,14 +449,24 @@ func (pc *PingDriver) Stop() {
 }
 
 func (pc *PingDriver) ping(ip string, count int) (float64, int, error) {
-	pingPath, err := exec.LookPath("ping")
+	ping, err := exec.LookPath("ping")
 	if err != nil {
-		pc.out.Warn("PingDriver.Ping: cmd not found :", err)
+		pc.out.Warn("PingDriver.Ping: ping cmd not found: ", err)
 	}
-
-	output, err := libol.Exec(pingPath, ip, "-c", strconv.Itoa(count))
+	output := ""
+	vrf := pc.cfg.Vrf
+	cstr := strconv.Itoa(count)
+	if vrf == "" {
+		output, err = libol.Exec(ping, ip, "-c", cstr)
+	} else {
+		ipcmd, err := exec.LookPath("ip")
+		if err != nil {
+			pc.out.Warn("PingDriver.Ping: ip cmd not found: ", err)
+		}
+		output, err = libol.Exec(ipcmd, "vrf", "exec", vrf, ping, ip, "-c", cstr)
+	}
+	pc.out.Debug("PingDriver.Ping: exec %s ping %s %s", vrf, ip, output)
 	if err != nil {
-		pc.out.Debug("PingDriver.Ping: exec ping %s, error: %s", ip, err)
 		return 0, 0, err
 	}
 
