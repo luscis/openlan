@@ -58,18 +58,20 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cs := h.Switcher.Config()
-	name, err := cs.AddNetwork(data)
+	obj, err := cs.AddNetwork(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if obj := cs.GetNetwork(name); obj != nil {
+	cs.CorrectNetwork(obj)
+	if obj := cs.GetNetwork(obj.Name); obj != nil {
 		h.Switcher.AddNetwork(obj.Name)
 	} else {
-		http.Error(w, name+" not found", http.StatusBadRequest)
+		http.Error(w, obj.Name+" not found", http.StatusBadRequest)
 		return
 	}
+
 	ResponseJson(w, "success")
 }
 

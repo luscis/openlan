@@ -103,7 +103,7 @@ func (s *Switch) Initialize() {
 func (s *Switch) LoadExt() {
 	s.LoadAcl()
 	s.LoadQos()
-	s.LoadNetwork()
+	s.LoadNetworks()
 }
 
 func (s *Switch) Correct() {
@@ -155,7 +155,7 @@ func (s *Switch) Dir(elem ...string) string {
 	return filepath.Join(args...)
 }
 
-func (s *Switch) formatNetworkWithObj(obj *Network) {
+func (s *Switch) formatNetwork(obj *Network) {
 	context := obj.Specifies
 	obj.NewSpecifies()
 	if obj.Specifies == nil {
@@ -168,14 +168,8 @@ func (s *Switch) formatNetworkWithObj(obj *Network) {
 	}
 }
 
-func (s *Switch) FormatNetwork() {
-	for _, obj := range s.Network {
-		s.formatNetworkWithObj(obj)
-	}
-}
-
-func (s *Switch) LoadNetworkWithData(data []byte) (*Network, error) {
-	libol.Debug("Switch.LoadNetworkWithData %s", data)
+func (s *Switch) LoadNetworkJson(data []byte) (*Network, error) {
+	libol.Debug("Switch.LoadNetworkJson %s", data)
 	obj := &Network{
 		Alias:   s.Alias,
 		ConfDir: s.ConfDir,
@@ -186,6 +180,9 @@ func (s *Switch) LoadNetworkWithData(data []byte) (*Network, error) {
 	if _, ok := s.Network[obj.Name]; ok {
 		return nil, libol.NewErr("already existed")
 	}
+	if obj.Bridge == nil {
+		obj.Bridge = &Bridge{}
+	}
 	obj.LoadLink()
 	obj.LoadRoute()
 	obj.LoadOutput()
@@ -194,7 +191,7 @@ func (s *Switch) LoadNetworkWithData(data []byte) (*Network, error) {
 	return obj, nil
 }
 
-func (s *Switch) correctNetworkWithObj(obj *Network) {
+func (s *Switch) correctNetwork(obj *Network) {
 	for _, link := range obj.Links {
 		link.Correct()
 	}
@@ -219,23 +216,32 @@ func (s *Switch) correctNetworkWithObj(obj *Network) {
 	}
 }
 
-func (s *Switch) CorrectNetwork() {
+func (s *Switch) FormatNetworks() {
 	for _, obj := range s.Network {
-		s.correctNetworkWithObj(obj)
+		s.formatNetwork(obj)
 	}
 }
 
-func (s *Switch) AddNetwork(data []byte) (string, error) {
-	obj, err := s.LoadNetworkWithData(data)
+func (s *Switch) CorrectNetwork(obj *Network) {
+	s.formatNetwork(obj)
+	s.correctNetwork(obj)
+}
+
+func (s *Switch) CorrectNetworks() {
+	for _, obj := range s.Network {
+		s.CorrectNetwork(obj)
+	}
+}
+
+func (s *Switch) AddNetwork(data []byte) (*Network, error) {
+	obj, err := s.LoadNetworkJson(data)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	s.formatNetworkWithObj(obj)
-	s.correctNetworkWithObj(obj)
-	return obj.Name, nil
+	return obj, nil
 }
 
-func (s *Switch) LoadNetwork() {
+func (s *Switch) LoadNetworks() {
 	files, err := filepath.Glob(s.Dir("network", "*.json"))
 	if err != nil {
 		libol.Error("Switch.LoadNetwork %s", err)
@@ -243,12 +249,11 @@ func (s *Switch) LoadNetwork() {
 	for _, k := range files {
 		if data, err := libol.LoadWithoutAnn(k); err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)
-		} else if _, err := s.LoadNetworkWithData(data); err != nil {
+		} else if _, err := s.LoadNetworkJson(data); err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)
 		}
 	}
-	s.FormatNetwork()
-	s.CorrectNetwork()
+	s.CorrectNetworks()
 }
 
 func (s *Switch) LoadQos() {

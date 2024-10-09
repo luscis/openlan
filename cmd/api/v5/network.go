@@ -2,6 +2,7 @@ package v5
 
 import (
 	"github.com/luscis/openlan/cmd/api"
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
@@ -44,12 +45,33 @@ func (u Network) List(c *cli.Context) error {
 
 func (u Network) Add(c *cli.Context) error {
 	file := c.String("file")
-	network := &schema.Network{}
+	name := c.String("name")
+	config := &co.Network{}
+	network := &schema.Network{Config: config}
 
-	if err := libol.UnmarshalLoad(&network.Config, file); err != nil {
-		return err
+	if file == "" && name == "" {
+		return libol.NewErr("invalid network")
 	}
-
+	if file != "" {
+		if err := libol.UnmarshalLoad(&network.Config, file); err != nil {
+			return err
+		}
+	}
+	if name != "" {
+		config.Name = name
+	}
+	if c.String("address") != "" {
+		if config.Bridge == nil {
+			config.Bridge = &co.Bridge{}
+		}
+		config.Bridge.Address = c.String("address")
+	}
+	if c.String("provider") != "" {
+		config.Provider = c.String("provider")
+	}
+	if c.String("namespace") != "" {
+		config.Namespace = c.String("namespace")
+	}
 	url := u.Url(c.String("url"), "")
 	clt := u.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, network, nil); err != nil {
@@ -60,7 +82,7 @@ func (u Network) Add(c *cli.Context) error {
 
 func (u Network) Remove(c *cli.Context) error {
 	network := c.String("name")
-	if len(network) == 0 {
+	if network == "" {
 		return libol.NewErr("invalid network")
 	}
 	url := u.Url(c.String("url"), network)
@@ -104,6 +126,10 @@ func (u Network) Commands(app *api.App) {
 				Usage: "Add a network",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "file"},
+					&cli.StringFlag{Name: "name"},
+					&cli.StringFlag{Name: "provider"},
+					&cli.StringFlag{Name: "address"},
+					&cli.StringFlag{Name: "namespace"},
 				},
 				Action: u.Add,
 			},
@@ -111,13 +137,19 @@ func (u Network) Commands(app *api.App) {
 				Name:    "remove",
 				Usage:   "Remove a network",
 				Aliases: []string{"rm"},
-				Action:  u.Remove,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "name"},
+				},
+				Action: u.Remove,
 			},
 			{
 				Name:    "save",
 				Usage:   "Save a network",
 				Aliases: []string{"sa"},
-				Action:  u.Save,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "name"},
+				},
+				Action: u.Save,
 			},
 			Point{}.Commands(),
 			Qos{}.Commands(),
