@@ -140,9 +140,10 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 func (t *HttpProxy) loadUrl() {
 	if strings.HasPrefix(t.cfg.Listen, "127.0.0.") {
 		t.api.HandleFunc("/", t.GetStats).Methods("GET")
-		t.api.HandleFunc("/config", t.GetConfig).Methods("GET")
-		t.api.HandleFunc("/config/match/{rule}/to/{remote}", t.AddMatch).Methods("POST")
-		t.api.HandleFunc("/config/match/{rule}/to/{remote}", t.DelMatch).Methods("DELETE")
+		t.api.HandleFunc("/api", t.GetApi).Methods("GET")
+		t.api.HandleFunc("/api/config", t.GetConfig).Methods("GET")
+		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.AddMatch).Methods("POST")
+		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.DelMatch).Methods("DELETE")
 		t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
 	}
 	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
@@ -460,7 +461,10 @@ var httpTmpl = map[string]string{
       <td>Total:</td><td>{{ .Total }}</td>
     </tr>
     <tr>
-      <td>Configuration:</td><td><a href="/config">display</a></td>
+      <td>Configuration:</td><td><a href="/api/config">display</a></td>
+    </tr>
+    <tr>
+      <td>APIs:</td><td><a href="/api">display</a></td>
     </tr>
     <tr>
       <td>StartAt:</td><td>{{ .StartAt }}</td>
@@ -540,13 +544,13 @@ func (t *HttpProxy) GetConfig(w http.ResponseWriter, r *http.Request) {
 func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	rule := vars["rule"]
-	remote := vars["remote"]
+	domain := vars["domain"]
+	backend := vars["backend"]
 
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	if t.cfg.AddMatch(rule, remote) > -1 {
+	if t.cfg.AddMatch(domain, backend) > -1 {
 		encodeYaml(w, "success")
 	} else {
 		encodeYaml(w, "failed")
@@ -557,13 +561,13 @@ func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	rule := vars["rule"]
-	remote := vars["remote"]
+	domain := vars["domain"]
+	backend := vars["backend"]
 
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	if t.cfg.DelMatch(rule, remote) > -1 {
+	if t.cfg.DelMatch(domain, backend) > -1 {
 		encodeYaml(w, "success")
 	} else {
 		encodeYaml(w, "failed")
@@ -595,4 +599,24 @@ func (t *HttpProxy) findQuery(r *http.Request, name string) string {
 		return values[0]
 	}
 	return ""
+}
+
+func (t *HttpProxy) GetApi(w http.ResponseWriter, r *http.Request) {
+	var urls []string
+
+	t.api.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			return nil
+		}
+		methods, err := route.GetMethods()
+		if err != nil {
+			return nil
+		}
+		for _, m := range methods {
+			urls = append(urls, fmt.Sprintf("%-6s %s", m, path))
+		}
+		return nil
+	})
+	encodeYaml(w, urls)
 }

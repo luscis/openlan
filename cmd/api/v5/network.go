@@ -119,7 +119,10 @@ func (u Network) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all network",
 				Aliases: []string{"ls"},
-				Action:  u.List,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "name"},
+				},
+				Action: u.List,
 			},
 			{
 				Name:  "add",
