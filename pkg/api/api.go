@@ -114,6 +114,8 @@ type Networker interface {
 	FindHoper() FindHoper
 	DoZTrust()
 	UndoZTrust()
+	DoSnat()
+	UndoSnat()
 }
 
 type IPSecer interface {

@@ -25,6 +25,7 @@ type Network struct {
 	Outputs   []*Output           `json:"outputs,omitempty"`
 	ZTrust    string              `json:"ztrust,omitempty"`
 	Qos       string              `json:"qos,omitempty"`
+	Snat      string              `json:"snat,omitempty"`
 	Namespace string              `json:"namespace,omitempty"`
 	FindHop   map[string]*FindHop `json:"findhop,omitempty"`
 }

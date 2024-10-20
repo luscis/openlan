@@ -5,19 +5,6 @@
     "address": "172.32.100.40/24",
     "tcpMss": 1360
   },
-  "routes": [
-    {
-      "prefix": "172.32.10.0/24"
-    }
-  ],
-  "links": [
-    {
-      "protocol": "tls",
-      "connection": "hi.openlan.net",
-      "username": "hi",
-      "password": "1f4ee82b5eb6"
-    }
-  ],
   "openvpn": {
     "protocol": "tcp",
     "listen": "0.0.0.0:3295",
@@ -35,5 +22,6 @@
   },
   "acl": "acl-100",
   "dhcp": "enable",
+  "snat": "disable",
   "namespace": "example"
 }

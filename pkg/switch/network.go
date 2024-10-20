@@ -56,6 +56,7 @@ type WorkerImpl struct {
 	br      cn.Bridger
 	acl     *ACL
 	findhop *FindHop
+	snat    *cn.FireWallChain
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -115,6 +116,7 @@ func (w *WorkerImpl) Initialize() {
 	w.createVPN()
 
 	w.fire = cn.NewFireWallTable(cfg.Name)
+	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
 
 	if out, err := w.setV.Clear(); err != nil {
 		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
@@ -394,9 +396,48 @@ func (w *WorkerImpl) SetMss(mss int) {
 	}
 }
 
+func (w *WorkerImpl) doSnat() {
+	w.fire.Nat.Post.AddRuleX(cn.IPRule{
+		Jump:    w.snat.Chain().Name,
+		Comment: "Goto SNAT",
+	})
+}
+
+func (w *WorkerImpl) undoSnat() {
+	w.fire.Nat.Post.DelRuleX(cn.IPRule{
+		Jump:    w.snat.Chain().Name,
+		Comment: "Goto SNAT",
+	})
+}
+
+func (w *WorkerImpl) DoSnat() {
+	cfg, _ := w.GetCfgs()
+	if cfg.Snat != "disable" {
+		cfg.Snat = "enable"
+		w.doSnat()
+	}
+}
+
+func (w *WorkerImpl) UndoSnat() {
+	cfg, _ := w.GetCfgs()
+	if cfg.Snat == "disable" {
+		cfg.Snat = "disable"
+		w.undoSnat()
+	}
+}
+
 func (w *WorkerImpl) doTrust() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.Pre.AddRuleX(cn.IPRule{
+		Input:   vpn.Device,
+		Jump:    w.ztrust.Chain(),
+		Comment: "Goto Zero Trust",
+	})
+}
+
+func (w *WorkerImpl) undoTrust() {
+	_, vpn := w.GetCfgs()
+	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
 		Jump:    w.ztrust.Chain(),
 		Comment: "Goto Zero Trust",
@@ -409,15 +450,6 @@ func (w *WorkerImpl) DoZTrust() {
 		cfg.ZTrust = "enable"
 		w.doTrust()
 	}
-}
-
-func (w *WorkerImpl) undoTrust() {
-	_, vpn := w.GetCfgs()
-	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
-		Input:   vpn.Device,
-		Jump:    w.ztrust.Chain(),
-		Comment: "Goto Zero Trust",
-	})
 }
 
 func (w *WorkerImpl) UndoZTrust() {
@@ -491,6 +523,10 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	}
 
 	w.fire.Start()
+	w.snat.Install()
+	if cfg.Snat != "disable" {
+		w.doSnat()
+	}
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
 		w.setMss()
@@ -575,6 +611,12 @@ func (w *WorkerImpl) RestartVPN() {
 func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 
+	cfg, _ := w.GetCfgs()
+	if cfg.Snat != "disable" {
+		w.undoSnat()
+	}
+
+	w.snat.Cancel()
 	w.fire.Stop()
 	w.findhop.Stop()
 	w.acl.Stop()
@@ -593,8 +635,8 @@ func (w *WorkerImpl) Stop() {
 		w.vrf.Down()
 	}
 
-	for _, output := range w.cfg.Outputs {
-		w.delOutput(w.cfg.Bridge.Name, output)
+	for _, output := range cfg.Outputs {
+		w.delOutput(cfg.Bridge.Name, output)
 	}
 
 	w.setR.Destroy()
@@ -691,7 +733,7 @@ func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
 func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 	// Enable masquerade from source to prefix.
 	output := ""
-	w.fire.Nat.Post.AddRule(cn.IPRule{
+	w.snat.AddRule(cn.IPRule{
 		Mark:    uint32(w.table),
 		Source:  source,
 		DestSet: pfxSet,
@@ -705,7 +747,7 @@ func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
 	output := ""
 	// Enable masquerade from source to prefix.
-	w.fire.Nat.Post.AddRule(cn.IPRule{
+	w.snat.AddRule(cn.IPRule{
 		Mark:    uint32(w.table),
 		SrcSet:  srcSet,
 		Dest:    prefix,
@@ -837,6 +879,7 @@ func (w *WorkerImpl) forwardVPN() {
 	for _, rt := range vpn.Routes {
 		w.addVPNSet(rt)
 	}
+
 	if w.vrf != nil {
 		w.toForward_r(w.vrf.Name(), vpn.Subnet, w.setV.Name, "From VPN")
 	} else {
@@ -904,7 +947,6 @@ func (w *WorkerImpl) forwardSubnet() {
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
-
 	w.toMasq_r(subnet.String(), w.setR.Name, "To Masq")
 }
 
@@ -970,7 +1012,6 @@ func (w *WorkerImpl) correctRoute(route *schema.PrefixRoute) co.PrefixRoute {
 		Prefix:  route.Prefix,
 		NextHop: route.NextHop,
 		FindHop: route.FindHop,
-		Mode:    route.Mode,
 		Metric:  route.Metric,
 	}
 	rt.CorrectRoute(w.IfAddr())
@@ -983,7 +1024,6 @@ func (w *WorkerImpl) ListRoute(call func(obj schema.PrefixRoute)) {
 			Prefix:  obj.Prefix,
 			NextHop: obj.NextHop,
 			FindHop: obj.FindHop,
-			Mode:    obj.Mode,
 			Metric:  obj.Metric,
 		}
 		call(data)

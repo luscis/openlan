@@ -24,7 +24,6 @@ func (r Route) Add(c *cli.Context) error {
 		NextHop: c.String("nexthop"),
 		FindHop: c.String("findhop"),
 		Metric:  c.Int("metric"),
-		Mode:    c.String("mode"),
 	}
 	url := r.Url(c.String("url"), network)
 	clt := r.NewHttp(c.String("token"))

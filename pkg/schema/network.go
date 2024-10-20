@@ -13,7 +13,6 @@ type PrefixRoute struct {
 	NextHop   string      `json:"nexthop"`
 	FindHop   string      `json:"findhop"`
 	Metric    int         `json:"metric"`
-	Mode      string      `json:"mode"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 }
 
