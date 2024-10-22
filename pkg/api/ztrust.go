@@ -16,6 +16,8 @@ type ZTrust struct {
 
 func (h ZTrust) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/ztrust", h.List).Methods("GET")
+	router.HandleFunc("/api/network/{id}/ztrust", h.Enable).Methods("POST")
+	router.HandleFunc("/api/network/{id}/ztrust", h.Disable).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/ztrust/enable", h.Enable).Methods("POST")
 	router.HandleFunc("/api/network/{id}/ztrust/disable", h.Disable).Methods("POST")
 	router.HandleFunc("/api/network/{id}/guest", h.ListGuest).Methods("GET")

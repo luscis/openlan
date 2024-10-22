@@ -122,3 +122,40 @@ func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
 
 	ResponseJson(w, true)
 }
+
+type SNAT struct {
+	Switcher Switcher
+}
+
+func (h SNAT) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/snat", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/snat", h.Delete).Methods("DELETE")
+}
+
+func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		obj.DoSnat()
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	ResponseJson(w, "success")
+}
+
+func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		obj.UndoSnat()
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	ResponseJson(w, "success")
+}

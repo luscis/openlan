@@ -78,7 +78,7 @@ func (w *WorkerImpl) newRoute(rt *co.PrefixRoute) *models.Route {
 		w.out.Warn("WorkerImpl.NewRoute: %s noNextHop", rt.Prefix)
 		return nil
 	}
-	rte := models.NewRoute(rt.Prefix, w.IfAddr(), rt.Mode)
+	rte := models.NewRoute(rt.Prefix, w.IfAddr())
 	if rt.Metric > 0 {
 		rte.Metric = rt.Metric
 	}
@@ -412,7 +412,7 @@ func (w *WorkerImpl) undoSnat() {
 
 func (w *WorkerImpl) DoSnat() {
 	cfg, _ := w.GetCfgs()
-	if cfg.Snat != "disable" {
+	if cfg.Snat == "disable" {
 		cfg.Snat = "enable"
 		w.doSnat()
 	}
@@ -420,7 +420,7 @@ func (w *WorkerImpl) DoSnat() {
 
 func (w *WorkerImpl) UndoSnat() {
 	cfg, _ := w.GetCfgs()
-	if cfg.Snat == "disable" {
+	if cfg.Snat != "disable" {
 		cfg.Snat = "disable"
 		w.undoSnat()
 	}

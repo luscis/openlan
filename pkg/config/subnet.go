@@ -29,7 +29,6 @@ type PrefixRoute struct {
 	NextHop   string      `json:"nexthop"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 	Metric    int         `json:"metric"`
-	Mode      string      `json:"forward,omitempty"` // route or snat
 	FindHop   string      `json:"findhop,omitempty"`
 }
 
@@ -44,9 +43,6 @@ func (r *PrefixRoute) String() string {
 	if len(r.FindHop) > 0 {
 		elems = append(elems, fmt.Sprintf("Findhop: %s", r.FindHop))
 	}
-	if len(r.Mode) > 0 {
-		elems = append(elems, fmt.Sprintf("Forward: %s", r.Mode))
-	}
 	if r.Metric > 0 {
 		elems = append(elems, fmt.Sprintf("Metric: %d", r.Metric))
 	}
@@ -59,9 +55,6 @@ func (r *PrefixRoute) CorrectRoute(nexthop string) {
 	}
 	if r.NextHop == "" {
 		r.NextHop = nexthop
-	}
-	if r.Mode == "" {
-		r.Mode = "snat"
 	}
 }
 

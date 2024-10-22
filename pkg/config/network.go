@@ -48,6 +48,9 @@ func (n *Network) Correct(sw *Switch) {
 	if n.Bridge == nil {
 		n.Bridge = &Bridge{}
 	}
+	if n.Snat == "" {
+		n.Snat = "enable"
+	}
 	switch n.Provider {
 	case "router":
 		spec := n.Specifies
@@ -77,6 +80,7 @@ func (n *Network) Correct(sw *Switch) {
 		n.Subnet.Netmask = ipMask
 	}
 	CorrectRoutes(n.Routes, ipAddr)
+
 	if n.OpenVPN != nil {
 		n.OpenVPN.Network = n.Name
 		obj := DefaultOpenVPN()

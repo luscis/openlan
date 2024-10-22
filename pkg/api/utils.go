@@ -32,7 +32,7 @@ func ResponseMsg(w http.ResponseWriter, code int, message string) {
 func ResponseYaml(w http.ResponseWriter, v interface{}) {
 	str, err := yaml.Marshal(v)
 	if err == nil {
-		w.Header().Set("Content-Type", "application/yaml")
+		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write(str)
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

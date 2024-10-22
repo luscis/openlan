@@ -11,7 +11,6 @@ type Route struct {
 	Prefix    string      `json:"prefix"`
 	NextHop   string      `json:"nexthop"`
 	Metric    int         `json:"metric"`
-	Mode      string      `json:"mode"`
 	Origin    string      `json:"origin"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 }
@@ -21,12 +20,11 @@ type MultiPath struct {
 	Weight  int    `json:"weight"`
 }
 
-func NewRoute(prefix string, nexthop, mode string) (this *Route) {
+func NewRoute(prefix, nexthop string) (this *Route) {
 	this = &Route{
 		Prefix:  prefix,
 		NextHop: nexthop,
 		Metric:  250,
-		Mode:    mode,
 	}
 	return
 }

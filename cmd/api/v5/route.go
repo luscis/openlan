@@ -63,9 +63,9 @@ func (r Route) Save(c *cli.Context) error {
 
 func (r Route) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -25 "prefix"}} {{ps -25 "nexthop"}} {{ps -8 "metric"}} {{ps -8 "mode"}}
+{{ps -25 "prefix"}} {{ps -25 "nexthop"}} {{ps -8 "metric"}}
 {{- range . }}
-{{ps -25 .Prefix}} {{ if .FindHop }}{{ps -25 .FindHop}}{{ else }}{{ps -25 .NextHop}}{{ end }} {{pi -8 .Metric }} {{ps -8 .Mode}}
+{{ps -25 .Prefix}} {{ if .FindHop }}{{ps -25 .FindHop}}{{ else }}{{ps -25 .NextHop}}{{ end }} {{pi -8 .Metric }}
 {{- end }}
 `
 }
@@ -93,7 +93,6 @@ func (r Route) Commands() *cli.Command {
 					&cli.StringFlag{Name: "nexthop"},
 					&cli.StringFlag{Name: "findhop"},
 					&cli.IntFlag{Name: "metric"},
-					&cli.StringFlag{Name: "mode"},
 				},
 				Action: r.Add,
 			},

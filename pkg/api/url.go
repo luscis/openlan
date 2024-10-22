@@ -26,4 +26,5 @@ func Add(router *mux.Router, switcher Switcher) {
 	IPSec{}.Router(router)
 	FindHop{}.Router(router)
 	Rate{Switcher: switcher}.Router(router)
+	SNAT{}.Router(router)
 }

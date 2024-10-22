@@ -162,6 +162,58 @@ func (u Network) Commands(app *api.App) {
 			Route{}.Commands(),
 			Link{}.Commands(),
 			FindHop{}.Commands(),
+			SNAT{}.Commands(),
 		},
 	})
+}
+
+type SNAT struct {
+	Cmd
+}
+
+func (s SNAT) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/snat"
+}
+
+func (s SNAT) Enable(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s SNAT) Disable(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s SNAT) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "snat",
+		Usage: "Control SNAT",
+		Subcommands: []*cli.Command{
+			{
+				Name:   "enable",
+				Usage:  "enable snat",
+				Action: s.Enable,
+			},
+			{
+				Name:   "disable",
+				Usage:  "disable snat",
+				Action: s.Disable,
+			},
+		},
+	}
 }

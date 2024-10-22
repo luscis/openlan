@@ -10,13 +10,13 @@ type ZTrust struct {
 	Cmd
 }
 
-func (z ZTrust) Url(prefix, network, action string) string {
-	return prefix + "/api/network/" + network + "/ztrust/" + action
+func (z ZTrust) Url(prefix, network string) string {
+	return prefix + "/api/network/" + network + "/ztrust"
 }
 
 func (z ZTrust) Enable(c *cli.Context) error {
 	name := c.String("network")
-	url := z.Url(c.String("url"), name, "enable")
+	url := z.Url(c.String("url"), name)
 	clt := z.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, nil, nil); err != nil {
 		return err
@@ -26,9 +26,9 @@ func (z ZTrust) Enable(c *cli.Context) error {
 
 func (z ZTrust) Disable(c *cli.Context) error {
 	name := c.String("network")
-	url := z.Url(c.String("url"), name, "disable")
+	url := z.Url(c.String("url"), name)
 	clt := z.NewHttp(c.String("token"))
-	if err := clt.PostJSON(url, nil, nil); err != nil {
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
 		return err
 	}
 	return nil

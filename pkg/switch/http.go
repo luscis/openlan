@@ -136,6 +136,7 @@ func (h *Http) LoadRouter() {
 	h.PProf(router)
 	h.Prome(router)
 	router.HandleFunc("/api/index", h.GetIndex).Methods("GET")
+	router.HandleFunc("/api/urls", h.GetApi).Methods("GET")
 	api.Add(router, h.switcher)
 }
 
@@ -352,4 +353,23 @@ func (h *Http) GetIndex(w http.ResponseWriter, r *http.Request) {
 	body := schema.Index{}
 	h.getIndex(&body)
 	api.ResponseJson(w, body)
+}
+
+func (t *Http) GetApi(w http.ResponseWriter, r *http.Request) {
+	var urls []string
+	t.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil || !strings.HasPrefix(path, "/api") {
+			return nil
+		}
+		methods, err := route.GetMethods()
+		if err != nil {
+			return nil
+		}
+		for _, m := range methods {
+			urls = append(urls, fmt.Sprintf("%-6s %s", m, path))
+		}
+		return nil
+	})
+	api.ResponseYaml(w, urls)
 }
