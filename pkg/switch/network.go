@@ -782,7 +782,7 @@ func (w *WorkerImpl) updateVPNRoute(routes []string, rt co.PrefixRoute) []string
 
 	addr := rt.Prefix
 	if addr == "0.0.0.0/0" {
-		vpn.Push = append(vpn.Push, "redirect-gateway def1")
+		vpn.AddRedirectDef1()
 		routes = append(routes, addr)
 		return routes
 	}
@@ -980,19 +980,13 @@ func (w *WorkerImpl) delVPNRoute(rt co.PrefixRoute) {
 	routes := vpn.Routes
 	addr := rt.Prefix
 	if addr == "0.0.0.0/0" {
-		for i, s := range vpn.Push {
-			if s == "redirect-gateway def1" {
-				vpn.Push = append(vpn.Push[:i], vpn.Push[i+1:]...)
-				break
-			}
-		}
+		vpn.DelRedirectDef1()
 		for i2, r := range routes {
 			if r == addr {
 				routes = append(routes[:i2], routes[i2+1:]...)
 				break
 			}
 		}
-
 		return
 	}
 	if inet, err := libol.ParseNet(addr); err == nil {

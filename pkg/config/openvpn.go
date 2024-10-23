@@ -105,7 +105,6 @@ func (o *OpenVPN) Merge(obj *OpenVPN) {
 	if o.Clients == nil || len(o.Clients) == 0 {
 		o.Clients = append(o.Clients, obj.Clients...)
 	}
-
 }
 
 func (o *OpenVPN) Correct(sw *Switch) {
@@ -120,4 +119,34 @@ func (o *OpenVPN) Correct(sw *Switch) {
 		value, _ := strconv.Atoi(port)
 		o.Subnet = fmt.Sprintf("%s.%d.0/24", pool, value&0xff)
 	}
+}
+
+func (o *OpenVPN) AddRedirectDef1() bool {
+	var find = -1
+
+	for i, v := range o.Push {
+		if strings.HasPrefix(v, "redirect-gateway") {
+			find = i
+			break
+		}
+	}
+	if find < 0 {
+		o.Push = append(o.Push, "redirect-gateway def1")
+	}
+	return find < 0
+}
+
+func (o *OpenVPN) DelRedirectDef1() bool {
+	var find = -1
+
+	for i, v := range o.Push {
+		if strings.HasPrefix(v, "redirect-gateway") {
+			find = i
+			break
+		}
+	}
+	if find > -1 {
+		o.Push = append(o.Push[:find], o.Push[find+1:]...)
+	}
+	return find > -1
 }

@@ -22,6 +22,7 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}", h.Get).Methods("GET")
 	router.HandleFunc("/api/network/{id}", h.Delete).Methods("DELETE")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
+	router.HandleFunc("/api/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.RestartVPN).Methods("POST")
 }
 
