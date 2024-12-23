@@ -9,4 +9,5 @@ type IPSecTunnel struct {
 	RightPort int    `json:"remoteport"`
 	Transport string `json:"protocol"`
 	Secret    string `json:"secret"`
+	State     string `json:"state"`
 }

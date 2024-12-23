@@ -12,6 +12,7 @@ type IPSecTunnel struct {
 	RightPort int    `json:"remoteport,omitempty"`
 	Transport string `json:"protocol"`
 	Secret    string `json:"secret"`
+	State     string `json:"state"`
 }
 
 func (s *IPSecTunnel) Correct() {

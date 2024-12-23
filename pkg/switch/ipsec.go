@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"text/template"
 
 	"github.com/luscis/openlan/pkg/api"
@@ -168,7 +169,7 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 			w.out.Error("WorkerImpl.AddTunnel %s", err)
 			return err
 		}
-		libol.Exec("ipsec", "auto", "--rereadsecrets")
+		libol.Exec(IPSecBin, "auto", "--rereadsecrets")
 	}
 	if connTmpl != "" {
 		if err := w.saveSec(name+".conf", connTmpl, tun); err != nil {
@@ -192,10 +193,10 @@ func (w *IPSecWorker) Start(v api.Switcher) {
 func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	name := tun.Name
 	if tun.Transport == "vxlan" {
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c2")
+		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c1")
+		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c2")
 	} else if tun.Transport == "gre" {
-		libol.Exec("ipsec", "auto", "--delete", "--asynchronous", name+"-c1")
+		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c1")
 	}
 	cfile := fmt.Sprintf("%s/%s.conf", IPSecEtcDir, name)
 	sfile := fmt.Sprintf("%s/%s.secrets", IPSecEtcDir, name)
@@ -211,6 +212,43 @@ func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 		}
 	}
 	return nil
+}
+
+func (w *IPSecWorker) Status() map[string]string {
+	status := make(map[string]string)
+	out, err := exec.Command(IPSecBin, "status").CombinedOutput()
+	if err != nil {
+		w.out.Warn("IPSecWorker.Status: %s", err)
+		return status
+	}
+	lines := strings.Split(string(out), "\n")
+	start := false
+	for _, line := range lines {
+		values := strings.SplitN(line, " ", 8)
+		if len(values) < 3 {
+			continue
+		}
+		if values[1] == "Total" && values[2] == "IPsec" {
+			break
+		}
+		if values[1] == "Connection" && values[2] == "list:" {
+			start = true
+			continue
+		}
+		if !start {
+			continue
+		}
+		if len(values) < 4 {
+			continue
+		}
+		title := strings.Trim(values[1], ":")
+		name := strings.Trim(title, "\"")
+		state := strings.Trim(values[3], ";")
+		if _, ok := status[name]; !ok {
+			status[name] = state
+		}
+	}
+	return status
 }
 
 func (w *IPSecWorker) Stop() {
@@ -270,7 +308,9 @@ func (w *IPSecWorker) RestartTunnel(data schema.IPSecTunnel) {
 }
 
 func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
+	status := w.Status()
 	for _, tun := range w.spec.Tunnels {
+		state := status[tun.Name+"-c1"]
 		obj := schema.IPSecTunnel{
 			Left:      tun.Left,
 			LeftId:    tun.LeftId,
@@ -280,6 +320,7 @@ func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
 			RightPort: tun.RightPort,
 			Secret:    tun.Secret,
 			Transport: tun.Transport,
+			State:     state,
 		}
 		call(obj)
 	}
