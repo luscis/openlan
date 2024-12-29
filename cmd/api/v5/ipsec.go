@@ -79,9 +79,9 @@ func (o IPSecTunnel) Restart(c *cli.Context) error {
 
 func (o IPSecTunnel) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "Remote"}} {{ps -15 "Protocol"}} {{ps -15 "Secret"}} {{ps -15 "Connection"}}
+{{ps -15 "Remote"}} {{ps -15 "Protocol"}} {{ps -15 "Secret"}} {{ps -15 "Connection"}} {{ps -8 "state"}}
 {{- range . }}
-{{ps -15 .Right}} {{ps -15 .Transport }} {{ps -15 .Secret}} [{{.LeftId}}]{{.LeftPort}} -> [{{.RightId}}]{{.RightPort}}
+{{ps -15 .Right}} {{ps -15 .Transport }} {{ps -15 .Secret}} [{{.LeftId}}]{{.LeftPort}} -> [{{.RightId}}]{{.RightPort}} {{ps -8 .State}}
 {{- end }}
 `
 }

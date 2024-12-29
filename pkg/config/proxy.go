@@ -33,6 +33,7 @@ type HttpForward struct {
 }
 
 type HttpProxy struct {
+	Conf     string         `json:"-" yaml:"-"`
 	ConfDir  string         `json:"-" yaml:"-"`
 	Listen   string         `json:"listen,omitempty"`
 	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
@@ -40,6 +41,37 @@ type HttpProxy struct {
 	Password string         `json:"password,omitempty" yaml:"password,omitempty"`
 	Forward  *HttpForward   `json:"forward,omitempty" yaml:"forward,omitempty"`
 	Backends []*HttpForward `json:"backends,omitempty" yaml:"backend,omitempty"`
+}
+
+func NewHttpProxy() *HttpProxy {
+	h := &HttpProxy{}
+	h.Parse()
+	err := h.Initialize()
+	if err != nil {
+		return nil
+	}
+	return h
+}
+
+func (h *HttpProxy) Parse() {
+	flag.StringVar(&h.Conf, "conf", "", "The configure file")
+	flag.Parse()
+}
+
+func (h *HttpProxy) Initialize() error {
+	if err := h.Load(); err != nil {
+		libol.Error("Proxy.Initialize %s", err)
+		return err
+	}
+	h.Correct()
+	return nil
+}
+
+func (h *HttpProxy) Load() error {
+	if h.Conf == "" {
+		return libol.NewErr("invalid configure file")
+	}
+	return libol.UnmarshalLoad(h, h.Conf)
 }
 
 func (h *HttpProxy) Correct() {
@@ -94,6 +126,15 @@ func (h *HttpProxy) DelMatch(domain, remote string) int {
 		to.Match = append(to.Match[:index], to.Match[index+1:]...)
 	}
 	return index
+}
+
+func (h *HttpProxy) Save() {
+	if h.Conf == "" {
+		return
+	}
+	if err := libol.MarshalSave(&h, h.Conf, true); err != nil {
+		libol.Error("Proxy.Save %s %s", h.Conf, err)
+	}
 }
 
 type TcpProxy struct {
@@ -151,8 +192,8 @@ func (p *Proxy) Load() error {
 	return libol.UnmarshalLoad(p, p.Conf)
 }
 
-func (h *Proxy) Save() {
-	if err := libol.MarshalSave(&h, h.Conf, true); err != nil {
-		libol.Error("Proxy.Save %s %s", h.Conf, err)
+func (p *Proxy) Save() {
+	if err := libol.MarshalSave(&p, p.Conf, true); err != nil {
+		libol.Error("Proxy.Save %s %s", p.Conf, err)
 	}
 }

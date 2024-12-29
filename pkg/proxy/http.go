@@ -555,7 +555,15 @@ func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.proxer.Save()
+	t.Save()
+}
+
+func (t *HttpProxy) Save() {
+	if t.proxer == nil {
+		t.cfg.Save()
+	} else {
+		t.proxer.Save()
+	}
 }
 
 func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
@@ -572,7 +580,7 @@ func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.proxer.Save()
+	t.Save()
 }
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
