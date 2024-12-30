@@ -148,6 +148,7 @@ install: env linux ## install packages
 	@mkdir -p $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan,openlan-switch} $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan-point,openlan-proxy} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/openlan-ceci $(LIN_DIR)/usr/bin
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
