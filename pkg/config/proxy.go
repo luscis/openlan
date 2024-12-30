@@ -43,24 +43,9 @@ type HttpProxy struct {
 	Backends []*HttpForward `json:"backends,omitempty" yaml:"backend,omitempty"`
 }
 
-func NewHttpProxy() *HttpProxy {
-	h := &HttpProxy{}
-	h.Parse()
-	err := h.Initialize()
-	if err != nil {
-		return nil
-	}
-	return h
-}
-
-func (h *HttpProxy) Parse() {
-	flag.StringVar(&h.Conf, "conf", "", "The configure file")
-	flag.Parse()
-}
-
 func (h *HttpProxy) Initialize() error {
 	if err := h.Load(); err != nil {
-		libol.Error("Proxy.Initialize %s", err)
+		libol.Error("HttpProxy.Initialize %s", err)
 		return err
 	}
 	h.Correct()
@@ -68,7 +53,7 @@ func (h *HttpProxy) Initialize() error {
 }
 
 func (h *HttpProxy) Load() error {
-	if h.Conf == "" {
+	if h.Conf == "" || libol.FileExist(h.Conf) != nil {
 		return libol.NewErr("invalid configure file")
 	}
 	return libol.UnmarshalLoad(h, h.Conf)
@@ -138,8 +123,24 @@ func (h *HttpProxy) Save() {
 }
 
 type TcpProxy struct {
+	Conf   string   `json:"-" yaml:"-"`
 	Listen string   `json:"listen,omitempty"`
 	Target []string `json:"target,omitempty"`
+}
+
+func (t *TcpProxy) Initialize() error {
+	if err := t.Load(); err != nil {
+		libol.Error("TcpProxy.Initialize %s", err)
+		return err
+	}
+	return nil
+}
+
+func (t *TcpProxy) Load() error {
+	if t.Conf == "" || libol.FileExist(t.Conf) != nil {
+		return libol.NewErr("invalid configure file")
+	}
+	return libol.UnmarshalLoad(t, t.Conf)
 }
 
 type Proxy struct {
