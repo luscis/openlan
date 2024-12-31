@@ -4,7 +4,6 @@ import (
 	"flag"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
@@ -39,11 +38,15 @@ type HttpProxy struct {
 	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Cert     *Cert          `json:"cert,omitempty" yaml:"cert,omitempty"`
 	Password string         `json:"password,omitempty" yaml:"password,omitempty"`
+	CaCert   string         `json:"cacert,omitempty" yaml:"cacert,omitempty"`
 	Forward  *HttpForward   `json:"forward,omitempty" yaml:"forward,omitempty"`
 	Backends []*HttpForward `json:"backends,omitempty" yaml:"backend,omitempty"`
 }
 
 func (h *HttpProxy) Initialize() error {
+	if h.ConfDir == "" {
+		h.ConfDir = path.Dir(os.Args[0])
+	}
 	if err := h.Load(); err != nil {
 		libol.Error("HttpProxy.Initialize %s", err)
 		return err
@@ -63,8 +66,11 @@ func (h *HttpProxy) Correct() {
 	if h.Cert != nil {
 		h.Cert.Correct()
 	}
-	if h.Password != "" && !strings.Contains(h.Password, "/") {
+	if h.Password != "" {
 		h.Password = path.Join(h.ConfDir, h.Password)
+	}
+	if h.CaCert != "" {
+		h.CaCert = path.Join(h.ConfDir, h.CaCert)
 	}
 }
 
@@ -170,8 +176,9 @@ func (p *Proxy) Parse() {
 }
 
 func (p *Proxy) Initialize() {
+	p.ConfDir = path.Dir(os.Args[0])
 	if p.Conf == "" {
-		p.Conf = path.Dir(os.Args[0]) + "/" + "proxy.json"
+		p.Conf = p.ConfDir + "/" + "proxy.json"
 	}
 	if err := p.Load(); err != nil {
 		libol.Error("Proxy.Initialize %s", err)
@@ -181,7 +188,6 @@ func (p *Proxy) Initialize() {
 }
 
 func (p *Proxy) Correct() {
-	p.ConfDir = path.Dir(p.Conf)
 	for _, h := range p.Http {
 		h.ConfDir = p.ConfDir
 		h.Correct()

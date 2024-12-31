@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -251,6 +253,18 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 		conf := &tls.Config{
 			InsecureSkipVerify: insecure,
 		}
+		caFile := t.cfg.CaCert
+		if caFile != "" {
+			caCertPool := x509.NewCertPool()
+			// Load CA cert
+			caCert, err := ioutil.ReadFile(caFile)
+			if err != nil {
+				t.out.Warn("HttpProxy.openConn %s", err)
+			} else {
+				caCertPool.AppendCertsFromPEM(caCert)
+				conf.RootCAs = caCertPool
+			}
+		}
 		dialer := &net.Dialer{Timeout: 10 * time.Second}
 		return tls.DialWithDialer(dialer, "tcp", remote, conf)
 
@@ -369,6 +383,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		conn, err := t.openConn(via.Protocol, via.Server, via.Insecure)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
+			t.out.Warn("HttpProxy.ServeHTTP %s: %s", via.Server, err)
 			return
 		}
 		dump, err := t.cloneRequest(r, via.Secret)
@@ -386,6 +401,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		conn, err := t.openConn("", r.URL.Host, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
+			t.out.Warn("HttpProxy.ServeHTTP %s: %s", r.URL.Host, err)
 			return
 		}
 		w.Write(connectOkay)
@@ -457,6 +473,9 @@ var httpTmpl = map[string]string{
   </head>
   <body>
     <table>
+    <tr>
+      <td>Project:</td><td><a href="https://github.com/luscis/openlan">OpenLAN Ceci</a></td>
+    </tr>
     <tr>
       <td>Total:</td><td>{{ .Total }}</td>
     </tr>
