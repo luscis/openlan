@@ -136,7 +136,7 @@ type TcpProxy struct {
 }
 
 func (t *TcpProxy) Initialize() error {
-	libol.Info("TcpProxy.Initialize %s", h.Conf)
+	libol.Info("TcpProxy.Initialize %s", t.Conf)
 	if err := t.Load(); err != nil {
 		libol.Error("TcpProxy.Initialize %s", err)
 		return err
