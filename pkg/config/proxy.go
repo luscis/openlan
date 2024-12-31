@@ -25,10 +25,10 @@ type SocksProxy struct {
 
 type HttpForward struct {
 	Protocol string   `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Server   string   `json:"server,omitempty"`
-	Insecure bool     `json:"insecure,omitempty"`
-	Match    []string `json:"match,omitempty"`
-	Secret   string   `json:"secret,omitempty"`
+	Server   string   `json:"server,omitempty" yaml:"server,omitempty"`
+	Insecure bool     `json:"insecure,omitempty" yaml:"insecure,omitempty"`
+	Match    []string `json:"match,omitempty" yaml:"match,omitempty"`
+	Secret   string   `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 type HttpProxy struct {
@@ -40,13 +40,14 @@ type HttpProxy struct {
 	Password string         `json:"password,omitempty" yaml:"password,omitempty"`
 	CaCert   string         `json:"cacert,omitempty" yaml:"cacert,omitempty"`
 	Forward  *HttpForward   `json:"forward,omitempty" yaml:"forward,omitempty"`
-	Backends []*HttpForward `json:"backends,omitempty" yaml:"backend,omitempty"`
+	Backends []*HttpForward `json:"backends,omitempty" yaml:"backends,omitempty"`
 }
 
 func (h *HttpProxy) Initialize() error {
 	if h.ConfDir == "" {
 		h.ConfDir = path.Dir(os.Args[0])
 	}
+	libol.Info("HttpProxy.Initialize %s", h.Conf)
 	if err := h.Load(); err != nil {
 		libol.Error("HttpProxy.Initialize %s", err)
 		return err
@@ -135,6 +136,7 @@ type TcpProxy struct {
 }
 
 func (t *TcpProxy) Initialize() error {
+	libol.Info("TcpProxy.Initialize %s", h.Conf)
 	if err := t.Load(); err != nil {
 		libol.Error("TcpProxy.Initialize %s", err)
 		return err

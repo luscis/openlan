@@ -12,7 +12,7 @@ func main() {
 	mode := "http"
 	conf := ""
 	flag.StringVar(&mode, "mode", "http", "Proxy mode for tcp or http")
-	flag.StringVar(&conf, "conf", "ceci.json", "The configuration file")
+	flag.StringVar(&conf, "conf", "ceci.yaml", "The configuration file")
 	flag.Parse()
 
 	libol.PreNotify()

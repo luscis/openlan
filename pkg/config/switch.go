@@ -247,7 +247,7 @@ func (s *Switch) LoadNetworks() {
 		libol.Error("Switch.LoadNetwork %s", err)
 	}
 	for _, k := range files {
-		if data, err := libol.LoadWithoutAnn(k); err != nil {
+		if data, err := libol.LoadFile(k); err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)
 		} else if _, err := s.LoadNetworkJson(data); err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)

@@ -1,12 +1,11 @@
 package libol
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
+	"gopkg.in/yaml.v2"
 	"math/rand"
 	"net"
 	"os"
@@ -26,6 +25,14 @@ const SimpleTime = "2006-01-02 15:04:05"
 const MacBase = 0x00
 
 var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+
+func IsYaml(file string) bool {
+	return strings.HasSuffix(file, ".yaml")
+}
+
+func IsJson(file string) bool {
+	return strings.HasSuffix(file, ".json")
+}
 
 func GenString(n int) string {
 	buffer := make([]byte, n)
@@ -93,12 +100,22 @@ func MarshalSave(v interface{}, file string, pretty bool) error {
 		return err
 	}
 	defer f.Close()
-	str, err := Marshal(v, true)
-	if err != nil {
-		Error("MarshalSave error: %s", err)
-		return err
+
+	var data []byte
+	if IsYaml(file) {
+		data, err = yaml.Marshal(v)
+		if err != nil {
+			Error("MarshalSave error: %s", err)
+			return err
+		}
+	} else {
+		data, err = Marshal(v, true)
+		if err != nil {
+			Error("MarshalSave error: %s", err)
+			return err
+		}
 	}
-	if _, err := f.Write(str); err != nil {
+	if _, err := f.Write(data); err != nil {
 		Error("MarshalSave: %s", err)
 		return err
 	}
@@ -112,38 +129,8 @@ func FileExist(file string) error {
 	return nil
 }
 
-func ScanAnn(r io.Reader) ([]byte, error) {
-	data := make([]byte, 0, 1024)
-	scan := bufio.NewScanner(r)
-	for scan.Scan() {
-		bs := scan.Bytes()
-		dis := false
-		for i, b := range bs {
-			if b == ' ' || b == '\t' || b == '\r' || b == '\n' {
-				continue
-			}
-			if b == '/' && len(bs) > i+1 && bs[i+1] == '/' {
-				dis = true // if start with //, need discard it.
-			}
-			break
-		}
-		if !dis {
-			data = append(data, bs...)
-		}
-	}
-	if err := scan.Err(); err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func LoadWithoutAnn(file string) ([]byte, error) {
-	fp, err := OpenRead(file)
-	if err != nil {
-		return nil, err
-	}
-	defer fp.Close()
-	return ScanAnn(fp)
+func LoadFile(file string) ([]byte, error) {
+	return os.ReadFile(file)
 }
 
 func Unmarshal(v interface{}, contents []byte) error {
@@ -157,11 +144,16 @@ func UnmarshalLoad(v interface{}, file string) error {
 	if err := FileExist(file); err != nil {
 		return nil
 	}
-	contents, err := LoadWithoutAnn(file)
+	contents, err := LoadFile(file)
 	if err != nil {
 		return NewErr("%s %s", file, err)
 	}
-	return Unmarshal(v, contents)
+
+	if IsYaml(file) {
+		return yaml.Unmarshal(contents, v)
+	} else {
+		return Unmarshal(v, contents)
+	}
 }
 
 func FunName(i interface{}) string {
