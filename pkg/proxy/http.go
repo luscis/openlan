@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -146,6 +146,8 @@ func (t *HttpProxy) loadUrl() {
 		t.api.HandleFunc("/api/config", t.GetConfig).Methods("GET")
 		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.AddMatch).Methods("POST")
 		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.DelMatch).Methods("DELETE")
+		t.api.HandleFunc("/api/user/{user}/{pass}", t.AddUser).Methods("POST")
+		t.api.HandleFunc("/api/user/{user}", t.DelUser).Methods("DELETE")
 		t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
 	}
 	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
@@ -153,7 +155,7 @@ func (t *HttpProxy) loadUrl() {
 
 func (t *HttpProxy) loadPass() {
 	file := t.cfg.Password
-	if file == "" {
+	if file == "" || libol.FileExist(file) != nil {
 		return
 	}
 	reader, err := libol.OpenRead(file)
@@ -176,6 +178,19 @@ func (t *HttpProxy) loadPass() {
 	if err := scanner.Err(); err != nil {
 		libol.Warn("HttpProxy.LoadPass scaner %v", err)
 	}
+}
+
+func (t *HttpProxy) savePass() error {
+	file := t.cfg.Password
+	writer, err := libol.OpenTrunk(file)
+	if err != nil {
+		return err
+	}
+	for user, pass := range t.pass {
+		line := user + ":" + pass
+		_, _ = writer.WriteString(line + "\n")
+	}
+	return nil
 }
 
 func (t *HttpProxy) isAuth(username, password string) bool {
@@ -254,10 +269,10 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 			InsecureSkipVerify: insecure,
 		}
 		caFile := t.cfg.CaCert
-		if caFile != "" {
+		if caFile != "" && libol.FileExist(caFile) == nil {
 			caCertPool := x509.NewCertPool()
 			// Load CA cert
-			caCert, err := ioutil.ReadFile(caFile)
+			caCert, err := os.ReadFile(caFile)
 			if err != nil {
 				t.out.Warn("HttpProxy.openConn %s", err)
 			} else {
@@ -457,7 +472,7 @@ var httpTmpl = map[string]string{
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>OpenLAN Proxy</title>
+    <title>OpenLAN Ceci</title>
     <style>
       body, table, a {
         background-color: #1d1d1d;
@@ -574,10 +589,39 @@ func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.Save()
+	t.save()
 }
 
-func (t *HttpProxy) Save() {
+func (t *HttpProxy) AddUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	user := vars["user"]
+	pass := vars["pass"]
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	t.pass[user] = pass
+	encodeYaml(w, "success")
+	t.savePass()
+}
+
+func (t *HttpProxy) DelUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	user := vars["user"]
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	if _, ok := t.pass[user]; ok {
+		delete(t.pass, user)
+	}
+	encodeYaml(w, "success")
+	t.savePass()
+}
+
+func (t *HttpProxy) save() {
 	if t.proxer == nil {
 		t.cfg.Save()
 	} else {
@@ -599,7 +643,7 @@ func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.Save()
+	t.save()
 }
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@ import (
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/switch"
+	cswitch "github.com/luscis/openlan/pkg/switch"
 )
 
 func main() {
@@ -12,7 +12,6 @@ func main() {
 	config.Update(c)
 
 	libol.SetLogger(c.Log.File, c.Log.Verbose)
-	libol.Debug("main %s", c)
 	cache.Init(&c.Perf)
 	s := cswitch.NewSwitch(c)
 	libol.PreNotify()

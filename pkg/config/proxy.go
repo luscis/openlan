@@ -67,12 +67,14 @@ func (h *HttpProxy) Correct() {
 	if h.Cert != nil {
 		h.Cert.Correct()
 	}
-	if h.Password != "" {
-		h.Password = path.Join(h.ConfDir, h.Password)
+	if h.Password == "" {
+		h.Password = h.Listen + ".pass"
 	}
-	if h.CaCert != "" {
-		h.CaCert = path.Join(h.ConfDir, h.CaCert)
+	h.Password = path.Join(h.ConfDir, h.Password)
+	if h.CaCert == "" {
+		h.CaCert = "ca.crt"
 	}
+	h.CaCert = path.Join(h.ConfDir, h.CaCert)
 }
 
 func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {

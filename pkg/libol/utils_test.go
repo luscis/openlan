@@ -1,9 +1,9 @@
 package libol
 
 import (
-	"bytes"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPrettyTime(t *testing.T) {
