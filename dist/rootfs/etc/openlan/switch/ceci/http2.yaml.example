@@ -1,0 +1,14 @@
+
+listen: 127.0.0.1:1080
+backends:
+- server: <s1>:<port1>
+  secret: <username>:<password>
+  match:
+  - openai.com
+  - chatgpt.com
+- server: <s2>:<port2>
+  secret: <username>:<password>
+  match:
+  - google.com
+  - github.com
+  - facebook.com

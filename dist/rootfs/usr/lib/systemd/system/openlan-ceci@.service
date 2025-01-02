@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenLAN Ceci daemon for %I
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/openlan-ceci $OPTIONS -conf /etc/openlan/switch/ceci/%i.yaml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

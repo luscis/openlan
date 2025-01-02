@@ -1,5 +1,5 @@
 [Unit]
-Description=OpenLAN Virtual Switch daemon
+Description=OpenLAN Central Switch daemon
 After=network.target
 Requires=openlan-confd.service
 
