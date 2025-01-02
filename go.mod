@@ -14,7 +14,6 @@ exclude github.com/sirupsen/logrus v1.8.1
 
 require (
 	github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000 // indirect
-	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/chzyer/logex v1.2.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/chzyer/test v0.0.0-20210722231415-061457976a23 // indirect

@@ -1,9 +1,6 @@
 # github.com/Sirupsen/logrus v0.0.0-00010101000000-000000000000 => github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/Sirupsen/logrus
-# github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
-## explicit
-github.com/armon/go-socks5
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/cenkalti/backoff/v4 v4.1.1
