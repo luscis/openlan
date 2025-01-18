@@ -31,13 +31,15 @@ type HttpRecord struct {
 	LastAt   string
 	CreateAt string
 	Domain   string
+	Bytes    int64
 }
 
-func (r *HttpRecord) Update() {
+func (r *HttpRecord) Update(bytes int64) {
 	if r.Count == 0 {
 		r.CreateAt = time.Now().Local().String()
 	}
 	r.Count += 1
+	r.Bytes += bytes
 	r.LastAt = time.Now().Local().String()
 }
 
@@ -230,7 +232,7 @@ func (t *HttpProxy) toDirect(w http.ResponseWriter, p *http.Response) {
 	_, _ = io.Copy(w, p.Body)
 }
 
-func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn) {
+func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn, update func(bytes int64)) {
 	src, bio, err := w.(http.Hijacker).Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -238,6 +240,7 @@ func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn) {
 	}
 	defer src.Close()
 	wait := libol.NewWaitOne(2)
+
 	libol.Go(func() {
 		defer wait.Done()
 		// The returned bufio.Reader may contain unprocessed buffered data from the client.
@@ -249,15 +252,19 @@ func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn) {
 				return
 			}
 		}
-		if _, err := io.Copy(conn, src); err != nil {
+		n64, err := io.Copy(conn, src)
+		if err != nil {
 			t.out.Debug("HttpProxy.tunnel from ws %s", err)
 		}
+		update(n64)
 	})
 	libol.Go(func() {
 		defer wait.Done()
-		if _, err := io.Copy(src, conn); err != nil {
+		n64, err := io.Copy(src, conn)
+		if err != nil {
 			t.out.Debug("HttpProxy.tunnel from target %s", err)
 		}
+		update(n64)
 	})
 	wait.Wait()
 	t.out.Debug("HttpProxy.tunnel %s exit", conn.RemoteAddr())
@@ -367,7 +374,7 @@ func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
 	return nil
 }
 
-func (t *HttpProxy) doRecord(r *http.Request) {
+func (t *HttpProxy) doRecord(r *http.Request, bytes int64) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -376,7 +383,7 @@ func (t *HttpProxy) doRecord(r *http.Request) {
 		record = &HttpRecord{}
 		t.requests[r.URL.Host] = record
 	}
-	record.Update()
+	record.Update(bytes)
 }
 
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -391,7 +398,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.doRecord(r)
+	t.doRecord(r, 0)
 	via := t.findForward(r)
 	if via != nil {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, via.Server)
@@ -407,7 +414,9 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		conn.Write(dump)
-		t.toTunnel(w, conn)
+		t.toTunnel(w, conn, func(bytes int64) {
+			t.doRecord(r, bytes)
+		})
 		return
 	}
 
@@ -420,7 +429,9 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write(connectOkay)
-		t.toTunnel(w, conn)
+		t.toTunnel(w, conn, func(bytes int64) {
+			t.doRecord(r, bytes)
+		})
 	} else { //RFC 7230 - HTTP/1.1: Message Syntax and Routing
 		transport := &http.Transport{}
 		p, err := transport.RoundTrip(r)
@@ -506,12 +517,12 @@ var httpTmpl = map[string]string{
     </table>
     <table>
     <tr>
-      <td>Domain</td><td>Count</td><td>LastAt</td><td>CreateAt</td>
+      <td>Domain</td><td>Count</td><td>Bytes</td><td>LastAt</td>
     </tr>
     {{- range .Requests }}
     <tr>
       <td>{{ .Domain }}</td><td>{{ .Count }}</td>
-      <td>{{ .LastAt }}</td><td>{{ .CreateAt }}</td>
+      <td>{{ .Bytes }}</td><td>{{ .LastAt }}
     </tr>
     {{- end }}
     </table>
@@ -545,6 +556,7 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 			Count:    record.Count,
 			LastAt:   record.LastAt,
 			CreateAt: record.CreateAt,
+			Bytes:    record.Bytes,
 		})
 	}
 	t.lock.RUnlock()
