@@ -380,8 +380,10 @@ func (t *HttpProxy) doRecord(r *http.Request, bytes int64) {
 
 	record, ok := t.requests[r.URL.Host]
 	if !ok {
-		record = &HttpRecord{}
-		t.requests[r.URL.Host] = record
+		record = &HttpRecord{
+			Domain: r.URL.Host,
+		}
+		t.requests[record.Domain] = record
 	}
 	record.Update(bytes)
 }
@@ -506,6 +508,9 @@ var httpTmpl = map[string]string{
       <td>Total:</td><td>{{ .Total }}</td>
     </tr>
     <tr>
+      <td>Bytes:</td><td>{{ .Bytes }}</td>
+    </tr>
+    <tr>
       <td>Configuration:</td><td><a href="/api/config">display</a></td>
     </tr>
     <tr>
@@ -545,19 +550,15 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	data := &struct {
 		StartAt  string
 		Total    int
+		Bytes    int64
 		Requests []*HttpRecord
 	}{
 		Total:   len(t.requests),
 		StartAt: t.startat.Local().String(),
 	}
-	for name, record := range t.requests {
-		data.Requests = append(data.Requests, &HttpRecord{
-			Domain:   name,
-			Count:    record.Count,
-			LastAt:   record.LastAt,
-			CreateAt: record.CreateAt,
-			Bytes:    record.Bytes,
-		})
+	for _, record := range t.requests {
+		data.Requests = append(data.Requests, record)
+		data.Bytes += record.Bytes
 	}
 	t.lock.RUnlock()
 
