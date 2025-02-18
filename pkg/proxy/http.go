@@ -142,16 +142,16 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 }
 
 func (t *HttpProxy) loadUrl() {
-	if strings.HasPrefix(t.cfg.Listen, "127.0.0.") {
-		t.api.HandleFunc("/", t.GetStats).Methods("GET")
-		t.api.HandleFunc("/api", t.GetApi).Methods("GET")
-		t.api.HandleFunc("/api/config", t.GetConfig).Methods("GET")
-		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.AddMatch).Methods("POST")
-		t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.DelMatch).Methods("DELETE")
-		t.api.HandleFunc("/api/user/{user}/{pass}", t.AddUser).Methods("POST")
-		t.api.HandleFunc("/api/user/{user}", t.DelUser).Methods("DELETE")
-		t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
-	}
+	t.api.HandleFunc("/", t.GetIndex).Methods("GET")
+	t.api.HandleFunc("/api", t.GetApi).Methods("GET")
+	t.api.HandleFunc("/api/stats", t.GetStats).Methods("GET")
+	t.api.HandleFunc("/api/config", t.GetConfig).Methods("GET")
+	t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.AddMatch).Methods("POST")
+	t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.DelMatch).Methods("DELETE")
+	t.api.HandleFunc("/api/user/{user}/{pass}", t.AddUser).Methods("POST")
+	t.api.HandleFunc("/api/user/{user}", t.DelUser).Methods("DELETE")
+	t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
+
 	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
 }
 
@@ -545,7 +545,7 @@ function FindProxyForURL(url, host) {
 }`,
 }
 
-func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
+func (t *HttpProxy) GetIndex(w http.ResponseWriter, r *http.Request) {
 	t.lock.RLock()
 	data := &struct {
 		StartAt  string
@@ -565,7 +565,10 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(data.Requests, func(i, j int) bool {
 		ii := data.Requests[i]
 		jj := data.Requests[j]
-		return ii.LastAt > jj.LastAt
+		if ii.Bytes == jj.Bytes {
+			return ii.LastAt > jj.LastAt
+		}
+		return ii.Bytes > jj.Bytes
 	})
 
 	if t.findQuery(r, "format") == "yaml" {
@@ -574,6 +577,28 @@ func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
 		encodeJson(w, data)
 	} else {
 		encodeText(w, httpTmpl["stats"], data)
+	}
+}
+
+func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
+	t.lock.RLock()
+	data := &struct {
+		StartAt string
+		Total   int
+		Bytes   int64
+	}{
+		Total:   len(t.requests),
+		StartAt: t.startat.Local().String(),
+	}
+	for _, record := range t.requests {
+		data.Bytes += record.Bytes
+	}
+	t.lock.RUnlock()
+
+	if t.findQuery(r, "format") == "json" {
+		encodeJson(w, data)
+	} else {
+		encodeYaml(w, data)
 	}
 }
 
