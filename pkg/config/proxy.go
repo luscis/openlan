@@ -180,9 +180,11 @@ func (p *Proxy) Parse() {
 }
 
 func (p *Proxy) Initialize() {
-	p.ConfDir = path.Dir(os.Args[0])
 	if p.Conf == "" {
-		p.Conf = p.ConfDir + "/" + "proxy.json"
+		p.Conf = path.Dir(os.Args[0]) + "/" + "proxy.json"
+	}
+	if p.ConfDir == "" {
+		p.ConfDir = path.Dir(p.Conf)
 	}
 	if err := p.Load(); err != nil {
 		libol.Error("Proxy.Initialize %s", err)
