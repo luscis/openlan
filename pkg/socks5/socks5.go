@@ -2,11 +2,15 @@ package socks5
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
-	"log"
+	"io"
 	"net"
-	"os"
+	"regexp"
+	"time"
 
+	co "github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 	"golang.org/x/net/context"
 )
 
@@ -44,10 +48,13 @@ type Config struct {
 
 	// Logger can be used to provide a custom log target.
 	// Defaults to stdout.
-	Logger *log.Logger
+	Logger *libol.SubLogger
 
 	// Optional function for dialing out
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
+
+	// Backends forwarding socks request
+	Backends []*co.HttpForward
 }
 
 // Server is reponsible for accepting connections and handling
@@ -80,7 +87,7 @@ func New(conf *Config) (*Server, error) {
 
 	// Ensure we have a log target
 	if conf.Logger == nil {
-		conf.Logger = log.New(os.Stdout, "", log.LstdFlags)
+		conf.Logger = libol.NewSubLogger("")
 	}
 
 	server := &Server{
@@ -125,14 +132,14 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Read the version byte
 	version := []byte{0}
 	if _, err := bufConn.Read(version); err != nil {
-		s.config.Logger.Printf("[ERR] socks: Failed to get version byte: %v", err)
+		s.config.Logger.Error("socks: Failed to get version byte: %v", err)
 		return err
 	}
 
 	// Ensure we are compatible
 	if version[0] != socks5Version {
 		err := fmt.Errorf("Unsupported SOCKS version: %v", version)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.config.Logger.Error("socks: %v", err)
 		return err
 	}
 
@@ -140,7 +147,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	authContext, err := s.authenticate(conn, bufConn)
 	if err != nil {
 		err = fmt.Errorf("Failed to authenticate: %v", err)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.config.Logger.Error("socks: %v", err)
 		return err
 	}
 
@@ -158,12 +165,108 @@ func (s *Server) ServeConn(conn net.Conn) error {
 		request.RemoteAddr = &AddrSpec{IP: client.IP, Port: client.Port}
 	}
 
-	// Process the client request
+	dstAddr := request.DestAddr
+	via := s.findForward(dstAddr.Address())
+	if via != nil {
+		if err := s.toForward(request, conn, via); err != nil {
+			s.config.Logger.Error("forward: %v", err)
+			return err
+		}
+		return nil
+	}
+
+	s.config.Logger.Info("ServeConn: %s", dstAddr.Address())
+	//Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
 		err = fmt.Errorf("Failed to handle request: %v", err)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.config.Logger.Error("socks: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Server) toTunnel(local net.Conn, target net.Conn) {
+	defer local.Close()
+	defer target.Close()
+	wait := libol.NewWaitOne(2)
+
+	libol.Go(func() {
+		defer wait.Done()
+		io.Copy(local, target)
+	})
+	libol.Go(func() {
+		defer wait.Done()
+		io.Copy(target, local)
+	})
+	wait.Wait()
+}
+
+func (s *Server) openConn(remote string) (net.Conn, error) {
+	return net.DialTimeout("tcp", remote, 10*time.Second)
+}
+
+func (s *Server) isMatch(value string, rules []string) bool {
+	if len(rules) == 0 {
+		return true
+	}
+	for _, rule := range rules {
+		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) findForward(host string) *co.HttpForward {
+	for _, via := range s.config.Backends {
+		if via != nil && s.isMatch(host, via.Match) {
+			return via
+		}
+	}
+	return nil
+}
+
+func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) error {
+	dstAddr := req.DestAddr
+	s.config.Logger.Info("Connect %s via %s", dstAddr.Address(), via.Server)
+
+	target, err := s.openConn(via.Server)
+	if err != nil {
+		sendReply(local, networkUnreachable, nil)
 		return err
 	}
 
+	// Handshake: SOCKS5 no auth
+	_, err = target.Write([]byte{socks5Version, 1, 0})
+	if err != nil {
+		sendReply(local, serverFailure, nil)
+		return err
+	}
+
+	reply := make([]byte, 2)
+	_, err = target.Read(reply)
+	if reply[0] != socks5Version || reply[1] != successReply {
+		sendReply(local, serverFailure, nil)
+		return err
+	}
+
+	domain := []byte(dstAddr.FQDN)
+	port := []byte{0, 0}
+	binary.BigEndian.PutUint16(port, uint16(dstAddr.Port))
+
+	// Request: CONNECT to domain
+	bind := []byte{socks5Version, 1, 0, 3}
+	bind = append(bind, byte(len(domain)))
+	bind = append(bind, domain...)
+	bind = append(bind, port...)
+	_, err = target.Write(bind)
+	if err != nil {
+		sendReply(local, serverFailure, nil)
+		return err
+	}
+
+	s.toTunnel(local, target)
 	return nil
 }

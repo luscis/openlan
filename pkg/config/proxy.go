@@ -19,8 +19,9 @@ type ShadowProxy struct {
 }
 
 type SocksProxy struct {
-	Listen string    `json:"listen,omitempty"`
-	Auth   *Password `json:"auth,omitempty"`
+	Listen   string         `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Backends []*HttpForward `json:"backends,omitempty" yaml:"backends,omitempty"`
 }
 
 type HttpForward struct {

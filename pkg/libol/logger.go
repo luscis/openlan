@@ -199,6 +199,10 @@ func (s *SubLogger) Print(format string, v ...interface{}) {
 	s.logger.Write(PRINT, s.Fmt(format), v...)
 }
 
+func (s *SubLogger) Printf(format string, v ...interface{}) {
+	s.logger.Write(PRINT, s.Fmt(format), v...)
+}
+
 func (s *SubLogger) Log(format string, v ...interface{}) {
 	s.logger.Write(LOG, s.Fmt(format), v...)
 }

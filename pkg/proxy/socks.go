@@ -22,15 +22,20 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 	// Create a SOCKS5 server
 	auth := cfg.Auth
 	authMethods := make([]socks5.Authenticator, 0, 2)
-	if len(auth.Username) > 0 {
+	if auth != nil && len(auth.Username) > 0 {
 		author := socks5.UserPassAuthenticator{
 			Credentials: socks5.StaticCredentials{
 				auth.Username: auth.Password,
 			},
 		}
 		authMethods = append(authMethods, author)
+
 	}
-	conf := &socks5.Config{AuthMethods: authMethods}
+	conf := &socks5.Config{
+		Backends:    cfg.Backends,
+		AuthMethods: authMethods,
+		Logger:      s.out,
+	}
 	server, err := socks5.New(conf)
 	if err != nil {
 		s.out.Error("NewSocksProxy %s", err)

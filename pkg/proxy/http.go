@@ -60,7 +60,7 @@ type HttpProxy struct {
 }
 
 var (
-	connectOkay = []byte("HTTP/1.1 200 Connection established\r\n\r\n")
+	httpOkay = "HTTP/1.1 200 OK\r\n\r\n"
 )
 
 func decodeBasicAuth(auth string) (username, password string, ok bool) {
@@ -430,7 +430,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			t.out.Warn("HttpProxy.ServeHTTP %s: %s", r.URL.Host, err)
 			return
 		}
-		w.Write(connectOkay)
+		fmt.Fprint(w, httpOkay)
 		t.toTunnel(w, conn, func(bytes int64) {
 			t.doRecord(r, bytes)
 		})
