@@ -62,9 +62,9 @@ config:
 
 builder:
 	docker run -d -it \
-		--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
-		--volume $(SD)/:/opt/openlan --volume $(shell echo ~)/.ssh:/root/.ssh \
-		--name openlan_builder debian:bullseye bash
+	--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
+	--volume $(SD)/:/opt/openlan --volume $(shell echo ~)/.ssh:/root/.ssh \
+	--name openlan_builder debian:bullseye bash
 	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc devscripts"
 	docker exec openlan_builder bash -c "apt install -y net-tools make build-essential libnss3-dev pkg-config libevent-dev libunbound-dev bison flex libsystemd-dev libcurl4-nss-dev libpam0g-dev libcap-ng-dev libldns-dev xmlto"
 	docker exec openlan_builder badh -c "apt install -y htmldoc libaudit-dev libkrb5-dev libldap2-dev libnss3-tools libselinux1-dev man2html"
@@ -78,10 +78,8 @@ builder:
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-
 docker-bin: ## binary by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
-
 
 docker-test: ## test by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make test"
@@ -92,19 +90,22 @@ docker-darwin: ## binary for MacOS by Docker
 docker-windows: ## binary for Windows by Docker
 	docker exec openlan_builder bash -c "cd /opt/openlan && make windows-gzip"
 
+docker-ceci: ## binary for ceci by Docker
+	docker exec openlan_builder bash -c "cd /opt/openlan && make ceci"
+
 docker-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && \
-		sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
-		--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
-		--file centos/Dockerfile .
+	sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
+	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
+	--file centos/Dockerfile .
 
 docker-deb: docker-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && \
-		sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
-		--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
-		--file debian/Dockerfile .
+	sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
+	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
+	--file debian/Dockerfile .
 
 docker: docker-deb docker-rhel ## build docker images
 
@@ -118,12 +119,18 @@ docker-compose: ## create a compose files
 	echo "$ cd /tmp/openlan.c" && \
 	echo "$ docker-compose up -d"
 
-linux: env ## build linux binary
+ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
+
+linux: env linux-ceci linux-proxy ## build linux binary
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci ./cmd/ceci
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
+
+linux-ceci:
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci ./cmd/ceci
+
+linux-proxy:
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 
 linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
@@ -152,8 +159,12 @@ install: env linux ## install packages
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
-windows: ## build windows binary
+windows: env windows-ceci windows-proxy ## build windows binary
+
+windows-proxy:
 	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
+
+windows-ceci:
 	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.exe ./cmd/ceci
 
 windows-gzip: env windows ## build windows packages
@@ -166,11 +177,15 @@ windows-gzip: env windows ## build windows packages
 ## cross build for osx
 osx: darwin
 
-darwin: env ## build darwin binary
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
-	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.arm64.dar ./cmd/proxy
+darwin: env darwin-ceci darwin-proxy ## build darwin binary
+
+darwin-ceci:
 	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.dar ./cmd/ceci
 	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.arm64.dar ./cmd/ceci
+
+darwin-proxy:
+	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
+	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.arm64.dar ./cmd/proxy
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)

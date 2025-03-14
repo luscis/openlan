@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -57,6 +56,7 @@ type HttpProxy struct {
 	startat  time.Time
 	requests map[string]*HttpRecord
 	lock     sync.RWMutex
+	socks    *SocksProxy
 }
 
 var (
@@ -134,7 +134,10 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 	if auth != nil && auth.Username != "" {
 		h.pass[auth.Username] = auth.Password
 	}
-
+	if cfg.SocksProxy != nil {
+		h.socks = NewSocksProxy(cfg.SocksProxy)
+		h.socks.server.SetBackends(h)
+	}
 	h.loadUrl()
 	h.loadPass()
 
@@ -271,7 +274,7 @@ func (t *HttpProxy) toTunnel(w http.ResponseWriter, conn net.Conn, update func(b
 }
 
 func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, error) {
-	if protocol == "https" {
+	if protocol == "https" || protocol == "tls" {
 		conf := &tls.Config{
 			InsecureSkipVerify: insecure,
 		}
@@ -292,6 +295,12 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 
 	}
 	return net.DialTimeout("tcp", remote, 10*time.Second)
+}
+
+func (h *HttpProxy) FindBackend(host string) *co.HttpForward {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	return h.cfg.Backends.FindBackend(host)
 }
 
 func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error) {
@@ -344,36 +353,6 @@ func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error)
 	return b.Bytes(), nil
 }
 
-func (t *HttpProxy) isMatch(value string, rules []string) bool {
-	if len(rules) == 0 {
-		return true
-	}
-	for _, rule := range rules {
-		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
-		re := regexp.MustCompile(pattern)
-		if re.MatchString(value) {
-			return true
-		}
-	}
-	return false
-}
-
-func (t *HttpProxy) findForward(r *http.Request) *co.HttpForward {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
-
-	via := t.cfg.Forward
-	if via != nil && t.isMatch(r.URL.Host, via.Match) {
-		return via
-	}
-	for _, via := range t.cfg.Backends {
-		if via != nil && t.isMatch(r.URL.Host, via.Match) {
-			return via
-		}
-	}
-	return nil
-}
-
 func (t *HttpProxy) doRecord(r *http.Request, bytes int64) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -401,7 +380,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.doRecord(r, 0)
-	via := t.findForward(r)
+	via := t.FindBackend(r.URL.Host)
 	if via != nil {
 		t.out.Info("HttpProxy.ServeHTTP %s %s -> %s via %s", r.Method, r.RemoteAddr, r.URL.Host, via.Server)
 		conn, err := t.openConn(via.Protocol, via.Server, via.Insecure)
@@ -450,6 +429,11 @@ func (t *HttpProxy) Start() {
 	if t.server == nil || t.cfg == nil {
 		return
 	}
+
+	if t.socks != nil {
+		t.socks.Start()
+	}
+
 	crt := t.cfg.Cert
 	if crt == nil || crt.KeyFile == "" {
 		t.out.Info("HttpProxy.start http://%s", t.server.Addr)

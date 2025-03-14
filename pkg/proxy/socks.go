@@ -50,7 +50,7 @@ func (s *SocksProxy) Start() {
 		return
 	}
 	addr := s.cfg.Listen
-	s.out.Info("SocksProxy.Start: %s", s.cfg.Listen)
+	s.out.Info("SocksProxy.Start: socks5://%s", s.cfg.Listen)
 
 	promise := &libol.Promise{
 		First:  time.Second * 2,

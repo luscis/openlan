@@ -1,0 +1,12 @@
+
+listen: 127.0.0.1:1080
+socks:
+  listen: 127.0.0.1:1081
+cacert: ca.crt
+backends:
+- protocol: ssl
+  server: <s1>:18000
+  socks:
+    server: <s2:18001>
+  match:
+  - a.b.com
