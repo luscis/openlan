@@ -50,7 +50,7 @@ func (s *SocksProxy) Start() {
 		return
 	}
 	addr := s.cfg.Listen
-	s.out.Info("Proxy.startSocks")
+	s.out.Info("SocksProxy.Start: %s", s.cfg.Listen)
 
 	promise := &libol.Promise{
 		First:  time.Second * 2,
@@ -59,7 +59,7 @@ func (s *SocksProxy) Start() {
 	}
 	promise.Go(func() error {
 		if err := s.server.ListenAndServe("tcp", addr); err != nil {
-			s.out.Warn("Proxy.startSocks %s", err)
+			s.out.Warn("SocksProxy.Start %s", err)
 			return err
 		}
 		return nil

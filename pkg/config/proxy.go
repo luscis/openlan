@@ -19,9 +19,26 @@ type ShadowProxy struct {
 }
 
 type SocksProxy struct {
+	Conf     string         `json:"-" yaml:"-"`
 	Listen   string         `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Backends []*HttpForward `json:"backends,omitempty" yaml:"backends,omitempty"`
+}
+
+func (s *SocksProxy) Initialize() error {
+	libol.Info("SocksProxy.Initialize %s", s.Conf)
+	if err := s.Load(); err != nil {
+		libol.Error("SocksProxy.Initialize %s", err)
+		return err
+	}
+	return nil
+}
+
+func (s *SocksProxy) Load() error {
+	if s.Conf == "" || libol.FileExist(s.Conf) != nil {
+		return libol.NewErr("invalid configure file")
+	}
+	return libol.UnmarshalLoad(s, s.Conf)
 }
 
 type HttpForward struct {

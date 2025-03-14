@@ -169,13 +169,13 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	via := s.findForward(dstAddr.Address())
 	if via != nil {
 		if err := s.toForward(request, conn, via); err != nil {
-			s.config.Logger.Error("forward: %v", err)
+			s.config.Logger.Error("socks.forward: %v", err)
 			return err
 		}
 		return nil
 	}
 
-	s.config.Logger.Info("ServeConn: %s", dstAddr.Address())
+	s.config.Logger.Info("socks.ServeConn: %s", dstAddr.Address())
 	//Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
 		err = fmt.Errorf("Failed to handle request: %v", err)
@@ -230,7 +230,7 @@ func (s *Server) findForward(host string) *co.HttpForward {
 
 func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) error {
 	dstAddr := req.DestAddr
-	s.config.Logger.Info("Connect %s via %s", dstAddr.Address(), via.Server)
+	s.config.Logger.Info("socks.toForward: %s via %s", dstAddr.Address(), via.Server)
 
 	target, err := s.openConn(via.Server)
 	if err != nil {
