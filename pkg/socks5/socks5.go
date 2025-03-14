@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"regexp"
 	"time"
 
 	co "github.com/luscis/openlan/pkg/config"
@@ -54,7 +53,7 @@ type Config struct {
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 
 	// Backends forwarding socks request
-	Backends []*co.HttpForward
+	Backends co.FindBackend
 }
 
 // Server is reponsible for accepting connections and handling
@@ -121,7 +120,6 @@ func (s *Server) Serve(l net.Listener) error {
 		}
 		go s.ServeConn(conn)
 	}
-	return nil
 }
 
 // ServeConn is used to serve a single connection.
@@ -132,14 +130,14 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Read the version byte
 	version := []byte{0}
 	if _, err := bufConn.Read(version); err != nil {
-		s.config.Logger.Error("socks: Failed to get version byte: %v", err)
+		s.config.Logger.Error("Socks.ServeConn Failed to get version byte: %v", err)
 		return err
 	}
 
 	// Ensure we are compatible
 	if version[0] != socks5Version {
 		err := fmt.Errorf("Unsupported SOCKS version: %v", version)
-		s.config.Logger.Error("socks: %v", err)
+		s.config.Logger.Error("Socks.ServeConn %v", err)
 		return err
 	}
 
@@ -147,7 +145,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	authContext, err := s.authenticate(conn, bufConn)
 	if err != nil {
 		err = fmt.Errorf("Failed to authenticate: %v", err)
-		s.config.Logger.Error("socks: %v", err)
+		s.config.Logger.Error("Socks.ServeConn %v", err)
 		return err
 	}
 
@@ -166,20 +164,22 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	}
 
 	dstAddr := request.DestAddr
-	via := s.findForward(dstAddr.Address())
-	if via != nil {
-		if err := s.toForward(request, conn, via); err != nil {
-			s.config.Logger.Error("socks.forward: %v", err)
-			return err
+	if s.config.Backends != nil {
+		via := s.config.Backends.FindBackend(dstAddr.Address())
+		if via != nil {
+			if err := s.toForward(request, conn, via); err != nil {
+				s.config.Logger.Error("Socks.ServeConn: %v", err)
+				return err
+			}
+			return nil
 		}
-		return nil
 	}
 
-	s.config.Logger.Info("socks.ServeConn: %s", dstAddr.Address())
+	s.config.Logger.Info("Socks.ServeConn CONNECT %s", dstAddr.Address())
 	//Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
 		err = fmt.Errorf("Failed to handle request: %v", err)
-		s.config.Logger.Error("socks: %v", err)
+		s.config.Logger.Error("Socks.ServeConn %v", err)
 	}
 
 	return nil
@@ -205,34 +205,13 @@ func (s *Server) openConn(remote string) (net.Conn, error) {
 	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
 
-func (s *Server) isMatch(value string, rules []string) bool {
-	if len(rules) == 0 {
-		return true
-	}
-	for _, rule := range rules {
-		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
-		re := regexp.MustCompile(pattern)
-		if re.MatchString(value) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *Server) findForward(host string) *co.HttpForward {
-	for _, via := range s.config.Backends {
-		if via != nil && s.isMatch(host, via.Match) {
-			return via
-		}
-	}
-	return nil
-}
-
 func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) error {
 	dstAddr := req.DestAddr
-	s.config.Logger.Info("socks.toForward: %s via %s", dstAddr.Address(), via.Server)
+	proxy := via.SocksAddr()
 
-	target, err := s.openConn(via.Server)
+	s.config.Logger.Info("Socks.ServeConn CONNECT %s via %s", dstAddr.Address(), proxy)
+
+	target, err := s.openConn(proxy)
 	if err != nil {
 		sendReply(local, networkUnreachable, nil)
 		return err
@@ -269,4 +248,8 @@ func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) er
 
 	s.toTunnel(local, target)
 	return nil
+}
+
+func (s *Server) SetBackends(find co.FindBackend) {
+	s.config.Backends = find
 }

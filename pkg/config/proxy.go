@@ -2,8 +2,10 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path"
+	"regexp"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
@@ -18,11 +20,69 @@ type ShadowProxy struct {
 	Protocol   string `json:"protocol,omitempty"`
 }
 
+type ForwardSocks struct {
+	Server string `json:"server,omitempty"`
+}
+
+type HttpForward struct {
+	Protocol string       `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Server   string       `json:"server,omitempty" yaml:"server,omitempty"`
+	Insecure bool         `json:"insecure,omitempty" yaml:"insecure,omitempty"`
+	Match    []string     `json:"match,omitempty" yaml:"match,omitempty"`
+	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Socks    ForwardSocks `json:"socks,omitempty" yaml:"socks,omitempty"`
+}
+
+func (f *HttpForward) SocksAddr() string {
+	if f.Socks.Server != "" {
+		return f.Socks.Server
+	}
+	return f.Server
+}
+
+type HttpBackends []*HttpForward
+
+func (h HttpBackends) isMatch(value string, rules []string) bool {
+	if len(rules) == 0 {
+		return true
+	}
+
+	for _, rule := range rules {
+		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
+		re := regexp.MustCompile(pattern)
+		if re.MatchString(value) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (h HttpBackends) FindBackend(host string) *HttpForward {
+	for _, via := range h {
+		if via == nil {
+			continue
+		}
+		if via.Server == "" && via.Socks.Server == "" {
+			continue
+		}
+		if h.isMatch(host, via.Match) {
+			return via
+		}
+	}
+
+	return nil
+}
+
+type FindBackend interface {
+	FindBackend(host string) *HttpForward
+}
+
 type SocksProxy struct {
-	Conf     string         `json:"-" yaml:"-"`
-	Listen   string         `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
-	Backends []*HttpForward `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Conf     string       `json:"-" yaml:"-"`
+	Listen   string       `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Auth     *Password    `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Backends HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
 }
 
 func (s *SocksProxy) Initialize() error {
@@ -41,24 +101,21 @@ func (s *SocksProxy) Load() error {
 	return libol.UnmarshalLoad(s, s.Conf)
 }
 
-type HttpForward struct {
-	Protocol string   `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Server   string   `json:"server,omitempty" yaml:"server,omitempty"`
-	Insecure bool     `json:"insecure,omitempty" yaml:"insecure,omitempty"`
-	Match    []string `json:"match,omitempty" yaml:"match,omitempty"`
-	Secret   string   `json:"secret,omitempty" yaml:"secret,omitempty"`
+type HttpSocks struct {
+	Listen string `json:"listen,omitempty"`
 }
 
 type HttpProxy struct {
-	Conf     string         `json:"-" yaml:"-"`
-	ConfDir  string         `json:"-" yaml:"-"`
-	Listen   string         `json:"listen,omitempty"`
-	Auth     *Password      `json:"auth,omitempty" yaml:"auth,omitempty"`
-	Cert     *Cert          `json:"cert,omitempty" yaml:"cert,omitempty"`
-	Password string         `json:"password,omitempty" yaml:"password,omitempty"`
-	CaCert   string         `json:"cacert,omitempty" yaml:"cacert,omitempty"`
-	Forward  *HttpForward   `json:"forward,omitempty" yaml:"forward,omitempty"`
-	Backends []*HttpForward `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Conf       string       `json:"-" yaml:"-"`
+	ConfDir    string       `json:"-" yaml:"-"`
+	Listen     string       `json:"listen,omitempty"`
+	Auth       *Password    `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Cert       *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
+	Password   string       `json:"password,omitempty" yaml:"password,omitempty"`
+	CaCert     string       `json:"cacert,omitempty" yaml:"cacert,omitempty"`
+	Backends   HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Socks      *HttpSocks   `json:"socks,omitempty" yaml:"socks,omitempty"`
+	SocksProxy *SocksProxy  `json:"-" yaml:"-"`
 }
 
 func (h *HttpProxy) Initialize() error {
@@ -93,6 +150,11 @@ func (h *HttpProxy) Correct() {
 		h.CaCert = "ca.crt"
 	}
 	h.CaCert = path.Join(h.ConfDir, h.CaCert)
+	if h.Socks != nil {
+		h.SocksProxy = &SocksProxy{
+			Listen: h.Socks.Listen,
+		}
+	}
 }
 
 func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {
@@ -105,9 +167,6 @@ func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {
 }
 
 func (h *HttpProxy) FindBackend(remote string) *HttpForward {
-	if remote == "" || remote == "null" {
-		return h.Forward
-	}
 	for _, to := range h.Backends {
 		if to.Server == remote {
 			return to
