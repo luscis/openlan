@@ -116,13 +116,13 @@ EOF
 Enable Access Point for central network:
 
 ```
-systemctl enable --now openlan-point@central
+systemctl enable --now openlan-access@central
 ```
 
 Check journal log:
 
 ```
-journalctl -u openlan-point@central
+journalctl -u openlan-access@central
 ```
 
 

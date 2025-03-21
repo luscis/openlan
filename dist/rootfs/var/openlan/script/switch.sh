@@ -9,7 +9,7 @@ set -ex
 sysctl -p /etc/sysctl.d/90-openlan.conf
 
 # clean older files.
-/usr/bin/env find /var/openlan/point -type f -delete
+/usr/bin/env find /var/openlan/access -type f -delete
 /usr/bin/env find /var/openlan/openvpn -name '*.status' -delete
 /usr/bin/env find /var/openlan/openvpn -name '*client.ovpn' -delete
 /usr/bin/env find /var/openlan/openvpn -name '*client.tmpl' -delete

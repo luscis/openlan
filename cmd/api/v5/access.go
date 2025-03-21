@@ -48,12 +48,12 @@ func (u Point) List(c *cli.Context) error {
 
 func (u Point) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "point",
-		Usage: "Point accessed to switch",
+		Name:  "access",
+		Usage: "access to this switch",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
-				Usage:   "Display all points",
+				Usage:   "Display all access",
 				Aliases: []string{"ls"},
 				Action:  u.List,
 			},

@@ -11,20 +11,18 @@ import (
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
-	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
 )
 
 const (
-	OlapBin = "openlan-point"
-	OlapDir = "/var/openlan/point"
+	AccessBin = "openlan-access"
+	AccessDir = "/var/openlan/access"
 )
 
 type Link struct {
-	cfg    *co.Point
-	status *schema.Point
-	out    *libol.SubLogger
-	uuid   string
+	cfg  *co.Point
+	out  *libol.SubLogger
+	uuid string
 }
 
 func NewLink(cfg *co.Point) *Link {
@@ -62,23 +60,23 @@ func (l *Link) UUID() string {
 }
 
 func (l *Link) Path() string {
-	return OlapBin
+	return AccessBin
 }
 
 func (l *Link) ConfFile() string {
-	return filepath.Join(OlapDir, l.uuid+".json")
+	return filepath.Join(AccessDir, l.uuid+".json")
 }
 
 func (l *Link) StatusFile() string {
-	return filepath.Join(OlapDir, l.uuid+".status")
+	return filepath.Join(AccessDir, l.uuid+".status")
 }
 
 func (l *Link) PidFile() string {
-	return filepath.Join(OlapDir, l.uuid+".pid")
+	return filepath.Join(AccessDir, l.uuid+".pid")
 }
 
 func (l *Link) LogFile() string {
-	return filepath.Join(OlapDir, l.uuid+".log")
+	return filepath.Join(AccessDir, l.uuid+".log")
 }
 
 func (l *Link) Start() error {

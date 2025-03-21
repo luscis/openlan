@@ -54,17 +54,17 @@ OpenLAN软件包含下面部分：
            "address": "172.32.10.10/24"       ## 一个唯一的子网地址，如共享二层网络填充本地地址
        },
        "subnet": {                            ## 网络的子网配置，如果没有动态地址分配可以忽略
-           "start": "172.32.10.100",          ## 用于动态分配给接入point的起始地址
+           "start": "172.32.10.100",          ## 用于动态分配给Access Point的起始地址
            "end": "172.32.10.150",            ## 用于动态分配的截止地址
            "netmask": "255.255.255.0"         ## 网络子网的掩码
        },
-       "hosts": [                             ## 为point添加静态地址分配
+       "hosts": [                             ## 为Access Point添加静态地址分配
            {
-               "hostname": "pc-99",           ## 接入point的主机名称
+               "hostname": "pc-99",           ## Access Point的主机名称
                "address": "172.32.10.99"      ## 固定的地址
            }
        ],
-       "routes": [                            ## 注入给point的路由信息
+       "routes": [                            ## 注入给Access Point的路由信息
            {
                "prefix": "192.168.10.0/24"
            }
@@ -120,7 +120,7 @@ OpenLAN软件包含下面部分：
 2. 添加一个新的网络配置；
    ```
    $ cd /etc/openlan
-   $ cp point.json.example example.json
+   $ cp access.json.example example.json
    $ vim example.json                           ## <网络名>.json
    {
      "protocol": "tcp",                         ## 同上
@@ -136,8 +136,8 @@ OpenLAN软件包含下面部分：
    ```
 3. 配置Access Point服务自启动；
    ```
-   $ systemctl enable --now openlan-point@example
-   $ journalctl -u openlan-point@example        ## 查看日志信息
+   $ systemctl enable --now openlan-access@example
+   $ journalctl -u openlan-access@example        ## 查看日志信息
    ```
 4. 检测网络是否可达；
    ```

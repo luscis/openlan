@@ -123,7 +123,7 @@ ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
 
 linux: env linux-ceci linux-proxy ## build linux binary
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-point ./cmd/point
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-ceci:
@@ -148,13 +148,13 @@ linux-bin: linux-gzip ## build linux install binary
 install: env linux ## install packages
 	@mkdir -p $(LIN_DIR)
 	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LIN_DIR)
-	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,point,l2tp,dhcp}
+	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,access,dhcp}
 	@cp -rf $(SD)/dist/cert/openlan/cert $(LIN_DIR)/var/openlan
 	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LIN_DIR)/var/openlan/cert
 	@cp -rf $(SD)/pkg/public $(LIN_DIR)/var/openlan
 	@mkdir -p $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan,openlan-switch} $(LIN_DIR)/usr/bin
-	@cp -rf $(BD)/{openlan-point,openlan-proxy} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan-access,openlan-proxy} $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/openlan-ceci $(LIN_DIR)/usr/bin
 	@echo "Installed to $(LIN_DIR)"
 
