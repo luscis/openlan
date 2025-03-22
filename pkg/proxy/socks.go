@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"crypto/tls"
 	"time"
 
 	"github.com/luscis/openlan/pkg/config"
@@ -36,6 +37,12 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 		AuthMethods: authMethods,
 		Logger:      s.out,
 	}
+	crt := cfg.Cert
+	if crt != nil && crt.KeyFile != "" {
+		conf.TlsConfig = &tls.Config{
+			RootCAs: crt.GetCertPool(),
+		}
+	}
 	server, err := socks5.New(conf)
 	if err != nil {
 		s.out.Error("NewSocksProxy %s", err)
@@ -50,7 +57,13 @@ func (s *SocksProxy) Start() {
 		return
 	}
 	addr := s.cfg.Listen
-	s.out.Info("SocksProxy.Start: socks5://%s", s.cfg.Listen)
+
+	crt := s.cfg.Cert
+	if crt == nil || crt.KeyFile == "" {
+		s.out.Info("SocksProxy.Start: socks5://%s", s.cfg.Listen)
+	} else {
+		s.out.Info("SocksProxy.Start: sockss://%s", s.cfg.Listen)
+	}
 
 	promise := &libol.Promise{
 		First:  time.Second * 2,

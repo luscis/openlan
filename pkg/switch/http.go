@@ -3,7 +3,6 @@ package cswitch
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -145,7 +144,7 @@ func (h *Http) LoadToken() {
 	if _, err := os.Stat(h.adminFile); os.IsNotExist(err) {
 		libol.Info("Http.LoadToken: file:%s does not exist", h.adminFile)
 	} else {
-		contents, err := ioutil.ReadFile(h.adminFile)
+		contents, err := os.ReadFile(h.adminFile)
 		if err != nil {
 			libol.Error("Http.LoadToken: file:%s %s", h.adminFile, err)
 		} else {
@@ -235,7 +234,7 @@ func (h *Http) getFile(name string) string {
 
 func (h *Http) PubFile(w http.ResponseWriter, r *http.Request) {
 	realpath := h.getFile(r.URL.Path)
-	contents, err := ioutil.ReadFile(realpath)
+	contents, err := os.ReadFile(realpath)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, "404")
 		return

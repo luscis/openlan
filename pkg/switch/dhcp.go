@@ -2,7 +2,6 @@ package cswitch
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -85,7 +84,7 @@ func (d *Dhcp) SaveConf() {
 		cfg.Subnet.End,
 		d.LeaseFile(),
 	)
-	_ = ioutil.WriteFile(d.ConfFile(), []byte(data), 0600)
+	_ = os.WriteFile(d.ConfFile(), []byte(data), 0600)
 }
 
 func (d *Dhcp) Start() {
@@ -124,7 +123,7 @@ func (d *Dhcp) Clean() {
 }
 
 func (d *Dhcp) Stop() {
-	if data, err := ioutil.ReadFile(d.PidFile()); err != nil {
+	if data, err := os.ReadFile(d.PidFile()); err != nil {
 		d.out.Info("Dhcp.Stop %s", err)
 	} else {
 		pid := strings.TrimSpace(string(data))

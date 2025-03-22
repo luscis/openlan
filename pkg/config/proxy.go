@@ -83,6 +83,7 @@ type SocksProxy struct {
 	Listen   string       `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Auth     *Password    `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Backends HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Cert     *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
 }
 
 func (s *SocksProxy) Initialize() error {

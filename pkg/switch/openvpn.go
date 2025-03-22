@@ -3,7 +3,6 @@ package cswitch
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -278,7 +277,7 @@ func (o *OpenVPN) ServerTmpl() string {
 		tmplStr = certConfTmpl
 	}
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"server.tmpl")
-	_ = ioutil.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
+	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
 }
 
@@ -286,7 +285,7 @@ func (o *OpenVPN) ClientConnectScriptTmpl() string {
 	tmplStr := clientConnectScriptTmpl
 
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"connectivplat.tmpl")
-	_ = ioutil.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
+	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
 }
 
@@ -294,7 +293,7 @@ func (o *OpenVPN) ClientDisConnectScriptTmpl() string {
 	tmplStr := clientDisConnectScriptTmpl
 
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"disconnectivplat.tmpl")
-	_ = ioutil.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
+	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
 }
 
@@ -310,7 +309,7 @@ func (o *OpenVPN) FileIpp(full bool) string {
 }
 
 func (o *OpenVPN) Pid(full bool) string {
-	if data, err := ioutil.ReadFile(o.FilePid(true)); err != nil {
+	if data, err := os.ReadFile(o.FilePid(true)); err != nil {
 		o.out.Debug("OpenVPN.Stop %s", err)
 		return ""
 	} else {
@@ -369,7 +368,7 @@ func (o *OpenVPN) writeClientConfig() error {
 		}
 		ficFile := filepath.Join(ccd, fic.Name)
 		pushIP := fmt.Sprintf("ifconfig-push %s %s", fic.Address, fic.Netmask)
-		if err := ioutil.WriteFile(ficFile, []byte(pushIP), 0600); err != nil {
+		if err := os.WriteFile(ficFile, []byte(pushIP), 0600); err != nil {
 			o.out.Warn("OpenVPN.writeClientConfig %s", err)
 		}
 	}
@@ -464,7 +463,7 @@ func (o *OpenVPN) Initialize() {
 	}
 	if ctx, err := o.Profile(); err == nil {
 		file := o.FileClient(true)
-		if err := ioutil.WriteFile(file, ctx, 0600); err != nil {
+		if err := os.WriteFile(file, ctx, 0600); err != nil {
 			o.out.Warn("OpenVPN.Initialize %s", err)
 		}
 	} else {
@@ -511,7 +510,7 @@ func (o *OpenVPN) Stop() {
 	if !o.ValidConf() {
 		return
 	}
-	if data, err := ioutil.ReadFile(o.FilePid(true)); err != nil {
+	if data, err := os.ReadFile(o.FilePid(true)); err != nil {
 		o.out.Debug("OpenVPN.Stop %s", err)
 	} else {
 		killPath, err := exec.LookPath("kill")
@@ -569,7 +568,7 @@ func (o *OpenVPN) ProfileTmpl() string {
 	}
 
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"client.tmpl")
-	_ = ioutil.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
+	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
 }
 
@@ -667,10 +666,10 @@ func NewOpenVPNProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
 			data.Server = name
 		}
 	}
-	if ctx, err := ioutil.ReadFile(cfg.RootCa); err == nil {
+	if ctx, err := os.ReadFile(cfg.RootCa); err == nil {
 		data.Ca = string(ctx)
 	}
-	if ctx, err := ioutil.ReadFile(cfg.TlsAuth); err == nil {
+	if ctx, err := os.ReadFile(cfg.TlsAuth); err == nil {
 		data.TlsAuth = string(ctx)
 	}
 	return data

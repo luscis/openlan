@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/luscis/openlan/pkg/libol"
@@ -40,7 +40,7 @@ func ResponseYaml(w http.ResponseWriter, v interface{}) {
 }
 
 func GetData(r *http.Request, v interface{}) error {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
 	}

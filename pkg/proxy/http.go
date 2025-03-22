@@ -458,7 +458,6 @@ func (t *HttpProxy) Start() {
 				return err
 			}
 		}
-		t.server.Shutdown(nil)
 		return nil
 	})
 }

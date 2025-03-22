@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -174,7 +174,7 @@ func (w *user) Timeout(user *models.User) bool {
 
 func (w *user) Check(obj *models.User) (*models.User, error) {
 	if w.Cert != "" {
-		pemData, err := ioutil.ReadFile(w.Cert)
+		pemData, err := os.ReadFile(w.Cert)
 		if err != nil {
 			return nil, err
 		}

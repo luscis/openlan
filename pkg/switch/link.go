@@ -1,7 +1,6 @@
 package cswitch
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -117,7 +116,7 @@ func (l *Link) Clean() {
 }
 
 func (l *Link) Stop() error {
-	if data, err := ioutil.ReadFile(l.PidFile()); err != nil {
+	if data, err := os.ReadFile(l.PidFile()); err != nil {
 		l.out.Debug("Link.Stop %s", err)
 	} else {
 		pid := strings.TrimSpace(string(data))

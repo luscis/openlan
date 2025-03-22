@@ -2,6 +2,7 @@ package socks5
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -54,6 +55,9 @@ type Config struct {
 
 	// Backends forwarding socks request
 	Backends co.FindBackend
+
+	// TLS Configurations
+	TlsConfig *tls.Config
 }
 
 // Server is reponsible for accepting connections and handling
@@ -104,10 +108,18 @@ func New(conf *Config) (*Server, error) {
 
 // ListenAndServe is used to create a listener and serve on it
 func (s *Server) ListenAndServe(network, addr string) error {
-	l, err := net.Listen(network, addr)
+	var l net.Listener
+	var err error
+
+	if s.config.TlsConfig != nil {
+		l, err = tls.Listen(network, addr, s.config.TlsConfig)
+	} else {
+		l, err = net.Listen(network, addr)
+	}
 	if err != nil {
 		return err
 	}
+
 	return s.Serve(l)
 }
 

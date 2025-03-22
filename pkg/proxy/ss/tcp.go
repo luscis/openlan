@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"sync"
@@ -120,7 +119,7 @@ func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
 				logf("failed to get target address from %v: %v", c.RemoteAddr(), err)
 				// drain c to avoid leaking server behavioral features
 				// see https://www.ndss-symposium.org/ndss-paper/detecting-probe-resistant-proxies/
-				_, err = io.Copy(ioutil.Discard, c)
+				_, err = io.Copy(io.Discard, c)
 				if err != nil {
 					logf("discard error: %v", err)
 				}

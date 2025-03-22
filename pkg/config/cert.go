@@ -4,8 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"os"
+
 	"github.com/luscis/openlan/pkg/libol"
-	"io/ioutil"
 )
 
 type Crypt struct {
@@ -67,7 +68,7 @@ func (c *Cert) GetCertPool() *x509.CertPool {
 		libol.Debug("Cert.GetTlsCertPool: %s not such file", c.CaFile)
 		return nil
 	}
-	caCert, err := ioutil.ReadFile(c.CaFile)
+	caCert, err := os.ReadFile(c.CaFile)
 	if err != nil {
 		libol.Warn("Cert.GetTlsCertPool: %s", err)
 		return nil

@@ -3,9 +3,9 @@ package libol
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/net/websocket"
@@ -162,7 +162,7 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 }
 
 func (t *WebClient) GetCertPool(ca string) *x509.CertPool {
-	caCert, err := ioutil.ReadFile(ca)
+	caCert, err := os.ReadFile(ca)
 	if err != nil {
 		Error("WebClient.GetCertPool: %s", err)
 		return nil
