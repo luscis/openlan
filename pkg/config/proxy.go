@@ -6,15 +6,24 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
+
+func SplitSecret(value string) (string, string) {
+	if strings.Contains(value, ":") {
+		values := strings.SplitN(value, ":", 2)
+		return values[0], values[1]
+	}
+	return value, ""
+}
 
 type ShadowProxy struct {
 	Server     string `json:"server,omitempty"`
 	Key        string `json:"key,omitempty"`
 	Cipher     string `json:"cipher,omitempty"`
-	Password   string `json:"password,omitempty"`
+	Secret     string `json:"secret,omitempty"`
 	Plugin     string `json:"plugin,omitempty"`
 	PluginOpts string `json:"pluginOpts,omitempty"`
 	Protocol   string `json:"protocol,omitempty"`
@@ -22,6 +31,7 @@ type ShadowProxy struct {
 
 type ForwardSocks struct {
 	Server string `json:"server,omitempty"`
+	Secret string `json:"-" yaml:"-"`
 }
 
 type HttpForward struct {
@@ -38,6 +48,10 @@ func (f *HttpForward) SocksAddr() string {
 		return f.Socks.Server
 	}
 	return f.Server
+}
+
+func (f *HttpForward) Correct() {
+	f.Socks.Secret = f.Secret
 }
 
 type HttpBackends []*HttpForward
@@ -81,7 +95,7 @@ type FindBackend interface {
 type SocksProxy struct {
 	Conf     string       `json:"-" yaml:"-"`
 	Listen   string       `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Auth     *Password    `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Backends HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
 	Cert     *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
 }
@@ -110,7 +124,7 @@ type HttpProxy struct {
 	Conf       string       `json:"-" yaml:"-"`
 	ConfDir    string       `json:"-" yaml:"-"`
 	Listen     string       `json:"listen,omitempty"`
-	Auth       *Password    `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Secret     string       `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Cert       *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
 	Password   string       `json:"password,omitempty" yaml:"password,omitempty"`
 	CaCert     string       `json:"cacert,omitempty" yaml:"cacert,omitempty"`
@@ -154,7 +168,11 @@ func (h *HttpProxy) Correct() {
 	if h.Socks != nil {
 		h.SocksProxy = &SocksProxy{
 			Listen: h.Socks.Listen,
+			Secret: h.Secret,
 		}
+	}
+	for _, via := range h.Backends {
+		via.Correct()
 	}
 }
 

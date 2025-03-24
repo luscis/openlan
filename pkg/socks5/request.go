@@ -50,7 +50,7 @@ type AddrSpec struct {
 
 func (a *AddrSpec) String() string {
 	if a.FQDN != "" {
-		return fmt.Sprintf("%s (%s):%d", a.FQDN, a.IP, a.Port)
+		return fmt.Sprintf("%s:%d", a.FQDN, a.Port)
 	}
 	return fmt.Sprintf("%s:%d", a.IP, a.Port)
 }

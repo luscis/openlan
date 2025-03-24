@@ -221,39 +221,74 @@ func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) er
 	dstAddr := req.DestAddr
 	proxy := via.SocksAddr()
 
-	s.config.Logger.Info("Socks.ServeConn CONNECT %s via %s", dstAddr.Address(), proxy)
+	s.config.Logger.Info("Socks.ServeConn CONNECT %s via %s", dstAddr, proxy)
 
 	target, err := s.openConn(proxy)
 	if err != nil {
 		sendReply(local, networkUnreachable, nil)
+		s.config.Logger.Error("Socks.ServeConn CONNECT %s: unreachable", dstAddr)
 		return err
 	}
 
-	// Handshake: SOCKS5 no auth
-	_, err = target.Write([]byte{socks5Version, 1, 0})
+	// Handshake: SOCKS5 auth.
+	if via.Secret != "" {
+		_, err = target.Write([]byte{socks5Version, 1, UserPassAuth})
+	} else {
+		_, err = target.Write([]byte{socks5Version, 1, NoAuth})
+	}
 	if err != nil {
 		sendReply(local, serverFailure, nil)
 		return err
 	}
 
-	reply := make([]byte, 2)
-	_, err = target.Read(reply)
-	if reply[0] != socks5Version || reply[1] != successReply {
-		sendReply(local, serverFailure, nil)
-		return err
+	// Auth request: User password.
+	if via.Secret != "" {
+		header := []byte{0, 0}
+		_, err := target.Read(header)
+		if header[0] != socks5Version || header[1] != UserPassAuth {
+			s.config.Logger.Error("Socks.ServeConn CONNECT %s: wrong %s", dstAddr, header[1])
+			sendReply(local, serverFailure, nil)
+			return err
+		}
+
+		user, pass := co.SplitSecret(via.Secret)
+		auth := []byte{userAuthVersion}
+		auth = append(auth, byte(len(user)))
+		auth = append(auth, user...)
+		auth = append(auth, byte(len(pass)))
+		auth = append(auth, pass...)
+		if _, err = target.Write(auth); err != nil {
+			sendReply(local, serverFailure, nil)
+			return err
+		}
+		// Check UserAuth reply.
+		header = []byte{0, 0}
+		_, err = target.Read(header)
+		if header[0] != userAuthVersion || header[1] != successReply {
+			sendReply(local, serverFailure, nil)
+			s.config.Logger.Error("Socks.ServeConn CONNECT %s: auth %d", dstAddr, header[1])
+			return err
+		}
+	} else {
+		// Check Socks5 reply.
+		header := []byte{0, 0}
+		_, err = target.Read(header)
+		if header[0] != socks5Version || header[1] != successReply {
+			sendReply(local, serverFailure, nil)
+			s.config.Logger.Error("Socks.ServeConn CONNECT %s: socks5 %d", dstAddr, header[1])
+			return err
+		}
 	}
 
+	// Bind: Connect Domain and port number.
 	domain := []byte(dstAddr.FQDN)
 	port := []byte{0, 0}
 	binary.BigEndian.PutUint16(port, uint16(dstAddr.Port))
-
-	// Request: CONNECT to domain
 	bind := []byte{socks5Version, 1, 0, 3}
 	bind = append(bind, byte(len(domain)))
 	bind = append(bind, domain...)
 	bind = append(bind, port...)
-	_, err = target.Write(bind)
-	if err != nil {
+	if _, err := target.Write(bind); err != nil {
 		sendReply(local, serverFailure, nil)
 		return err
 	}

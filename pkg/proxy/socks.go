@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/luscis/openlan/pkg/config"
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/socks5"
 )
@@ -21,16 +22,16 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 		out: libol.NewSubLogger(cfg.Listen),
 	}
 	// Create a SOCKS5 server
-	auth := cfg.Auth
+	user, pass := co.SplitSecret(cfg.Secret)
 	authMethods := make([]socks5.Authenticator, 0, 2)
-	if auth != nil && len(auth.Username) > 0 {
+	if user != "" {
 		author := socks5.UserPassAuthenticator{
 			Credentials: socks5.StaticCredentials{
-				auth.Username: auth.Password,
+				user: pass,
 			},
 		}
 		authMethods = append(authMethods, author)
-
+		s.out.Debug("SocksProxy: Auth user %s", user)
 	}
 	conf := &socks5.Config{
 		Backends:    cfg.Backends,

@@ -2,10 +2,11 @@ package ss
 
 import (
 	"encoding/base64"
+	"log"
+
 	c "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/shadowsocks/go-shadowsocks2/core"
-	"log"
 )
 
 type ShadowSocks struct {
@@ -28,7 +29,7 @@ func NewShadowSocks(cfg *c.ShadowProxy) *ShadowSocks {
 		Server:     cfg.Server,
 		Key:        cfg.Key,
 		Cipher:     cfg.Cipher,
-		Password:   cfg.Password,
+		Password:   cfg.Secret,
 		Plugin:     cfg.Plugin,
 		PluginOpts: cfg.PluginOpts,
 		Protocol:   proto,

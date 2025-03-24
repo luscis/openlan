@@ -7,17 +7,14 @@
   "shadow": [
     {
       "server": ":8488",
-      "password": "ecd0820973c9",
+      "secret": "ecd0820973c9",
       "cipher": "AEAD_CHACHA20_POLY1305"
     }
   ],
   "http": [
     {
       "listen": "0.0.0.0:11082",
-      "auth": {
-        "username": "hi",
-        "password": "cb2ff088a34d"
-      }
+      "secret": "hi:cb2ff088a34d"
     },
     {
       "listen": "0.0.0.0:11082",
@@ -28,9 +25,7 @@
     },
     {
       "listen": "0.0.0.0:11083",
-      "auth": {
-        "username": "hi",
-        "password": "cb2ff088a34d"
+      "secret": "hi:cb2ff088a34d"
       },
       "cert": {
         "directory": "/var/openlan/cert"

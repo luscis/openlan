@@ -130,9 +130,10 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 		Addr:    cfg.Listen,
 		Handler: h,
 	}
-	auth := cfg.Auth
-	if auth != nil && auth.Username != "" {
-		h.pass[auth.Username] = auth.Password
+	user, pass := co.SplitSecret(cfg.Secret)
+	if user != "" {
+		h.pass[user] = pass
+		h.out.Debug("HttpProxy: Auth user %s", user)
 	}
 	if cfg.SocksProxy != nil {
 		h.socks = NewSocksProxy(cfg.SocksProxy)
