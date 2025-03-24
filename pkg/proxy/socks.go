@@ -41,7 +41,7 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 	crt := cfg.Cert
 	if crt != nil && crt.KeyFile != "" {
 		conf.TlsConfig = &tls.Config{
-			RootCAs: crt.GetCertPool(),
+			Certificates: crt.GetCertificates(),
 		}
 	}
 	server, err := socks5.New(conf)

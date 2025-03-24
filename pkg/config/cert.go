@@ -47,35 +47,42 @@ func (c *Cert) Correct() {
 	}
 }
 
-func (c *Cert) GetTlsCfg() *tls.Config {
+func (c *Cert) GetCertificates() []tls.Certificate {
 	if c.KeyFile == "" || c.CrtFile == "" {
 		return nil
 	}
-	libol.Debug("Cert.GetTlsCfg: %v", c)
+	libol.Debug("Cert.GetCertificates: %v", c)
 	cer, err := tls.LoadX509KeyPair(c.CrtFile, c.KeyFile)
 	if err != nil {
-		libol.Error("Cert.GetTlsCfg: %s", err)
+		libol.Error("Cert.GetCertificates: %s", err)
 		return nil
 	}
-	return &tls.Config{Certificates: []tls.Certificate{cer}}
+	return []tls.Certificate{cer}
 }
 
-func (c *Cert) GetCertPool() *x509.CertPool {
-	if c.CaFile == "" {
-		return nil
+func GetCertPool(ca string) (*x509.CertPool, error) {
+	if ca == "" {
+		return nil, libol.NewErr("%s: not such file", ca)
 	}
-	if err := libol.FileExist(c.CaFile); err != nil {
-		libol.Debug("Cert.GetTlsCertPool: %s not such file", c.CaFile)
-		return nil
+	if err := libol.FileExist(ca); err != nil {
+		return nil, libol.NewErr("Cert.GetTlsCertPool: %s not such file", ca)
 	}
-	caCert, err := os.ReadFile(c.CaFile)
+	caCert, err := os.ReadFile(ca)
 	if err != nil {
-		libol.Warn("Cert.GetTlsCertPool: %s", err)
-		return nil
+		return nil, libol.NewErr("Cert.GetTlsCertPool: %s", err)
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caCert) {
-		libol.Warn("Cert.GetTlsCertPool: invalid cert")
+		return nil, libol.NewErr("Cert.GetTlsCertPool: invalid cert")
+	}
+	return pool, nil
+}
+
+func (c *Cert) GetCertPool() *x509.CertPool {
+	pool, err := GetCertPool(c.CaFile)
+	if err != nil {
+		libol.Warn("GetCertPool %s", err)
+		return nil
 	}
 	return pool
 }

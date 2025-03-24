@@ -213,7 +213,17 @@ func (s *Server) toTunnel(local net.Conn, target net.Conn) {
 	wait.Wait()
 }
 
-func (s *Server) openConn(remote string) (net.Conn, error) {
+func (s *Server) openConn(via *co.HttpForward) (net.Conn, error) {
+	remote := via.SocksAddr()
+
+	if via.Protocol == "tls" || via.Protocol == "https" {
+		conf := &tls.Config{
+			InsecureSkipVerify: via.Insecure,
+		}
+		conf.RootCAs, _ = co.GetCertPool(via.CaCert)
+		dialer := &net.Dialer{Timeout: 10 * time.Second}
+		return tls.DialWithDialer(dialer, "tcp", remote, conf)
+	}
 	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
 
@@ -223,7 +233,7 @@ func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) er
 
 	s.config.Logger.Info("Socks.ServeConn CONNECT %s via %s", dstAddr, proxy)
 
-	target, err := s.openConn(proxy)
+	target, err := s.openConn(via)
 	if err != nil {
 		sendReply(local, networkUnreachable, nil)
 		s.config.Logger.Error("Socks.ServeConn CONNECT %s: unreachable", dstAddr)

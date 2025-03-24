@@ -31,7 +31,6 @@ type ShadowProxy struct {
 
 type ForwardSocks struct {
 	Server string `json:"server,omitempty"`
-	Secret string `json:"-" yaml:"-"`
 }
 
 type HttpForward struct {
@@ -41,6 +40,7 @@ type HttpForward struct {
 	Match    []string     `json:"match,omitempty" yaml:"match,omitempty"`
 	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Socks    ForwardSocks `json:"socks,omitempty" yaml:"socks,omitempty"`
+	CaCert   string       `json:"-" yaml:"-"`
 }
 
 func (f *HttpForward) SocksAddr() string {
@@ -48,10 +48,6 @@ func (f *HttpForward) SocksAddr() string {
 		return f.Socks.Server
 	}
 	return f.Server
-}
-
-func (f *HttpForward) Correct() {
-	f.Socks.Secret = f.Secret
 }
 
 type HttpBackends []*HttpForward
@@ -94,6 +90,7 @@ type FindBackend interface {
 
 type SocksProxy struct {
 	Conf     string       `json:"-" yaml:"-"`
+	ConfDir  string       `json:"-" yaml:"-"`
 	Listen   string       `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Backends HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
@@ -116,8 +113,15 @@ func (s *SocksProxy) Load() error {
 	return libol.UnmarshalLoad(s, s.Conf)
 }
 
+func (s *SocksProxy) Correct() {
+	if s.Cert != nil {
+		s.Cert.Correct()
+	}
+}
+
 type HttpSocks struct {
 	Listen string `json:"listen,omitempty"`
+	Cert   *Cert  `json:"-" yaml:"-"`
 }
 
 type HttpProxy struct {
@@ -169,10 +173,11 @@ func (h *HttpProxy) Correct() {
 		h.SocksProxy = &SocksProxy{
 			Listen: h.Socks.Listen,
 			Secret: h.Secret,
+			Cert:   h.Cert,
 		}
 	}
 	for _, via := range h.Backends {
-		via.Correct()
+		via.CaCert = h.CaCert
 	}
 }
 
@@ -290,11 +295,15 @@ func (p *Proxy) Initialize() {
 }
 
 func (p *Proxy) Correct() {
+	p.Log.Correct()
 	for _, h := range p.Http {
 		h.ConfDir = p.ConfDir
 		h.Correct()
 	}
-	p.Log.Correct()
+	for _, s := range p.Socks {
+		s.ConfDir = s.ConfDir
+		s.Correct()
+	}
 }
 
 func (p *Proxy) Load() error {

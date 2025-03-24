@@ -1,6 +1,7 @@
 package cswitch
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -74,7 +75,9 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 			WrQus:   s.Queue.SockWr,
 		}
 		if s.Cert != nil {
-			c.Tls = s.Cert.GetTlsCfg()
+			c.Tls = &tls.Config{
+				Certificates: s.Cert.GetCertificates(),
+			}
 		}
 		return libol.NewTcpServer(s.Listen, c)
 	}
