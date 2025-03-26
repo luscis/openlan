@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 Type=notify
+LimitNOFILE=102400
 ExecStart=/usr/bin/openlan-ceci $OPTIONS -conf /etc/openlan/switch/ceci/%i.yaml
 Restart=always
 
