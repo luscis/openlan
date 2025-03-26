@@ -13,8 +13,8 @@ SD = $(shell pwd)
 BD = "$(SD)/build"
 CD = "$(SD)/build/coverage"
 LIN_DIR ?= "openlan-$(VER).$(ARCH)"
-WIN_DIR ?= "openlan-windows-$(VER).$(ARCH)"
-MAC_DIR ?= "openlan-darwin-$(VER).$(ARCH)"
+WIN_DIR ?= "openceci-windows-$(VER).$(ARCH)"
+MAC_DIR ?= "openceci-darwin-$(VER).$(ARCH)"
 
 ## declare flags
 MOD = github.com/luscis/openlan/pkg/libol
@@ -159,38 +159,31 @@ install: env linux ## install packages
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
-windows: env windows-ceci windows-proxy ## build windows binary
-
-windows-proxy:
-	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.exe ./cmd/proxy
+windows: env windows-ceci ## build windows binary
 
 windows-ceci:
 	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.exe ./cmd/ceci
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.local $(WIN_DIR)/proxy.json
-	@cp -rf $(BD)/openlan-proxy.exe $(WIN_DIR)
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(WIN_DIR)/ceci.yaml
+	@cp -rf $(BD)/openlan-ceci.exe $(WIN_DIR)
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
 	gzip -f $(BD)/$(WIN_DIR).tar && rm -rf $(WIN_DIR)
 
 ## cross build for osx
 osx: darwin
 
-darwin: env darwin-ceci darwin-proxy ## build darwin binary
+darwin: env darwin-ceci ## build darwin binary
 
 darwin-ceci:
 	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.dar ./cmd/ceci
 	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.arm64.dar ./cmd/ceci
 
-darwin-proxy:
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.dar ./cmd/proxy
-	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy.arm64.dar ./cmd/proxy
-
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/proxy.json.local $(MAC_DIR)/proxy.json
-	@cp -rf $(BD)/openlan-proxy.dar $(MAC_DIR)
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(MAC_DIR)/ceci.yaml
+	@cp -rf $(BD)/openlan-ceci.dar $(MAC_DIR)
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	gzip -f $(BD)/$(MAC_DIR).tar && rm -rf $(MAC_DIR)
 

@@ -324,7 +324,7 @@ func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error)
 	if len(r.TransferEncoding) > 0 {
 		fmt.Fprintf(&b, "Transfer-Encoding: %s\r\n", strings.Join(r.TransferEncoding, ","))
 	}
-	if r.Close {
+	if !r.Close && r.Method != "CONNECT" {
 		fmt.Fprintf(&b, "Connection: close\r\n")
 	}
 
@@ -395,7 +395,12 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		conn.Write(dump)
+
+		n, err := conn.Write(dump)
+		if n != len(dump) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		t.toTunnel(w, conn, func(bytes int64) {
 			t.doRecord(r, bytes)
 		})
