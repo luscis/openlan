@@ -42,10 +42,10 @@ function requires() {
   ## Install libreswan from github.
   if [ "$sys"x == "redhat"x ]; then
     wget -O /tmp/libreswan-4.10-1.el7.x86_64.rpm https://github.com/luscis/packages/raw/main/redhat/centos7/libreswan-4.10-1.el7.x86_64.rpm
-    yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm
+    yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm || yum install -y libreswan
   elif [ "$sys"x == "debian"x ]; then
     wget -O /tmp/libreswan_4.10-1_amd64.deb https://github.com/luscis/packages/raw/main/debian/bullseye/libreswan_4.10-1_amd64.deb
-    apt install -y /tmp/libreswan_4.10-1_amd64.deb
+    apt install -y /tmp/libreswan_4.10-1_amd64.deb || apt install -y libreswan
   fi
 }
 

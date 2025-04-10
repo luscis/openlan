@@ -1,7 +1,6 @@
 [Unit]
 Description=OpenLAN Central Switch daemon
 After=network.target
-Requires=openlan-confd.service
 
 [Service]
 Type=notify

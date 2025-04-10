@@ -121,9 +121,13 @@ docker-compose: ## create a compose files
 
 ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
 
-linux: env linux-ceci linux-proxy ## build linux binary
+linux: env linux-access linux-switch linux-ceci linux-proxy ## build linux binary
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+
+linux-access:
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
+
+linux-switch:
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-ceci:
