@@ -744,14 +744,26 @@ func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 
 }
 
+func (w *WorkerImpl) toMasq_i(input, pfxSet, comment string) {
+	// Enable masquerade from input to prefix.
+	w.snat.AddRule(cn.IPRule{
+		Mark:    uint32(w.table),
+		Input:   input,
+		DestSet: pfxSet,
+		Output:  "",
+		Jump:    cn.CMasq,
+		Comment: comment,
+	})
+
+}
+
 func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
-	output := ""
 	// Enable masquerade from source to prefix.
 	w.snat.AddRule(cn.IPRule{
 		Mark:    uint32(w.table),
 		SrcSet:  srcSet,
 		Dest:    prefix,
-		Output:  output,
+		Output:  "",
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
@@ -947,7 +959,7 @@ func (w *WorkerImpl) forwardSubnet() {
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
-	w.toMasq_r(subnet.String(), w.setR.Name, "To Masq")
+	w.toMasq_i(input, w.setR.Name, "To Masq")
 }
 
 func (w *WorkerImpl) createVPN() {

@@ -25,6 +25,12 @@ type Log struct {
 	Verbose int    `json:"level,omitempty"`
 }
 
+func (l *Log) Correct() {
+	if l.Verbose == 0 {
+		l.Verbose = libol.INFO
+	}
+}
+
 func LogFile(file string) string {
 	if runtime.GOOS == "linux" {
 		return "/var/log/" + file

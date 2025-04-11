@@ -51,12 +51,6 @@ func (i *Interface) Correct() {
 	}
 }
 
-func (l *Log) Correct() {
-	if l.Verbose == 0 {
-		l.Verbose = libol.INFO
-	}
-}
-
 func NewPoint() *Point {
 	p := &Point{RequestAddr: true}
 	p.Parse()
