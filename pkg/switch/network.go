@@ -708,6 +708,16 @@ func (w *WorkerImpl) openPort(protocol, port, comment string) {
 	})
 }
 
+func (w *WorkerImpl) toForward_i(input, pfxSet, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s %s:%s", input, pfxSet)
+	// Allowed forward between source and prefix.
+	w.fire.Filter.For.AddRule(cn.IPRule{
+		Input:   input,
+		DestSet: pfxSet,
+		Comment: comment,
+	})
+}
+
 func (w *WorkerImpl) toForward_r(input, source, pfxSet, comment string) {
 	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, source, pfxSet)
 	// Allowed forward between source and prefix.
@@ -750,7 +760,6 @@ func (w *WorkerImpl) toMasq_i(input, pfxSet, comment string) {
 		Mark:    uint32(w.table),
 		Input:   input,
 		DestSet: pfxSet,
-		Output:  "",
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
@@ -763,7 +772,6 @@ func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
 		Mark:    uint32(w.table),
 		SrcSet:  srcSet,
 		Dest:    prefix,
-		Output:  "",
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
@@ -941,7 +949,6 @@ func (w *WorkerImpl) forwardSubnet() {
 		return
 	}
 
-	subnet := w.Subnet()
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(input, "Accept related")
 	for _, rt := range cfg.Routes {
@@ -951,9 +958,9 @@ func (w *WorkerImpl) forwardSubnet() {
 	}
 
 	if w.vrf != nil {
-		w.toForward_r(w.vrf.Name(), subnet.String(), w.setR.Name, "To route")
+		w.toForward_i(w.vrf.Name(), w.setR.Name, "To route")
 	} else {
-		w.toForward_r(input, subnet.String(), w.setR.Name, "To route")
+		w.toForward_i(input, w.setR.Name, "To route")
 	}
 
 	if vpn != nil {
