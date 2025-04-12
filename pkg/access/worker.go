@@ -14,6 +14,7 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
+	"github.com/miekg/dns"
 )
 
 type jobTimer struct {
@@ -225,7 +226,6 @@ func (w *Worker) Initialize() {
 		},
 		ReadAt:   w.conWorker.Write,
 		FindNext: w.FindNext,
-		OnDNS:    w.OnDNS,
 	}
 	w.tapWorker.Initialize()
 }
@@ -275,6 +275,9 @@ func (w *Worker) Start() {
 			}
 		}
 	})
+	if w.cfg.Bind != "" {
+		libol.Go(w.StartDNS)
+	}
 }
 
 func (w *Worker) Stop() {
@@ -405,14 +408,63 @@ func (w *Worker) SetUUID(v string) {
 	w.uuid = v
 }
 
-func (w *Worker) OnDNS(domain string, addr net.IP) {
-	name := strings.TrimRight(domain, ".")
-	w.out.Debug("Worker.OnDNS %s -> %s\n", name, addr.String())
+func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
+	if len(r.Question) == 0 {
+		return nil
+	}
+
+	name := r.Question[0].Name
+	name = strings.TrimRight(name, ".")
+	w.out.Debug("Worker.FindBackend %s", name)
 	via := w.cfg.Backends.FindBackend(name)
 	if via != nil {
-		w.out.Debug("Worker.OnDNS %s via %s", name, via.Server)
-		if w.listener.Forward != nil {
-			w.listener.Forward(domain, addr.String()+"/32", via.Server)
+		w.out.Debug("Worker.FindBackend %s via %s", name, via.Server)
+	}
+
+	return via
+}
+
+func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
+	client := new(dns.Client)
+	client.Net = "udp"
+
+	nameto := w.cfg.Nameto
+
+	via := w.FindBackend(r)
+	if via != nil {
+		nameto = via.Nameto
+	}
+	if nameto == "" || nameto == w.cfg.Bind {
+		w.out.Error("Worker.handleDNS: nil(%s)", nameto)
+		return
+	}
+
+	w.out.Info("forward: %v -> %s", r.Question, nameto)
+	resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
+	if err != nil {
+		w.out.Error("Worker.handleDNS: %s: %v", r, err)
+		return
+	}
+
+	for _, rr := range resp.Answer {
+		if n, ok := rr.(*dns.A); ok {
+			if via != nil {
+				w.listener.Forward(n.Hdr.Name, n.A.String()+"/32", via.Server)
+			}
 		}
+	}
+
+	if err := conn.WriteMsg(resp); err != nil {
+		w.out.Error("Worker.handleDNS: %s", err)
+	}
+}
+func (w *Worker) StartDNS() {
+	listenAddr := fmt.Sprintf("%s:53", w.cfg.Bind)
+	dns.HandleFunc(".", w.handleDNS)
+	server := &dns.Server{Addr: listenAddr, Net: "udp"}
+	w.out.Info("Worker.StartDNS on %s", listenAddr)
+
+	if err := server.ListenAndServe(); err != nil {
+		w.out.Error("Worker.StartDNS server: %v", err)
 	}
 }

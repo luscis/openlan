@@ -213,7 +213,7 @@ func (s *Server) toTunnel(local net.Conn, target net.Conn) {
 	wait.Wait()
 }
 
-func (s *Server) openConn(via *co.HttpForward) (net.Conn, error) {
+func (s *Server) openConn(via *co.ForwardTo) (net.Conn, error) {
 	remote := via.SocksAddr()
 
 	if via.Protocol == "tls" || via.Protocol == "https" {
@@ -227,7 +227,7 @@ func (s *Server) openConn(via *co.HttpForward) (net.Conn, error) {
 	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
 
-func (s *Server) toForward(req *Request, local net.Conn, via *co.HttpForward) error {
+func (s *Server) toForward(req *Request, local net.Conn, via *co.ForwardTo) error {
 	dstAddr := req.DestAddr
 	proxy := via.SocksAddr()
 

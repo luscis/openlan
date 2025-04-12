@@ -2,22 +2,11 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path"
-	"regexp"
-	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
-
-func SplitSecret(value string) (string, string) {
-	if strings.Contains(value, ":") {
-		values := strings.SplitN(value, ":", 2)
-		return values[0], values[1]
-	}
-	return value, ""
-}
 
 type ShadowProxy struct {
 	Server     string `json:"server,omitempty"`
@@ -29,72 +18,13 @@ type ShadowProxy struct {
 	Protocol   string `json:"protocol,omitempty"`
 }
 
-type ForwardSocks struct {
-	Server string `json:"server,omitempty"`
-}
-
-type HttpForward struct {
-	Protocol string       `json:"protocol,omitempty" yaml:"protocol,omitempty"`
-	Server   string       `json:"server,omitempty" yaml:"server,omitempty"`
-	Insecure bool         `json:"insecure,omitempty" yaml:"insecure,omitempty"`
-	Match    []string     `json:"match,omitempty" yaml:"match,omitempty"`
-	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
-	Socks    ForwardSocks `json:"socks,omitempty" yaml:"socks,omitempty"`
-	CaCert   string       `json:"-" yaml:"-"`
-}
-
-func (f *HttpForward) SocksAddr() string {
-	if f.Socks.Server != "" {
-		return f.Socks.Server
-	}
-	return f.Server
-}
-
-type HttpBackends []*HttpForward
-
-func (h HttpBackends) isMatch(value string, rules []string) bool {
-	if len(rules) == 0 {
-		return true
-	}
-
-	for _, rule := range rules {
-		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
-		re := regexp.MustCompile(pattern)
-		if re.MatchString(value) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (h HttpBackends) FindBackend(host string) *HttpForward {
-	for _, via := range h {
-		if via == nil {
-			continue
-		}
-		if via.Server == "" && via.Socks.Server == "" {
-			continue
-		}
-		if h.isMatch(host, via.Match) {
-			return via
-		}
-	}
-
-	return nil
-}
-
-type FindBackend interface {
-	FindBackend(host string) *HttpForward
-}
-
 type SocksProxy struct {
-	Conf     string       `json:"-" yaml:"-"`
-	ConfDir  string       `json:"-" yaml:"-"`
-	Listen   string       `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Secret   string       `json:"secret,omitempty" yaml:"secret,omitempty"`
-	Backends HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
-	Cert     *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
+	Conf     string     `json:"-" yaml:"-"`
+	ConfDir  string     `json:"-" yaml:"-"`
+	Listen   string     `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Secret   string     `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Cert     *Cert      `json:"cert,omitempty" yaml:"cert,omitempty"`
 }
 
 func (s *SocksProxy) Initialize() error {
@@ -125,16 +55,16 @@ type HttpSocks struct {
 }
 
 type HttpProxy struct {
-	Conf       string       `json:"-" yaml:"-"`
-	ConfDir    string       `json:"-" yaml:"-"`
-	Listen     string       `json:"listen,omitempty"`
-	Secret     string       `json:"secret,omitempty" yaml:"secret,omitempty"`
-	Cert       *Cert        `json:"cert,omitempty" yaml:"cert,omitempty"`
-	Password   string       `json:"password,omitempty" yaml:"password,omitempty"`
-	CaCert     string       `json:"cacert,omitempty" yaml:"cacert,omitempty"`
-	Backends   HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
-	Socks      *HttpSocks   `json:"socks,omitempty" yaml:"socks,omitempty"`
-	SocksProxy *SocksProxy  `json:"-" yaml:"-"`
+	Conf       string      `json:"-" yaml:"-"`
+	ConfDir    string      `json:"-" yaml:"-"`
+	Listen     string      `json:"listen,omitempty"`
+	Secret     string      `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Cert       *Cert       `json:"cert,omitempty" yaml:"cert,omitempty"`
+	Password   string      `json:"password,omitempty" yaml:"password,omitempty"`
+	CaCert     string      `json:"cacert,omitempty" yaml:"cacert,omitempty"`
+	Backends   ToForwards  `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Socks      *HttpSocks  `json:"socks,omitempty" yaml:"socks,omitempty"`
+	SocksProxy *SocksProxy `json:"-" yaml:"-"`
 }
 
 func (h *HttpProxy) Initialize() error {
@@ -181,7 +111,7 @@ func (h *HttpProxy) Correct() {
 	}
 }
 
-func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {
+func (h *HttpProxy) FindMatch(domain string, to *ForwardTo) int {
 	for i, rule := range to.Match {
 		if rule == domain {
 			return i
@@ -190,7 +120,7 @@ func (h *HttpProxy) FindMatch(domain string, to *HttpForward) int {
 	return -1
 }
 
-func (h *HttpProxy) FindBackend(remote string) *HttpForward {
+func (h *HttpProxy) FindBackend(remote string) *ForwardTo {
 	for _, to := range h.Backends {
 		if to.Server == remote {
 			return to

@@ -1,4 +1,5 @@
 protocol: tcp
+bind: 127.0.0.1
 connection: 2.2.2.1
 interface:
   address: 192.168.11.33/24
@@ -11,12 +12,15 @@ forward:
   match:
   - 8.8.8.8
   - 8.8.4.4
+nameto: 114.114.114.114
 backends:
 - server: 192.168.11.10
+  nameto: 8.8.8.8
   match:
   - openai.com
   - chatgpt.com
 - server: 192.168.11.11
+  nameto: 8.8.8.8
   match:
   - google.com
   - github.com

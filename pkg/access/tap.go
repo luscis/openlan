@@ -10,7 +10,6 @@ import (
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/network"
-	"github.com/miekg/dns"
 )
 
 type TapWorkerListener struct {
@@ -18,7 +17,6 @@ type TapWorkerListener struct {
 	OnClose  func(w *TapWorker)
 	FindNext func(dest []byte) []byte
 	ReadAt   func(frame *libol.FrameMessage) error
-	OnDNS    func(string, net.IP)
 }
 
 type TunEther struct {
@@ -196,6 +194,7 @@ func (a *TapWorker) onFrame(frame *libol.FrameMessage, data []byte) int {
 		size += eth.Len
 	}
 	frame.SetSize(size)
+
 	return size
 }
 
@@ -285,12 +284,6 @@ func (a *TapWorker) DoWrite(frame *libol.FrameMessage) error {
 		}
 	}
 	a.lock.Unlock()
-
-	proto, _ := frame.Proto()
-	udp := proto.Udp
-	if udp != nil && udp.Source == 53 {
-		a.snoopDNS(udp.Payload)
-	}
 
 	if _, err := a.device.Write(data); err != nil {
 		a.out.Error("TapWorker.DoWrite: %s", err)
@@ -391,19 +384,4 @@ func (a *TapWorker) Stop() {
 	a.neighbor.Stop()
 	a.close()
 	a.device = nil
-}
-
-func (a *TapWorker) snoopDNS(data []byte) {
-	msg := new(dns.Msg)
-	err := msg.Unpack(data)
-	if err != nil {
-		a.out.Info("Failed to unpack DNS message: %v\n", err)
-		return
-	}
-
-	for _, rr := range msg.Answer {
-		if n, ok := rr.(*dns.A); ok {
-			a.listener.OnDNS(n.Hdr.Name, n.A)
-		}
-	}
 }

@@ -298,7 +298,7 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
 
-func (h *HttpProxy) FindBackend(host string) *co.HttpForward {
+func (h *HttpProxy) FindBackend(host string) *co.ForwardTo {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 	return h.cfg.Backends.FindBackend(host)
