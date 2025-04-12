@@ -224,6 +224,7 @@ func (w *Worker) Initialize() {
 		},
 		ReadAt:   w.conWorker.Write,
 		FindNext: w.FindNext,
+		OnDNS:    w.OnDNS,
 	}
 	w.tapWorker.Initialize()
 }
@@ -401,4 +402,8 @@ func (w *Worker) UUID() string {
 
 func (w *Worker) SetUUID(v string) {
 	w.uuid = v
+}
+
+func (w *Worker) OnDNS(name string, addr net.IP) {
+	w.out.Info("Worker.OnDSN %s -> %s\n", name, addr.String())
 }

@@ -420,6 +420,7 @@ type Tcp struct {
 	Options        []byte
 	Padding        []byte
 	Len            int
+	Payload        []byte
 }
 
 func NewTcp() (t *Tcp) {
@@ -458,6 +459,7 @@ func (t *Tcp) Decode(frame []byte) error {
 	t.Window = binary.BigEndian.Uint16(frame[14:16])
 	t.Checksum = binary.BigEndian.Uint16(frame[16:18])
 	t.UrgentPointer = binary.BigEndian.Uint16(frame[18:20])
+	t.Payload = frame[20:]
 
 	return nil
 }
@@ -488,6 +490,7 @@ type Udp struct {
 	Length      uint16
 	Checksum    uint16
 	Len         int
+	Payload     []byte
 }
 
 func NewUdp() (u *Udp) {
@@ -516,6 +519,7 @@ func (u *Udp) Decode(frame []byte) error {
 	u.Destination = binary.BigEndian.Uint16(frame[2:4])
 	u.Length = binary.BigEndian.Uint16(frame[4:6])
 	u.Checksum = binary.BigEndian.Uint16(frame[6:8])
+	u.Payload = frame[8:]
 
 	return nil
 }
