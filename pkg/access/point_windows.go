@@ -1,10 +1,11 @@
 package access
 
 import (
+	"strings"
+
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
-	"strings"
 )
 
 type Point struct {
@@ -39,11 +40,11 @@ func (p *Point) OnTap(w *TapWorker) error {
 	if err := libol.UnmarshalLoad(&routes, ".routes.json"); err == nil {
 		for _, route := range routes {
 			_, _ = libol.IpRouteDel(p.IfName(), route.Prefix, route.NextHop)
-			p.out.Debug("Point.OnTap: clear %s via %s", route.Prefix, route.NextHop)
+			p.out.Debug("Access.OnTap: clear %s via %s", route.Prefix, route.NextHop)
 		}
 	}
 	if out, err := libol.IpMetricSet(p.IfName(), "235"); err != nil {
-		p.out.Warn("Point.OnTap: metricSet %s: %s", err, out)
+		p.out.Warn("Access.OnTap: metricSet %s: %s", err, out)
 	}
 	return nil
 }
@@ -64,10 +65,10 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	out, err := libol.IpAddrAdd(p.IfName(), ipStr)
 	if err != nil {
-		p.out.Warn("Point.AddAddr: %s, %s", err, p.Trim(out))
+		p.out.Warn("Access.AddAddr: %s, %s", err, p.Trim(out))
 		return err
 	}
-	p.out.Info("Point.AddAddr: %s", ipStr)
+	p.out.Info("Access.AddAddr: %s", ipStr)
 	p.addr = ipStr
 	return nil
 }
@@ -76,10 +77,10 @@ func (p *Point) DelAddr(ipStr string) error {
 	ipv4 := strings.Split(ipStr, "/")[0]
 	out, err := libol.IpAddrDel(p.IfName(), ipv4)
 	if err != nil {
-		p.out.Warn("Point.DelAddr: %s, %s", err, p.Trim(out))
+		p.out.Warn("Access.DelAddr: %s, %s", err, p.Trim(out))
 		return err
 	}
-	p.out.Info("Point.DelAddr: %s", ipv4)
+	p.out.Info("Access.DelAddr: %s", ipv4)
 	p.addr = ""
 	return nil
 }
@@ -92,10 +93,10 @@ func (p *Point) AddRoutes(routes []*models.Route) error {
 	for _, route := range routes {
 		out, err := libol.IpRouteAdd(p.IfName(), route.Prefix, route.NextHop)
 		if err != nil {
-			p.out.Warn("Point.AddRoutes: %s %s", route.Prefix, p.Trim(out))
+			p.out.Warn("Access.AddRoutes: %s %s", route.Prefix, p.Trim(out))
 			continue
 		}
-		p.out.Info("Point.AddRoutes: route %s via %s", route.Prefix, route.NextHop)
+		p.out.Info("Access.AddRoutes: route %s via %s", route.Prefix, route.NextHop)
 	}
 	p.routes = routes
 	return nil
@@ -105,10 +106,10 @@ func (p *Point) DelRoutes(routes []*models.Route) error {
 	for _, route := range routes {
 		out, err := libol.IpRouteDel(p.IfName(), route.Prefix, route.NextHop)
 		if err != nil {
-			p.out.Warn("Point.DelRoutes: %s %s", route.Prefix, p.Trim(out))
+			p.out.Warn("Access.DelRoutes: %s %s", route.Prefix, p.Trim(out))
 			continue
 		}
-		p.out.Info("Point.DelRoutes: route %s via %s", route.Prefix, route.NextHop)
+		p.out.Info("Access.DelRoutes: route %s via %s", route.Prefix, route.NextHop)
 	}
 	p.routes = nil
 	return nil

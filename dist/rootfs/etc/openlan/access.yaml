@@ -1,0 +1,18 @@
+protocol: tcp
+connection: 2.2.2.1
+interface:
+  address: 192.168.11.33/24
+username: test@vxlan
+password: fvph0ldhdvai
+crypt:
+  secret: 477bb0c55edb
+backends:
+- server: 192.168.11.10
+  match:
+  - openai.com
+  - chatgpt.com
+- server: 192.168.11.11
+  match:
+  - google.com
+  - github.com
+  - facebook.com

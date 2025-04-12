@@ -72,6 +72,7 @@ type WorkerListener struct {
 	OnTap     func(w *TapWorker) error
 	AddRoutes func(routes []*models.Route) error
 	DelRoutes func(routes []*models.Route) error
+	Forward   func(prefix, nexthop string)
 }
 
 type PrefixRule struct {
@@ -404,6 +405,14 @@ func (w *Worker) SetUUID(v string) {
 	w.uuid = v
 }
 
-func (w *Worker) OnDNS(name string, addr net.IP) {
-	w.out.Info("Worker.OnDSN %s -> %s\n", name, addr.String())
+func (w *Worker) OnDNS(domain string, addr net.IP) {
+	name := strings.TrimRight(domain, ".")
+	w.out.Debug("Worker.OnDNS %s -> %s\n", name, addr.String())
+	via := w.cfg.Backends.FindBackend(name)
+	if via != nil {
+		w.out.Debug("Worker.OnDNS %s via %s", name, via.Server)
+		if w.listener.Forward != nil {
+			w.listener.Forward(addr.String()+"/32", via.Server)
+		}
+	}
 }

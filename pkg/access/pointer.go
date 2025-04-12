@@ -1,12 +1,13 @@
 package access
 
 import (
+	"runtime"
+
 	"github.com/luscis/openlan/pkg/access/http"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
-	"runtime"
 )
 
 type Pointer interface {
@@ -44,7 +45,7 @@ func NewMixPoint(config *config.Point) MixPoint {
 }
 
 func (p *MixPoint) Initialize() {
-	libol.Info("MixPoint.Initialize")
+	libol.Info("MixAccess.Initialize")
 	p.worker.SetUUID(p.UUID())
 	p.worker.Initialize()
 	if p.config.Http != nil {
@@ -53,7 +54,7 @@ func (p *MixPoint) Initialize() {
 }
 
 func (p *MixPoint) Start() {
-	p.out.Info("MixPoint.Start %s", runtime.GOOS)
+	p.out.Info("MixAccess.Start %s", runtime.GOOS)
 	if p.config.PProf != "" {
 		f := libol.PProf{Listen: p.config.PProf}
 		f.Start()
@@ -62,7 +63,7 @@ func (p *MixPoint) Start() {
 }
 
 func (p *MixPoint) Stop() {
-	defer libol.Catch("MixPoint.Stop")
+	defer libol.Catch("MixAccess.Stop")
 	if p.http != nil {
 		p.http.Shutdown()
 	}
