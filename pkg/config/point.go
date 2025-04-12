@@ -41,6 +41,7 @@ type Point struct {
 	StatusFile  string       `json:"status,omitempty"`
 	PidFile     string       `json:"pid,omitempty"`
 	Backends    HttpBackends `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Forward     *HttpForward `json:"forward,omitempty" yaml:"forward,omitempty"`
 }
 
 func (i *Interface) Correct() {

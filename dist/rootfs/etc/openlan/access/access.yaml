@@ -6,6 +6,11 @@ username: test@vxlan
 password: fvph0ldhdvai
 crypt:
   secret: 477bb0c55edb
+forward:
+  server: 192.168.11.1
+  match:
+  - 8.8.8.8
+  - 8.8.4.4
 backends:
 - server: 192.168.11.10
   match:

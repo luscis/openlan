@@ -40,8 +40,6 @@ func (p *Point) Initialize() {
 
 	w.listener.AddAddr = p.AddAddr
 	w.listener.DelAddr = p.DelAddr
-	w.listener.AddRoutes = p.AddRoutes
-	w.listener.DelRoutes = p.DelRoutes
 	w.listener.OnTap = p.OnTap
 	w.listener.Forward = p.Forward
 
@@ -80,6 +78,9 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	p.out.Info("Access.AddAddr: %s", ipStr)
 	p.addr = ipStr
+
+	p.AddRoutes()
+
 	return nil
 }
 
@@ -143,168 +144,53 @@ func (p *Point) OnTap(w *TapWorker) error {
 	return nil
 }
 
-func (p *Point) GetRemote() string {
-	conn := p.worker.conWorker
-	if conn == nil {
-		return ""
-	}
-	remote := conn.client.RemoteAddr()
-	remote = strings.SplitN(remote, ":", 2)[0]
-	return remote
-}
-
-func (p *Point) AddBypass(routes []*models.Route) {
-	remote := p.GetRemote()
-	if !p.config.ByPass {
-		return
-	}
-	addr, dest, _ := net.ParseCIDR(remote + "/32")
-	gws, err := netlink.RouteGet(addr)
-	if err != nil || len(gws) == 0 {
-		p.out.Error("Access.AddBypass: RouteGet %s: %s", addr, err)
-		return
-	}
-	rt := &netlink.Route{
-		LinkIndex: gws[0].LinkIndex,
-		Dst:       dest,
-		Gw:        gws[0].Gw,
-		Table:     100,
-	}
-	p.out.Debug("Access.AddBypass: %s")
-	if err := netlink.RouteReplace(rt); err != nil {
-		p.out.Warn("Access.AddBypass: %s %s", rt.Dst, err)
-		return
-	}
-	p.out.Info("Access.AddBypass: route %s via %s", rt.Dst, rt.Gw)
-	ru := netlink.NewRule()
-	ru.Table = 100
-	ru.Priority = 16383
-	if err := netlink.RuleAdd(ru); err != nil {
-		p.out.Warn("Access.AddBypass: %s %s", ru.Dst, err)
-	}
-	p.out.Info("Access.AddBypass: %s", ru)
-	p.bypass = rt
-	for _, rt := range routes {
-		if rt.Prefix != "0.0.0.0/0" {
-			continue
-		}
-		gw := net.ParseIP(rt.NextHop)
-		_, dst0, _ := net.ParseCIDR("0.0.0.0/1")
-		rt0 := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst0,
-			Gw:        gw,
-			Priority:  rt.Metric,
-		}
-		p.out.Debug("Access.AddBypass: %s", rt0)
-		if err := netlink.RouteAdd(&rt0); err != nil {
-			p.out.Warn("Access.AddBypass: %s %s", rt0.Dst, err)
-		}
-		p.out.Info("Access.AddBypass: route %s via %s", rt0.Dst, rt0.Gw)
-		_, dst1, _ := net.ParseCIDR("128.0.0.0/1")
-		rt1 := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst1,
-			Gw:        gw,
-			Priority:  rt.Metric,
-		}
-		p.out.Debug("Access.AddBypass: %s", rt1)
-		if err := netlink.RouteAdd(&rt1); err != nil {
-			p.out.Warn("Access.AddBypass: %s %s", rt1.Dst, err)
-		}
-		p.out.Info("Access.AddBypass: route %s via %s", rt1.Dst, rt1.Gw)
-	}
-}
-
-func (p *Point) Forward(prefix, nexthop string) {
+func (p *Point) Forward(name, prefix, nexthop string) {
 	_, dst, _ := net.ParseCIDR(prefix)
-	p.out.Info("Access.Forward: %s via %s", prefix, nexthop)
 	if err := netlink.RouteAdd(&netlink.Route{
 		Dst: dst,
 		Gw:  net.ParseIP(nexthop),
 	}); err != nil {
-		if !strings.Contains(err.Error(), "file exists") {
-			p.out.Warn("Access.Forward: %s %s", prefix, err)
+		if strings.Contains(err.Error(), "file exists") {
+			return
 		}
+		p.out.Warn("Access.Forward: %s %s", prefix, err)
+		return
 	}
+	p.out.Info("Access.Forward: %s:%s via %s", name, prefix, nexthop)
 }
 
-func (p *Point) AddRoutes(routes []*models.Route) error {
-	if routes == nil || p.link == nil {
-		return nil
-	}
-	p.AddBypass(routes)
-	for _, rt := range routes {
-		_, dst, err := net.ParseCIDR(rt.Prefix)
+func (p *Point) AddRoutes() error {
+	to := p.config.Forward
+
+	for _, prefix := range to.Match {
+		if !strings.Contains(prefix, "/") {
+			prefix = prefix + "/32"
+		}
+		_, dst, err := net.ParseCIDR(prefix)
 		if err != nil {
 			continue
 		}
-		nxt := net.ParseIP(rt.NextHop)
+		nxt := net.ParseIP(to.Server)
 		rte := netlink.Route{
 			LinkIndex: p.link.Attrs().Index,
 			Dst:       dst,
 			Gw:        nxt,
-			Priority:  rt.Metric,
 		}
 		p.out.Debug("Access.AddRoute: %s", rte)
 		if err := netlink.RouteAdd(&rte); err != nil {
-			p.out.Warn("Access.AddRoute: %s %s", rt.Prefix, err)
+			p.out.Warn("Access.AddRoute: %s %s", prefix, err)
 			continue
 		}
-		p.out.Info("Access.AddRoutes: route %s via %s", rt.Prefix, rt.NextHop)
+		p.out.Info("Access.AddRoutes: route %s via %s", prefix, to.Server)
 	}
-	p.routes = routes
 	return nil
-}
-
-func (p *Point) DelBypass(routes []*models.Route) {
-	if !p.config.ByPass || p.bypass == nil {
-		return
-	}
-	p.out.Debug("Access.DelRoute: %s")
-	rt := p.bypass
-	if err := netlink.RouteAdd(rt); err != nil {
-		p.out.Warn("Access.DelRoute: %s %s", rt.Dst, err)
-	}
-	p.out.Info("Access.DelBypass: route %s via %s", rt.Dst, rt.Gw)
-	p.bypass = nil
-	for _, rt := range routes {
-		if rt.Prefix != "0.0.0.0/0" {
-			continue
-		}
-		gw := net.ParseIP(rt.NextHop)
-		_, dst0, _ := net.ParseCIDR("0.0.0.0/1")
-		rt0 := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst0,
-			Gw:        gw,
-			Priority:  rt.Metric,
-		}
-		p.out.Debug("Access.DelBypass: %s", rt0)
-		if err := netlink.RouteDel(&rt0); err != nil {
-			p.out.Warn("Access.DelBypass: %s %s", rt0.Dst, err)
-		}
-		p.out.Info("Access.DelBypass: route %s via %s", rt0.Dst, rt0.Gw)
-		_, dst1, _ := net.ParseCIDR("128.0.0.0/1")
-		rt1 := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst1,
-			Gw:        gw,
-			Priority:  rt.Metric,
-		}
-		p.out.Debug("Access.DelBypass: %s", rt1)
-		if err := netlink.RouteDel(&rt1); err != nil {
-			p.out.Warn("Access.DelBypass: %s %s", rt1.Dst, err)
-		}
-		p.out.Info("Access.DelBypass: route %s via %s", rt1.Dst, rt1.Gw)
-	}
 }
 
 func (p *Point) DelRoutes(routes []*models.Route) error {
 	if routes == nil || p.link == nil {
 		return nil
 	}
-	p.DelBypass(routes)
+
 	for _, rt := range routes {
 		_, dst, err := net.ParseCIDR(rt.Prefix)
 		if err != nil {

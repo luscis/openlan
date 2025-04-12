@@ -72,7 +72,7 @@ type WorkerListener struct {
 	OnTap     func(w *TapWorker) error
 	AddRoutes func(routes []*models.Route) error
 	DelRoutes func(routes []*models.Route) error
-	Forward   func(prefix, nexthop string)
+	Forward   func(name, prefix, nexthop string)
 }
 
 type PrefixRule struct {
@@ -412,7 +412,7 @@ func (w *Worker) OnDNS(domain string, addr net.IP) {
 	if via != nil {
 		w.out.Debug("Worker.OnDNS %s via %s", name, via.Server)
 		if w.listener.Forward != nil {
-			w.listener.Forward(addr.String()+"/32", via.Server)
+			w.listener.Forward(domain, addr.String()+"/32", via.Server)
 		}
 	}
 }
