@@ -68,7 +68,7 @@ builder:
 	docker exec openlan_builder bash -c "apt update && apt install -y git lsb-release wget make gcc devscripts"
 	docker exec openlan_builder bash -c "apt install -y net-tools make build-essential libnss3-dev pkg-config libevent-dev libunbound-dev bison flex libsystemd-dev libcurl4-nss-dev libpam0g-dev libcap-ng-dev libldns-dev xmlto"
 	docker exec openlan_builder badh -c "apt install -y htmldoc libaudit-dev libkrb5-dev libldap2-dev libnss3-tools libselinux1-dev man2html"
-	docker exec openlan_builder bash -c "wget https://golang.google.cn/dl/go1.16.linux-amd64.tar.gz && tar -xf go1.16.linux-amd64.tar.gz -C /usr/local"
+	docker exec openlan_builder bash -c "wget https://golang.google.cn/dl/go1.23.0.linux-amd64.tar.gz && tar -xf go1.23.0.linux-amd64.tar.gz -C /usr/local"
 	docker exec openlan_builder bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
 	docker exec openlan_builder git config --global --add safe.directory /opt/openlan
 	docker exec openlan_builder git config --global --add safe.directory /opt/openlan/dist/cert
