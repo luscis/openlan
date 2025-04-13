@@ -85,7 +85,7 @@ func (b *LinuxBridge) Open(addr string) {
 	if addr != "" {
 		ipAddr, err := nl.ParseAddr(addr)
 		if err != nil {
-			b.out.Error("LinuxBridge.Open: ParseCIDR %s", err)
+			b.out.Error("LinuxBridge.Open: ParseAddr %s", err)
 		}
 		b.address = ipAddr
 		if err := b.Plugin(ipAddr); err != nil {

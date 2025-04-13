@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
@@ -145,7 +146,7 @@ func (p *Point) OnTap(w *TapWorker) error {
 }
 
 func (p *Point) Forward(name, prefix, nexthop string) {
-	_, dst, _ := net.ParseCIDR(prefix)
+	dst, _ := libol.ParseCIDR(prefix)
 	if err := netlink.RouteAdd(&netlink.Route{
 		Dst: dst,
 		Gw:  net.ParseIP(nexthop),
@@ -156,17 +157,14 @@ func (p *Point) Forward(name, prefix, nexthop string) {
 		p.out.Warn("Access.Forward: %s %s", prefix, err)
 		return
 	}
-	p.out.Info("Access.Forward: %s:%s via %s", name, prefix, nexthop)
+	p.out.Info("Access.Forward: %s %s via %s", name, prefix, nexthop)
 }
 
 func (p *Point) AddRoutes() error {
 	to := p.config.Forward
 
 	for _, prefix := range to.Match {
-		if !strings.Contains(prefix, "/") {
-			prefix = prefix + "/32"
-		}
-		_, dst, err := net.ParseCIDR(prefix)
+		dst, err := libol.ParseCIDR(prefix)
 		if err != nil {
 			continue
 		}
@@ -192,7 +190,7 @@ func (p *Point) DelRoutes(routes []*models.Route) error {
 	}
 
 	for _, rt := range routes {
-		_, dst, err := net.ParseCIDR(rt.Prefix)
+		dst, err := libol.ParseCIDR(rt.Prefix)
 		if err != nil {
 			continue
 		}

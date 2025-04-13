@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"net"
 	"os"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 const LeaseTime = "2006-01-02T15"
@@ -280,11 +281,15 @@ func GetPrefixLen(addr string) int {
 }
 
 func ParseNet(addr string) (*net.IPNet, error) {
-	if _, ipNet, err := net.ParseCIDR(addr); err != nil {
-		return nil, err
-	} else {
-		return ipNet, nil
+	return ParseCIDR(addr)
+}
+
+func ParseCIDR(addr string) (*net.IPNet, error) {
+	if !strings.Contains(addr, "/") {
+		addr = addr + "/32"
 	}
+	_, cidr, err := net.ParseCIDR(addr)
+	return cidr, err
 }
 
 func Uint2S(value uint32) string {

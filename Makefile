@@ -78,29 +78,14 @@ builder:
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-docker-bin: ## binary by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
-
-docker-test: ## test by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make test"
-
-docker-darwin: ## binary for MacOS by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make darwin-gzip"
-
-docker-windows: ## binary for Windows by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make windows-gzip"
-
-docker-ceci: ## binary for ceci by Docker
-	docker exec openlan_builder bash -c "cd /opt/openlan && make ceci"
-
-docker-rhel: docker-bin ## build image for redhat
+docker-rhel: linux-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && \
 	sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file centos/Dockerfile .
 
-docker-deb: docker-bin ## build image for debian
+docker-deb: linux-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && \
 	sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
@@ -131,7 +116,7 @@ linux-switch:
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-ceci:
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci ./cmd/ceci
+	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
 
 linux-proxy:
 	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
@@ -159,19 +144,19 @@ install: env linux ## install packages
 	@mkdir -p $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan,openlan-switch} $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan-access,openlan-proxy} $(LIN_DIR)/usr/bin
-	@cp -rf $(BD)/openlan-ceci $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/openceci $(LIN_DIR)/usr/bin
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
 windows: env windows-ceci ## build windows binary
 
 windows-ceci:
-	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.exe ./cmd/ceci
+	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.exe ./cmd/ceci
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(WIN_DIR)/ceci.yaml
-	@cp -rf $(BD)/openlan-ceci.exe $(WIN_DIR)
+	@cp -rf $(BD)/openceci.exe $(WIN_DIR)
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
 	gzip -f $(BD)/$(WIN_DIR).tar && rm -rf $(WIN_DIR)
 
@@ -181,13 +166,13 @@ osx: darwin
 darwin: env darwin-ceci ## build darwin binary
 
 darwin-ceci:
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.dar ./cmd/ceci
-	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-ceci.arm64.dar ./cmd/ceci
+	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.dar ./cmd/ceci
+	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.arm64.dar ./cmd/ceci
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(MAC_DIR)/ceci.yaml
-	@cp -rf $(BD)/openlan-ceci.dar $(MAC_DIR)
+	@cp -rf $(BD)/openceci.dar $(MAC_DIR)
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	gzip -f $(BD)/$(MAC_DIR).tar && rm -rf $(MAC_DIR)
 

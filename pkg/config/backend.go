@@ -55,6 +55,7 @@ func (h ToForwards) isMatch(value string, rules []string) bool {
 }
 
 func (h ToForwards) FindBackend(host string) *ForwardTo {
+	host = strings.TrimRight(host, ".")
 	for _, via := range h {
 		if via == nil {
 			continue

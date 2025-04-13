@@ -171,16 +171,18 @@ type Worker struct {
 	out       *libol.SubLogger
 	done      chan bool
 	ticker    *time.Ticker
+	nameCache map[string]string
 }
 
 func NewWorker(cfg *config.Point) *Worker {
 	return &Worker{
-		ifAddr: cfg.Interface.Address,
-		cfg:    cfg,
-		routes: make([]PrefixRule, 0, 32),
-		out:    libol.NewSubLogger(cfg.Id()),
-		done:   make(chan bool),
-		ticker: time.NewTicker(2 * time.Second),
+		ifAddr:    cfg.Interface.Address,
+		cfg:       cfg,
+		routes:    make([]PrefixRule, 0, 32),
+		out:       libol.NewSubLogger(cfg.Id()),
+		done:      make(chan bool),
+		ticker:    time.NewTicker(2 * time.Second),
+		nameCache: make(map[string]string),
 	}
 }
 
@@ -414,7 +416,6 @@ func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
 	}
 
 	name := r.Question[0].Name
-	name = strings.TrimRight(name, ".")
 	w.out.Debug("Worker.FindBackend %s", name)
 	via := w.cfg.Backends.FindBackend(name)
 	if via != nil {
@@ -422,6 +423,16 @@ func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
 	}
 
 	return via
+}
+
+func (w *Worker) updateDNS(n *dns.A, via string) {
+	name := n.Hdr.Name
+	addr := n.A.String()
+	if _, ok := w.nameCache[name]; !ok {
+		w.nameCache[name] = addr
+		w.listener.Forward(n.Hdr.Name, addr, via)
+	}
+	w.out.Debug("Worker.updateDNS %s -> %s", addr, via)
 }
 
 func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
@@ -435,27 +446,28 @@ func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 		nameto = via.Nameto
 	}
 	if nameto == "" || nameto == w.cfg.Bind {
-		w.out.Error("Worker.handleDNS: nil(%s)", nameto)
+		w.out.Error("Worker.handleDNS nil(%s)", nameto)
 		return
 	}
 
-	w.out.Info("forward: %v -> %s", r.Question, nameto)
+	w.out.Info("handleDNS %s <- %v", nameto, r.Question)
 	resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
 	if err != nil {
-		w.out.Error("Worker.handleDNS: %s: %v", r, err)
+		w.out.Error("Worker.handleDNS %s: %v", r, err)
 		return
 	}
 
 	for _, rr := range resp.Answer {
 		if n, ok := rr.(*dns.A); ok {
-			if via != nil {
-				w.listener.Forward(n.Hdr.Name, n.A.String()+"/32", via.Server)
+			if via == nil {
+				continue
 			}
+			w.updateDNS(n, via.Server)
 		}
 	}
 
 	if err := conn.WriteMsg(resp); err != nil {
-		w.out.Error("Worker.handleDNS: %s", err)
+		w.out.Error("Worker.handleDNS %s", err)
 	}
 }
 func (w *Worker) StartDNS() {
