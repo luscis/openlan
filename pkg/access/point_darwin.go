@@ -35,6 +35,10 @@ func (p *Point) AddAddr(ipStr string) error {
 	if ipStr == "" {
 		return nil
 	}
+
+	// Flush DNS.
+	libol.FlushDNS()
+
 	// add point-to-point
 	ips := strings.SplitN(ipStr, "/", 2)
 	out, err := libol.IpAddrAdd(p.IfName(), ips[0], ips[0])

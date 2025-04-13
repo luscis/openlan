@@ -173,6 +173,7 @@ type Worker struct {
 	done      chan bool
 	ticker    *time.Ticker
 	nameCache map[string]string
+	addrCache map[string]string
 	lock      sync.RWMutex
 }
 
@@ -185,6 +186,7 @@ func NewWorker(cfg *config.Point) *Worker {
 		done:      make(chan bool),
 		ticker:    time.NewTicker(2 * time.Second),
 		nameCache: make(map[string]string),
+		addrCache: make(map[string]string),
 	}
 }
 
@@ -434,12 +436,17 @@ func (w *Worker) updateDNS(name, addr string) bool {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
+	updated := false
 	if _, ok := w.nameCache[name]; !ok {
 		w.nameCache[name] = addr
-		return true
+		updated = true
+	}
+	if _, ok := w.addrCache[addr]; !ok {
+		w.addrCache[addr] = name
+		updated = true
 	}
 
-	return false
+	return updated
 }
 
 func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
