@@ -145,23 +145,11 @@ func (p *Point) OnTap(w *TapWorker) error {
 	return nil
 }
 
-func (p *Point) Forward(name, prefix, nexthop string) {
-	dst, _ := libol.ParseCIDR(prefix)
-	if err := netlink.RouteAdd(&netlink.Route{
-		Dst: dst,
-		Gw:  net.ParseIP(nexthop),
-	}); err != nil {
-		if strings.Contains(err.Error(), "file exists") {
-			return
-		}
-		p.out.Warn("Access.Forward: %s %s", prefix, err)
-		return
-	}
-	p.out.Info("Access.Forward: %s %s via %s", name, prefix, nexthop)
-}
-
 func (p *Point) AddRoutes() error {
 	to := p.config.Forward
+	if to == nil {
+		return nil
+	}
 
 	for _, prefix := range to.Match {
 		dst, err := libol.ParseCIDR(prefix)
@@ -184,29 +172,17 @@ func (p *Point) AddRoutes() error {
 	return nil
 }
 
-func (p *Point) DelRoutes(routes []*models.Route) error {
-	if routes == nil || p.link == nil {
-		return nil
+func (p *Point) Forward(name, prefix, nexthop string) {
+	dst, _ := libol.ParseCIDR(prefix)
+	if err := netlink.RouteAdd(&netlink.Route{
+		Dst: dst,
+		Gw:  net.ParseIP(nexthop),
+	}); err != nil {
+		if strings.Contains(err.Error(), "file exists") {
+			return
+		}
+		p.out.Warn("Access.Forward: %s %s", prefix, err)
+		return
 	}
-
-	for _, rt := range routes {
-		dst, err := libol.ParseCIDR(rt.Prefix)
-		if err != nil {
-			continue
-		}
-		nxt := net.ParseIP(rt.NextHop)
-		rte := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst,
-			Gw:        nxt,
-			Priority:  rt.Metric,
-		}
-		if err := netlink.RouteDel(&rte); err != nil {
-			p.out.Warn("Access.DelRoute: %s %s", rt.Prefix, err)
-			continue
-		}
-		p.out.Info("Access.DelRoutes: route %s via %s", rt.Prefix, rt.NextHop)
-	}
-	p.routes = nil
-	return nil
+	p.out.Info("Access.Forward: %s %s via %s", name, prefix, nexthop)
 }

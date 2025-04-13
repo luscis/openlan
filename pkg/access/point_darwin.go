@@ -5,7 +5,6 @@ import (
 
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
 )
 
 type Point struct {
@@ -13,7 +12,6 @@ type Point struct {
 	// private
 	brName string
 	addr   string
-	routes []*models.Route
 }
 
 func NewPoint(config *config.Point) *Point {
@@ -25,10 +23,11 @@ func NewPoint(config *config.Point) *Point {
 }
 
 func (p *Point) Initialize() {
-	p.worker.listener.AddAddr = p.AddAddr
-	p.worker.listener.DelAddr = p.DelAddr
-	p.worker.listener.AddRoutes = p.AddRoutes
-	p.worker.listener.DelRoutes = p.DelRoutes
+	w := p.worker
+	w.listener.AddAddr = p.AddAddr
+	w.listener.DelAddr = p.DelAddr
+	w.listener.Forward = p.Forward
+
 	p.MixPoint.Initialize()
 }
 
@@ -51,6 +50,9 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	p.out.Info("Access.AddAddr: route %s via %s", ipStr, p.IfName())
 	p.addr = ipStr
+
+	p.AddRoutes()
+
 	return nil
 }
 
@@ -73,31 +75,30 @@ func (p *Point) DelAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) AddRoutes(routes []*models.Route) error {
-	if routes == nil {
+func (p *Point) AddRoutes() error {
+	to := p.config.Forward
+	if to == nil {
 		return nil
 	}
-	for _, route := range routes {
-		out, err := libol.IpRouteAdd(p.IfName(), route.Prefix, "")
+
+	for _, prefix := range to.Match {
+		out, err := libol.IpRouteAdd("", prefix, to.Server)
 		if err != nil {
-			p.out.Warn("Access.AddRoutes: %s %s", route.Prefix, out)
+			p.out.Warn("Access.AddRoutes: %s %s", prefix, out)
 			continue
 		}
-		p.out.Info("Access.AddRoutes: route %s via %s", route.Prefix, p.IfName())
+		p.out.Info("Access.AddRoutes: route %s via %s", prefix, to.Server)
 	}
-	p.routes = routes
 	return nil
 }
 
-func (p *Point) DelRoutes(routes []*models.Route) error {
-	for _, route := range routes {
-		out, err := libol.IpRouteDel(p.IfName(), route.Prefix, "")
-		if err != nil {
-			p.out.Warn("Access.DelRoutes: %s %s", route.Prefix, out)
-			continue
+func (p *Point) Forward(name, prefix, nexthop string) {
+	if out, err := libol.IpRouteAdd("", prefix, nexthop); err != nil {
+		if strings.Contains(err.Error(), "file exists") {
+			return
 		}
-		p.out.Info("Access.DelRoutes: route %s via %s", route.Prefix, p.IfName())
+		p.out.Warn("Access.Forward: %s %s: %s", prefix, err, out)
+		return
 	}
-	p.routes = nil
-	return nil
+	p.out.Info("Access.Forward: %s %s via %s", name, prefix, nexthop)
 }

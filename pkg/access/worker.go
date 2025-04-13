@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/luscis/openlan/pkg/config"
@@ -172,6 +173,7 @@ type Worker struct {
 	done      chan bool
 	ticker    *time.Ticker
 	nameCache map[string]string
+	lock      sync.RWMutex
 }
 
 func NewWorker(cfg *config.Point) *Worker {
@@ -438,38 +440,45 @@ func (w *Worker) updateDNS(n *dns.A, via string) {
 func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 	client := new(dns.Client)
 	client.Net = "udp"
-
 	nameto := w.cfg.Nameto
 
-	via := w.FindBackend(r)
-	if via != nil {
-		nameto = via.Nameto
-	}
-	if nameto == "" || nameto == w.cfg.Bind {
-		w.out.Error("Worker.handleDNS nil(%s)", nameto)
-		return
-	}
+	libol.Go(func() {
+		w.lock.RLock()
+		via := w.FindBackend(r)
+		w.lock.RUnlock()
 
-	w.out.Info("handleDNS %s <- %v", nameto, r.Question)
-	resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
-	if err != nil {
-		w.out.Error("Worker.handleDNS %s: %v", r, err)
-		return
-	}
-
-	for _, rr := range resp.Answer {
-		if n, ok := rr.(*dns.A); ok {
-			if via == nil {
-				continue
-			}
-			w.updateDNS(n, via.Server)
+		if via != nil {
+			nameto = via.Nameto
 		}
-	}
+		if nameto == "" || nameto == w.cfg.Bind {
+			w.out.Error("Worker.handleDNS nil(%s)", nameto)
+			return
+		}
 
-	if err := conn.WriteMsg(resp); err != nil {
-		w.out.Error("Worker.handleDNS %s", err)
-	}
+		w.out.Info("handleDNS %s <- %v", nameto, r.Question)
+		resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
+		if err != nil {
+			w.out.Error("Worker.handleDNS %s: %v", r, err)
+			return
+		}
+
+		w.lock.Lock()
+		for _, rr := range resp.Answer {
+			if n, ok := rr.(*dns.A); ok {
+				if via == nil {
+					continue
+				}
+				w.updateDNS(n, via.Server)
+			}
+		}
+		w.lock.Unlock()
+
+		if err := conn.WriteMsg(resp); err != nil {
+			w.out.Error("Worker.handleDNS %s", err)
+		}
+	})
 }
+
 func (w *Worker) StartDNS() {
 	listenAddr := fmt.Sprintf("%s:53", w.cfg.Bind)
 	dns.HandleFunc(".", w.handleDNS)

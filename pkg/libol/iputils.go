@@ -133,8 +133,7 @@ func IpRouteAdd(name, prefix, nexthop string, opts ...string) ([]byte, error) {
 		}
 		return exec.Command("netsh", args...).CombinedOutput()
 	case "darwin":
-		args := append([]string{
-			"add", "-net", prefix})
+		args := []string{"add", "-net", prefix}
 		if name != "" {
 			args = append(args, "-iface", name)
 		}

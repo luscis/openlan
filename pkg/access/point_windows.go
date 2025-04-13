@@ -28,8 +28,6 @@ func NewPoint(config *config.Point) *Point {
 func (p *Point) Initialize() {
 	p.worker.listener.AddAddr = p.AddAddr
 	p.worker.listener.DelAddr = p.DelAddr
-	p.worker.listener.AddRoutes = p.AddRoutes
-	p.worker.listener.DelRoutes = p.DelRoutes
 	p.worker.listener.OnTap = p.OnTap
 	p.MixPoint.Initialize()
 }
@@ -85,32 +83,19 @@ func (p *Point) DelAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) AddRoutes(routes []*models.Route) error {
-	if routes == nil {
-		return nil
-	}
-	_ = libol.MarshalSave(routes, ".routes.json", true)
-	for _, route := range routes {
-		out, err := libol.IpRouteAdd(p.IfName(), route.Prefix, route.NextHop)
-		if err != nil {
-			p.out.Warn("Access.AddRoutes: %s %s", route.Prefix, p.Trim(out))
-			continue
-		}
-		p.out.Info("Access.AddRoutes: route %s via %s", route.Prefix, route.NextHop)
-	}
-	p.routes = routes
-	return nil
-}
-
-func (p *Point) DelRoutes(routes []*models.Route) error {
-	for _, route := range routes {
-		out, err := libol.IpRouteDel(p.IfName(), route.Prefix, route.NextHop)
-		if err != nil {
-			p.out.Warn("Access.DelRoutes: %s %s", route.Prefix, p.Trim(out))
-			continue
-		}
-		p.out.Info("Access.DelRoutes: route %s via %s", route.Prefix, route.NextHop)
-	}
-	p.routes = nil
+func (p *Point) AddRoutes() error {
+	// if routes == nil {
+	// 	return nil
+	// }
+	// _ = libol.MarshalSave(routes, ".routes.json", true)
+	// for _, route := range routes {
+	// 	out, err := libol.IpRouteAdd(p.IfName(), route.Prefix, route.NextHop)
+	// 	if err != nil {
+	// 		p.out.Warn("Access.AddRoutes: %s %s", route.Prefix, p.Trim(out))
+	// 		continue
+	// 	}
+	// 	p.out.Info("Access.AddRoutes: route %s via %s", route.Prefix, route.NextHop)
+	// }
+	// p.routes = routes
 	return nil
 }
