@@ -419,33 +419,39 @@ func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
 
 	name := r.Question[0].Name
 	w.out.Debug("Worker.FindBackend %s", name)
+
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
 	via := w.cfg.Backends.FindBackend(name)
 	if via != nil {
 		w.out.Debug("Worker.FindBackend %s via %s", name, via.Server)
 	}
-
 	return via
 }
 
-func (w *Worker) updateDNS(n *dns.A, via string) {
-	name := n.Hdr.Name
-	addr := n.A.String()
+func (w *Worker) updateDNS(name, addr string) bool {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
 	if _, ok := w.nameCache[name]; !ok {
 		w.nameCache[name] = addr
-		w.listener.Forward(n.Hdr.Name, addr, via)
+		return true
 	}
-	w.out.Debug("Worker.updateDNS %s -> %s", addr, via)
+
+	return false
 }
 
 func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
-	client := new(dns.Client)
-	client.Net = "udp"
+	client := &dns.Client{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		Net:          "udp",
+	}
 	nameto := w.cfg.Nameto
 
 	libol.Go(func() {
-		w.lock.RLock()
 		via := w.FindBackend(r)
-		w.lock.RUnlock()
 
 		if via != nil {
 			nameto = via.Nameto
@@ -462,16 +468,19 @@ func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 
-		w.lock.Lock()
 		for _, rr := range resp.Answer {
 			if n, ok := rr.(*dns.A); ok {
 				if via == nil {
 					continue
 				}
-				w.updateDNS(n, via.Server)
+
+				name := n.Hdr.Name
+				addr := n.A.String()
+				if w.updateDNS(name, addr) {
+					w.listener.Forward(name, addr, via.Server)
+				}
 			}
 		}
-		w.lock.Unlock()
 
 		if err := conn.WriteMsg(resp); err != nil {
 			w.out.Error("Worker.handleDNS %s", err)
