@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build windows
+//go:build windows
 
 // Package registry provides access to the Windows registry.
 //
@@ -19,11 +19,11 @@
 //		log.Fatal(err)
 //	}
 //	fmt.Printf("Windows system root is %q\n", s)
-//
 package registry
 
 import (
 	"io"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -113,6 +113,13 @@ func OpenRemoteKey(pcname string, k Key) (Key, error) {
 // The parameter n controls the number of returned names,
 // analogous to the way os.File.Readdirnames works.
 func (k Key) ReadSubKeyNames(n int) ([]string, error) {
+	// RegEnumKeyEx must be called repeatedly and to completion.
+	// During this time, this goroutine cannot migrate away from
+	// its current thread. See https://golang.org/issue/49320 and
+	// https://golang.org/issue/49466.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	names := make([]string, 0)
 	// Registry key size limit is 255 bytes and described there:
 	// https://msdn.microsoft.com/library/windows/desktop/ms724872.aspx
@@ -157,7 +164,12 @@ loopItems:
 func CreateKey(k Key, path string, access uint32) (newk Key, openedExisting bool, err error) {
 	var h syscall.Handle
 	var d uint32
-	err = regCreateKeyEx(syscall.Handle(k), syscall.StringToUTF16Ptr(path),
+	var pathPointer *uint16
+	pathPointer, err = syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return 0, false, err
+	}
+	err = regCreateKeyEx(syscall.Handle(k), pathPointer,
 		0, nil, _REG_OPTION_NON_VOLATILE, access, nil, &h, &d)
 	if err != nil {
 		return 0, false, err
@@ -167,7 +179,11 @@ func CreateKey(k Key, path string, access uint32) (newk Key, openedExisting bool
 
 // DeleteKey deletes the subkey path of key k and its values.
 func DeleteKey(k Key, path string) error {
-	return regDeleteKey(syscall.Handle(k), syscall.StringToUTF16Ptr(path))
+	pathPointer, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	return regDeleteKey(syscall.Handle(k), pathPointer)
 }
 
 // A KeyInfo describes the statistics of a key. It is returned by Stat.

@@ -1,9 +1,10 @@
 package access
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/songgao/water"
 	"testing"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/water"
 )
 
 func TestTapWrite(t *testing.T) {

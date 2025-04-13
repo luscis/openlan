@@ -1,7 +1,7 @@
 package network
 
 import (
-	"github.com/songgao/water"
+	"github.com/luscis/openlan/pkg/water"
 )
 
 func WaterNew(c TapConfig) (dev *water.Interface, err error) {

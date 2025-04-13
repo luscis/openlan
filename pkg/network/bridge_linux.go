@@ -8,6 +8,10 @@ import (
 	nl "github.com/vishvananda/netlink"
 )
 
+func NewBridger(provider, name string, ifMtu int) Bridger {
+	return NewLinuxBridge(name, ifMtu)
+}
+
 type LinuxBridge struct {
 	sts     DeviceStats
 	address *nl.Addr

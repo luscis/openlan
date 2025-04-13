@@ -106,20 +106,20 @@ docker-compose: ## create a compose files
 
 ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
 
-linux: env linux-access linux-switch linux-ceci linux-proxy ## build linux binary
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+linux: linux-access linux-switch linux-ceci linux-proxy ## build linux binary
+	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 
 linux-access:
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
+	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
 
 linux-switch:
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
+	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-ceci:
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
+	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
 
 linux-proxy:
-	go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
+	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 
 linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
@@ -148,7 +148,7 @@ install: env linux ## install packages
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
-windows: env windows-ceci ## build windows binary
+windows: windows-ceci ## build windows binary
 
 windows-ceci:
 	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.exe ./cmd/ceci
@@ -163,7 +163,7 @@ windows-gzip: env windows ## build windows packages
 ## cross build for osx
 osx: darwin
 
-darwin: env darwin-ceci ## build darwin binary
+darwin: darwin-ceci ## build darwin binary
 
 darwin-ceci:
 	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.dar ./cmd/ceci

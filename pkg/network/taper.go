@@ -38,9 +38,6 @@ type Taper interface {
 }
 
 func NewTaper(tenant string, c TapConfig) (Taper, error) {
-	if c.Provider == ProviderVir {
-		return NewVirtualTap(tenant, c)
-	}
 	return NewKernelTap(tenant, c)
 }
 

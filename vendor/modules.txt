@@ -4,26 +4,14 @@ github.com/Sirupsen/logrus
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/cenkalti/backoff/v4 v4.1.1
-## explicit; go 1.13
-github.com/cenkalti/backoff/v4
-# github.com/cenkalti/hub v1.0.1
-## explicit
-github.com/cenkalti/hub
-# github.com/cenkalti/rpc2 v0.0.0-20210604223624-c1acbc6ec984
-## explicit
-github.com/cenkalti/rpc2
-github.com/cenkalti/rpc2/jsonrpc
 # github.com/cespare/xxhash/v2 v2.1.1
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/chzyer/logex v1.2.0
-## explicit; go 1.17
 # github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 ## explicit
 github.com/chzyer/readline
-# github.com/chzyer/test v0.0.0-20210722231415-061457976a23
-## explicit
+# github.com/chzyer/test v1.0.0
+## explicit; go 1.15
 # github.com/coreos/go-systemd/v22 v22.3.2
 ## explicit; go 1.12
 github.com/coreos/go-systemd/v22/daemon
@@ -41,26 +29,16 @@ github.com/ghodss/yaml
 # github.com/go-ldap/ldap v3.0.3+incompatible
 ## explicit
 github.com/go-ldap/ldap
-# github.com/go-logr/logr v1.1.0
-## explicit; go 1.16
-github.com/go-logr/logr
-github.com/go-logr/logr/funcr
-# github.com/go-logr/stdr v1.1.0
-## explicit; go 1.16
-github.com/go-logr/stdr
 # github.com/godbus/dbus v4.1.0+incompatible
 ## explicit
 github.com/godbus/dbus
-# github.com/golang/protobuf v1.5.0
+# github.com/golang/protobuf v1.4.3
 ## explicit; go 1.9
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/uuid v1.2.0
-## explicit
-github.com/google/uuid
 # github.com/gorilla/mux v1.8.0
 ## explicit; go 1.12
 github.com/gorilla/mux
@@ -94,14 +72,6 @@ github.com/mmcloughlin/avo/x86
 # github.com/moby/libnetwork v0.5.6
 ## explicit
 github.com/moby/libnetwork/iptables
-# github.com/ovn-org/libovsdb v0.6.1-0.20220127023511-a619f0fd93be
-## explicit; go 1.16
-github.com/ovn-org/libovsdb/cache
-github.com/ovn-org/libovsdb/client
-github.com/ovn-org/libovsdb/mapper
-github.com/ovn-org/libovsdb/model
-github.com/ovn-org/libovsdb/ovsdb
-github.com/ovn-org/libovsdb/ovsdb/serverdb
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -126,26 +96,12 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3
-## explicit
-github.com/riobard/go-bloom
 # github.com/russross/blackfriday/v2 v2.0.1
 ## explicit
 github.com/russross/blackfriday/v2
-# github.com/shadowsocks/go-shadowsocks2 v0.1.5
-## explicit; go 1.16
-github.com/shadowsocks/go-shadowsocks2/core
-github.com/shadowsocks/go-shadowsocks2/internal
-github.com/shadowsocks/go-shadowsocks2/nfutil
-github.com/shadowsocks/go-shadowsocks2/pfutil
-github.com/shadowsocks/go-shadowsocks2/shadowaead
-github.com/shadowsocks/go-shadowsocks2/socks
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 ## explicit
 github.com/shurcooL/sanitized_anchor_name
-# github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
-## explicit
-github.com/songgao/water
 # github.com/stretchr/testify v1.7.0
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
@@ -171,16 +127,12 @@ github.com/vishvananda/netns
 # github.com/xtaci/kcp-go/v5 v5.6.1
 ## explicit; go 1.13
 github.com/xtaci/kcp-go/v5
-# golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 => github.com/golang/crypto v0.0.0-20200604202706-70a84ac30bf9
-## explicit; go 1.11
+# golang.org/x/crypto v0.37.0
+## explicit; go 1.23.0
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
-golang.org/x/crypto/chacha20
-golang.org/x/crypto/chacha20poly1305
-golang.org/x/crypto/hkdf
-golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/internal/alias
 golang.org/x/crypto/pbkdf2
-golang.org/x/crypto/poly1305
 golang.org/x/crypto/salsa20
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/tea
@@ -189,8 +141,8 @@ golang.org/x/crypto/xtea
 # golang.org/x/mod v0.23.0
 ## explicit; go 1.22.0
 golang.org/x/mod/semver
-# golang.org/x/net v0.35.0 => github.com/golang/net v0.0.0-20190812203447-cdfb69ac37fc
-## explicit
+# golang.org/x/net v0.39.0
+## explicit; go 1.23.0
 golang.org/x/net/bpf
 golang.org/x/net/context
 golang.org/x/net/internal/iana
@@ -201,9 +153,8 @@ golang.org/x/net/websocket
 # golang.org/x/sync v0.11.0
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.30.0 => github.com/golang/sys v0.0.0-20190209173611-3b5209105503
-## explicit
-golang.org/x/sys/cpu
+# golang.org/x/sys v0.32.0
+## explicit; go 1.23.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
@@ -226,7 +177,7 @@ golang.org/x/tools/internal/stdlib
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.26.0-rc.1
 ## explicit; go 1.9
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
@@ -249,12 +200,10 @@ google.golang.org/protobuf/internal/set
 google.golang.org/protobuf/internal/strs
 google.golang.org/protobuf/internal/version
 google.golang.org/protobuf/proto
-google.golang.org/protobuf/reflect/protodesc
 google.golang.org/protobuf/reflect/protoreflect
 google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
-google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
@@ -268,7 +217,3 @@ gopkg.in/yaml.v2
 ## explicit
 gopkg.in/yaml.v3
 # github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.8.1
-# golang.org/x/crypto => github.com/golang/crypto v0.0.0-20200604202706-70a84ac30bf9
-# golang.org/x/net => github.com/golang/net v0.0.0-20190812203447-cdfb69ac37fc
-# golang.org/x/sys => github.com/golang/sys v0.0.0-20190209173611-3b5209105503
-# golang.org/x/time => github.com/golang/time v0.0.0-20210220033141-f8bda1e9f3ba

@@ -8,16 +8,6 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
-type ShadowProxy struct {
-	Server     string `json:"server,omitempty"`
-	Key        string `json:"key,omitempty"`
-	Cipher     string `json:"cipher,omitempty"`
-	Secret     string `json:"secret,omitempty"`
-	Plugin     string `json:"plugin,omitempty"`
-	PluginOpts string `json:"pluginOpts,omitempty"`
-	Protocol   string `json:"protocol,omitempty"`
-}
-
 type SocksProxy struct {
 	Conf     string     `json:"-" yaml:"-"`
 	ConfDir  string     `json:"-" yaml:"-"`
@@ -185,14 +175,13 @@ func (t *TcpProxy) Load() error {
 }
 
 type Proxy struct {
-	Conf    string         `json:"-" yaml:"-"`
-	ConfDir string         `json:"-" yaml:"-"`
-	Log     Log            `json:"log"`
-	Socks   []*SocksProxy  `json:"socks,omitempty" yaml:"socks,omitempty"`
-	Http    []*HttpProxy   `json:"http,omitempty" yaml:"http,omitempty"`
-	Tcp     []*TcpProxy    `json:"tcp,omitempty" yaml:"tcp,omitempty"`
-	Shadow  []*ShadowProxy `json:"shadow,omitempty" yaml:"shadow,omitempty"`
-	PProf   string         `json:"pprof,omitempty" yaml:"pprof,omitempty"`
+	Conf    string        `json:"-" yaml:"-"`
+	ConfDir string        `json:"-" yaml:"-"`
+	Log     Log           `json:"log"`
+	Socks   []*SocksProxy `json:"socks,omitempty" yaml:"socks,omitempty"`
+	Http    []*HttpProxy  `json:"http,omitempty" yaml:"http,omitempty"`
+	Tcp     []*TcpProxy   `json:"tcp,omitempty" yaml:"tcp,omitempty"`
+	PProf   string        `json:"pprof,omitempty" yaml:"pprof,omitempty"`
 }
 
 func NewProxy() *Proxy {

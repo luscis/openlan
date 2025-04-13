@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPointFlags(t *testing.T) {
@@ -19,7 +20,7 @@ func TestPointFlags(t *testing.T) {
 	ap.Parse()
 	fmt.Println(ap)
 	assert.Equal(t, "fake", ap.Alias, "be the same.")
-	assert.Equal(t, "/etc/openlan/fake.json", ap.SaveFile, "be the same.")
+	assert.Equal(t, "/etc/openlan/fake.json", ap.Conf, "be the same.")
 	assert.Equal(t, "off", ap.Terminal, "be the same.")
 }
 

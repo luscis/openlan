@@ -1,9 +1,10 @@
 package network
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/songgao/water"
 	"sync"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/water"
 )
 
 type KernelTap struct {

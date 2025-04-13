@@ -34,7 +34,7 @@ type Point struct {
 	PProf       string     `json:"pprof,omitempty"`
 	RequestAddr bool       `json:"requestAddr"`
 	ByPass      bool       `json:"bypass,omitempty"`
-	SaveFile    string     `json:"-"`
+	Conf        string     `json:"-"`
 	Queue       *Queue     `json:"queue,omitempty"`
 	Terminal    string     `json:"-"`
 	Cert        *Cert      `json:"cert,omitempty"`
@@ -69,7 +69,7 @@ func (ap *Point) Parse() {
 	flag.StringVar(&ap.Alias, "alias", "", "Alias for this point")
 	flag.StringVar(&ap.Log.File, "log:file", "", "File log saved to")
 	flag.StringVar(&ap.Terminal, "terminal", "", "Run interactive terminal")
-	flag.StringVar(&ap.SaveFile, "conf", "", "The configuration file")
+	flag.StringVar(&ap.Conf, "conf", "", "The configuration file")
 	flag.Parse()
 }
 
@@ -77,12 +77,14 @@ func (ap *Point) Id() string {
 	return ap.Connection + ":" + ap.Network
 }
 
-func (ap *Point) Initialize() {
+func (ap *Point) Initialize() error {
 	if err := ap.Load(); err != nil {
 		libol.Warn("NewPoint.Initialize %s", err)
+		return err
 	}
 	ap.Correct()
 	libol.SetLogger(ap.Log.File, ap.Log.Verbose)
+	return nil
 }
 
 func (ap *Point) Correct() {
@@ -128,8 +130,8 @@ func (ap *Point) Correct() {
 }
 
 func (ap *Point) Load() error {
-	if err := libol.FileExist(ap.SaveFile); err == nil {
-		return libol.UnmarshalLoad(ap, ap.SaveFile)
+	if err := libol.FileExist(ap.Conf); err == nil {
+		return libol.UnmarshalLoad(ap, ap.Conf)
 	}
 	return nil
 }
