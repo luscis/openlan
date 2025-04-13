@@ -36,9 +36,6 @@ func (p *Point) AddAddr(ipStr string) error {
 		return nil
 	}
 
-	// Flush DNS.
-	libol.FlushDNS()
-
 	// add point-to-point
 	ips := strings.SplitN(ipStr, "/", 2)
 	out, err := libol.IpAddrAdd(p.IfName(), ips[0], ips[0])
@@ -104,5 +101,5 @@ func (p *Point) Forward(name, prefix, nexthop string) {
 		p.out.Warn("Access.Forward: %s %s: %s", prefix, err, out)
 		return
 	}
-	p.out.Info("Access.Forward: %s %s via %s", name, prefix, nexthop)
+	p.out.Info("Access.Forward: %s <- %s %s ", nexthop, name, prefix)
 }

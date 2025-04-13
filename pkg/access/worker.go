@@ -215,6 +215,13 @@ func (w *Worker) Initialize() {
 	}
 	w.conWorker.Initialize()
 
+	to := w.cfg.Forward
+	if to != nil {
+		for _, rule := range to.Match {
+			w.UpdateRoute(rule, to.Server)
+		}
+	}
+
 	w.tapWorker.listener = TapWorkerListener{
 		OnOpen: func(t *TapWorker) error {
 			if w.listener.OnTap != nil {
@@ -307,12 +314,11 @@ func (w *Worker) UpTime() int64 {
 }
 
 func (w *Worker) FindNext(dest []byte) []byte {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
 	for _, rt := range w.routes {
 		if !rt.Destination.Contains(dest) {
 			continue
-		}
-		if rt.Type == 0x00 {
-			break
 		}
 		if w.out.Has(libol.DEBUG) {
 			w.out.Debug("Worker.FindNext %v to %v", dest, rt.NextHop)
@@ -328,46 +334,18 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 		w.out.Debug("Worker.OnIpAddr: %s noChanged", addr)
 		return nil
 	}
+
 	w.out.Cmd("Worker.OnIpAddr: %s", addr)
 	w.out.Cmd("Worker.OnIpAddr: %s", n.Routes)
+
 	prefix := libol.Netmask2Len(n.Netmask)
 	ipStr := fmt.Sprintf("%s/%d", n.IfAddr, prefix)
 	w.tapWorker.OnIpAddr(ipStr)
 	if w.listener.AddAddr != nil {
 		_ = w.listener.AddAddr(ipStr)
 	}
-	// Filter routes.
-	var routes []*models.Route
-	for _, rt := range n.Routes {
-		if _, _, err := net.ParseCIDR(rt.Prefix); err != nil {
-			w.out.Warn("Worker.OnIpAddr: parse %s failed.", rt.Prefix)
-			continue
-		}
-		if rt.NextHop == n.IfAddr || rt.Origin == n.IfAddr {
-			continue
-		}
-		routes = append(routes, rt)
-	}
-	if w.listener.AddRoutes != nil {
-		_ = w.listener.AddRoutes(routes)
-	}
+
 	w.network = n
-	// update routes
-	ip := net.ParseIP(w.network.IfAddr)
-	m := net.IPMask(net.ParseIP(w.network.Netmask).To4())
-	w.routes = append(w.routes, PrefixRule{
-		Type:        0x00,
-		Destination: net.IPNet{IP: ip.Mask(m), Mask: m},
-		NextHop:     libol.EthZero,
-	})
-	for _, rt := range routes {
-		_, dest, _ := net.ParseCIDR(rt.Prefix)
-		w.routes = append(w.routes, PrefixRule{
-			Type:        0x01,
-			Destination: *dest,
-			NextHop:     net.ParseIP(rt.NextHop),
-		})
-	}
 	return nil
 }
 
@@ -432,7 +410,7 @@ func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
 	return via
 }
 
-func (w *Worker) updateDNS(name, addr string) bool {
+func (w *Worker) UpdateDNS(name, addr string) bool {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
@@ -451,8 +429,8 @@ func (w *Worker) updateDNS(name, addr string) bool {
 
 func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 	client := &dns.Client{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 		Net:          "udp",
 	}
 	nameto := w.cfg.Nameto
@@ -483,7 +461,8 @@ func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 
 				name := n.Hdr.Name
 				addr := n.A.String()
-				if w.updateDNS(name, addr) {
+				if w.UpdateDNS(name, addr) {
+					w.UpdateRoute(addr, via.Server)
 					w.listener.Forward(name, addr, via.Server)
 				}
 			}
@@ -504,4 +483,15 @@ func (w *Worker) StartDNS() {
 	if err := server.ListenAndServe(); err != nil {
 		w.out.Error("Worker.StartDNS server: %v", err)
 	}
+}
+
+func (w *Worker) UpdateRoute(addr, nexthop string) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	dest, _ := libol.ParseCIDR(addr)
+	w.routes = append(w.routes, PrefixRule{
+		Destination: *dest,
+		NextHop:     libol.ParseAddr(nexthop),
+	})
 }

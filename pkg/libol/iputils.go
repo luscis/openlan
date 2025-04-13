@@ -207,18 +207,3 @@ func LookupIP(name string) string {
 	}
 	return ""
 }
-
-func FlushDNS() error {
-	switch runtime.GOOS {
-	case "darwin":
-		args := []string{"-flushcache"}
-		exec.Command("dscacheutil", args...).CombinedOutput()
-		args = []string{"-HUP", "mDNSResponder"}
-		exec.Command("killall", args...).CombinedOutput()
-	default:
-		return NewErr("IpRouteDel %s notSupport", runtime.GOOS)
-	}
-	return nil
-}
-
-// sudo networksetup -listallnetworkservices | sed 1d | xargs -I {} sudo networksetup -setv6off {}
