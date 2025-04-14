@@ -29,6 +29,8 @@ func (u User) Add(c *cli.Context) error {
 	if !strings.Contains(username, "@") {
 		return libol.NewErr("invalid username")
 	}
+
+	users := make([]schema.User, 1)
 	user := &schema.User{
 		Name:     username,
 		Password: c.String("password"),
@@ -41,7 +43,9 @@ func (u User) Add(c *cli.Context) error {
 	if err := clt.PostJSON(url, user, nil); err != nil {
 		return err
 	}
-	return nil
+
+	users[0] = *user
+	return u.Out(users, c.String("format"), u.Tmpl())
 }
 
 func (u User) Remove(c *cli.Context) error {

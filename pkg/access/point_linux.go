@@ -162,12 +162,11 @@ func (p *Point) AddRoutes() error {
 			Dst:       dst,
 			Gw:        nxt,
 		}
-		p.out.Debug("Access.AddRoute: %s", rte)
 		if err := netlink.RouteAdd(&rte); err != nil {
 			p.out.Warn("Access.AddRoute: %s %s", prefix, err)
 			continue
 		}
-		p.out.Info("Access.AddRoutes: route %s via %s", prefix, to.Server)
+		p.out.Info("Access.AddRoute: %s via %s", prefix, to.Server)
 	}
 	return nil
 }

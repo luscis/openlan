@@ -3,6 +3,7 @@ package v5
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -38,7 +39,7 @@ func (cl Client) GetBody(url string) ([]byte, error) {
 		return nil, libol.NewErr(r.Status)
 	}
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}

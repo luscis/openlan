@@ -168,7 +168,7 @@ type Worker struct {
 	cfg       *config.Point
 	uuid      string
 	network   *models.Network
-	routes    []PrefixRule
+	routes    map[string]PrefixRule
 	out       *libol.SubLogger
 	done      chan bool
 	ticker    *time.Ticker
@@ -181,7 +181,7 @@ func NewWorker(cfg *config.Point) *Worker {
 	return &Worker{
 		ifAddr:    cfg.Interface.Address,
 		cfg:       cfg,
-		routes:    make([]PrefixRule, 0, 32),
+		routes:    make(map[string]PrefixRule),
 		out:       libol.NewSubLogger(cfg.Id()),
 		done:      make(chan bool),
 		ticker:    time.NewTicker(2 * time.Second),
@@ -322,7 +322,7 @@ func (w *Worker) FindNext(dest []byte) []byte {
 		}
 		if w.out.Has(libol.DEBUG) {
 			w.out.Debug("Worker.FindNext %v to %v", dest, rt.NextHop)
-		}
+		} // TODO prefix length
 		return rt.NextHop.To4()
 	}
 	return dest
@@ -362,7 +362,7 @@ func (w *Worker) FreeIpAddr() {
 		_ = w.listener.DelAddr(ipStr)
 	}
 	w.network = nil
-	w.routes = make([]PrefixRule, 0, 32)
+	w.routes = make(map[string]PrefixRule)
 }
 
 func (w *Worker) OnClose(s *SocketWorker) error {
@@ -490,8 +490,8 @@ func (w *Worker) UpdateRoute(addr, nexthop string) {
 	defer w.lock.Unlock()
 
 	dest, _ := libol.ParseCIDR(addr)
-	w.routes = append(w.routes, PrefixRule{
+	w.routes[dest.String()] = PrefixRule{
 		Destination: *dest,
 		NextHop:     libol.ParseAddr(nexthop),
-	})
+	}
 }

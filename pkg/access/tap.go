@@ -56,7 +56,6 @@ func (a *TapWorker) Initialize() {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
-	a.out.Info("TapWorker.Initialize")
 	a.neighbor = Neighbors{
 		neighbors: make(map[uint32]*Neighbor, 1024),
 		done:      make(chan bool),
@@ -75,8 +74,8 @@ func (a *TapWorker) Initialize() {
 	if a.IsTun() {
 		addr := a.pinCfg.Interface.Address
 		a.setAddr(addr, libol.GenEthAddr(6))
-		a.out.Info("TapWorker.Initialize: src %x", a.ether.HwAddr)
 	}
+	a.out.Info("TapWorker.Initialize: addr %x", a.ether.HwAddr)
 	if err := a.open(); err != nil {
 		a.eventQueue <- NewEvent(EvTapOpenErr, err.Error())
 	}
