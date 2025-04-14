@@ -31,6 +31,15 @@ func (p *Point) Initialize() {
 	p.MixPoint.Initialize()
 }
 
+func (p *Point) RouteAdd(prefix, nexthop string) ([]byte, error) {
+	libol.IpRouteDel("", prefix, "")
+	out, err := libol.IpRouteAdd(p.IfName(), prefix, "")
+	if err == nil {
+		p.out.Info("Access.RouteAdd: route %s via %s dev %s", prefix, nexthop, p.IfName())
+	}
+	return out, err
+}
+
 func (p *Point) AddAddr(ipStr string) error {
 	if ipStr == "" {
 		return nil
@@ -45,11 +54,10 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	p.out.Info("Access.AddAddr: %s", ipStr)
 	// add directly route.
-	out, err = libol.IpRouteAdd(p.IfName(), ipStr, "")
+	out, err = p.RouteAdd(ipStr, "")
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 	}
-	p.out.Info("Access.AddAddr: route %s via %s", ipStr, p.IfName())
 	p.addr = ipStr
 
 	p.AddRoutes()
@@ -83,23 +91,21 @@ func (p *Point) AddRoutes() error {
 	}
 
 	for _, prefix := range to.Match {
-		out, err := libol.IpRouteAdd("", prefix, to.Server)
+		out, err := p.RouteAdd(prefix, to.Server)
 		if err != nil {
-			p.out.Warn("Access.AddRoutes: %s %s", prefix, out)
+			p.out.Warn("Access.AddRoutes: %s: %s", prefix, out)
 			continue
 		}
-		p.out.Info("Access.AddRoutes: route %s via %s", prefix, to.Server)
 	}
 	return nil
 }
 
 func (p *Point) Forward(name, prefix, nexthop string) {
-	if out, err := libol.IpRouteAdd("", prefix, nexthop); err != nil {
+	if out, err := p.RouteAdd(prefix, nexthop); err != nil {
 		if strings.Contains(err.Error(), "file exists") {
 			return
 		}
 		p.out.Warn("Access.Forward: %s %s: %s", prefix, err, out)
 		return
 	}
-	p.out.Info("Access.Forward: %s <- %s %s ", nexthop, name, prefix)
 }
