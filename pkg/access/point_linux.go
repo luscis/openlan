@@ -183,5 +183,5 @@ func (p *Point) Forward(name, prefix, nexthop string) {
 		p.out.Warn("Access.Forward: %s %s", prefix, err)
 		return
 	}
-	p.out.Info("Access.Forward: %s <- %s %s ", nexthop, name, prefix)
+	p.out.Info("Access.Forward: %s <- %s via %s ", nexthop, name, prefix)
 }

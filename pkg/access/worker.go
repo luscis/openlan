@@ -446,7 +446,7 @@ func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 
-		w.out.Info("handleDNS %s <- %v", nameto, r.Question)
+		w.out.Info("handleDNS %s <- %v via %s", nameto, r.Question, conn.RemoteAddr())
 		resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
 		if err != nil {
 			w.out.Error("Worker.handleDNS %s: %v", r, err)
