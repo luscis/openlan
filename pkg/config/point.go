@@ -33,13 +33,12 @@ type Point struct {
 	Crypt       *Crypt     `json:"crypt,omitempty"`
 	PProf       string     `json:"pprof,omitempty"`
 	RequestAddr bool       `json:"requestAddr"`
-	ByPass      bool       `json:"bypass,omitempty"`
 	Conf        string     `json:"-"`
 	Queue       *Queue     `json:"queue,omitempty"`
 	Terminal    string     `json:"-"`
 	Cert        *Cert      `json:"cert,omitempty"`
-	StatusFile  string     `json:"status,omitempty"`
-	PidFile     string     `json:"pid,omitempty"`
+	StatusFile  string     `json:"status,omitempty" yaml:"status,omitempty" `
+	PidFile     string     `json:"pid,omitempty" yaml:"pid,omitempty"`
 	Backends    ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
 	Forward     *ForwardTo `json:"forward,omitempty" yaml:"forward,omitempty"`
 	Bind        string     `json:"bind,omitempty" yaml:"bind,omitempty"`

@@ -243,15 +243,19 @@ func (w *Worker) Initialize() {
 	w.tapWorker.Initialize()
 }
 
-func (w *Worker) FlushStatus() {
+func (w *Worker) SaveStatus() {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
 	file := w.cfg.StatusFile
 	device := w.tapWorker.device
 	client := w.conWorker.client
 	if file == "" || device == nil || client == nil {
 		return
 	}
+
 	sts := client.Statistics()
-	status := &schema.Point{
+	access := &schema.Point{
 		RxBytes:   uint64(sts[libol.CsRecvOkay]),
 		TxBytes:   uint64(sts[libol.CsSendOkay]),
 		ErrPkt:    uint64(sts[libol.CsSendError]),
@@ -266,28 +270,31 @@ func (w *Worker) FlushStatus() {
 		UUID:      w.uuid,
 		Alias:     w.cfg.Alias,
 		System:    runtime.GOOS,
+		Names:     w.addrCache,
 	}
 	if w.network != nil {
-		status.Address = models.NewNetworkSchema(w.network)
+		access.Address = w.network.IfAddr
 	}
-	_ = libol.MarshalSave(status, file, true)
+
+	libol.MarshalSave(access, file, true)
 }
 
 func (w *Worker) Start() {
 	w.out.Debug("Worker.Start linux.")
-	w.FlushStatus()
 	w.tapWorker.Start()
 	w.conWorker.Start()
+
 	libol.Go(func() {
 		for {
 			select {
 			case <-w.done:
 				return
 			case <-w.ticker.C:
-				w.FlushStatus()
+				w.SaveStatus()
 			}
 		}
 	})
+
 	if w.cfg.Bind != "" {
 		libol.Go(w.StartDNS)
 	}
