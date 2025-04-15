@@ -453,17 +453,15 @@ func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 
-		for _, rr := range resp.Answer {
-			if n, ok := rr.(*dns.A); ok {
-				if via == nil {
-					continue
-				}
-
-				name := n.Hdr.Name
-				addr := n.A.String()
-				if w.UpdateDNS(name, addr) {
-					w.UpdateRoute(addr, via.Server)
-					w.listener.Forward(name, addr, via.Server)
+		if via != nil && via.Server != "" {
+			for _, rr := range resp.Answer {
+				if n, ok := rr.(*dns.A); ok {
+					name := n.Hdr.Name
+					addr := n.A.String()
+					if w.UpdateDNS(name, addr) {
+						w.UpdateRoute(addr, via.Server)
+						w.listener.Forward(name, addr, via.Server)
+					}
 				}
 			}
 		}

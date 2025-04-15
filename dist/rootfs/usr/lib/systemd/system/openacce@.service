@@ -1,11 +1,11 @@
 [Unit]
-Description=OpenLAN Access daemon for %I
+Description=Open Access daemon for %I
 After=network.target
 
 [Service]
 Type=notify
 EnvironmentFile=/etc/sysconfig/openlan/access.cfg
-ExecStart=/usr/bin/openlan-access $OPTIONS -conf /etc/openlan/access/%i.yaml
+ExecStart=/usr/bin/openceci $OPTIONS -conf /etc/openlan/switch/ceci/%i.yaml
 Restart=always
 
 [Install]
