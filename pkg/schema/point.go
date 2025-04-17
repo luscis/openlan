@@ -8,13 +8,12 @@ type Point struct {
 	Alias     string            `json:"alias"`
 	Protocol  string            `json:"protocol"`
 	Remote    string            `json:"remote"`
-	Switch    string            `json:"switch,omitempty"`
 	Device    string            `json:"device"`
-	RxBytes   uint64            `json:"rxBytes"`
-	TxBytes   uint64            `json:"txBytes"`
+	RxBytes   uint64            `json:"rxbytes"`
+	TxBytes   uint64            `json:"txbytes"`
 	ErrPkt    uint64            `json:"errors"`
 	State     string            `json:"state"`
-	AliveTime int64             `json:"aliveTime"`
+	AliveTime int64             `json:"alivetime"`
 	System    string            `json:"system"`
 	Address   string            `json:"address"`
 	Names     map[string]string `json:"names"`

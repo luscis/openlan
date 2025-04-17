@@ -243,6 +243,14 @@ func (s *SubLogger) Fatal(format string, v ...interface{}) {
 	s.logger.Write(FATAL, s.Fmt(format), v...)
 }
 
-func init() {
+func LogDate() {
 	log.SetFlags(log.LstdFlags)
+}
+
+func NoLogDate() {
+	log.SetFlags(0)
+}
+
+func init() {
+	LogDate()
 }

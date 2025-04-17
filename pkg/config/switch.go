@@ -114,7 +114,7 @@ func (s *Switch) Correct() {
 		s.Alias = GetAlias()
 	}
 
-	CorrectAddr(&s.Listen, 10002)
+	SetListen(&s.Listen, 10002)
 	if s.Http == nil {
 		s.Http = &Http{}
 	}

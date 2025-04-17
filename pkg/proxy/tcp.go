@@ -25,6 +25,9 @@ func NewTcpProxy(cfg *config.TcpProxy) *TcpProxy {
 	}
 }
 
+func (t *TcpProxy) Initialize() {
+}
+
 func (t *TcpProxy) tunnel(src net.Conn, dst net.Conn) {
 	defer dst.Close()
 	defer src.Close()
@@ -106,8 +109,11 @@ func (t *TcpProxy) Start() {
 
 func (t *TcpProxy) Stop() {
 	if t.listener != nil {
-		_ = t.listener.Close()
+		t.listener.Close()
+		t.listener = nil
 	}
 	t.out.Info("TcpProxy.Stop")
-	t.listener = nil
+}
+
+func (t *TcpProxy) Save() {
 }

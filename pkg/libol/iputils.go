@@ -122,8 +122,9 @@ func IpRouteAdd(name, prefix, nexthop string, opts ...string) ([]byte, error) {
 	switch runtime.GOOS {
 	case "linux":
 		args := []string{
-			"route", "address", prefix, "via", nexthop,
+			"route", "replace", prefix, "via", nexthop,
 		}
+		args = append(args, opts...)
 		return exec.Command("ip", args...).CombinedOutput()
 	case "windows":
 		args := []string{

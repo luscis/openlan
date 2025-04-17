@@ -44,7 +44,7 @@ type Http struct {
 }
 
 func (h *Http) Correct() {
-	CorrectAddr(&h.Listen, 10000)
+	SetListen(&h.Listen, 10000)
 	if h.Public == "" {
 		h.Public = VarDir("public")
 	}
@@ -59,7 +59,7 @@ func (h *Http) GetUrl() string {
 	return "https://127.0.0.1:" + port
 }
 
-func CorrectAddr(listen *string, port int) {
+func SetListen(listen *string, port int) {
 	if *listen == "" {
 		*listen = fmt.Sprintf("0.0.0.0:%d", port)
 		return

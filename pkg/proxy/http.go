@@ -3,6 +3,7 @@ package proxy
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -125,24 +126,26 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 		requests: make(map[string]*HttpRecord),
 		proxer:   px,
 	}
-
-	h.server = &http.Server{
-		Addr:    cfg.Listen,
-		Handler: h,
-	}
-	user, pass := co.SplitSecret(cfg.Secret)
-	if user != "" {
-		h.pass[user] = pass
-		h.out.Debug("HttpProxy: Auth user %s", user)
-	}
-	if cfg.SocksProxy != nil {
-		h.socks = NewSocksProxy(cfg.SocksProxy)
-		h.socks.server.SetBackends(h)
-	}
-	h.loadUrl()
-	h.loadPass()
-
+	h.Initialize()
 	return h
+}
+
+func (t *HttpProxy) Initialize() {
+	t.server = &http.Server{
+		Addr:    t.cfg.Listen,
+		Handler: t,
+	}
+	user, pass := co.SplitSecret(t.cfg.Secret)
+	if user != "" {
+		t.pass[user] = pass
+		t.out.Debug("HttpProxy: Auth user %s", user)
+	}
+	if t.cfg.SocksProxy != nil {
+		t.socks = NewSocksProxy(t.cfg.SocksProxy)
+		t.socks.server.SetBackends(t)
+	}
+	t.loadUrl()
+	t.loadPass()
 }
 
 func (t *HttpProxy) loadUrl() {
@@ -609,14 +612,13 @@ func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 	backend := vars["backend"]
 
 	t.lock.Lock()
-	defer t.lock.Unlock()
-
 	if t.cfg.AddMatch(domain, backend) > -1 {
 		encodeYaml(w, "success")
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.save()
+	t.lock.Unlock()
+	t.Save()
 }
 
 func (t *HttpProxy) AddUser(w http.ResponseWriter, r *http.Request) {
@@ -648,7 +650,10 @@ func (t *HttpProxy) DelUser(w http.ResponseWriter, r *http.Request) {
 	t.savePass()
 }
 
-func (t *HttpProxy) save() {
+func (t *HttpProxy) Save() {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	if t.proxer == nil {
 		t.cfg.Save()
 	} else {
@@ -663,14 +668,14 @@ func (t *HttpProxy) DelMatch(w http.ResponseWriter, r *http.Request) {
 	backend := vars["backend"]
 
 	t.lock.Lock()
-	defer t.lock.Unlock()
-
 	if t.cfg.DelMatch(domain, backend) > -1 {
 		encodeYaml(w, "success")
 	} else {
 		encodeYaml(w, "failed")
 	}
-	t.save()
+	t.lock.Unlock()
+
+	t.Save()
 }
 
 func (t *HttpProxy) GetPac(w http.ResponseWriter, r *http.Request) {
@@ -717,4 +722,11 @@ func (t *HttpProxy) GetApi(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 	encodeYaml(w, urls)
+}
+
+func (t *HttpProxy) Stop() {
+	if t.server != nil {
+		t.server.Shutdown(context.Background())
+		t.server = nil
+	}
 }

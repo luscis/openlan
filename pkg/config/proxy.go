@@ -234,3 +234,35 @@ func (p *Proxy) Save() {
 		libol.Error("Proxy.Save %s %s", p.Conf, err)
 	}
 }
+
+type NameProxy struct {
+	Conf     string `json:"-" yaml:"-"`
+	Listen   string `json:"listen,omitempty"`
+	Nameto   string `json:"nameto,omitempty" yaml:"nameto,omitempty"`
+	Metric   int
+	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
+}
+
+func (t *NameProxy) Initialize() error {
+	libol.Info("NameProxy.Initialize %s", t.Conf)
+	if err := t.Load(); err != nil {
+		libol.Error("NameProxy.Initialize %s", err)
+		return err
+	}
+	t.Correct()
+	return nil
+}
+
+func (t *NameProxy) Correct() {
+	SetListen(&t.Listen, 53)
+	if t.Metric == 0 {
+		t.Metric = 300
+	}
+}
+
+func (t *NameProxy) Load() error {
+	if t.Conf == "" || libol.FileExist(t.Conf) != nil {
+		return libol.NewErr("invalid configure file")
+	}
+	return libol.UnmarshalLoad(t, t.Conf)
+}

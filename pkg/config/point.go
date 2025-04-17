@@ -95,7 +95,7 @@ func (ap *Point) Correct() {
 			ap.Network = strings.SplitN(ap.Username, "@", 2)[1]
 		}
 	}
-	CorrectAddr(&ap.Connection, 10002)
+	SetListen(&ap.Connection, 10002)
 	if runtime.GOOS == "darwin" {
 		ap.Interface.Provider = "tun"
 	}

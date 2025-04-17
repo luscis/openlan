@@ -1,25 +1,13 @@
-protocol: tcp
-bind: 127.0.0.1
-connection: 2.2.2.1
-interface:
-  address: 192.168.11.33/24
-username: test@vxlan
-password: fvph0ldhdvai
-crypt:
-  secret: 477bb0c55edb
-forward:
-  server: 192.168.11.1
-  match:
-  - 8.8.8.8
-  - 8.8.4.4
+
+listen: 127.0.0.1
 nameto: 114.114.114.114
 backends:
-- server: 192.168.11.10
+- server: 192.168.11.1
   nameto: 8.8.8.8
   match:
   - openai.com
   - chatgpt.com
-- server: 192.168.11.11
+- server: 192.168.11.2
   nameto: 8.8.8.8
   match:
   - google.com

@@ -22,7 +22,12 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 		out: libol.NewSubLogger(cfg.Listen),
 	}
 	// Create a SOCKS5 server
-	user, pass := co.SplitSecret(cfg.Secret)
+	s.Initialize()
+	return s
+}
+
+func (s *SocksProxy) Initialize() {
+	user, pass := co.SplitSecret(s.cfg.Secret)
 	authMethods := make([]socks5.Authenticator, 0, 2)
 	if user != "" {
 		author := socks5.UserPassAuthenticator{
@@ -34,11 +39,11 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 		s.out.Debug("SocksProxy: Auth user %s", user)
 	}
 	conf := &socks5.Config{
-		Backends:    cfg.Backends,
+		Backends:    s.cfg.Backends,
 		AuthMethods: authMethods,
 		Logger:      s.out,
 	}
-	crt := cfg.Cert
+	crt := s.cfg.Cert
 	if crt != nil && crt.KeyFile != "" {
 		conf.TlsConfig = &tls.Config{
 			Certificates: crt.GetCertificates(),
@@ -47,10 +52,8 @@ func NewSocksProxy(cfg *config.SocksProxy) *SocksProxy {
 	server, err := socks5.New(conf)
 	if err != nil {
 		s.out.Error("NewSocksProxy %s", err)
-		return nil
 	}
 	s.server = server
-	return s
 }
 
 func (s *SocksProxy) Start() {
@@ -78,4 +81,13 @@ func (s *SocksProxy) Start() {
 		}
 		return nil
 	})
+}
+
+func (s *SocksProxy) Stop() {
+	if s.server != nil {
+		s.server = nil
+	}
+}
+
+func (s *SocksProxy) Save() {
 }
