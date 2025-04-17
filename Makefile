@@ -78,19 +78,22 @@ builder:
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-docker-rhel: linux-bin ## build image for redhat
+docker-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && \
 	sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file centos/Dockerfile .
 
-docker-deb: linux-bin ## build image for debian
+docker-deb: docker-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && \
 	sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file debian/Dockerfile .
+
+docker-bin:
+	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
 docker: docker-deb docker-rhel ## build docker images
 
@@ -143,7 +146,7 @@ install: env linux ## install packages
 	@cp -rf $(SD)/pkg/public $(LIN_DIR)/var/openlan
 	@mkdir -p $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/{openlan,openlan-switch} $(LIN_DIR)/usr/bin
-	@cp -rf $(BD)/{openlan-access,openlan-proxy} $(LIN_DIR)/usr/bin
+	@cp -rf $(BD)/{openlan-access,openlan-proxy,openceci} $(LIN_DIR)/usr/bin
 	@cp -rf $(BD)/openceci $(LIN_DIR)/usr/bin
 	@echo "Installed to $(LIN_DIR)"
 

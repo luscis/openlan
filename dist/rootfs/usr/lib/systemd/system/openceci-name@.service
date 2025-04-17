@@ -1,12 +1,12 @@
 [Unit]
-Description=Open Cecilia daemon for %I
+Description=Open Cecilia daemon for name %I
 After=network.target
 
 [Service]
 Type=notify
 LimitNOFILE=102400
 EnvironmentFile=/etc/sysconfig/openlan/ceci.cfg
-ExecStart=/usr/bin/openceci $OPTIONS -conf /etc/openlan/switch/ceci/%i.yaml
+ExecStart=/usr/bin/openceci -mode name $OPTIONS -conf /etc/openlan/name/%i.yaml
 Restart=always
 
 [Install]
