@@ -19,30 +19,26 @@ type Interface struct {
 }
 
 type Point struct {
-	File        string     `json:"file,omitempty"`
-	Alias       string     `json:"alias,omitempty"`
-	Connection  string     `json:"connection"`
-	Timeout     int        `json:"timeout,omitempty"`
-	Username    string     `json:"username,omitempty"`
-	Network     string     `json:"network,omitempty"`
-	Password    string     `json:"password,omitempty"`
-	Protocol    string     `json:"protocol,omitempty"`
-	Interface   Interface  `json:"interface,omitempty"`
-	Log         Log        `json:"log,omitempty"`
-	Http        *Http      `json:"http,omitempty"`
-	Crypt       *Crypt     `json:"crypt,omitempty"`
-	PProf       string     `json:"pprof,omitempty"`
-	RequestAddr bool       `json:"requestAddr"`
-	Conf        string     `json:"-"`
-	Queue       *Queue     `json:"queue,omitempty"`
-	Terminal    string     `json:"-"`
-	Cert        *Cert      `json:"cert,omitempty"`
-	StatusFile  string     `json:"status,omitempty" yaml:"status,omitempty" `
-	PidFile     string     `json:"pid,omitempty" yaml:"pid,omitempty"`
-	Backends    ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
-	Forward     *ForwardTo `json:"forward,omitempty" yaml:"forward,omitempty"`
-	Bind        string     `json:"bind,omitempty" yaml:"bind,omitempty"`
-	Nameto      string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
+	File        string    `json:"file,omitempty"`
+	Alias       string    `json:"alias,omitempty"`
+	Connection  string    `json:"connection"`
+	Timeout     int       `json:"timeout,omitempty"`
+	Username    string    `json:"username,omitempty"`
+	Network     string    `json:"network,omitempty"`
+	Password    string    `json:"password,omitempty"`
+	Protocol    string    `json:"protocol,omitempty"`
+	Interface   Interface `json:"interface,omitempty"`
+	Log         Log       `json:"log,omitempty"`
+	Http        *Http     `json:"http,omitempty"`
+	Crypt       *Crypt    `json:"crypt,omitempty"`
+	PProf       string    `json:"pprof,omitempty"`
+	RequestAddr bool      `json:"requestAddr"`
+	Conf        string    `json:"-"`
+	Queue       *Queue    `json:"queue,omitempty"`
+	Terminal    string    `json:"-"`
+	Cert        *Cert     `json:"cert,omitempty"`
+	StatusFile  string    `json:"status,omitempty" yaml:"status,omitempty" `
+	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
 }
 
 func (i *Interface) Correct() {

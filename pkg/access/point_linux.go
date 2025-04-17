@@ -1,11 +1,7 @@
 package access
 
 import (
-	"net"
-	"strings"
-
 	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
@@ -42,7 +38,6 @@ func (p *Point) Initialize() {
 	w.listener.AddAddr = p.AddAddr
 	w.listener.DelAddr = p.DelAddr
 	w.listener.OnTap = p.OnTap
-	w.listener.Forward = p.Forward
 
 	p.MixPoint.Initialize()
 }
@@ -79,8 +74,6 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	p.out.Info("Access.AddAddr: %s", ipStr)
 	p.addr = ipStr
-
-	p.AddRoutes()
 
 	return nil
 }
@@ -143,45 +136,4 @@ func (p *Point) OnTap(w *TapWorker) error {
 	}
 	p.link = link
 	return nil
-}
-
-func (p *Point) AddRoutes() error {
-	to := p.config.Forward
-	if to == nil {
-		return nil
-	}
-
-	for _, prefix := range to.Match {
-		dst, err := libol.ParseCIDR(prefix)
-		if err != nil {
-			continue
-		}
-		nxt := net.ParseIP(to.Server)
-		rte := netlink.Route{
-			LinkIndex: p.link.Attrs().Index,
-			Dst:       dst,
-			Gw:        nxt,
-		}
-		if err := netlink.RouteAdd(&rte); err != nil {
-			p.out.Warn("Access.AddRoute: %s %s", prefix, err)
-			continue
-		}
-		p.out.Info("Access.AddRoute: %s via %s", prefix, to.Server)
-	}
-	return nil
-}
-
-func (p *Point) Forward(name, prefix, nexthop string) {
-	dst, _ := libol.ParseCIDR(prefix)
-	if err := netlink.RouteAdd(&netlink.Route{
-		Dst: dst,
-		Gw:  net.ParseIP(nexthop),
-	}); err != nil {
-		if strings.Contains(err.Error(), "file exists") {
-			return
-		}
-		p.out.Warn("Access.Forward: %s %s", prefix, err)
-		return
-	}
-	p.out.Info("Access.Forward: %s <- %s via %s ", nexthop, name, prefix)
 }

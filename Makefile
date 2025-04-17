@@ -148,10 +148,13 @@ install: env linux ## install packages
 	@echo "Installed to $(LIN_DIR)"
 
 ## cross build for windows
-windows: windows-ceci ## build windows binary
+windows: windows-ceci windows-access ## build windows binary
 
 windows-ceci:
 	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.exe ./cmd/ceci
+
+windows-access:
+	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.exe ./cmd/access
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -163,11 +166,15 @@ windows-gzip: env windows ## build windows packages
 ## cross build for osx
 osx: darwin
 
-darwin: darwin-ceci ## build darwin binary
+darwin: darwin-ceci darwin-access ## build darwin binary
 
 darwin-ceci:
 	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.dar ./cmd/ceci
 	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.arm64.dar ./cmd/ceci
+
+darwin-access:
+	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
+	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)

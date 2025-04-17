@@ -15,7 +15,6 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
-	"github.com/miekg/dns"
 )
 
 type jobTimer struct {
@@ -215,13 +214,6 @@ func (w *Worker) Initialize() {
 	}
 	w.conWorker.Initialize()
 
-	to := w.cfg.Forward
-	if to != nil {
-		for _, rule := range to.Match {
-			w.UpdateRoute(rule, to.Server)
-		}
-	}
-
 	w.tapWorker.listener = TapWorkerListener{
 		OnOpen: func(t *TapWorker) error {
 			if w.listener.OnTap != nil {
@@ -294,10 +286,6 @@ func (w *Worker) Start() {
 			}
 		}
 	})
-
-	if w.cfg.Bind != "" {
-		libol.Go(w.StartDNS)
-	}
 }
 
 func (w *Worker) Stop() {
@@ -397,106 +385,4 @@ func (w *Worker) UUID() string {
 
 func (w *Worker) SetUUID(v string) {
 	w.uuid = v
-}
-
-func (w *Worker) FindBackend(r *dns.Msg) *config.ForwardTo {
-	if len(r.Question) == 0 {
-		return nil
-	}
-
-	name := r.Question[0].Name
-	w.out.Debug("Worker.FindBackend %s", name)
-
-	w.lock.RLock()
-	defer w.lock.RUnlock()
-
-	via := w.cfg.Backends.FindBackend(name)
-	if via != nil {
-		w.out.Debug("Worker.FindBackend %s via %s", name, via.Server)
-	}
-	return via
-}
-
-func (w *Worker) UpdateDNS(name, addr string) bool {
-	w.lock.Lock()
-	defer w.lock.Unlock()
-
-	updated := false
-	if _, ok := w.nameCache[name]; !ok {
-		w.nameCache[name] = addr
-		updated = true
-	}
-	if _, ok := w.addrCache[addr]; !ok {
-		w.addrCache[addr] = name
-		updated = true
-	}
-
-	return updated
-}
-
-func (w *Worker) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
-	client := &dns.Client{
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
-		Net:          "udp",
-	}
-	nameto := w.cfg.Nameto
-
-	libol.Go(func() {
-		via := w.FindBackend(r)
-
-		if via != nil {
-			nameto = via.Nameto
-		}
-		if nameto == "" || nameto == w.cfg.Bind {
-			w.out.Error("Worker.handleDNS nil(%s)", nameto)
-			return
-		}
-
-		w.out.Info("handleDNS %s <- %v via %s", nameto, r.Question, conn.RemoteAddr())
-		resp, _, err := client.Exchange(r, fmt.Sprintf("%s:53", nameto))
-		if err != nil {
-			w.out.Error("Worker.handleDNS %s: %v", r, err)
-			return
-		}
-
-		if via != nil && via.Server != "" {
-			for _, rr := range resp.Answer {
-				if n, ok := rr.(*dns.A); ok {
-					name := n.Hdr.Name
-					addr := n.A.String()
-					if w.UpdateDNS(name, addr) {
-						w.UpdateRoute(addr, via.Server)
-						w.listener.Forward(name, addr, via.Server)
-					}
-				}
-			}
-		}
-
-		if err := conn.WriteMsg(resp); err != nil {
-			w.out.Error("Worker.handleDNS %s", err)
-		}
-	})
-}
-
-func (w *Worker) StartDNS() {
-	listenAddr := fmt.Sprintf("%s:53", w.cfg.Bind)
-	dns.HandleFunc(".", w.handleDNS)
-	server := &dns.Server{Addr: listenAddr, Net: "udp"}
-	w.out.Info("Worker.StartDNS on %s", listenAddr)
-
-	if err := server.ListenAndServe(); err != nil {
-		w.out.Error("Worker.StartDNS server: %v", err)
-	}
-}
-
-func (w *Worker) UpdateRoute(addr, nexthop string) {
-	w.lock.Lock()
-	defer w.lock.Unlock()
-
-	dest, _ := libol.ParseCIDR(addr)
-	w.routes[dest.String()] = PrefixRule{
-		Destination: *dest,
-		NextHop:     libol.ParseAddr(nexthop),
-	}
 }

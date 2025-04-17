@@ -26,7 +26,6 @@ func (p *Point) Initialize() {
 	w := p.worker
 	w.listener.AddAddr = p.AddAddr
 	w.listener.DelAddr = p.DelAddr
-	w.listener.Forward = p.Forward
 
 	p.MixPoint.Initialize()
 }
@@ -58,8 +57,6 @@ func (p *Point) AddAddr(ipStr string) error {
 	}
 	p.addr = ipStr
 
-	p.AddRoutes()
-
 	return nil
 }
 
@@ -82,29 +79,4 @@ func (p *Point) DelAddr(ipStr string) error {
 	p.out.Info("Access.DelAddr: %s", ip4)
 	p.addr = ""
 	return nil
-}
-
-func (p *Point) AddRoutes() error {
-	to := p.config.Forward
-	if to == nil {
-		return nil
-	}
-
-	for _, prefix := range to.Match {
-		out, err := p.RouteAdd(prefix, to.Server)
-		if err != nil {
-			p.out.Warn("Access.AddRoute: %s: %s", prefix, out)
-			continue
-		}
-		p.out.Info("Access.AddRoute: %s via %s", prefix, to.Server)
-	}
-	return nil
-}
-
-func (p *Point) Forward(name, prefix, nexthop string) {
-	if out, err := p.RouteAdd(prefix, nexthop); err != nil {
-		p.out.Warn("Access.Forward: %s %s: %s", prefix, err, out)
-		return
-	}
-	p.out.Info("Access.Forward: %s <- %s via %s ", nexthop, name, prefix)
 }
