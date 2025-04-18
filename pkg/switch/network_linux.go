@@ -3,6 +3,7 @@ package cswitch
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -184,20 +185,20 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		mtu = 1450
 		link := &LinuxLink{
 			link: &nl.Vxlan{
-				VxlanId: port.Segment,
 				LinkAttrs: nl.LinkAttrs{
-					TxQLen: -1,
-					Name:   port.Link,
-					MTU:    mtu,
+					Name: port.Link,
 				},
-				Group: libol.ParseAddr(port.Remote),
-				Port:  dport,
 			},
 		}
-		if err := link.Start(); err != nil {
-			w.out.Error("WorkerImpl.LinkStart %s %s", port.Id(), err)
+		opts := []string{"type", "vxlan",
+			"id", strconv.Itoa(port.Segment), "remote", port.Remote,
+			"dstport", strconv.Itoa(dport), "noudpcsum"}
+		_, err := libol.IpLinkAdd(port.Link, opts...)
+		if err != nil {
+			w.out.Error("WorkerImpl.LinkStart %s %v", port.Id(), opts)
 			return
 		}
+		libol.IpLinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
 	} else if port.Protocol == "tcp" || port.Protocol == "tls" ||
 		port.Protocol == "wss" {
