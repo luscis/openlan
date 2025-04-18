@@ -161,8 +161,8 @@ windows-access:
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(WIN_DIR)/ceci.yaml
-	@cp -rf $(BD)/openceci.exe $(WIN_DIR)
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/http/http.yaml.example $(WIN_DIR)/ceci.yaml
+	@cp -rf $(BD)/{openlan-access,openceci.exe} $(WIN_DIR)
 	tar -cf $(WIN_DIR).tar $(WIN_DIR) && mv $(WIN_DIR).tar $(BD)
 	gzip -f $(BD)/$(WIN_DIR).tar && rm -rf $(WIN_DIR)
 
@@ -181,8 +181,8 @@ darwin-access:
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
-	@cp -rf $(SD)/dist/rootfs/etc/openlan/switch/ceci/http.yaml.example $(MAC_DIR)/ceci.yaml
-	@cp -rf $(BD)/openceci.dar $(MAC_DIR)
+	@cp -rf $(SD)/dist/rootfs/etc/openlan/http/http.yaml.example $(MAC_DIR)/ceci.yaml
+	@cp -rf $(BD)/{openlan-access,openceci.dar,openceci.arm64.dar} $(MAC_DIR)
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	gzip -f $(BD)/$(MAC_DIR).tar && rm -rf $(MAC_DIR)
 

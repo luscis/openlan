@@ -2,14 +2,10 @@
 
 set -e
 
-systemctl disable firewalld
-systemctl stop firewalld
+systemctl disable --now firewalld
 
-systemctl disable NetworkManager
-systemctl stop NetworkManager
-
-systemctl enable network
-systemctl start network
+systemctl disable --now  NetworkManager
+systemctl enable --now network
 
 cat > /etc/sysconfig/selinux <<EOF
 SELINUX=disabled
