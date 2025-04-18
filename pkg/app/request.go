@@ -123,17 +123,18 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 	}
 	resp := &models.Network{
 		Name:    n.Name,
-		IfAddr:  recv.IfAddr,
+		Address: recv.Address,
 		Netmask: recv.Netmask,
+		Gateway: libol.ParseAddr(n.Address).String(),
 		Routes:  n.Routes,
 	}
-	lease := findLease(recv.IfAddr, p)
+	lease := findLease(recv.Address, p)
 	if lease != nil {
-		resp.IfAddr = lease.Address
+		resp.Address = lease.Address
 		resp.Netmask = n.Netmask
 		resp.Routes = n.Routes
 	} else {
-		resp.IfAddr = "169.254.0.0"
+		resp.Address = "169.254.0.0"
 		resp.Netmask = n.Netmask
 		if resp.Netmask == "" {
 			resp.Netmask = "255.255.0.0"
@@ -145,7 +146,7 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 		m := libol.NewControlFrame(libol.IpAddrResp, respStr)
 		_ = client.WriteMsg(m)
 	}
-	out.Info("Request.onIpAddr: %s", resp.IfAddr)
+	out.Info("Request.onIpAddr: %s", resp.Address)
 }
 
 func (r *Request) onLeave(client libol.SocketClient, data []byte) {

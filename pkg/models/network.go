@@ -44,12 +44,13 @@ func (u *Route) SetOrigin(value string) {
 type Network struct {
 	Name    string      `json:"name"`
 	Tenant  string      `json:"tenant,omitempty"`
-	IfAddr  string      `json:"ifAddr"`
-	IpStart string      `json:"ipStart"`
-	IpEnd   string      `json:"ipEnd"`
+	Gateway string      `json:"gateway,omitempty"`
+	Address string      `json:"address"`
+	IpStart string      `json:"startAt,omitempty"`
+	IpEnd   string      `json:"endAt,omitempty"`
 	Netmask string      `json:"netmask"`
-	Routes  []*Route    `json:"routes"`
-	Config  interface{} `json:"config"`
+	Routes  []*Route    `json:"routes,omitempty"`
+	Config  interface{} `json:"config,omitempty"`
 }
 
 func NewNetwork(name string, ifAddr string) (this *Network) {
@@ -67,7 +68,7 @@ func NewNetwork(name string, ifAddr string) (this *Network) {
 	}
 	this = &Network{
 		Name:    name,
-		IfAddr:  address,
+		Address: address,
 		Netmask: netmask,
 	}
 	return
@@ -75,7 +76,7 @@ func NewNetwork(name string, ifAddr string) (this *Network) {
 
 func (u *Network) String() string {
 	return fmt.Sprintf("%s, %s, %s, %s, %s, %s",
-		u.Name, u.IfAddr, u.IpStart, u.IpEnd, u.Netmask, u.Routes)
+		u.Name, u.Address, u.IpStart, u.IpEnd, u.Netmask, u.Routes)
 }
 
 func (u *Network) ParseIP(s string) {
@@ -86,7 +87,7 @@ func NetworkEqual(o *Network, n *Network) bool {
 		return true
 	} else if o == nil || n == nil {
 		return false
-	} else if o.IfAddr != n.IfAddr || o.Netmask != n.Netmask {
+	} else if o.Address != n.Address || o.Netmask != n.Netmask {
 		return false
 	} else {
 		ors := make([]string, 0, 32)

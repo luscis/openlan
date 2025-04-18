@@ -107,7 +107,7 @@ func (w *WorkerImpl) Initialize() {
 			IpStart: cfg.Subnet.Start,
 			IpEnd:   cfg.Subnet.End,
 			Netmask: cfg.Subnet.Netmask,
-			IfAddr:  cfg.Bridge.Address,
+			Address: cfg.Bridge.Address,
 			Config:  cfg,
 		}
 		cache.Network.Add(&n)
@@ -191,8 +191,10 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			},
 		}
 		opts := []string{"type", "vxlan",
-			"id", strconv.Itoa(port.Segment), "remote", port.Remote,
-			"dstport", strconv.Itoa(dport), "noudpcsum"}
+			"id", strconv.Itoa(port.Segment),
+			"remote", port.Remote,
+			"dstport", strconv.Itoa(dport),
+			"noudpcsum"}
 		_, err := libol.IpLinkAdd(port.Link, opts...)
 		if err != nil {
 			w.out.Error("WorkerImpl.LinkStart %s %v", port.Id(), opts)

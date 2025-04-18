@@ -265,7 +265,7 @@ func (w *Worker) SaveStatus() {
 		Names:     w.addrCache,
 	}
 	if w.network != nil {
-		access.Address = w.network.IfAddr
+		access.Address = w.network.Address
 	}
 
 	libol.MarshalSave(access, file, true)
@@ -324,7 +324,7 @@ func (w *Worker) FindNext(dest []byte) []byte {
 }
 
 func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
-	addr := fmt.Sprintf("%s/%s", n.IfAddr, n.Netmask)
+	addr := fmt.Sprintf("%s/%s", n.Address, n.Netmask)
 	if models.NetworkEqual(w.network, n) {
 		w.out.Debug("Worker.OnIpAddr: %s noChanged", addr)
 		return nil
@@ -334,7 +334,7 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 	w.out.Cmd("Worker.OnIpAddr: %s", n.Routes)
 
 	prefix := libol.Netmask2Len(n.Netmask)
-	ipStr := fmt.Sprintf("%s/%d", n.IfAddr, prefix)
+	ipStr := fmt.Sprintf("%s/%d", n.Address, prefix)
 	w.tapWorker.OnIpAddr(ipStr)
 	if w.listener.AddAddr != nil {
 		_ = w.listener.AddAddr(ipStr)
@@ -353,7 +353,7 @@ func (w *Worker) FreeIpAddr() {
 	}
 	if w.listener.DelAddr != nil {
 		prefix := libol.Netmask2Len(w.network.Netmask)
-		ipStr := fmt.Sprintf("%s/%d", w.network.IfAddr, prefix)
+		ipStr := fmt.Sprintf("%s/%d", w.network.Address, prefix)
 		_ = w.listener.DelAddr(ipStr)
 	}
 	w.network = nil

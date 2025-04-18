@@ -262,7 +262,7 @@ func (t *SocketWorker) canReqAddr() bool {
 		return true
 	}
 	// For link, need advise ipAddr with configured address.
-	if t.network.IfAddr != "" {
+	if t.network.Address != "" {
 		return true
 	}
 	return false

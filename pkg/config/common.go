@@ -22,7 +22,7 @@ func VarDir(name ...string) string {
 
 type Log struct {
 	File    string `json:"file,omitempty"`
-	Verbose int    `json:"level,omitempty"`
+	Verbose int    `json:"level,omitempty" yaml:"level,omitempty"`
 }
 
 func (l *Log) Correct() {
