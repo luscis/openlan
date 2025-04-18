@@ -7,6 +7,42 @@ import (
 	"strings"
 )
 
+func IpLinkAdd(name string, opts ...string) ([]byte, error) {
+	switch runtime.GOOS {
+	case "linux":
+		args := append([]string{
+			"link", "add", name,
+		}, opts...)
+		return exec.Command("ip", args...).CombinedOutput()
+	default:
+		return nil, NewErr("IpLinkAdd %s notSupport", runtime.GOOS)
+	}
+}
+
+func IpLinkSet(name string, opts ...string) ([]byte, error) {
+	switch runtime.GOOS {
+	case "linux":
+		args := append([]string{
+			"link", "set", name,
+		}, opts...)
+		return exec.Command("ip", args...).CombinedOutput()
+	default:
+		return nil, NewErr("IpLinkSet %s notSupport", runtime.GOOS)
+	}
+}
+
+func IpLinkDel(name string, opts ...string) ([]byte, error) {
+	switch runtime.GOOS {
+	case "linux":
+		args := append([]string{
+			"link", "del", name,
+		}, opts...)
+		return exec.Command("ip", args...).CombinedOutput()
+	default:
+		return nil, NewErr("IpLinkDel %s notSupport", runtime.GOOS)
+	}
+}
+
 func IpLinkUp(name string) ([]byte, error) {
 	switch runtime.GOOS {
 	case "linux":
