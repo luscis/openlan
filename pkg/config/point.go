@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"log"
 	"runtime"
 	"strings"
 
@@ -35,10 +34,10 @@ type Point struct {
 	RequestAddr bool      `json:"requestAddr"`
 	Conf        string    `json:"-"`
 	Queue       *Queue    `json:"queue,omitempty"`
-	Terminal    string    `json:"-"`
 	Cert        *Cert     `json:"cert,omitempty"`
 	StatusFile  string    `json:"status,omitempty" yaml:"status,omitempty" `
 	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
+	Forward     []string  `json:"forward,omitempty" yaml:"forward,omitempty"`
 }
 
 func (i *Interface) Correct() {
@@ -53,9 +52,6 @@ func (i *Interface) Correct() {
 func NewPoint() *Point {
 	p := &Point{RequestAddr: true}
 	p.Parse()
-	if p.Terminal == "off" {
-		log.SetFlags(0)
-	}
 	p.Initialize()
 	return p
 }
@@ -63,7 +59,6 @@ func NewPoint() *Point {
 func (ap *Point) Parse() {
 	flag.StringVar(&ap.Alias, "alias", "", "Alias for this point")
 	flag.StringVar(&ap.Log.File, "log:file", "", "File log saved to")
-	flag.StringVar(&ap.Terminal, "terminal", "", "Run interactive terminal")
 	flag.StringVar(&ap.Conf, "conf", "", "The configuration file")
 	flag.Parse()
 }
@@ -94,9 +89,6 @@ func (ap *Point) Correct() {
 	SetListen(&ap.Connection, 10002)
 	if runtime.GOOS == "darwin" {
 		ap.Interface.Provider = "tun"
-	}
-	if ap.Terminal == "" {
-		ap.Terminal = "on"
 	}
 	if ap.Protocol == "tls" || ap.Protocol == "wss" {
 		if ap.Cert == nil {

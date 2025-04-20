@@ -72,9 +72,12 @@ func (p *Point) AddAddr(ipStr string) error {
 		p.out.Warn("Access.AddAddr.SetLinkIp: %s", err)
 		return err
 	}
-	p.out.Info("Access.AddAddr: %s", ipStr)
-	p.addr = ipStr
 
+	p.out.Info("Access.AddAddr: %s", ipStr)
+
+	p.AddRoute()
+
+	p.addr = ipStr
 	return nil
 }
 
@@ -135,5 +138,28 @@ func (p *Point) OnTap(w *TapWorker) error {
 		}
 	}
 	p.link = link
+	return nil
+}
+
+func (p *Point) AddRoute() error {
+	to := p.config.Forward
+	route := p.Network()
+	if to == nil || route == nil {
+		return nil
+	}
+
+	via := route.Gateway
+	if via == "" {
+		return nil
+	}
+
+	for _, prefix := range to {
+		out, err := network.RouteAdd(p.IfName(), prefix, via)
+		if err != nil {
+			p.out.Warn("Access.AddRoute: %s: %s", prefix, out)
+			continue
+		}
+		p.out.Info("Access.AddRoute: %s via %s", prefix, via)
+	}
 	return nil
 }

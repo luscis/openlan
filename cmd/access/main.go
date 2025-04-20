@@ -13,11 +13,6 @@ func main() {
 	p.Initialize()
 	libol.Go(p.Start)
 
-	if c.Terminal == "on" {
-		t := access.NewTerminal(p)
-		t.Start()
-	} else {
-		libol.Wait()
-	}
+	libol.Wait()
 	p.Stop()
 }

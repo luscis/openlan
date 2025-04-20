@@ -30,7 +30,7 @@ func (p *Point) Initialize() {
 	p.MixPoint.Initialize()
 }
 
-func (p *Point) RouteAdd(prefix, nexthop string) ([]byte, error) {
+func (p *Point) routeAdd(prefix string) ([]byte, error) {
 	network.RouteDel("", prefix, "")
 	out, err := network.RouteAdd(p.IfName(), prefix, "")
 	return out, err
@@ -51,10 +51,12 @@ func (p *Point) AddAddr(ipStr string) error {
 	p.out.Info("Access.AddAddr: %s", ipStr)
 
 	// add directly route.
-	out, err = p.RouteAdd(ipStr, "")
+	out, err = p.routeAdd(ipStr)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 	}
+	p.AddRoute()
+
 	p.addr = ipStr
 
 	return nil
@@ -78,5 +80,22 @@ func (p *Point) DelAddr(ipStr string) error {
 
 	p.out.Info("Access.DelAddr: %s", ip4)
 	p.addr = ""
+	return nil
+}
+
+func (p *Point) AddRoute() error {
+	to := p.config.Forward
+	if to == nil {
+		return nil
+	}
+
+	for _, prefix := range to {
+		out, err := p.routeAdd(prefix)
+		if err != nil {
+			p.out.Warn("Access.AddRoute: %s: %s", prefix, out)
+			continue
+		}
+		p.out.Info("Access.AddRoute: %s via %s", prefix, p.IfName())
+	}
 	return nil
 }
