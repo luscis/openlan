@@ -195,12 +195,12 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			"remote", port.Remote,
 			"dstport", strconv.Itoa(dport),
 			"noudpcsum"}
-		_, err := libol.IpLinkAdd(port.Link, opts...)
+		_, err := cn.LinkAdd(port.Link, opts...)
 		if err != nil {
 			w.out.Error("WorkerImpl.LinkStart %s %v", port.Id(), opts)
 			return
 		}
-		libol.IpLinkSet(port.Link, "mtu", strconv.Itoa(mtu))
+		cn.LinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
 	} else if port.Protocol == "tcp" || port.Protocol == "tls" ||
 		port.Protocol == "wss" {

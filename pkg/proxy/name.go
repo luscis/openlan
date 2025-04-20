@@ -2,11 +2,13 @@ package proxy
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/network"
 	"github.com/miekg/dns"
 )
 
@@ -34,8 +36,11 @@ func (n *NameProxy) Initialize() {
 }
 
 func (n *NameProxy) Forward(name, addr, nexthop string) {
-	opts := []string{"metric", fmt.Sprintf("%d", n.cfg.Metric)}
-	if out, err := libol.IpRouteAdd("", addr, nexthop, opts...); err != nil {
+	opts := []string{}
+	if runtime.GOOS == "linux" {
+		opts = []string{"metric", fmt.Sprintf("%d", n.cfg.Metric)}
+	}
+	if out, err := network.RouteAdd("", addr, nexthop, opts...); err != nil {
 		n.out.Warn("Access.Forward: %s %s: %s", addr, err, out)
 		return
 	}
@@ -51,12 +56,10 @@ func (n *NameProxy) UpdateDNS(name, addr string) bool {
 		n.names[name] = addr
 		updated = true
 	}
-
 	if _, ok := n.addrs[addr]; !ok {
 		n.addrs[addr] = name
 		updated = true
 	}
-
 	return updated
 }
 

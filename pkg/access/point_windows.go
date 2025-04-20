@@ -6,6 +6,7 @@ import (
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
+	"github.com/luscis/openlan/pkg/network"
 )
 
 type Point struct {
@@ -37,12 +38,9 @@ func (p *Point) OnTap(w *TapWorker) error {
 	routes := make([]*models.Route, 0, 32)
 	if err := libol.UnmarshalLoad(&routes, ".routes.json"); err == nil {
 		for _, route := range routes {
-			_, _ = libol.IpRouteDel(p.IfName(), route.Prefix, route.NextHop)
+			_, _ = network.RouteDel(p.IfName(), route.Prefix, route.NextHop)
 			p.out.Debug("Access.OnTap: clear %s via %s", route.Prefix, route.NextHop)
 		}
-	}
-	if out, err := libol.IpMetricSet(p.IfName(), "235"); err != nil {
-		p.out.Warn("Access.OnTap: metricSet %s: %s", err, out)
 	}
 	return nil
 }
@@ -55,13 +53,13 @@ func (p *Point) AddAddr(ipStr string) error {
 	if ipStr == "" {
 		return nil
 	}
-	addrExisted := libol.IpAddrShow(p.IfName())
+	addrExisted := network.AddrShow(p.IfName())
 	if len(addrExisted) > 0 {
 		for _, addr := range addrExisted {
-			_, _ = libol.IpAddrDel(p.IfName(), addr)
+			_, _ = network.AddrDel(p.IfName(), addr)
 		}
 	}
-	out, err := libol.IpAddrAdd(p.IfName(), ipStr)
+	out, err := network.AddrAdd(p.IfName(), ipStr)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, p.Trim(out))
 		return err
@@ -73,7 +71,7 @@ func (p *Point) AddAddr(ipStr string) error {
 
 func (p *Point) DelAddr(ipStr string) error {
 	ipv4 := strings.Split(ipStr, "/")[0]
-	out, err := libol.IpAddrDel(p.IfName(), ipv4)
+	out, err := network.AddrDel(p.IfName(), ipv4)
 	if err != nil {
 		p.out.Warn("Access.DelAddr: %s, %s", err, p.Trim(out))
 		return err

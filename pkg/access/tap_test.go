@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/water"
 )
 
@@ -14,7 +15,7 @@ func TestTapWrite(t *testing.T) {
 		t.Skipf("Tap.open %s", err)
 		return
 	}
-	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+	if _, err := network.LinkUp(dev.Name()); err != nil {
 		libol.Warn("KernelTap.Up %s: %s", dev, err)
 		return
 	}
@@ -38,7 +39,7 @@ func BenchmarkTapWrite64(b *testing.B) {
 		b.Skipf("Tap.open %s", err)
 		return
 	}
-	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+	if _, err := network.LinkUp(dev.Name()); err != nil {
 		libol.Warn("KernelTap.Up %s: %s", dev, err)
 		return
 	}
@@ -67,7 +68,7 @@ func BenchmarkTapWrite1500(b *testing.B) {
 		b.Skipf("Tap.open %s", err)
 		return
 	}
-	if _, err := libol.IpLinkUp(dev.Name()); err != nil {
+	if _, err := network.LinkUp(dev.Name()); err != nil {
 		libol.Warn("KernelTap.Up %s: %s", dev, err)
 		return
 	}

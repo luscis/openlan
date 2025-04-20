@@ -340,6 +340,10 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 		_ = w.listener.AddAddr(ipStr)
 	}
 
+	if n.Gateway != "" && runtime.GOOS == "darwin" {
+		w.UpdateRoute("0.0.0.0/0", n.Gateway)
+	}
+
 	w.network = n
 	return nil
 }
@@ -385,4 +389,15 @@ func (w *Worker) UUID() string {
 
 func (w *Worker) SetUUID(v string) {
 	w.uuid = v
+}
+
+func (w *Worker) UpdateRoute(addr, nexthop string) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	dest, _ := libol.ParseCIDR(addr)
+	w.routes[dest.String()] = PrefixRule{
+		Destination: *dest,
+		NextHop:     libol.ParseAddr(nexthop),
+	}
 }

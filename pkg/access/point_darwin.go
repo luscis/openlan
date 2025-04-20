@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/network"
 )
 
 type Point struct {
@@ -31,8 +31,8 @@ func (p *Point) Initialize() {
 }
 
 func (p *Point) RouteAdd(prefix, nexthop string) ([]byte, error) {
-	libol.IpRouteDel("", prefix, "")
-	out, err := libol.IpRouteAdd(p.IfName(), prefix, "")
+	network.RouteDel("", prefix, "")
+	out, err := network.RouteAdd(p.IfName(), prefix, "")
 	return out, err
 }
 
@@ -43,7 +43,7 @@ func (p *Point) AddAddr(ipStr string) error {
 
 	// add point-to-point
 	ips := strings.SplitN(ipStr, "/", 2)
-	out, err := libol.IpAddrAdd(p.IfName(), ips[0], ips[0])
+	out, err := network.AddrAdd(p.IfName(), ips[0], ips[0])
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 		return err
@@ -62,7 +62,7 @@ func (p *Point) AddAddr(ipStr string) error {
 
 func (p *Point) DelAddr(ipStr string) error {
 	// delete directly route.
-	out, err := libol.IpRouteDel(p.IfName(), ipStr, "")
+	out, err := network.RouteDel(p.IfName(), ipStr, "")
 	if err != nil {
 		p.out.Warn("Access.DelAddr: %s, %s", err, out)
 	}
@@ -70,7 +70,7 @@ func (p *Point) DelAddr(ipStr string) error {
 
 	// delete point-to-point
 	ip4 := strings.SplitN(ipStr, "/", 2)[0]
-	out, err = libol.IpAddrDel(p.IfName(), ip4)
+	out, err = network.AddrDel(p.IfName(), ip4)
 	if err != nil {
 		p.out.Warn("Access.DelAddr: %s, %s", err, out)
 		return err
