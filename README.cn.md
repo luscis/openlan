@@ -22,10 +22,10 @@ OpenLAN提供一种局域网数据报文在广域网的传输实现，并能够�
 * 用户可以使用OpenLAN划分多个网络空间，为不同的业务提供逻辑网络隔离；
 * 多个Central Switch之间可以使用OpenLAN协议在链路层上互联互通，在链路网络上可以添加SNAT路由轻松的访问企业内部网络；
 * 用户可以使用OpenVPN接入用户网络，OpenVPN支持多平台如Android/MacOS/Windows等；
-* 多个Central Switch之间也可以使用IPSec隧道网络，并且支持在该网络上进一步划分VxLAN/STT的租户网络；
+* 多个Central Switch之间也可以使用IPSec隧道网络，并且支持在该网络上进一步划分VxLAN的租户网络；
 * 使用简单的用户名密码的作为接入认证方式，并且可以设置预共享密钥对数据报文进行加密；
 * OpenLAN协议可以工作在TCP/TLS/UDP/KCP/WS/WSS等多种传输协议上，TCP具有较高的性能，TLS/WSS能够提供更好的加密安全；
-* OpenLAN也提供了简单的HTTP/HTTPS/SOCKS5等HTTP的正向代理技术，用户可以根据需要灵活配置代理进行网络穿透；
+* OpenLAN也提供HTTP/HTTPS/SOCKS5等HTTP的正向代理技术，用户可以根据需要灵活配置域名匹配策略进行流量转发；
 
 
 ## OpenLAN的工作场景？

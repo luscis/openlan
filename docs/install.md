@@ -3,7 +3,7 @@
 OpenLAN软件包含下面部分：
 
 * Central Switch : 具有公网地址的CentOS服务器、云主机或者DMZ主机
-* Access Point : 运行在企业内部的CentOS主机或者移动办公的PC上，没有公网地址
+* Access Point : 运行在企业内部的CentOS主机或者移动办公的PC上，无需公网地址
 
 # CentOS
 
@@ -13,19 +13,14 @@ OpenLAN软件包含下面部分：
 1. 安装依赖的软件；
    ```
    $ yum install -y epel-release
-   $ yum search centos-release-openstack
-   $ yum install -y centos-release-openstack-train
-   $ yum install -y rdma-core libibverbs
    ```
 2. 使用bin安装Central Switch软件；
    ```
-   $ wget https://github.com/luscis/openlan/releases/download/v24.01.25/openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
-   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
-   $ ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
+   $ wget https://github.com/luscis/openlan/releases/download/v25.4.1/openlan-v25.4.1.x86_64.bin
+   $ chmod +x ./openlan-v25.4.1.x86_64.bin && ./openlan-v25.4.1.x86_64.bin
    ```
 3. 配置Central Switch服务自启动；
    ```
-   $ systemctl enable --now openlan-confd
    $ systemctl enable --now openlan-switch
    ```
 4. 配置预共享密钥以及加密算法；
@@ -54,17 +49,10 @@ OpenLAN软件包含下面部分：
            "address": "172.32.10.10/24"       ## 一个唯一的子网地址，如共享二层网络填充本地地址
        },
        "subnet": {                            ## 网络的子网配置，如果没有动态地址分配可以忽略
-           "start": "172.32.10.100",          ## 用于动态分配给Access Point的起始地址
-           "end": "172.32.10.150",            ## 用于动态分配的截止地址
-           "netmask": "255.255.255.0"         ## 网络子网的掩码
+           "startAt": "172.32.10.100",        ## 用于动态分配给Access Point的起始地址
+           "endAt": "172.32.10.150"           ## 用于动态分配的截止地址
        },
-       "hosts": [                             ## 为Access Point添加静态地址分配
-           {
-               "hostname": "pc-99",           ## Access Point的主机名称
-               "address": "172.32.10.99"      ## 固定的地址
-           }
-       ],
-       "routes": [                            ## 注入给Access Point的路由信息
+       "routes": [                            ## 声明本地的路由信息
            {
                "prefix": "192.168.10.0/24"
            }
@@ -84,7 +72,6 @@ OpenLAN软件包含下面部分：
 7. 添加一个新的接入认证的用户；
    ```
    $ openlan us add --name hi@example               ## <用户名>@<网络>
-   $ openlan us ls --network example                ## 查看随机密码
    hi@example  l6llot97yx  guest                    ## <用户名>@<网络> 密码 角色 租期
 
    $ openlan us rm --name hi@example                ## 删除一个用户
@@ -107,30 +94,26 @@ OpenLAN软件包含下面部分：
 1. 安装依赖的软件；
    ```
    $ yum install -y epel-release
-   $ yum search centos-release-openstack
-   $ yum install -y centos-release-openstack-train
-   $ yum install -y rdma-core libibverbs
    ```
 2. 使用bin安装Access Point软件；
    ```
-   $ wget https://github.com/luscis/openlan/releases/download/v24.01.25/openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
-   $ chmod +x ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin
-   $ ./openlan-CentOS7.8.2003-v24.01.25.x86_64.bin nodeps
+   $ wget https://github.com/luscis/openlan/releases/download/v25.4.1/openlan-v25.4.1.x86_64.bin
+   $ chmod +x ./openlan-v25.4.1.x86_64.bin && ./openlan-v25.4.1.x86_64.bin nodeps
    ```
 2. 添加一个新的网络配置；
    ```
-   $ cd /etc/openlan
+   $ cd /etc/openlan/access
    $ cp access.json.example example.json
    $ vim example.json                           ## <网络名>.json
    {
      "protocol": "tcp",                         ## 同上
      "crypt": {                                 ## 同上
-       "algo": "aes-128",
+       "algorithm": "aes-128",
        "secret": "ea64d5b0c96c"
      },
-     "connection": "example.net",               ## 默认端口10002，格式:<adderss>:<port>
-     "username": "hi@example",                  ## <用户名>@<网络>
-     "password": "l6llot97yxulsw1qqbm07vn1"     ## 认证的密码
+     "connection": "example.net",
+     "username": "<your-name>@example",         ## <用户名>@<网络>
+     "password": "<your-password>"              ## 认证的密码
    }
    $ cat example.json | python -m json.tool     ## 配置预检查
    ```
@@ -142,5 +125,6 @@ OpenLAN软件包含下面部分：
 4. 检测网络是否可达；
    ```
    $ ping 172.32.10.10 -c 3
+   $ ip r add 192.168.10.0/24 via 172.32.10.10
    $ ping 192.168.10.1 -c 3
    ```
