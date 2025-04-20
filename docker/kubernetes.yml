@@ -93,62 +93,6 @@ spec:
         name: openlan
     spec:
       containers:
-        - name: "openlan-confd"
-          image: "luscis/openlan:23.04.02"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /var/openlan/script/confd.sh
-            - start
-          resources:
-            limits:
-              cpu: 200m
-              memory: 512Mi
-            requests:
-              cpu: 200m
-              memory: 512Mi
-          volumeMounts:
-            - name: openlan-etc
-              mountPath: /etc/openlan
-            - name: confd-run
-              mountPath: /var/openlan/confd
-        - name: "ovsdb-server"
-          image: "luscis/openlan:23.04.02"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /var/openlan/script/ovsdb-server.sh
-            - start
-          resources:
-            limits:
-              cpu: 200m
-              memory: 512Mi
-            requests:
-              cpu: 200m
-              memory: 512Mi
-          volumeMounts:
-            - name: ovs-run
-              mountPath: /run/openvswitch
-            - name: ovs-etc
-              mountPath: /etc/openvswitch 
-        - name: "ovs-vswitchd"
-          image: "luscis/openlan:23.04.02"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /var/openlan/script/ovs-vswitchd.sh
-            - start
-          resources:
-            limits:
-              cpu: 200m
-              memory: 512Mi
-            requests:
-              cpu: 200m
-              memory: 512Mi
-          volumeMounts:
-            - name: ovs-run
-              mountPath: /run/openvswitch
-            - name: ovs-etc
-              mountPath: /etc/openvswitch
-          securityContext:
-            privileged: true
         - name: "openlan-switch"
           image: "luscis/openlan:23.04.02"
           imagePullPolicy: IfNotPresent
@@ -178,12 +122,6 @@ spec:
               subPath: switch.json
             - name: network-etc
               mountPath: /etc/openlan/switch/network
-            - name: confd-run
-              mountPath: /var/openlan/confd
-            - name: ovs-run
-              mountPath: /run/openvswitch
-            - name: ovs-etc
-              mountPath: /etc/openvswitch
         - name: "openlan-proxy"
           image: "luscis/openlan:23.04.02"
           imagePullPolicy: IfNotPresent
@@ -197,38 +135,10 @@ spec:
             - name: proxy-etc
               mountPath: /etc/openlan/proxy.json
               subPath: proxy.json
-        - name: "openlan-task"
-          image: "luscis/openlan:23.04.02"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /var/openlan/script/task.sh
-          resources:
-            limits:
-              cpu: 100m
-              memory: 128Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          volumeMounts:
-            - name: openlan-etc
-              mountPath: /etc/openlan
-            - name: confd-run
-              mountPath: /var/openlan/confd
-            - name: ovs-run
-              mountPath: /run/openvswitch
-            - name: ovs-etc
-              mountPath: /etc/openvswitch
       volumes:
-      - name: confd-run
-        emptyDir: {}
       - name: openlan-etc
         hostPath:
           path: /opt/openlan/etc/openlan
-      - name: ovs-run
-        emptyDir: {}
-      - name: ovs-etc
-        hostPath:
-          path: /opt/openlan/etc/openvswitch
       - name: network-etc
         configMap:
           defaultMode: 0777

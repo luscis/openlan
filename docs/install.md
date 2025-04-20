@@ -111,9 +111,12 @@ OpenLAN软件包含下面部分：
        "algorithm": "aes-128",
        "secret": "ea64d5b0c96c"
      },
+     "forward": [
+       "192.168.10.0/24"                        ## 转发路由
+     ],
      "connection": "example.net",
      "username": "<your-name>@example",         ## <用户名>@<网络>
-     "password": "<your-password>"              ## 认证的密码
+     "password": "<your-password>"             ## 认证的密码
    }
    $ cat example.json | python -m json.tool     ## 配置预检查
    ```
@@ -125,6 +128,5 @@ OpenLAN软件包含下面部分：
 4. 检测网络是否可达；
    ```
    $ ping 172.32.10.10 -c 3
-   $ ip r add 192.168.10.0/24 via 172.32.10.10
    $ ping 192.168.10.1 -c 3
    ```
