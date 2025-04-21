@@ -10,7 +10,7 @@ import (
 	"github.com/luscis/openlan/pkg/network"
 )
 
-type Pointer interface {
+type Acceser interface {
 	Addr() string
 	IfName() string
 	IfAddr() string
@@ -24,27 +24,27 @@ type Pointer interface {
 	Record() map[string]int64
 	Tenant() string
 	Alias() string
-	Config() *config.Point
+	Config() *config.Access
 	Network() *models.Network
 }
 
-type MixPoint struct {
+type MixAccess struct {
 	uuid   string
 	worker *Worker
-	config *config.Point
+	config *config.Access
 	out    *libol.SubLogger
 	http   *http.Http
 }
 
-func NewMixPoint(config *config.Point) MixPoint {
-	return MixPoint{
+func NewMixAccess(config *config.Access) MixAccess {
+	return MixAccess{
 		worker: NewWorker(config),
 		config: config,
 		out:    libol.NewSubLogger(config.Id()),
 	}
 }
 
-func (p *MixPoint) Initialize() {
+func (p *MixAccess) Initialize() {
 	libol.Info("MixAccess.Initialize")
 	p.worker.SetUUID(p.UUID())
 	p.worker.Initialize()
@@ -53,7 +53,7 @@ func (p *MixPoint) Initialize() {
 	}
 }
 
-func (p *MixPoint) Start() {
+func (p *MixAccess) Start() {
 	p.out.Info("MixAccess.Start %s", runtime.GOOS)
 	if p.config.PProf != "" {
 		f := libol.PProf{Listen: p.config.PProf}
@@ -62,7 +62,7 @@ func (p *MixPoint) Start() {
 	p.worker.Start()
 }
 
-func (p *MixPoint) Stop() {
+func (p *MixAccess) Stop() {
 	defer libol.Catch("MixAccess.Stop")
 	if p.http != nil {
 		p.http.Shutdown()
@@ -70,14 +70,14 @@ func (p *MixPoint) Stop() {
 	p.worker.Stop()
 }
 
-func (p *MixPoint) UUID() string {
+func (p *MixAccess) UUID() string {
 	if p.uuid == "" {
 		p.uuid = libol.GenString(13)
 	}
 	return p.uuid
 }
 
-func (p *MixPoint) Status() libol.SocketStatus {
+func (p *MixAccess) Status() libol.SocketStatus {
 	client := p.Client()
 	if client == nil {
 		return 0
@@ -85,11 +85,11 @@ func (p *MixPoint) Status() libol.SocketStatus {
 	return client.Status()
 }
 
-func (p *MixPoint) Addr() string {
+func (p *MixAccess) Addr() string {
 	return p.config.Connection
 }
 
-func (p *MixPoint) IfName() string {
+func (p *MixAccess) IfName() string {
 	device := p.Device()
 	if device == nil {
 		return ""
@@ -97,54 +97,54 @@ func (p *MixPoint) IfName() string {
 	return device.Name()
 }
 
-func (p *MixPoint) Client() libol.SocketClient {
+func (p *MixAccess) Client() libol.SocketClient {
 	if p.worker.conWorker == nil {
 		return nil
 	}
 	return p.worker.conWorker.client
 }
 
-func (p *MixPoint) Device() network.Taper {
+func (p *MixAccess) Device() network.Taper {
 	if p.worker.tapWorker == nil {
 		return nil
 	}
 	return p.worker.tapWorker.device
 }
 
-func (p *MixPoint) UpTime() int64 {
+func (p *MixAccess) UpTime() int64 {
 	return p.worker.UpTime()
 }
 
-func (p *MixPoint) IfAddr() string {
+func (p *MixAccess) IfAddr() string {
 	return p.worker.ifAddr
 }
 
-func (p *MixPoint) Tenant() string {
+func (p *MixAccess) Tenant() string {
 	return p.config.Network
 }
 
-func (p *MixPoint) User() string {
+func (p *MixAccess) User() string {
 	return p.config.Username
 }
 
-func (p *MixPoint) Alias() string {
+func (p *MixAccess) Alias() string {
 	return p.config.Alias
 }
 
-func (p *MixPoint) Record() map[string]int64 {
+func (p *MixAccess) Record() map[string]int64 {
 	rt := p.worker.conWorker.record
 	// TODO padding data from tapWorker
 	return rt.Data()
 }
 
-func (p *MixPoint) Config() *config.Point {
+func (p *MixAccess) Config() *config.Access {
 	return p.config
 }
 
-func (p *MixPoint) Network() *models.Network {
+func (p *MixAccess) Network() *models.Network {
 	return p.worker.network
 }
 
-func (p *MixPoint) Protocol() string {
+func (p *MixAccess) Protocol() string {
 	return p.config.Protocol
 }

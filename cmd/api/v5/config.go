@@ -58,10 +58,10 @@ func (u Config) Check(c *cli.Context) error {
 		}
 	}
 	// Check OLAP configurations.
-	out.Info("%15s: %s", "check", "point")
-	file = filepath.Join(dir, "point.json")
+	out.Info("%15s: %s", "check", "access")
+	file = filepath.Join(dir, "access", "access.json")
 	if err := libol.FileExist(file); err == nil {
-		obj := &config.Point{}
+		obj := &config.Access{}
 		if err := libol.UnmarshalLoad(obj, file); err != nil {
 			out.Warn("%15s: %s", filepath.Base(file), err)
 		} else {
@@ -124,7 +124,7 @@ func (u Config) Check(c *cli.Context) error {
 	pattern = filepath.Join(dir, "switch", "link", "*.json")
 	if files, err := filepath.Glob(pattern); err == nil {
 		for _, file := range files {
-			var obj []config.Point
+			var obj []config.Access
 			if err := libol.UnmarshalLoad(&obj, file); err != nil {
 				out.Warn("%15s: %s", filepath.Base(file), err)
 			} else {

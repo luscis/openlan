@@ -16,7 +16,7 @@ type Network struct {
 	Bridge    *Bridge             `json:"bridge,omitempty"`
 	Subnet    *Subnet             `json:"subnet,omitempty"`
 	OpenVPN   *OpenVPN            `json:"openvpn,omitempty"`
-	Links     []Point             `json:"links,omitempty"`
+	Links     []Access            `json:"links,omitempty"`
 	Hosts     []HostLease         `json:"hosts,omitempty"`
 	Routes    []PrefixRoute       `json:"routes,omitempty"`
 	Acl       string              `json:"acl,omitempty"`

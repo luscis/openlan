@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/luscis/openlan/pkg/access"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/network"
@@ -20,19 +21,27 @@ type NameProxy struct {
 	lock   sync.RWMutex
 	names  map[string]string
 	addrs  map[string]string
+	access []*access.Access
 }
 
 func NewNameProxy(cfg *config.NameProxy) *NameProxy {
-	return &NameProxy{
+	n := &NameProxy{
 		listen: cfg.Listen,
 		cfg:    cfg,
 		out:    libol.NewSubLogger(cfg.Listen),
 		names:  make(map[string]string),
 		addrs:  make(map[string]string),
 	}
+	n.Initialize()
+	return n
 }
 
 func (n *NameProxy) Initialize() {
+	for _, cfg := range n.cfg.Access {
+		acc := access.NewAccess(cfg)
+		acc.Initialize()
+		n.access = append(n.access, acc)
+	}
 }
 
 func (n *NameProxy) Forward(name, addr, nexthop string) {
@@ -130,14 +139,22 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 func (n *NameProxy) Start() {
 	dns.HandleFunc(".", n.handleDNS)
 	n.server = &dns.Server{Addr: n.listen, Net: "udp"}
+
 	n.out.Info("NameProxy.StartDNS on %s", n.listen)
 
+	for _, acc := range n.access {
+		libol.Go(acc.Start)
+	}
 	if err := n.server.ListenAndServe(); err != nil {
 		n.out.Error("NameProxy.StartDNS server: %v", err)
 	}
 }
 
 func (n *NameProxy) Stop() {
+	for _, acc := range n.access {
+		acc.Stop()
+	}
+	n.access = nil
 	if n.server != nil {
 		n.server.Shutdown()
 		n.server = nil

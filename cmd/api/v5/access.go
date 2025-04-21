@@ -5,11 +5,11 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type Point struct {
+type Access struct {
 	Cmd
 }
 
-func (u Point) Url(prefix, name string) string {
+func (u Access) Url(prefix, name string) string {
 	if name == "" {
 		return prefix + "/api/point"
 	} else {
@@ -17,7 +17,7 @@ func (u Point) Url(prefix, name string) string {
 	}
 }
 
-func (u Point) Tmpl() string {
+func (u Access) Tmpl() string {
 	return `# total {{ len . }}
 {{ps -16 "uuid"}} {{ps -8 "alive"}} {{ ps -8 "device" }} {{ps -16 "alias"}} {{ps -8 "user"}} {{ps -22 "remote"}} {{ps -8 "network"}} {{ ps -6 "state"}}
 {{- range . }}
@@ -26,10 +26,10 @@ func (u Point) Tmpl() string {
 `
 }
 
-func (u Point) List(c *cli.Context) error {
+func (u Access) List(c *cli.Context) error {
 	url := u.Url(c.String("url"), "")
 	clt := u.NewHttp(c.String("token"))
-	var items []schema.Point
+	var items []schema.Access
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (u Point) List(c *cli.Context) error {
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
-func (u Point) Commands() *cli.Command {
+func (u Access) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "access",
 		Usage: "access to this switch",

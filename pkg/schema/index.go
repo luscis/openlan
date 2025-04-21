@@ -3,7 +3,7 @@ package schema
 type Index struct {
 	Version   Version     `json:"version"`
 	Worker    Worker      `json:"worker"`
-	Points    []Point     `json:"points"`
+	Access    []Access    `json:"access"`
 	Links     []Link      `json:"links"`
 	Neighbors []Neighbor  `json:"neighbors"`
 	OnLines   []OnLine    `json:"online"`

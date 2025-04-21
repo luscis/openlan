@@ -2,23 +2,24 @@ package access
 
 import (
 	"fmt"
-	"github.com/chzyer/readline"
-	"github.com/luscis/openlan/pkg/libol"
 	"io"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/chzyer/readline"
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Terminal struct {
-	Pointer Pointer
+	Acceser Acceser
 	Console *readline.Instance
 }
 
-func NewTerminal(pointer Pointer) *Terminal {
-	t := &Terminal{Pointer: pointer}
+func NewTerminal(Acceser Acceser) *Terminal {
+	t := &Terminal{Acceser: Acceser}
 	completer := readline.NewPrefixCompleter(
 		readline.PcItem("quit"),
 		readline.PcItem("help"),
@@ -52,7 +53,7 @@ func NewTerminal(pointer Pointer) *Terminal {
 }
 
 func (t *Terminal) Prompt() string {
-	user := t.Pointer.User()
+	user := t.Acceser.User()
 	cur := os.Getenv("PWD")
 	home := os.Getenv("HOME")
 	if strings.HasPrefix(cur, home) {
@@ -71,24 +72,24 @@ func (t *Terminal) CmdShow(args []string) {
 	}
 	switch action {
 	case "record":
-		v := t.Pointer.Record()
+		v := t.Acceser.Record()
 		if out, err := libol.Marshal(v, true); err == nil {
 			fmt.Printf("%s\n", out)
 		}
 	case "statistics":
-		if c := t.Pointer.Client(); c != nil {
+		if c := t.Acceser.Client(); c != nil {
 			v := c.Statistics()
 			if out, err := libol.Marshal(v, true); err == nil {
 				fmt.Printf("%s\n", out)
 			}
 		}
 	case "config":
-		cfg := t.Pointer.Config()
+		cfg := t.Acceser.Config()
 		if str, err := libol.Marshal(cfg, true); err == nil {
 			fmt.Printf("%s\n", str)
 		}
 	case "network":
-		cfg := t.Pointer.Network()
+		cfg := t.Acceser.Network()
 		if str, err := libol.Marshal(cfg, true); err == nil {
 			fmt.Printf("%s\n", str)
 		}
@@ -99,10 +100,10 @@ func (t *Terminal) CmdShow(args []string) {
 			Device string
 			Status string
 		}{
-			UUID:   t.Pointer.UUID(),
-			UpTime: t.Pointer.UpTime(),
-			Device: t.Pointer.IfName(),
-			Status: t.Pointer.Status().String(),
+			UUID:   t.Acceser.UUID(),
+			UpTime: t.Acceser.UpTime(),
+			Device: t.Acceser.IfName(),
+			Status: t.Acceser.Status().String(),
 		}
 		if str, err := libol.Marshal(v, true); err == nil {
 			fmt.Printf("%s\n", str)

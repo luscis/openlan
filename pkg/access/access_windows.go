@@ -9,31 +9,31 @@ import (
 	"github.com/luscis/openlan/pkg/network"
 )
 
-type Point struct {
-	MixPoint
+type Access struct {
+	MixAccess
 	// private
 	brName string
 	addr   string
 	routes []*models.Route
-	config *config.Point
+	config *config.Access
 }
 
-func NewPoint(config *config.Point) *Point {
-	p := Point{
-		brName:   config.Interface.Bridge,
-		MixPoint: NewMixPoint(config),
+func NewAccess(config *config.Access) *Access {
+	p := Access{
+		brName:    config.Interface.Bridge,
+		MixAccess: NewMixAccess(config),
 	}
 	return &p
 }
 
-func (p *Point) Initialize() {
+func (p *Access) Initialize() {
 	p.worker.listener.AddAddr = p.AddAddr
 	p.worker.listener.DelAddr = p.DelAddr
 	p.worker.listener.OnTap = p.OnTap
-	p.MixPoint.Initialize()
+	p.MixAccess.Initialize()
 }
 
-func (p *Point) OnTap(w *TapWorker) error {
+func (p *Access) OnTap(w *TapWorker) error {
 	// clean routes previous
 	routes := make([]*models.Route, 0, 32)
 	if err := libol.UnmarshalLoad(&routes, ".routes.json"); err == nil {
@@ -45,11 +45,11 @@ func (p *Point) OnTap(w *TapWorker) error {
 	return nil
 }
 
-func (p *Point) Trim(out []byte) string {
+func (p *Access) Trim(out []byte) string {
 	return strings.TrimSpace(string(out))
 }
 
-func (p *Point) AddAddr(ipStr string) error {
+func (p *Access) AddAddr(ipStr string) error {
 	if ipStr == "" {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (p *Point) AddAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) DelAddr(ipStr string) error {
+func (p *Access) DelAddr(ipStr string) error {
 	ipv4 := strings.Split(ipStr, "/")[0]
 	out, err := network.AddrDel(p.IfName(), ipv4)
 	if err != nil {

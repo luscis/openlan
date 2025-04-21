@@ -12,12 +12,12 @@ type Link struct {
 	StatusFile string
 }
 
-func (l *Link) reload() *schema.Point {
-	status := &schema.Point{}
+func (l *Link) reload() *schema.Access {
+	status := &schema.Access{}
 	_ = libol.UnmarshalLoad(status, l.StatusFile)
 	return status
 }
 
-func (l *Link) Status() *schema.Point {
+func (l *Link) Status() *schema.Access {
 	return l.reload()
 }

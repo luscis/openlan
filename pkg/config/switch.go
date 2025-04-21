@@ -8,7 +8,7 @@ import (
 )
 
 type Perf struct {
-	Point    int `json:"point"`
+	Access   int `json:"access"`
 	Neighbor int `json:"neighbor"`
 	OnLine   int `json:"online"`
 	Link     int `json:"link"`
@@ -20,8 +20,8 @@ type Perf struct {
 }
 
 func (p *Perf) Correct() {
-	if p.Point == 0 {
-		p.Point = 64
+	if p.Access == 0 {
+		p.Access = 64
 	}
 	if p.Neighbor == 0 {
 		p.Neighbor = 64

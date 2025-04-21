@@ -19,12 +19,12 @@ const (
 )
 
 type Link struct {
-	cfg  *co.Point
+	cfg  *co.Access
 	out  *libol.SubLogger
 	uuid string
 }
 
-func NewLink(cfg *co.Point) *Link {
+func NewLink(cfg *co.Access) *Link {
 	uuid := libol.GenString(13)
 	return &Link{
 		uuid: uuid,
@@ -50,7 +50,7 @@ func (l *Link) Initialize() {
 	_ = libol.MarshalSave(l.cfg, file, true)
 }
 
-func (l *Link) Conf() *co.Point {
+func (l *Link) Conf() *co.Access {
 	return l.cfg
 }
 

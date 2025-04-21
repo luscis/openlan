@@ -1,6 +1,6 @@
 package schema
 
-type Point struct {
+type Access struct {
 	Uptime    int64             `json:"uptime"`
 	UUID      string            `json:"uuid"`
 	Network   string            `json:"network"`

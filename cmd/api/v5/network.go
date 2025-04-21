@@ -154,7 +154,7 @@ func (u Network) Commands(app *api.App) {
 				},
 				Action: u.Save,
 			},
-			Point{}.Commands(),
+			Access{}.Commands(),
 			Qos{}.Commands(),
 			VPNClient{}.Commands(),
 			OpenVPN{}.Commands(),

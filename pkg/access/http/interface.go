@@ -2,7 +2,7 @@ package http
 
 import "github.com/luscis/openlan/pkg/config"
 
-type Pointer interface {
+type Accesser interface {
 	UUID() string
-	Config() *config.Point
+	Config() *config.Access
 }

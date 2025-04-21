@@ -1,9 +1,10 @@
 package models
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
 	"net"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type Neighbor struct {
@@ -47,9 +48,9 @@ func (e *Neighbor) Update(client libol.SocketClient) {
 	if private == nil {
 		return
 	}
-	if point, ok := private.(*Point); ok {
-		e.Network = point.Network
-		e.Device = point.IfName
+	if acc, ok := private.(*Access); ok {
+		e.Network = acc.Network
+		e.Device = acc.IfName
 		e.Client = client.String()
 	}
 }

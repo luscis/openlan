@@ -7,8 +7,8 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-type Point struct {
-	MixPoint
+type Access struct {
+	MixAccess
 	// private
 	brName string
 	ipMtu  int
@@ -19,30 +19,30 @@ type Point struct {
 	uuid   string
 }
 
-func NewPoint(config *config.Point) *Point {
+func NewAccess(config *config.Access) *Access {
 	ipMtu := config.Interface.IPMtu
 	if ipMtu == 0 {
 		ipMtu = 1500
 	}
-	p := Point{
-		ipMtu:    ipMtu,
-		brName:   config.Interface.Bridge,
-		MixPoint: NewMixPoint(config),
+	p := Access{
+		ipMtu:     ipMtu,
+		brName:    config.Interface.Bridge,
+		MixAccess: NewMixAccess(config),
 	}
 	return &p
 }
 
-func (p *Point) Initialize() {
+func (p *Access) Initialize() {
 	w := p.worker
 
 	w.listener.AddAddr = p.AddAddr
 	w.listener.DelAddr = p.DelAddr
 	w.listener.OnTap = p.OnTap
 
-	p.MixPoint.Initialize()
+	p.MixAccess.Initialize()
 }
 
-func (p *Point) DelAddr(ipStr string) error {
+func (p *Access) DelAddr(ipStr string) error {
 	if p.link == nil || ipStr == "" {
 		return nil
 	}
@@ -59,7 +59,7 @@ func (p *Point) DelAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) AddAddr(ipStr string) error {
+func (p *Access) AddAddr(ipStr string) error {
 	if ipStr == "" || p.link == nil {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (p *Point) AddAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) UpBr(name string) *netlink.Bridge {
+func (p *Access) UpBr(name string) *netlink.Bridge {
 	if name == "" {
 		return nil
 	}
@@ -105,7 +105,7 @@ func (p *Point) UpBr(name string) *netlink.Bridge {
 	return br
 }
 
-func (p *Point) OnTap(w *TapWorker) error {
+func (p *Access) OnTap(w *TapWorker) error {
 	p.out.Info("Access.OnTap")
 	tap := w.device
 	name := tap.Name()
@@ -141,7 +141,7 @@ func (p *Point) OnTap(w *TapWorker) error {
 	return nil
 }
 
-func (p *Point) AddRoute() error {
+func (p *Access) AddRoute() error {
 	to := p.config.Forward
 	route := p.Network()
 	if to == nil || route == nil {

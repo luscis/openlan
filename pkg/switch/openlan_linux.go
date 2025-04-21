@@ -174,7 +174,7 @@ func (w *OpenLANWorker) UpTime() int64 {
 	return 0
 }
 
-func (w *OpenLANWorker) AddLink(c co.Point) {
+func (w *OpenLANWorker) AddLink(c co.Access) {
 	br := w.cfg.Bridge
 
 	c.Alias = w.alias

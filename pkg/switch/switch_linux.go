@@ -189,7 +189,7 @@ func (v *Switch) preNetwork() {
 }
 
 func (v *Switch) preApplication() {
-	// Append accessed auth for point
+	// Append accessed auth for Access
 	v.apps.Auth = app.NewAccess(v)
 	v.hooks = append(v.hooks, v.apps.Auth.OnFrame)
 	// Append request process
@@ -331,14 +331,14 @@ func (v *Switch) SignIn(client libol.SocketClient) error {
 	return nil
 }
 
-func client2Point(client libol.SocketClient) (*models.Point, error) {
+func client2Access(client libol.SocketClient) (*models.Access, error) {
 	addr := client.RemoteAddr()
 	if private := client.Private(); private == nil {
-		return nil, libol.NewErr("point %s notFound.", addr)
+		return nil, libol.NewErr("Access %s notFound.", addr)
 	} else {
-		obj, ok := private.(*models.Point)
+		obj, ok := private.(*models.Access)
 		if !ok {
-			return nil, libol.NewErr("point %s notRight.", addr)
+			return nil, libol.NewErr("Access %s notRight.", addr)
 		}
 		return obj, nil
 	}
@@ -353,7 +353,7 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 	if err := v.onFrame(client, frame); err != nil {
 		v.out.Debug("Switch.ReadClient: %s dropping by %s", addr, err)
 		if frame.Action() == libol.PingReq {
-			// send sign message to point require login.
+			// send sign message to Access require login.
 			_ = v.SignIn(client)
 		}
 		return nil
@@ -362,7 +362,7 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 		return nil
 	}
 	// process ethernet frame message.
-	obj, err := client2Point(client)
+	obj, err := client2Access(client)
 	if err != nil {
 		return err
 	}
@@ -380,10 +380,10 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 func (v *Switch) OnClose(client libol.SocketClient) error {
 	addr := client.RemoteAddr()
 	v.out.Info("Switch.OnClose: %s", addr)
-	if obj, err := client2Point(client); err == nil {
+	if obj, err := client2Access(client); err == nil {
 		cache.Network.DelLease(obj.Alias, obj.Network)
 	}
-	cache.Point.Del(addr)
+	cache.Access.Del(addr)
 	return nil
 }
 
@@ -428,9 +428,9 @@ func (v *Switch) Stop() {
 		}
 		w.Stop()
 	}
-	v.out.Info("Switch.Stop left points")
-	// notify leave to point.
-	for p := range cache.Point.List() {
+	v.out.Info("Switch.Stop left Accesss")
+	// notify leave to Access.
+	for p := range cache.Access.List() {
 		if p == nil {
 			break
 		}

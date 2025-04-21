@@ -2,13 +2,14 @@ package http
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/libol"
-	"net/http"
 )
 
 type Http struct {
-	pointer Pointer
+	acc     Accesser
 	listen  string
 	server  *http.Server
 	crtFile string
@@ -18,11 +19,11 @@ type Http struct {
 	token   string
 }
 
-func NewHttp(pointer Pointer) (h *Http) {
+func NewHttp(acc Accesser) (h *Http) {
 	h = &Http{
-		pointer: pointer,
+		acc: acc,
 	}
-	if config := pointer.Config(); config != nil {
+	if config := acc.Config(); config != nil {
 		if config.Http != nil {
 			h.listen = config.Http.Listen
 			h.pubDir = config.Http.Public
@@ -80,17 +81,17 @@ func (h *Http) LoadRouter() {
 	router.HandleFunc("/current/uuid", func(w http.ResponseWriter, r *http.Request) {
 		format := GetQueryOne(r, "format")
 		if format == "yaml" {
-			ResponseYaml(w, h.pointer.UUID())
+			ResponseYaml(w, h.acc.UUID())
 		} else {
-			ResponseJson(w, h.pointer.UUID())
+			ResponseJson(w, h.acc.UUID())
 		}
 	})
 	router.HandleFunc("/current/config", func(w http.ResponseWriter, r *http.Request) {
 		format := GetQueryOne(r, "format")
 		if format == "yaml" {
-			ResponseYaml(w, h.pointer.Config())
+			ResponseYaml(w, h.acc.Config())
 		} else {
-			ResponseJson(w, h.pointer.Config())
+			ResponseJson(w, h.acc.Config())
 		}
 	})
 }

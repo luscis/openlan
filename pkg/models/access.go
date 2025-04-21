@@ -5,7 +5,7 @@ import (
 	"github.com/luscis/openlan/pkg/network"
 )
 
-type Point struct {
+type Access struct {
 	UUID     string             `json:"uuid"`
 	Alias    string             `json:"alias"`
 	Network  string             `json:"network"`
@@ -20,8 +20,8 @@ type Point struct {
 	System   string             `json:"system"`
 }
 
-func NewPoint(c libol.SocketClient, d network.Taper, proto string) (w *Point) {
-	return &Point{
+func NewAccess(c libol.SocketClient, d network.Taper, proto string) (w *Access) {
+	return &Access{
 		Alias:    "",
 		Server:   c.LocalAddr(),
 		Client:   c,
@@ -30,7 +30,7 @@ func NewPoint(c libol.SocketClient, d network.Taper, proto string) (w *Point) {
 	}
 }
 
-func (p *Point) Update() *Point {
+func (p *Access) Update() *Access {
 	client := p.Client
 	if client != nil {
 		p.Uptime = client.UpTime()
@@ -43,7 +43,7 @@ func (p *Point) Update() *Point {
 	return p
 }
 
-func (p *Point) SetUser(user *User) {
+func (p *Access) SetUser(user *User) {
 	p.User = user.Name
 	p.UUID = user.UUID
 	if len(p.UUID) > 13 {

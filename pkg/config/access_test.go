@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPointFlags(t *testing.T) {
-	ap := Point{}
+func TestAccessFlags(t *testing.T) {
+	ap := Access{}
 	os.Args = []string{
 		"app",
 		"-conf", "/etc/openlan/fake.json",
@@ -22,8 +22,8 @@ func TestPointFlags(t *testing.T) {
 	assert.Equal(t, "/etc/openlan/fake.json", ap.Conf, "be the same.")
 }
 
-func TestPoint(t *testing.T) {
-	ap := Point{
+func TestAccess(t *testing.T) {
+	ap := Access{
 		Username: "user0@fake",
 	}
 	ap.Correct()

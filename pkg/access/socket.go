@@ -43,7 +43,7 @@ type SocketWorker struct {
 	keepalive  KeepAlive
 	done       chan bool
 	ticker     *time.Ticker
-	pinCfg     *config.Point
+	pinCfg     *config.Access
 	eventQueue chan *WorkerEvent
 	writeQueue chan *libol.FrameMessage
 	jobber     []jobTimer
@@ -52,7 +52,7 @@ type SocketWorker struct {
 	wlFrame    *libol.FrameMessage // Last frame from write.
 }
 
-func NewSocketWorker(client libol.SocketClient, c *config.Point) *SocketWorker {
+func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker {
 	t := &SocketWorker{
 		client:     client,
 		network:    models.NewNetwork(c.Network, c.Interface.Address),

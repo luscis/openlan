@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	c := config.NewPoint()
-	p := access.NewPoint(c)
+	c := config.NewAccess()
+	p := access.NewAccess(c)
 
 	p.Initialize()
 	libol.Go(p.Start)

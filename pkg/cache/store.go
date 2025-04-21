@@ -5,7 +5,7 @@ import (
 )
 
 func Init(cfg *config.Perf) {
-	Point.Init(cfg.Point)
+	Access.Init(cfg.Access)
 	Link.Init(cfg.Link)
 	Neighbor.Init(cfg.Neighbor)
 	Online.Init(cfg.OnLine)

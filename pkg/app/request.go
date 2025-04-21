@@ -66,7 +66,7 @@ func (r *Request) onNeighbor(client libol.SocketClient, data []byte) {
 	}
 }
 
-func findLease(ifAddr string, p *models.Point) *schema.Lease {
+func findLease(ifAddr string, p *models.Access) *schema.Lease {
 	alias := p.Alias
 	network := p.Network
 	lease := cache.Network.GetLease(alias, network) // try by alias firstly
@@ -116,7 +116,7 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 		return
 	}
 	out.Cmd("Request.onIpAddr: find %s", n)
-	p := cache.Point.Get(client.String())
+	p := cache.Access.Get(client.String())
 	if p == nil {
 		out.Error("Request.onIpAddr: point notFound")
 		return

@@ -17,7 +17,7 @@ type Interface struct {
 	Cost     int    `json:"cost,omitempty"`
 }
 
-type Point struct {
+type Access struct {
 	File        string    `json:"file,omitempty"`
 	Alias       string    `json:"alias,omitempty"`
 	Connection  string    `json:"connection"`
@@ -49,27 +49,27 @@ func (i *Interface) Correct() {
 	}
 }
 
-func NewPoint() *Point {
-	p := &Point{RequestAddr: true}
+func NewAccess() *Access {
+	p := &Access{RequestAddr: true}
 	p.Parse()
 	p.Initialize()
 	return p
 }
 
-func (ap *Point) Parse() {
-	flag.StringVar(&ap.Alias, "alias", "", "Alias for this point")
+func (ap *Access) Parse() {
+	flag.StringVar(&ap.Alias, "alias", "", "Alias for this Access")
 	flag.StringVar(&ap.Log.File, "log:file", "", "File log saved to")
 	flag.StringVar(&ap.Conf, "conf", "", "The configuration file")
 	flag.Parse()
 }
 
-func (ap *Point) Id() string {
+func (ap *Access) Id() string {
 	return ap.Connection + ":" + ap.Network
 }
 
-func (ap *Point) Initialize() error {
+func (ap *Access) Initialize() error {
 	if err := ap.Load(); err != nil {
-		libol.Warn("NewPoint.Initialize %s", err)
+		libol.Warn("NewAccess.Initialize %s", err)
 		return err
 	}
 	ap.Correct()
@@ -77,7 +77,7 @@ func (ap *Point) Initialize() error {
 	return nil
 }
 
-func (ap *Point) Correct() {
+func (ap *Access) Correct() {
 	if ap.Alias == "" {
 		ap.Alias = GetAlias()
 	}
@@ -116,7 +116,7 @@ func (ap *Point) Correct() {
 	ap.Queue.Correct()
 }
 
-func (ap *Point) Load() error {
+func (ap *Access) Load() error {
 	if err := libol.FileExist(ap.Conf); err == nil {
 		return libol.UnmarshalLoad(ap, ap.Conf)
 	}

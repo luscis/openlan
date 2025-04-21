@@ -32,7 +32,7 @@ type TapWorker struct {
 	ether      TunEther
 	neighbor   Neighbors
 	devCfg     network.TapConfig
-	pinCfg     *config.Point
+	pinCfg     *config.Access
 	ifAddr     string
 	writeQueue chan *libol.FrameMessage
 	done       chan bool
@@ -40,7 +40,7 @@ type TapWorker struct {
 	eventQueue chan *WorkerEvent
 }
 
-func NewTapWorker(devCfg network.TapConfig, pinCfg *config.Point) (a *TapWorker) {
+func NewTapWorker(devCfg network.TapConfig, pinCfg *config.Access) (a *TapWorker) {
 	a = &TapWorker{
 		devCfg:     devCfg,
 		pinCfg:     pinCfg,

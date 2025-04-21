@@ -207,7 +207,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		port.Link = cn.Taps.GenName()
 		name, pass := SplitCombined(port.Secret)
 		algo, secret := SplitCombined(port.Crypt)
-		ac := co.Point{
+		ac := co.Access{
 			Alias:       w.cfg.Alias,
 			Network:     w.cfg.Name,
 			RequestAddr: false,

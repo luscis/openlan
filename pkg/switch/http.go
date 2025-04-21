@@ -246,16 +246,16 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version = schema.NewVersionSchema()
 	body.Worker = api.NewWorkerSchema(h.switcher)
 
-	// display accessed point.
-	for p := range cache.Point.List() {
+	// display accessed Access.
+	for p := range cache.Access.List() {
 		if p == nil {
 			break
 		}
-		body.Points = append(body.Points, models.NewPointSchema(p))
+		body.Access = append(body.Access, models.NewAccessSchema(p))
 	}
-	sort.SliceStable(body.Points, func(i, j int) bool {
-		ii := body.Points[i]
-		jj := body.Points[j]
+	sort.SliceStable(body.Access, func(i, j int) bool {
+		ii := body.Access[i]
+		jj := body.Access[j]
 		return ii.Network+ii.Remote > jj.Network+jj.Remote
 	})
 	// display neighbor.

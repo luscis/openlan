@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
@@ -95,15 +96,15 @@ func (p *Access) onAuth(client libol.SocketClient, user *models.User) error {
 	}
 	out.Info("Access.onAuth: on >>> %s <<<", dev.Name())
 	proto := p.master.Protocol()
-	m := models.NewPoint(client, dev, proto)
+	m := models.NewAccess(client, dev, proto)
 	m.SetUser(user)
 	// free point has same uuid.
-	if om := cache.Point.GetByUUID(m.UUID); om != nil {
+	if om := cache.Access.GetByUUID(m.UUID); om != nil {
 		out.Info("Access.onAuth: OffClient %s", om.Client)
 		p.master.OffClient(om.Client)
 	}
 	client.SetPrivate(m)
-	cache.Point.Add(m)
+	cache.Access.Add(m)
 	libol.Go(func() {
 		p.master.ReadTap(dev, func(f *libol.FrameMessage) error {
 			if err := client.WriteMsg(f); err != nil {

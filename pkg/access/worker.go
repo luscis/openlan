@@ -82,7 +82,7 @@ type PrefixRule struct {
 	NextHop     net.IP
 }
 
-func GetSocketClient(p *config.Point) libol.SocketClient {
+func GetSocketClient(p *config.Access) libol.SocketClient {
 	crypt := p.Crypt
 	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
 	switch p.Protocol {
@@ -142,7 +142,7 @@ func GetSocketClient(p *config.Point) libol.SocketClient {
 	}
 }
 
-func GetTapCfg(c *config.Point) network.TapConfig {
+func GetTapCfg(c *config.Access) network.TapConfig {
 	cfg := network.TapConfig{
 		Provider: c.Interface.Provider,
 		Name:     c.Interface.Name,
@@ -164,7 +164,7 @@ type Worker struct {
 	listener  WorkerListener
 	conWorker *SocketWorker
 	tapWorker *TapWorker
-	cfg       *config.Point
+	cfg       *config.Access
 	uuid      string
 	network   *models.Network
 	routes    map[string]PrefixRule
@@ -176,7 +176,7 @@ type Worker struct {
 	lock      sync.RWMutex
 }
 
-func NewWorker(cfg *config.Point) *Worker {
+func NewWorker(cfg *config.Access) *Worker {
 	return &Worker{
 		ifAddr:    cfg.Interface.Address,
 		cfg:       cfg,
@@ -247,7 +247,7 @@ func (w *Worker) SaveStatus() {
 	}
 
 	sts := client.Statistics()
-	access := &schema.Point{
+	access := &schema.Access{
 		RxBytes:   uint64(sts[libol.CsRecvOkay]),
 		TxBytes:   uint64(sts[libol.CsSendOkay]),
 		ErrPkt:    uint64(sts[libol.CsSendError]),

@@ -22,10 +22,10 @@ func TestInit(t *testing.T) {
 	cfg := &config.Perf{}
 	cfg.Correct()
 	Init(cfg)
-	fmt.Println(Point)
-	Point.Add(&models.Point{
+	fmt.Println(Access)
+	Access.Add(&models.Access{
 		UUID:   "fake",
 		Client: &SocketClientMock{},
 	})
-	assert.Equal(t, 1, Point.Clients.Len(), "MUST be same")
+	assert.Equal(t, 1, Access.Clients.Len(), "MUST be same")
 }

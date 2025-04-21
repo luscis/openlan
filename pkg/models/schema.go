@@ -5,10 +5,10 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-func NewPointSchema(p *Point) schema.Point {
+func NewAccessSchema(p *Access) schema.Access {
 	client, dev := p.Client, p.Device
 	sts := client.Statistics()
-	return schema.Point{
+	return schema.Access{
 		Uptime:    p.Uptime,
 		UUID:      p.UUID,
 		Alias:     p.Alias,

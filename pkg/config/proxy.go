@@ -236,11 +236,12 @@ func (p *Proxy) Save() {
 }
 
 type NameProxy struct {
-	Conf     string `json:"-" yaml:"-"`
-	Listen   string `json:"listen,omitempty"`
-	Nameto   string `json:"nameto,omitempty" yaml:"nameto,omitempty"`
-	Metric   int
+	Conf     string     `json:"-" yaml:"-"`
+	Listen   string     `json:"listen,omitempty"`
+	Nameto   string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
+	Metric   int        `json:"metric,omitempty" yaml:"metric,omitempty"`
 	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Access   []*Access  `json:"access,omitempty" yaml:"access,omitempty"`
 }
 
 func (t *NameProxy) Initialize() error {
@@ -257,6 +258,10 @@ func (t *NameProxy) Correct() {
 	SetListen(&t.Listen, 53)
 	if t.Metric == 0 {
 		t.Metric = 300
+	}
+	for _, acc := range t.Access {
+		acc.RequestAddr = true
+		acc.Correct()
 	}
 }
 

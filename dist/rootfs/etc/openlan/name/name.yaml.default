@@ -1,12 +1,15 @@
 
 listen: 127.0.0.1
+access:
+- connection: <remote-server>
+  protocol: tcp
+  username: <username>@<network>
+  password: <password>
+  forward:
+  - 8.8.8.8
+  - 8.8.4.4
 nameto: 114.114.114.114
 backends:
-- server: 192.168.11.1
-  nameto: 8.8.8.8
-  match:
-  - openai.com
-  - chatgpt.com
 - server: 192.168.11.2
   nameto: 8.8.8.8
   match:

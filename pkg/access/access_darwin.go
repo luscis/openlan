@@ -7,41 +7,41 @@ import (
 	"github.com/luscis/openlan/pkg/network"
 )
 
-type Point struct {
-	MixPoint
+type Access struct {
+	MixAccess
 	// private
 	brName string
 	addr   string
 }
 
-func NewPoint(config *config.Point) *Point {
-	p := Point{
-		brName:   config.Interface.Bridge,
-		MixPoint: NewMixPoint(config),
+func NewAccess(config *config.Access) *Access {
+	p := Access{
+		brName:    config.Interface.Bridge,
+		MixAccess: NewMixAccess(config),
 	}
 	return &p
 }
 
-func (p *Point) Initialize() {
+func (p *Access) Initialize() {
 	w := p.worker
 	w.listener.AddAddr = p.AddAddr
 	w.listener.DelAddr = p.DelAddr
 
-	p.MixPoint.Initialize()
+	p.MixAccess.Initialize()
 }
 
-func (p *Point) routeAdd(prefix string) ([]byte, error) {
+func (p *Access) routeAdd(prefix string) ([]byte, error) {
 	network.RouteDel("", prefix, "")
 	out, err := network.RouteAdd(p.IfName(), prefix, "")
 	return out, err
 }
 
-func (p *Point) AddAddr(ipStr string) error {
+func (p *Access) AddAddr(ipStr string) error {
 	if ipStr == "" {
 		return nil
 	}
 
-	// add point-to-point
+	// add Access-to-Access
 	ips := strings.SplitN(ipStr, "/", 2)
 	out, err := network.AddrAdd(p.IfName(), ips[0], ips[0])
 	if err != nil {
@@ -62,7 +62,7 @@ func (p *Point) AddAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) DelAddr(ipStr string) error {
+func (p *Access) DelAddr(ipStr string) error {
 	// delete directly route.
 	out, err := network.RouteDel(p.IfName(), ipStr, "")
 	if err != nil {
@@ -70,7 +70,7 @@ func (p *Point) DelAddr(ipStr string) error {
 	}
 	p.out.Info("Access.DelAddr: route %s via %s", ipStr, p.IfName())
 
-	// delete point-to-point
+	// delete Access-to-Access
 	ip4 := strings.SplitN(ipStr, "/", 2)[0]
 	out, err = network.AddrDel(p.IfName(), ip4)
 	if err != nil {
@@ -83,7 +83,7 @@ func (p *Point) DelAddr(ipStr string) error {
 	return nil
 }
 
-func (p *Point) AddRoute() error {
+func (p *Access) AddRoute() error {
 	to := p.config.Forward
 	if to == nil {
 		return nil

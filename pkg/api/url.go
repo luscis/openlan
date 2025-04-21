@@ -6,7 +6,7 @@ func Add(router *mux.Router, switcher Switcher) {
 	Link{Switcher: switcher}.Router(router)
 	User{}.Router(router)
 	Neighbor{}.Router(router)
-	Point{}.Router(router)
+	Access{}.Router(router)
 	Network{Switcher: switcher}.Router(router)
 	OnLine{}.Router(router)
 	Lease{}.Router(router)
