@@ -68,7 +68,7 @@ func NewEvent(newType, reason string) *WorkerEvent {
 }
 
 type WorkerListener struct {
-	AddAddr   func(ipStr string) error
+	AddAddr   func(ipStr, gateway string) error
 	DelAddr   func(ipStr string) error
 	OnTap     func(w *TapWorker) error
 	AddRoutes func(routes []*models.Route) error
@@ -337,7 +337,7 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 	ipStr := fmt.Sprintf("%s/%d", n.Address, prefix)
 	w.tapWorker.OnIpAddr(ipStr)
 	if w.listener.AddAddr != nil {
-		_ = w.listener.AddAddr(ipStr)
+		_ = w.listener.AddAddr(ipStr, n.Gateway)
 	}
 
 	if n.Gateway != "" && runtime.GOOS == "darwin" {
@@ -375,7 +375,7 @@ func (w *Worker) OnSuccess(s *SocketWorker) error {
 	if !w.cfg.RequestAddr {
 		w.out.Info("SocketWorker.AddAddr: notAllowed")
 	} else if w.listener.AddAddr != nil {
-		_ = w.listener.AddAddr(w.ifAddr)
+		_ = w.listener.AddAddr(w.ifAddr, "")
 	}
 	return nil
 }

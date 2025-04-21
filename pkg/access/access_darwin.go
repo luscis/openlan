@@ -10,8 +10,9 @@ import (
 type Access struct {
 	MixAccess
 	// private
-	brName string
-	addr   string
+	brName  string
+	addr    string
+	gateway string
 }
 
 func NewAccess(config *config.Access) *Access {
@@ -32,46 +33,51 @@ func (p *Access) Initialize() {
 
 func (p *Access) routeAdd(prefix string) ([]byte, error) {
 	network.RouteDel("", prefix, "")
-	out, err := network.RouteAdd(p.IfName(), prefix, "")
+	out, err := network.RouteAdd("", prefix, p.gateway)
 	return out, err
 }
 
-func (p *Access) AddAddr(ipStr string) error {
-	if ipStr == "" {
+func (p *Access) AddAddr(addr, gateway string) error {
+	if addr == "" {
 		return nil
 	}
 
 	// add Access-to-Access
-	ips := strings.SplitN(ipStr, "/", 2)
-	out, err := network.AddrAdd(p.IfName(), ips[0], ips[0])
+	ips := strings.SplitN(addr, "/", 2)
+	if gateway == "" {
+		gateway = ips[0]
+	}
+	out, err := network.AddrAdd(p.IfName(), ips[0], gateway)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 		return err
 	}
-	p.out.Info("Access.AddAddr: %s", ipStr)
+	p.out.Info("Access.AddAddr: %s", addr)
+
+	p.addr = addr
+	p.gateway = gateway
 
 	// add directly route.
-	out, err = p.routeAdd(ipStr)
+	out, err = p.routeAdd(addr)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 	}
-	p.AddRoute()
 
-	p.addr = ipStr
+	p.AddRoute()
 
 	return nil
 }
 
-func (p *Access) DelAddr(ipStr string) error {
+func (p *Access) DelAddr(addr string) error {
 	// delete directly route.
-	out, err := network.RouteDel(p.IfName(), ipStr, "")
+	out, err := network.RouteDel(p.IfName(), addr, "")
 	if err != nil {
 		p.out.Warn("Access.DelAddr: %s, %s", err, out)
 	}
-	p.out.Info("Access.DelAddr: route %s via %s", ipStr, p.IfName())
+	p.out.Info("Access.DelAddr: route %s via %s", addr, p.IfName())
 
 	// delete Access-to-Access
-	ip4 := strings.SplitN(ipStr, "/", 2)[0]
+	ip4 := strings.SplitN(addr, "/", 2)[0]
 	out, err = network.AddrDel(p.IfName(), ip4)
 	if err != nil {
 		p.out.Warn("Access.DelAddr: %s, %s", err, out)

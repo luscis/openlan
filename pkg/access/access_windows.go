@@ -49,8 +49,8 @@ func (p *Access) Trim(out []byte) string {
 	return strings.TrimSpace(string(out))
 }
 
-func (p *Access) AddAddr(ipStr string) error {
-	if ipStr == "" {
+func (p *Access) AddAddr(addr, gateway string) error {
+	if addr == "" {
 		return nil
 	}
 	addrExisted := network.AddrShow(p.IfName())
@@ -59,13 +59,13 @@ func (p *Access) AddAddr(ipStr string) error {
 			_, _ = network.AddrDel(p.IfName(), addr)
 		}
 	}
-	out, err := network.AddrAdd(p.IfName(), ipStr)
+	out, err := network.AddrAdd(p.IfName(), addr)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, p.Trim(out))
 		return err
 	}
-	p.out.Info("Access.AddAddr: %s", ipStr)
-	p.addr = ipStr
+	p.out.Info("Access.AddAddr: %s", addr)
+	p.addr = addr
 	return nil
 }
 

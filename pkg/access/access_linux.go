@@ -42,30 +42,30 @@ func (p *Access) Initialize() {
 	p.MixAccess.Initialize()
 }
 
-func (p *Access) DelAddr(ipStr string) error {
-	if p.link == nil || ipStr == "" {
+func (p *Access) DelAddr(addr string) error {
+	if p.link == nil || addr == "" {
 		return nil
 	}
-	ipAddr, err := netlink.ParseAddr(ipStr)
+	ipAddr, err := netlink.ParseAddr(addr)
 	if err != nil {
-		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", ipStr, err)
+		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", addr, err)
 		return err
 	}
 	if err := netlink.AddrDel(p.link, ipAddr); err != nil {
 		p.out.Warn("Access.DelAddr.UnsetLinkIp: %s", err)
 	}
-	p.out.Info("Access.DelAddr: %s", ipStr)
+	p.out.Info("Access.DelAddr: %s", addr)
 	p.addr = ""
 	return nil
 }
 
-func (p *Access) AddAddr(ipStr string) error {
-	if ipStr == "" || p.link == nil {
+func (p *Access) AddAddr(addr, gateway string) error {
+	if addr == "" || p.link == nil {
 		return nil
 	}
-	ipAddr, err := netlink.ParseAddr(ipStr)
+	ipAddr, err := netlink.ParseAddr(addr)
 	if err != nil {
-		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", ipStr, err)
+		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", addr, err)
 		return err
 	}
 	if err := netlink.AddrAdd(p.link, ipAddr); err != nil {
@@ -73,11 +73,11 @@ func (p *Access) AddAddr(ipStr string) error {
 		return err
 	}
 
-	p.out.Info("Access.AddAddr: %s", ipStr)
+	p.addr = addr
+	p.out.Info("Access.AddAddr: %s", addr)
 
 	p.AddRoute()
 
-	p.addr = ipStr
 	return nil
 }
 

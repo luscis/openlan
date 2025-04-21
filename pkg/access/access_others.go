@@ -4,17 +4,10 @@ package access
 
 import "github.com/luscis/openlan/pkg/config"
 
-type Point struct {
+type Access struct {
+	MixAccess
 }
 
-func NewPoint(config *config.Point) *Point {
+func NewAccess(config *config.Access) *Access {
 	return nil
-}
-
-func (p *Point) Initialize() {
-
-}
-
-func (p *Point) Start() {
-
 }
