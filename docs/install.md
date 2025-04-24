@@ -27,7 +27,7 @@ OpenLAN软件包含下面部分：
    ```
    $ cd /etc/openlan/switch
    $ cp ./switch.yaml.example ./switch.yaml
-   $ vim ./switch.yaml               ## 编辑switch.yaml配置文件
+   $ vim ./switch.yaml
    protocol: tcp
    crypt:
      algorithm: aes-128
@@ -39,7 +39,7 @@ OpenLAN软件包含下面部分：
    $ cd ./network
    $ cp ./network.yaml.example ./example.yaml
    $ vim ./example.yaml 
-   name: example,
+   name: example
    bridge: 
      address: 172.32.10.10/24
    subnet:
@@ -58,10 +58,8 @@ OpenLAN软件包含下面部分：
    ```
 3. 添加一个新的接入认证的用户；
    ```
-   $ openlan us add --name hi@example
+   $ openlan user add --name hi@example
    hi@example  l6llot97yx  guest
-
-   $ openlan us rm --name hi@example
    ```
 4. 导出OpenVPN的客户端配置文件；
 
@@ -104,7 +102,7 @@ OpenLAN软件包含下面部分：
 3. 配置Access Point服务自启动；
    ```
    $ systemctl enable --now openlan-access@example
-   $ journalctl -u openlan-access@example        ## 查看日志信息
+   $ journalctl -u openlan-access@example
    ```
 4. 检测网络是否可达；
    ```

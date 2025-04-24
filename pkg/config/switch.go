@@ -158,7 +158,7 @@ func (s *Switch) Dir(elem0, elem1 string) string {
 	var file string
 
 	if elem1 == "" {
-		return filepath.Join(elem0)
+		return filepath.Join(s.ConfDir, elem0)
 	}
 
 	if s.IsYaml() {
@@ -170,16 +170,33 @@ func (s *Switch) Dir(elem0, elem1 string) string {
 	return filepath.Join(s.ConfDir, elem0, file)
 }
 
-func (s *Switch) formatNetwork(obj *Network) {
-	context := obj.Specifies
-	obj.NewSpecifies()
+func (s *Switch) RemarshalNetwork(obj *Network, format string) {
 	if obj.Specifies == nil {
 		return
 	}
-	if data, err := libol.Marshal(context, true); err != nil {
-		libol.Warn("Switch.Format %s", err)
-	} else if err := libol.Unmarshal(obj.Specifies, data); err != nil {
-		libol.Warn("Switch.Format %s", err)
+
+	context := obj.Specifies
+	obj.NewSpecifies()
+
+	if format == "" {
+		format = "json"
+		if s.IsYaml() {
+			format = "yaml"
+		}
+	}
+
+	if format == "yaml" {
+		if data, err := libol.MarshalYaml(context); err != nil {
+			libol.Warn("Switch.Format %s", err)
+		} else if err := libol.UnmarshalYaml(obj.Specifies, data); err != nil {
+			libol.Warn("Switch.Format %s", err)
+		}
+	} else {
+		if data, err := libol.Marshal(context, true); err != nil {
+			libol.Warn("Switch.Format %s", err)
+		} else if err := libol.Unmarshal(obj.Specifies, data); err != nil {
+			libol.Warn("Switch.Format %s", err)
+		}
 	}
 }
 
@@ -210,11 +227,19 @@ func (s *Switch) UnmarshalNetwork(data []byte) (*Network, error) {
 	obj.LoadRoute()
 	obj.LoadOutput()
 	obj.LoadFindHop()
+
 	s.Network[obj.Name] = obj
 	return obj, nil
 }
 
-func (s *Switch) correctNetwork(obj *Network) {
+func (s *Switch) RemarshalNetworks(format string) {
+	for _, obj := range s.Network {
+		s.RemarshalNetwork(obj, format)
+	}
+}
+
+func (s *Switch) CorrectNetwork(obj *Network, format string) {
+	s.RemarshalNetwork(obj, format)
 	for _, link := range obj.Links {
 		link.Correct()
 	}
@@ -239,20 +264,9 @@ func (s *Switch) correctNetwork(obj *Network) {
 	}
 }
 
-func (s *Switch) FormatNetworks() {
-	for _, obj := range s.Network {
-		s.formatNetwork(obj)
-	}
-}
-
-func (s *Switch) CorrectNetwork(obj *Network) {
-	s.formatNetwork(obj)
-	s.correctNetwork(obj)
-}
-
 func (s *Switch) CorrectNetworks() {
 	for _, obj := range s.Network {
-		s.CorrectNetwork(obj)
+		s.CorrectNetwork(obj, "")
 	}
 }
 

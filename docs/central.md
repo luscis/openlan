@@ -64,10 +64,10 @@ Add three access users on central network:
 
 ```
 
-[root@switch ~]# openlan us add --name admin@central --role admin
-[root@switch ~]# openlan us add --name access1@central
-[root@switch ~]# openlan us add --name access2@central
-[root@switch ~]# openlan us add --name access3@central
+[root@switch ~]# openlan user add --name admin@central --role admin
+[root@switch ~]# openlan user add --name access1@central
+[root@switch ~]# openlan user add --name access2@central
+[root@switch ~]# openlan user add --name access3@central
 ```
 
 

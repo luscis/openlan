@@ -106,9 +106,9 @@ EOF
 Add three access users on private network:
 
 ```
-[root@switch-sh ~]# openlan us add --name admin@private --role admin
-[root@switch-sh ~]# openlan us add --name access3@private
-[root@switch-sh ~]# openlan us add --name access4@private
-[root@switch-sh ~]# openlan us add --name access5@private
+[root@switch-sh ~]# openlan user add --name admin@private --role admin
+[root@switch-sh ~]# openlan user add --name access3@private
+[root@switch-sh ~]# openlan user add --name access4@private
+[root@switch-sh ~]# openlan user add --name access5@private
 ```
 

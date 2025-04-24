@@ -428,8 +428,8 @@ func (v *Switch) Stop() {
 		}
 		w.Stop()
 	}
-	v.out.Info("Switch.Stop left Accesss")
-	// notify leave to Access.
+	v.out.Info("Switch.Stop left access")
+	// notify leave to access.
 	for p := range cache.Access.List() {
 		if p == nil {
 			break

@@ -65,7 +65,7 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cs.CorrectNetwork(obj)
+	cs.CorrectNetwork(obj, "json")
 	if obj := cs.GetNetwork(obj.Name); obj != nil {
 		h.Switcher.AddNetwork(obj.Name)
 	} else {

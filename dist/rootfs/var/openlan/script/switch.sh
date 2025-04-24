@@ -14,13 +14,10 @@ sysctl -p /etc/sysctl.d/90-openlan.conf
 /usr/bin/env find /var/openlan/openvpn -name '*client.ovpn' -delete
 /usr/bin/env find /var/openlan/openvpn -name '*client.tmpl' -delete
 
-if [ ! -e "/etc/openlan/switch/switch.json" ]; then
-cat >> /etc/openlan/switch/switch.json << EOF
-{
-    "crypt": {
-        "secret": "cb2ff088a34d"
-    }
-}
+if [ ! -e "/etc/openlan/switch/switch.yaml" ]; then
+cat >> /etc/openlan/switch/switch.yaml << EOF
+crypt
+  secret: cb2ff088a34d
 EOF
 fi
 
