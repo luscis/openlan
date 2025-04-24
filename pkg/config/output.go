@@ -7,14 +7,14 @@ type Linker interface {
 	Stop() error
 }
 type Output struct {
-	Segment  int    `json:"segment"`
-	Protocol string `json:"protocol,omitempty"` // gre, vxlan, tcp/tls/wss etc.
-	Remote   string `json:"remote"`
-	DstPort  int    `json:"dstport,omitempty"`
-	Link     string `json:"link,omitempty"` // link name
-	Secret   string `json:"secret,omitempty"`
-	Crypt    string `json:"crypt,omitempty"`
-	Linker   Linker `json:"-"`
+	Segment  int    `json:"segment" yaml:"segment"`
+	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"` // gre, vxlan, tcp/tls/wss etc.
+	Remote   string `json:"remote" yaml:"remote"`
+	DstPort  int    `json:"dstport,omitempty" yaml:"dstport,omitempty"`
+	Link     string `json:"link,omitempty" yaml:"link,omitempty"` // link name
+	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Crypt    string `json:"crypt,omitempty" yaml:"crypt,omitempty"`
+	Linker   Linker `json:"-" yaml:"-"`
 }
 
 func (o *Output) Id() string {

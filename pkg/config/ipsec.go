@@ -3,16 +3,16 @@ package config
 import "fmt"
 
 type IPSecTunnel struct {
-	Name      string `json:"-"`
-	Left      string `json:"local"`
-	LeftId    string `json:"localid,omitempty"`
-	LeftPort  int    `json:"localport,omitempty"`
-	Right     string `json:"remote"`
-	RightId   string `json:"remoteid,omitempty"`
-	RightPort int    `json:"remoteport,omitempty"`
-	Transport string `json:"protocol"`
-	Secret    string `json:"secret"`
-	State     string `json:"state"`
+	Name      string `json:"-" yaml:"-"`
+	Left      string `json:"local" yaml:"local"`
+	LeftId    string `json:"localid,omitempty" yaml:"localid,omitempty"`
+	LeftPort  int    `json:"localport,omitempty" yaml:"localport,omitempty"`
+	Right     string `json:"remote" yaml:"remote"`
+	RightId   string `json:"remoteid,omitempty" yaml:"remoteid,omitempty"`
+	RightPort int    `json:"remoteport,omitempty" yaml:"remoteport,omitempty"`
+	Transport string `json:"protocol" yaml:"protocol"`
+	Secret    string `json:"secret" yaml:"secret"`
+	State     string `json:"state" yaml:"state"`
 }
 
 func (s *IPSecTunnel) Correct() {
@@ -30,8 +30,8 @@ func (s *IPSecTunnel) Id() string {
 }
 
 type IPSecSpecifies struct {
-	Name    string         `json:"name"`
-	Tunnels []*IPSecTunnel `json:"tunnels"`
+	Name    string         `json:"name" yaml:"name"`
+	Tunnels []*IPSecTunnel `json:"tunnels" yaml:"tunnels"`
 }
 
 func (s *IPSecSpecifies) Correct() {

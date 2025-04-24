@@ -94,6 +94,15 @@ func Marshal(v interface{}, pretty bool) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+func MarshalYaml(v interface{}) ([]byte, error) {
+	str, err := yaml.Marshal(v)
+	if err != nil {
+		Error("Marshal error: %s", err)
+		return nil, err
+	}
+	return str, nil
+}
+
 func MarshalSave(v interface{}, file string, pretty bool) error {
 	f, err := CreateFile(file)
 	if err != nil {
@@ -104,7 +113,7 @@ func MarshalSave(v interface{}, file string, pretty bool) error {
 
 	var data []byte
 	if IsYaml(file) {
-		data, err = yaml.Marshal(v)
+		data, err = MarshalYaml(v)
 		if err != nil {
 			Error("MarshalSave error: %s", err)
 			return err
@@ -141,6 +150,13 @@ func Unmarshal(v interface{}, contents []byte) error {
 	return nil
 }
 
+func UnmarshalYaml(v interface{}, contents []byte) error {
+	if err := yaml.Unmarshal(contents, v); err != nil {
+		return NewErr("%s", err)
+	}
+	return nil
+}
+
 func UnmarshalLoad(v interface{}, file string) error {
 	if err := FileExist(file); err != nil {
 		return nil
@@ -151,7 +167,7 @@ func UnmarshalLoad(v interface{}, file string) error {
 	}
 
 	if IsYaml(file) {
-		return yaml.Unmarshal(contents, v)
+		return Unmarshal(v, contents)
 	} else {
 		return Unmarshal(v, contents)
 	}

@@ -3,9 +3,9 @@ package config
 import "github.com/luscis/openlan/pkg/libol"
 
 type ACL struct {
-	File  string     `json:"-"`
-	Name  string     `json:"name"`
-	Rules []*ACLRule `json:"rules,omitempty"`
+	File  string     `json:"-" yaml:"-"`
+	Name  string     `json:"name" yaml:"name"`
+	Rules []*ACLRule `json:"rules,omitempty" yaml:"rules,omitempty"`
 }
 
 func (ru *ACL) Save() {
@@ -19,18 +19,18 @@ func (ru *ACL) Correct(sw *Switch) {
 		rule.Correct()
 	}
 	if ru.File == "" {
-		ru.File = sw.Dir("acl", ru.Name+".json")
+		ru.File = sw.Dir("acl", ru.Name)
 	}
 }
 
 type ACLRule struct {
-	Name    string `json:"name,omitempty"`
-	SrcIp   string `json:"source,omitempty"`
-	DstIp   string `json:"destination,omitempty"`
-	Proto   string `json:"protocol,omitempty"`
-	SrcPort int    `json:"sport,omitempty"`
-	DstPort int    `json:"dport,omitempty"`
-	Action  string `json:"action,omitempty"`
+	Name    string `json:"name,omitempty" yaml:"name,omitempty"`
+	SrcIp   string `json:"source,omitempty" yaml:"source,omitempty"`
+	DstIp   string `json:"destination,omitempty" yaml:"destination,omitempty"`
+	Proto   string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	SrcPort int    `json:"sport,omitempty" yaml:"sport,omitempty"`
+	DstPort int    `json:"dport,omitempty" yaml:"dport,omitempty"`
+	Action  string `json:"action,omitempty" yaml:"action,omitempty"`
 }
 
 func (ru *ACLRule) Correct() {

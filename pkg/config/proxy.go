@@ -40,14 +40,14 @@ func (s *SocksProxy) Correct() {
 }
 
 type HttpSocks struct {
-	Listen string `json:"listen,omitempty"`
+	Listen string `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Cert   *Cert  `json:"-" yaml:"-"`
 }
 
 type HttpProxy struct {
 	Conf       string      `json:"-" yaml:"-"`
 	ConfDir    string      `json:"-" yaml:"-"`
-	Listen     string      `json:"listen,omitempty"`
+	Listen     string      `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Secret     string      `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Cert       *Cert       `json:"cert,omitempty" yaml:"cert,omitempty"`
 	Password   string      `json:"password,omitempty" yaml:"password,omitempty"`
@@ -154,8 +154,8 @@ func (h *HttpProxy) Save() {
 
 type TcpProxy struct {
 	Conf   string   `json:"-" yaml:"-"`
-	Listen string   `json:"listen,omitempty"`
-	Target []string `json:"target,omitempty"`
+	Listen string   `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Target []string `json:"target,omitempty" yaml:"target,omitempty"`
 }
 
 func (t *TcpProxy) Initialize() error {
@@ -177,7 +177,7 @@ func (t *TcpProxy) Load() error {
 type Proxy struct {
 	Conf    string        `json:"-" yaml:"-"`
 	ConfDir string        `json:"-" yaml:"-"`
-	Log     Log           `json:"log"`
+	Log     Log           `json:"log" yaml:"log"`
 	Socks   []*SocksProxy `json:"socks,omitempty" yaml:"socks,omitempty"`
 	Http    []*HttpProxy  `json:"http,omitempty" yaml:"http,omitempty"`
 	Tcp     []*TcpProxy   `json:"tcp,omitempty" yaml:"tcp,omitempty"`
@@ -237,7 +237,7 @@ func (p *Proxy) Save() {
 
 type NameProxy struct {
 	Conf     string     `json:"-" yaml:"-"`
-	Listen   string     `json:"listen,omitempty"`
+	Listen   string     `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Nameto   string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
 	Metric   int        `json:"metric,omitempty" yaml:"metric,omitempty"`
 	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`

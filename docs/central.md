@@ -33,22 +33,9 @@ Global configure with pre-share key:
 
 ```
 [root@switch ~]# cd /etc/openlan/switch
-[root@switch ~]# cat > switch.json <<EOF
-{
-  "cert": {
-    "dir": "/var/openlan/cert"
-  },
-  "http": {
-    "public": "/var/openlan/public"
-  },
-  "inspect": [
-    "neighbor", 
-    "online"
-  ],
-  "crypt": {
-    "secret": "f367aa429ed2"
-  }
-}
+[root@switch ~]# cat > switch.yaml <<EOF
+crypt:
+  secret: f367aa429ed2
 EOF
 ```
 
@@ -56,29 +43,20 @@ Add a user network configuration:
 
 ```
 [root@switch ~]# cd network
-[root@switch ~]# cat > central.json <<EOF
-{
-  "name": "central",
-  "bridge": {
-    "name": "br-em1",
-    "address": "10.16.1.10/24"
-  },
-  "subnet": {
-    "end": "10.16.1.100",
-    "netmask": "255.255.255.0",
-    "start": "10.16.1.44"
-  },
-  "hosts": [
-     {
-       "hostname": "access1.hostname",
-       "address": "10.16.1.11"
-     }
-  ],
-  "openvpn": {
-    "listen": "0.0.0.0:1194",
-    "subnet": "172.32.194.0/24"
-  }
-}
+[root@switch ~]# cat > central.yaml <<EOF
+name: central
+bridge: 
+  name: br-em1
+  address: 10.16.1.10/24
+subnet: 
+  endAt: 10.16.1.100
+  startAt: 10.16.1.44
+hosts: 
+- hostname: access1.hostname
+  address: 10.16.1.11
+openvpn: 
+  listen: 0.0.0.0:1194
+  subnet: 172.32.194.0/24
 EOF
 ```
 
@@ -100,17 +78,14 @@ Add a user network configuration:
 
 ```
 [root@access1 ~]# cd /etc/openlan
-[root@access1 ~]# cat > central.json <<EOF                          
-{
-  "crypt": {
-    "secret": "f367aa429ed2"
-  },
-  "connection": "public-ip-of-switch",
-  "username": "access1@central",
-  "password": "get-password-of-switch-administrator"
-}
+[root@access1 ~]# cat > central.yaml <<EOF                          
+crypt: 
+  secret: f367aa429ed2
+connection: public-ip-of-switch
+username: access1@central
+password: get-password-of-switch-administrator
 EOF
-[root@access1 ~]# cat central.json | python -m json.tool
+[root@access1 ~]# cat central.yaml | python -m json.tool
 ```
 
 Enable Access Point for central network:

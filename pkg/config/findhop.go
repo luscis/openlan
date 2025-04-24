@@ -1,12 +1,12 @@
 package config
 
 type FindHop struct {
-	Name      string      `json:"-"`
-	Check     string      `json:"check"`
-	Params    PingParams  `json:"params"`
-	Mode      string      `json:"mode,omitempty"`
-	NextHop   []string    `json:"nexthop"`
-	Available []MultiPath `json:"available,omitempty"`
+	Name      string      `json:"-" yaml:"-"`
+	Check     string      `json:"check" yaml:"check"`
+	Params    PingParams  `json:"params" yaml:"params"`
+	Mode      string      `json:"mode,omitempty" yaml:"mode,omitempty"`
+	NextHop   []string    `json:"nexthop" yaml:"nexthop"`
+	Available []MultiPath `json:"available,omitempty" yaml:"available,omitempty"`
 	Vrf       string      `json:"-" yaml:"-"`
 }
 
@@ -24,10 +24,10 @@ func (ng *FindHop) Correct() {
 }
 
 type PingParams struct {
-	Count    int `json:"count"`
-	Loss     int `json:"loss,omitempty"`
-	Rtt      int `json:"rtt,omitempty"`
-	Interval int `json:"interval,omitempty"`
+	Count    int `json:"count" yaml:"count"`
+	Loss     int `json:"loss,omitempty" yaml:"loss,omitempty"`
+	Rtt      int `json:"rtt,omitempty" yaml:"rtt,omitempty"`
+	Interval int `json:"interval,omitempty" yaml:"interval,omitempty"`
 }
 
 func (pp *PingParams) Correct() {

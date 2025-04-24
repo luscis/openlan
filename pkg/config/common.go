@@ -21,7 +21,7 @@ func VarDir(name ...string) string {
 }
 
 type Log struct {
-	File    string `json:"file,omitempty"`
+	File    string `json:"file,omitempty" yaml:"file,omitempty"`
 	Verbose int    `json:"level,omitempty" yaml:"level,omitempty"`
 }
 
@@ -39,8 +39,8 @@ func LogFile(file string) string {
 }
 
 type Http struct {
-	Listen string `json:"listen,omitempty"`
-	Public string `json:"public,omitempty"`
+	Listen string `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Public string `json:"public,omitempty" yaml:"public,omitempty"`
 }
 
 func (h *Http) Correct() {

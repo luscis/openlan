@@ -8,15 +8,15 @@ import (
 )
 
 type Perf struct {
-	Access   int `json:"access"`
-	Neighbor int `json:"neighbor"`
-	OnLine   int `json:"online"`
-	Link     int `json:"link"`
-	User     int `json:"user"`
-	Esp      int `json:"esp"`
-	State    int `json:"state"`
-	Policy   int `json:"policy"`
-	VxLAN    int `json:"vxlan"`
+	Access   int `json:"access" yaml:"access"`
+	Neighbor int `json:"neighbor" yaml:"neighbor"`
+	OnLine   int `json:"online" yaml:"online"`
+	Link     int `json:"link" yaml:"link"`
+	User     int `json:"user" yaml:"user"`
+	Esp      int `json:"esp" yaml:"esp"`
+	State    int `json:"state" yaml:"state"`
+	Policy   int `json:"policy" yaml:"policy"`
+	VxLAN    int `json:"vxlan" yaml:"vxlan"`
 }
 
 func (p *Perf) Correct() {
@@ -50,26 +50,26 @@ func (p *Perf) Correct() {
 }
 
 type Switch struct {
-	File      string              `json:"-"`
-	Alias     string              `json:"alias"`
-	Perf      Perf                `json:"limit,omitempty"`
-	Protocol  string              `json:"protocol"` // tcp, tls, udp, kcp, ws and wss.
-	Listen    string              `json:"listen"`
-	Timeout   int                 `json:"timeout"`
-	Http      *Http               `json:"http,omitempty"`
-	Log       Log                 `json:"log"`
-	Cert      *Cert               `json:"cert,omitempty"`
-	Crypt     *Crypt              `json:"crypt,omitempty"`
-	Network   map[string]*Network `json:"network,omitempty"`
-	Acl       map[string]*ACL     `json:"acl,omitempty"`
-	Qos       map[string]*Qos     `json:"qos,omitempty"`
-	FireWall  []FlowRule          `json:"firewall,omitempty"`
-	Queue     Queue               `json:"queue"`
-	PassFile  string              `json:"password"`
-	Ldap      *LDAP               `json:"ldap,omitempty"`
-	AddrPool  string              `json:"pool,omitempty"`
-	ConfDir   string              `json:"-"`
-	TokenFile string              `json:"-"`
+	File      string              `json:"-" yaml:"-"`
+	Alias     string              `json:"alias" yaml:"alias"`
+	Perf      Perf                `json:"limit,omitempty" yaml:"limit,omitempty"`
+	Protocol  string              `json:"protocol" yaml:"protocol"` // tcp, tls, udp, kcp, ws and wss.
+	Listen    string              `json:"listen" yaml:"listen"`
+	Timeout   int                 `json:"timeout" yaml:"timeout"`
+	Http      *Http               `json:"http,omitempty" yaml:"http,omitempty"`
+	Log       Log                 `json:"log" yaml:"log"`
+	Cert      *Cert               `json:"cert,omitempty" yaml:"cert,omitempty"`
+	Crypt     *Crypt              `json:"crypt,omitempty" yaml:"crypt,omitempty"`
+	Network   map[string]*Network `json:"network,omitempty" yaml:"network,omitempty"`
+	Acl       map[string]*ACL     `json:"acl,omitempty" yaml:"acl,omitempty"`
+	Qos       map[string]*Qos     `json:"qos,omitempty" yaml:"qos,omitempty"`
+	FireWall  []FlowRule          `json:"firewall,omitempty" yaml:"firewall,omitempty"`
+	Queue     Queue               `json:"queue" yaml:"queue"`
+	PassFile  string              `json:"password" yaml:"password"`
+	Ldap      *LDAP               `json:"ldap,omitempty" yaml:"ldap,omitempty"`
+	AddrPool  string              `json:"pool,omitempty" yaml:"pool,omitempty"`
+	ConfDir   string              `json:"-" yaml:"-"`
+	TokenFile string              `json:"-" yaml:"-"`
 }
 
 func NewSwitch() *Switch {
@@ -90,17 +90,24 @@ func (s *Switch) Parse() {
 	flag.Parse()
 }
 
+func (s *Switch) IsYaml() bool {
+	return libol.IsYaml(s.File)
+}
+
 func (s *Switch) Initialize() {
-	s.File = s.Dir("switch.json")
+	s.File = s.Dir("switch.json", "")
+	if err := libol.FileExist(s.File); err != nil {
+		s.File = s.Dir("switch.yaml", "")
+	}
 	if err := s.Load(); err != nil {
 		libol.Error("Switch.Initialize %s", err)
 	}
 	s.Correct()
-	s.LoadExt()
+	s.LoadExtend()
 	libol.Debug("Switch.Initialize %v", s)
 }
 
-func (s *Switch) LoadExt() {
+func (s *Switch) LoadExtend() {
 	s.LoadAcl()
 	s.LoadQos()
 	s.LoadNetworks()
@@ -126,10 +133,7 @@ func (s *Switch) Correct() {
 	if s.Timeout == 0 {
 		s.Timeout = 120
 	}
-
-	s.TokenFile = s.Dir("token")
-	s.File = s.Dir("switch.json")
-
+	s.TokenFile = s.Dir("token", "")
 	if s.Cert == nil {
 		s.Cert = &Cert{}
 	}
@@ -141,7 +145,7 @@ func (s *Switch) Correct() {
 	s.Crypt.Correct()
 	s.Perf.Correct()
 
-	s.PassFile = s.Dir("password")
+	s.PassFile = s.Dir("password", "")
 	if s.Protocol == "" {
 		s.Protocol = "tcp"
 	}
@@ -150,9 +154,20 @@ func (s *Switch) Correct() {
 	}
 }
 
-func (s *Switch) Dir(elem ...string) string {
-	args := append([]string{s.ConfDir}, elem...)
-	return filepath.Join(args...)
+func (s *Switch) Dir(elem0, elem1 string) string {
+	var file string
+
+	if elem1 == "" {
+		return filepath.Join(elem0)
+	}
+
+	if s.IsYaml() {
+		file = elem1 + ".yaml"
+	} else {
+		file = elem1 + ".json"
+	}
+
+	return filepath.Join(s.ConfDir, elem0, file)
 }
 
 func (s *Switch) formatNetwork(obj *Network) {
@@ -168,21 +183,29 @@ func (s *Switch) formatNetwork(obj *Network) {
 	}
 }
 
-func (s *Switch) LoadNetworkJson(data []byte) (*Network, error) {
-	libol.Debug("Switch.LoadNetworkJson %s", data)
+func (s *Switch) UnmarshalNetwork(data []byte) (*Network, error) {
+	libol.Debug("Switch.UnmarshalNetwork %s", data)
 	obj := &Network{
 		Alias:   s.Alias,
 		ConfDir: s.ConfDir,
 	}
-	if err := libol.Unmarshal(obj, data); err != nil {
-		return nil, err
+	if s.IsYaml() {
+		if err := libol.UnmarshalYaml(obj, data); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := libol.Unmarshal(obj, data); err != nil {
+			return nil, err
+		}
 	}
+
 	if _, ok := s.Network[obj.Name]; ok {
 		return nil, libol.NewErr("already existed")
 	}
 	if obj.Bridge == nil {
 		obj.Bridge = &Bridge{}
 	}
+
 	obj.LoadLink()
 	obj.LoadRoute()
 	obj.LoadOutput()
@@ -198,7 +221,7 @@ func (s *Switch) correctNetwork(obj *Network) {
 	obj.Correct(s)
 	obj.Alias = s.Alias
 	if obj.File == "" {
-		obj.File = s.Dir("network", obj.Name+".json")
+		obj.File = s.Dir("network", obj.Name)
 	}
 	if _, ok := s.Acl[obj.Name]; !ok {
 		obj := &ACL{
@@ -234,7 +257,7 @@ func (s *Switch) CorrectNetworks() {
 }
 
 func (s *Switch) AddNetwork(data []byte) (*Network, error) {
-	obj, err := s.LoadNetworkJson(data)
+	obj, err := s.UnmarshalNetwork(data)
 	if err != nil {
 		return nil, err
 	}
@@ -242,31 +265,35 @@ func (s *Switch) AddNetwork(data []byte) (*Network, error) {
 }
 
 func (s *Switch) LoadNetworks() {
-	files, err := filepath.Glob(s.Dir("network", "*.json"))
+	files, err := filepath.Glob(s.Dir("network", "*"))
 	if err != nil {
 		libol.Error("Switch.LoadNetwork %s", err)
 	}
-	for _, k := range files {
-		if data, err := libol.LoadFile(k); err != nil {
+	for _, file := range files {
+		data, err := libol.LoadFile(file)
+		if err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)
-		} else if _, err := s.LoadNetworkJson(data); err != nil {
+			continue
+		}
+		if _, err := s.UnmarshalNetwork(data); err != nil {
 			libol.Warn("Switch.LoadNetwork %s", err)
 		}
+
 	}
 	s.CorrectNetworks()
 }
 
 func (s *Switch) LoadQos() {
-	files, err := filepath.Glob(s.Dir("qos", "*.json"))
+	files, err := filepath.Glob(s.Dir("qos", "*"))
 	if err != nil {
 		libol.Error("Switch.LoadQos %s", err)
 	}
 
-	for _, k := range files {
+	for _, file := range files {
 		obj := &Qos{
-			File: k,
+			File: file,
 		}
-		if err := libol.UnmarshalLoad(obj, k); err != nil {
+		if err := libol.UnmarshalLoad(obj, file); err != nil {
 			libol.Error("Switch.LoadQos %s", err)
 			continue
 		}
@@ -277,22 +304,20 @@ func (s *Switch) LoadQos() {
 		for _, rule := range obj.Config {
 			rule.Correct()
 		}
-		if obj.File == "" {
-			obj.File = s.Dir("acl", obj.Name+".json")
-		}
+		obj.Correct(s)
 	}
 }
 
 func (s *Switch) LoadAcl() {
-	files, err := filepath.Glob(s.Dir("acl", "*.json"))
+	files, err := filepath.Glob(s.Dir("acl", "*"))
 	if err != nil {
 		libol.Error("Switch.LoadAcl %s", err)
 	}
-	for _, k := range files {
+	for _, file := range files {
 		obj := &ACL{
-			File: k,
+			File: file,
 		}
-		if err := libol.UnmarshalLoad(obj, k); err != nil {
+		if err := libol.UnmarshalLoad(obj, file); err != nil {
 			libol.Error("Switch.LoadAcl %s", err)
 			continue
 		}

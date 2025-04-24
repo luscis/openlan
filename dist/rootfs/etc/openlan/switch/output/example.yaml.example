@@ -1,0 +1,12 @@
+- segment: 43
+  remote: 3.3.3.5
+  dstport: 8899
+  protocol: vxlan
+- segment: 55
+  remote: 3.3.3.3
+  protocol: gre
+- segment: 23
+  remote: enp2s2
+- remote: 3.3.3.6
+  protocol: tcp
+  secret: swordfish

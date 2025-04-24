@@ -1,0 +1,13 @@
+name: acl-1
+rules:
+- destination: 192.168.77.121
+  protocol: tcp
+  dport: 443
+  action: drop
+- destination: 192.168.10.0/24
+  action: drop
+  source: 192.168.100.0/24
+  protocol: udp
+  dport: 68
+  action: drop
+

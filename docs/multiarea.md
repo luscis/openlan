@@ -29,18 +29,10 @@ Global configure:
 
 ```
 [root@switch-nj ~]# cd /etc/openlan/switch
-[root@switch-nj ~]# cat > switch.json <<EOF
-{
-  "cert": {
-    "dir": "/var/openlan/cert"
-  },
-  "http": {
-    "public": "/var/openlan/public"
-  },
-  "crypt": {
-    "secret": "f367aa429ed2"
-  }
-}
+[root@switch-nj ~]# cat > switch.yaml <<EOF
+crypt: 
+  secret: f367aa429ed2
+
 EOF
 ```
 
@@ -48,23 +40,18 @@ Network configure:
 
 ```
 [root@switch-nj ~]# cd network
-[root@switch-nj ~]# cat > private.json <<EOF
-{
-  "name": "private",
-  "bridge": {
-    "name": "br-em2",
-    "address": "192.168.1.66/24"
-  },
-  "subnet": {
-    "end": "192.168.1.99",
-    "netmask": "255.255.255.0",
-    "start": "192.168.1.80"
-  },
-  "openvpn": {
-    "listen": "0.0.0.0:1166",
-    "subnet": "172.32.66.0/24"
-  }
-}
+[root@switch-nj ~]# cat > private.yaml <<EOF
+name: private
+bridge: 
+  name: br-em2
+  address: 192.168.1.66/24
+subnet: 
+  endAt: 192.168.1.99
+  startAt: 192.168.1.80
+openvpn: 
+  listen: 0.0.0.0:1166
+  subnet: 172.32.66.0/24
+
 EOF
 [root@switch-nj ~]# openlan cfg co
 [root@switch-sh ~]# systemctl restart openlan-switch
@@ -84,18 +71,9 @@ Global configure:
 
 ```
 [root@switch-sh ~]# cd /etc/openlan/switch
-[root@switch-sh ~]# cat > switch.json <<EOF
-{
-  "cert": {
-    "dir": "/var/openlan/cert"
-  },
-  "http": {
-    "public": "/var/openlan/public"
-  },
-  "crypt": {
-    "secret": "7519e54d12c5"
-  }
-}
+[root@switch-sh ~]# cat > switch.yaml <<EOF
+crypt: 
+  secret: 7519e54d12c5
 EOF
 ```
 
@@ -103,33 +81,23 @@ Network configure:
 
 ```
 [root@switch-sh ~]# cd network
-[root@switch-sh ~]# cat > private.json <<EOF
-{
-  "name": "private",
-  "bridge": {
-    "name": "br-em2",
-    "address": "192.168.1.88/24"
-  },
-  "subnet": {
-    "end": "192.168.1.150",
-    "netmask": "255.255.255.0",
-    "start": "192.168.1.100"
-  },
-  "openvpn": {
-    "listen": "0.0.0.0:1188",
-    "subnet": "172.32.88.0/24"
-  },
-  "links": [
-    {
-      "connection": "address-of-switch-nj",
-      "password": "get-it-from-switch-nj",
-      "username": "admin",
-      "crypt": { 
-         "secret": "f367aa429ed2" 
-      }
-    }
-  ]
-}
+[root@switch-sh ~]# cat > private.yaml <<EOF
+name: private
+bridge: 
+  name: br-em2
+  address: 192.168.1.88/24
+subnet: 
+  endAt: 192.168.1.150
+  startAt: 192.168.1.100
+openvpn: 
+  listen: 0.0.0.0:1188
+  subnet: 172.32.88.0/24
+links:
+- connection: address-of-switch-nj
+  password: get-it-from-switch-nj
+  username: admin
+  crypt:  
+    secret: f367aa429ed2 
 EOF
 [root@switch-sh ~]# openlan cfg co
 [root@switch-sh ~]# systemctl restart openlan-switch

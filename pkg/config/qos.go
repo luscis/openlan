@@ -3,9 +3,9 @@ package config
 import "github.com/luscis/openlan/pkg/libol"
 
 type Qos struct {
-	File   string               `json:"-"`
-	Name   string               `json:"name"`
-	Config map[string]*QosLimit `json:"qos,omitempty"`
+	File   string               `json:"-" yaml:"-"`
+	Name   string               `json:"name" yaml:"name"`
+	Config map[string]*QosLimit `json:"qos,omitempty" yaml:"qos,omitempty"`
 }
 
 func (q *Qos) Correct(sw *Switch) {
@@ -13,7 +13,7 @@ func (q *Qos) Correct(sw *Switch) {
 		rule.Correct()
 	}
 	if q.File == "" {
-		q.File = sw.Dir("qos", q.Name+".json")
+		q.File = sw.Dir("qos", q.Name)
 	}
 }
 
@@ -24,7 +24,7 @@ func (q *Qos) Save() {
 }
 
 type QosLimit struct {
-	InSpeed float64 `json:"inSpeed,omitempty"`
+	InSpeed float64 `json:"inSpeed,omitempty" yaml:"inSpeed,omitempty"`
 }
 
 func (ql *QosLimit) Correct() {

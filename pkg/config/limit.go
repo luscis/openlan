@@ -3,12 +3,12 @@ package config
 import "github.com/luscis/openlan/pkg/libol"
 
 type Queue struct {
-	SockWr int `json:"sockWr"` // per frames about 1572(1514+4+20+20+14)bytes
-	SockRd int `json:"sockRd"` // per frames
-	TapWr  int `json:"tapWr"`  // per frames about 1572((1514+4+20+20+14))bytes
-	TapRd  int `json:"tapRd"`  // per frames
-	VirSnd int `json:"virSnd"`
-	VirWrt int `json:"virWrt"`
+	SockWr int `json:"sockWr" yaml:"sockWr"` // per frames about 1572(1514+4+20+20+14)bytes
+	SockRd int `json:"sockRd" yaml:"sockRd"` // per frames
+	TapWr  int `json:"tapWr" yaml:"tapWr"`   // per frames about 1572((1514+4+20+20+14))bytes
+	TapRd  int `json:"tapRd" yaml:"tapRd"`   // per frames
+	VirSnd int `json:"virSnd" yaml:"virSnd"`
+	VirWrt int `json:"virWrt" yaml:"virWrt"`
 }
 
 var (

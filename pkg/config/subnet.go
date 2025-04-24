@@ -6,16 +6,16 @@ import (
 )
 
 type Subnet struct {
-	Network string `json:"network,omitempty"`
-	Start   string `json:"startAt,omitempty"`
-	End     string `json:"endAt,omitempty"`
-	Netmask string `json:"netmask,omitempty"`
-	CIDR    string `json:"cidr,omitempty"`
+	Network string `json:"network,omitempty" yaml:"network,omitempty"`
+	Start   string `json:"startAt,omitempty" yaml:"startAt,omitempty"`
+	End     string `json:"endAt,omitempty" yaml:"endAt,omitempty"`
+	Netmask string `json:"netmask,omitempty" yaml:"netmask,omitempty"`
+	CIDR    string `json:"cidr,omitempty" yaml:"cidr,omitempty"`
 }
 
 type MultiPath struct {
-	NextHop string `json:"nexthop"`
-	Weight  int    `json:"weight"`
+	NextHop string `json:"nexthop" yaml:"nexthop"`
+	Weight  int    `json:"weight" yaml:"weight"`
 }
 
 func (mp *MultiPath) CompareEqual(b MultiPath) bool {
@@ -23,13 +23,13 @@ func (mp *MultiPath) CompareEqual(b MultiPath) bool {
 }
 
 type PrefixRoute struct {
-	File      string      `json:"-"`
-	Network   string      `json:"network,omitempty"`
-	Prefix    string      `json:"prefix"`
-	NextHop   string      `json:"nexthop"`
-	MultiPath []MultiPath `json:"multipath,omitempty"`
-	Metric    int         `json:"metric"`
-	FindHop   string      `json:"findhop,omitempty"`
+	File      string      `json:"-" yaml:"-"`
+	Network   string      `json:"network,omitempty" yaml:"network,omitempty"`
+	Prefix    string      `json:"prefix" yaml:"prefix"`
+	NextHop   string      `json:"nexthop" yaml:"nexthop"`
+	MultiPath []MultiPath `json:"multipath,omitempty" yaml:"multipath,omitempty"`
+	Metric    int         `json:"metric" yaml:"metric"`
+	FindHop   string      `json:"findhop,omitempty" yaml:"findhop,omitempty"`
 }
 
 func (r *PrefixRoute) String() string {
@@ -65,7 +65,7 @@ func CorrectRoutes(routes []PrefixRoute, nexthop string) {
 }
 
 type HostLease struct {
-	Network  string `json:"network,omitempty"`
-	Hostname string `json:"hostname"`
-	Address  string `json:"address"`
+	Network  string `json:"network,omitempty" yaml:"network,omitempty"`
+	Hostname string `json:"hostname" yaml:"hostname"`
+	Address  string `json:"address" yaml:"address"`
 }

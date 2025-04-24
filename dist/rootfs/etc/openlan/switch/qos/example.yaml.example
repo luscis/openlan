@@ -1,0 +1,6 @@
+name: example
+qos: 
+  hi@example:
+    inSpeed: 125000
+        
+    

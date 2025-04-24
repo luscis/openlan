@@ -21,13 +21,10 @@ tar -xvf config.tar.gz -C /opt
 ```
 [root@example openlan]# cd /opt/openlan/etc/openlan/switch/network
 [root@example network]#
-[root@example network]# cat ./example.json
-{
-    "name": "example",
-    "bridge": {
-        "address": "172.32.100.40/24"
-    }
-}
+[root@example network]# cat ./example.yaml
+name: example
+bridge:
+  address: 172.32.100.40/24
 [root@example network]#
 ```
 
@@ -61,33 +58,33 @@ openlan_switch_1   /var/openlan/script/switch ...   Up
 [root@example openlan]# docker cp openlan_switch_1:/var/openlan/openvpn ./
 [root@example openlan]# docker-compose down
 [root@example openlan]# vi docker-compose.yml
-version: "2.3"
+version: 2.3
 services:
   ipsec:
     restart: always
-    image: "luscis/openlan:v25.4.1.x86_64.deb"
+    image: luscis/openlan:v25.4.1.x86_64.deb
     privileged: true
     network_mode: host
-    entrypoint: ["/var/openlan/script/ipsec.sh"]
+    entrypoint: [/var/openlan/script/ipsec.sh]
     volumes:
       - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
   switch:
     restart: always
-    image: "luscis/openlan:v25.4.1.x86_64.deb"
+    image: luscis/openlan:v25.4.1.x86_64.deb
     privileged: true
-    network_mode: "host"
-    entrypoint: ["/var/openlan/script/switch.sh", "start"]
+    network_mode: host
+    entrypoint: [/var/openlan/script/switch.sh, start]
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
       - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
   proxy:
     restart: always
-    image: "luscis/openlan:v25.4.1.x86_64.deb"
+    image: luscis/openlan:v25.4.1.x86_64.deb
     privileged: true
-    network_mode: "host"
-    entrypoint: ["/usr/bin/openlan-proxy", "-conf", "/etc/openlan/proxy.json", "-log:file", "/dev/null"]
+    network_mode: host
+    entrypoint: [/usr/bin/openlan-proxy, -conf, /etc/openlan/proxy.yaml, -log:file, /dev/null]
     volumes:
       - /opt/openlan/etc/openlan:/etc/openlan
 

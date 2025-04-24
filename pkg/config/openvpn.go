@@ -9,32 +9,32 @@ import (
 )
 
 type OpenVPN struct {
-	Network   string           `json:"network"`
-	Url       string           `json:"url,omitempty"`
-	Directory string           `json:"directory,omitempty"`
-	Listen    string           `json:"listen"`
-	Protocol  string           `json:"protocol,omitempty"`
-	Subnet    string           `json:"subnet"`
-	Device    string           `json:"device"`
-	Version   int              `json:"version,omitempty"`
-	Auth      string           `json:"auth,omitempty"` // xauth or cert.
-	DhPem     string           `json:"dhPem,omitempty"`
-	RootCa    string           `json:"rootCa,omitempty"`
-	ServerCrt string           `json:"cert,omitempty"`
-	ServerKey string           `json:"key,omitempty"`
-	TlsAuth   string           `json:"tlsAuth,omitempty"`
-	Cipher    string           `json:"cipher,omitempty"`
-	Routes    []string         `json:"-"`
-	Renego    int              `json:"renego,omitempty"`
-	Script    string           `json:"-"`
-	Push      []string         `json:"push,omitempty"`
-	Clients   []*OpenVPNClient `json:"clients,omitempty"`
+	Network   string           `json:"network" yaml:"network"`
+	Url       string           `json:"url,omitempty" yaml:"url,omitempty"`
+	Directory string           `json:"directory,omitempty" yaml:"directory,omitempty"`
+	Listen    string           `json:"listen" yaml:"listen"`
+	Protocol  string           `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+	Subnet    string           `json:"subnet" yaml:"subnet"`
+	Device    string           `json:"device" yaml:"device"`
+	Version   int              `json:"version,omitempty" yaml:"version,omitempty"`
+	Auth      string           `json:"auth,omitempty" yaml:"auth,omitempty"` // xauth or cert.
+	DhPem     string           `json:"dhPem,omitempty" yaml:"dhPem,omitempty"`
+	RootCa    string           `json:"rootCa,omitempty" yaml:"rootCa,omitempty"`
+	ServerCrt string           `json:"cert,omitempty" yaml:"cert,omitempty"`
+	ServerKey string           `json:"key,omitempty" yaml:"key,omitempty"`
+	TlsAuth   string           `json:"tlsAuth,omitempty" yaml:"tlsAuth,omitempty"`
+	Cipher    string           `json:"cipher,omitempty" yaml:"cipher,omitempty"`
+	Routes    []string         `json:"-" yaml:"-"`
+	Renego    int              `json:"renego,omitempty" yaml:"renego,omitempty"`
+	Script    string           `json:"-" yaml:"-"`
+	Push      []string         `json:"push,omitempty" yaml:"push,omitempty"`
+	Clients   []*OpenVPNClient `json:"clients,omitempty" yaml:"clients,omitempty"`
 }
 
 type OpenVPNClient struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
-	Netmask string `json:"netmask"`
+	Name    string `json:"name" yaml:"name"`
+	Address string `json:"address" yaml:"address"`
+	Netmask string `json:"netmask" yaml:"netmask"`
 }
 
 var defaultVpn = &OpenVPN{

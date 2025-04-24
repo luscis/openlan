@@ -15,7 +15,7 @@ func SplitSecret(value string) (string, string) {
 }
 
 type ForwardSocks struct {
-	Server string `json:"server,omitempty"`
+	Server string `json:"server,omitempty" yaml:"server,omitempty"`
 }
 
 type ForwardTo struct {

@@ -10,8 +10,8 @@ import (
 )
 
 type Crypt struct {
-	Algo   string `json:"algorithm,omitempty"`
-	Secret string `json:"secret,omitempty"`
+	Algo   string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+	Secret string `json:"secret,omitempty" yaml:"secret,omitempty"`
 }
 
 func (c *Crypt) IsZero() bool {
@@ -25,11 +25,11 @@ func (c *Crypt) Correct() {
 }
 
 type Cert struct {
-	Dir      string `json:"directory"`
-	CrtFile  string `json:"cert"`
-	KeyFile  string `json:"key"`
-	CaFile   string `json:"rootCa"`
-	Insecure bool   `json:"insecure"`
+	Dir      string `json:"directory" yaml:"directory"`
+	CrtFile  string `json:"cert" yaml:"cert"`
+	KeyFile  string `json:"key" yaml:"key"`
+	CaFile   string `json:"rootCa" yaml:"rootCa"`
+	Insecure bool   `json:"insecure" yaml:"insecure"`
 }
 
 func (c *Cert) Correct() {
