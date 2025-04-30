@@ -6,9 +6,7 @@ import (
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
-	nl "github.com/vishvananda/netlink"
 )
 
 func PeerName(name, prefix string) (string, string) {
@@ -83,47 +81,9 @@ func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 	if err := master.Delay(cfg.Delay); err != nil {
 		w.out.Warn("OpenLANWorker.UpBridge: Delay %s", err)
 	}
-	w.connectPeer(cfg)
 	if err := master.CallIptables(0); err != nil {
 		w.out.Warn("OpenLANWorker.Start: CallIptables %s", err)
 	}
-}
-
-func (w *OpenLANWorker) connectPeer(cfg *co.Bridge) {
-	if cfg.Peer == "" {
-		return
-	}
-	in, ex := PeerName(cfg.Network, "-e")
-	link := &nl.Veth{
-		LinkAttrs: nl.LinkAttrs{Name: in},
-		PeerName:  ex,
-	}
-	br := cn.NewBrCtl(cfg.Peer, cfg.IPMtu)
-	promise := &libol.Promise{
-		First:  time.Second * 2,
-		MaxInt: time.Minute,
-		MinInt: time.Second * 10,
-	}
-	promise.Go(func() error {
-		if !br.Has() {
-			w.out.Warn("%s notFound", br.Name)
-			return libol.NewErr("%s notFound", br.Name)
-		}
-		err := nl.LinkAdd(link)
-		if err != nil {
-			w.out.Error("OpenLANWorker.connectPeer: %s", err)
-			return nil
-		}
-		br0 := cn.NewBrCtl(cfg.Name, cfg.IPMtu)
-		if err := br0.AddPort(in); err != nil {
-			w.out.Error("OpenLANWorker.connectPeer: %s", err)
-		}
-		br1 := cn.NewBrCtl(cfg.Peer, cfg.IPMtu)
-		if err := br1.AddPort(ex); err != nil {
-			w.out.Error("OpenLANWorker.connectPeer: %s", err)
-		}
-		return nil
-	})
 }
 
 func (w *OpenLANWorker) Start(v api.Switcher) {
@@ -138,25 +98,8 @@ func (w *OpenLANWorker) Start(v api.Switcher) {
 	w.WorkerImpl.Start(v)
 }
 
-func (w *OpenLANWorker) downBridge(cfg *co.Bridge) {
-	w.closePeer(cfg)
+func (w *OpenLANWorker) downBridge() {
 	_ = w.br.Close()
-}
-
-func (w *OpenLANWorker) closePeer(cfg *co.Bridge) {
-	if cfg.Peer == "" {
-		return
-	}
-	in, ex := PeerName(cfg.Network, "-e")
-	link := &nl.Veth{
-		LinkAttrs: nl.LinkAttrs{Name: in},
-		PeerName:  ex,
-	}
-	err := nl.LinkDel(link)
-	if err != nil {
-		w.out.Error("OpenLANWorker.closePeer: %s", err)
-		return
-	}
 }
 
 func (w *OpenLANWorker) Stop() {
@@ -164,7 +107,7 @@ func (w *OpenLANWorker) Stop() {
 	w.WorkerImpl.Stop()
 	w.UnLoadLinks()
 	w.startTime = 0
-	w.downBridge(w.cfg.Bridge)
+	w.downBridge()
 }
 
 func (w *OpenLANWorker) UpTime() int64 {

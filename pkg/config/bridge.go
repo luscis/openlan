@@ -2,7 +2,7 @@ package config
 
 type Bridge struct {
 	Network  string `json:"-" yaml:"-"`
-	Peer     string `json:"peer,omitempty" yaml:"peer,omitempty"`
+	Share    string `json:"share,omitempty" yaml:"share,omitempty"`
 	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
 	IPMtu    int    `json:"mtu,omitempty" yaml:"mtu,omitempty"`
 	Address  string `json:"address,omitempty" yaml:"address,omitempty"`

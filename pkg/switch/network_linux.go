@@ -74,21 +74,6 @@ func (w *WorkerImpl) Provider() string {
 	return w.cfg.Provider
 }
 
-func (w *WorkerImpl) newRoute(rt *co.PrefixRoute) *models.Route {
-	if rt.NextHop == "" {
-		w.out.Warn("WorkerImpl.NewRoute: %s noNextHop", rt.Prefix)
-		return nil
-	}
-	rte := models.NewRoute(rt.Prefix, w.IfAddr())
-	if rt.Metric > 0 {
-		rte.Metric = rt.Metric
-	}
-	if rt.NextHop != "" {
-		rte.Origin = rt.NextHop
-	}
-	return rte
-}
-
 func (w *WorkerImpl) Initialize() {
 	cfg := w.cfg
 
@@ -119,12 +104,8 @@ func (w *WorkerImpl) Initialize() {
 	w.fire = cn.NewFireWallTable(cfg.Name)
 	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
 
-	if out, err := w.setV.Clear(); err != nil {
-		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
-	}
-	if out, err := w.setR.Clear(); err != nil {
-		w.out.Error("WorkerImpl.Initialize: create ipset: %s %s", out, err)
-	}
+	w.setV.Clear()
+	w.setR.Clear()
 
 	w.ztrust = NewZTrust(cfg.Name, 30)
 	w.ztrust.Initialize()
@@ -946,6 +927,7 @@ func (w *WorkerImpl) forwardSubnet() {
 		input = w.br.L3Name()
 		w.forwardZone(input)
 	}
+	share := cfg.Bridge.Share
 
 	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
 	if ifAddr == "" {
@@ -954,6 +936,9 @@ func (w *WorkerImpl) forwardSubnet() {
 
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(input, "Accept related")
+	if share != "" {
+		w.toRelated(share, "Accept related")
+	}
 	for _, rt := range cfg.Routes {
 		if !w.addIpSet(rt) {
 			break
@@ -963,11 +948,17 @@ func (w *WorkerImpl) forwardSubnet() {
 	if w.vrf != nil {
 		w.toForward_i(w.vrf.Name(), w.setR.Name, "To route")
 	} else {
+		if share != "" {
+			w.toForward_i(share, w.setR.Name, "To route")
+		}
 		w.toForward_i(input, w.setR.Name, "To route")
 	}
 
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
+	}
+	if share != "" {
+		w.toMasq_i(share, w.setR.Name, "To Masq")
 	}
 	w.toMasq_i(input, w.setR.Name, "To Masq")
 }
