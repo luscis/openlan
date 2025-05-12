@@ -927,7 +927,6 @@ func (w *WorkerImpl) forwardSubnet() {
 		input = w.br.L3Name()
 		w.forwardZone(input)
 	}
-	share := cfg.Bridge.Share
 
 	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
 	if ifAddr == "" {
@@ -936,9 +935,6 @@ func (w *WorkerImpl) forwardSubnet() {
 
 	// Enable MASQUERADE, and FORWARD it.
 	w.toRelated(input, "Accept related")
-	if share != "" {
-		w.toRelated(share, "Accept related")
-	}
 	for _, rt := range cfg.Routes {
 		if !w.addIpSet(rt) {
 			break
@@ -948,19 +944,13 @@ func (w *WorkerImpl) forwardSubnet() {
 	if w.vrf != nil {
 		w.toForward_i(w.vrf.Name(), w.setR.Name, "To route")
 	} else {
-		if share != "" {
-			w.toForward_i(share, w.setR.Name, "To route")
-		}
-		w.toForward_i(input, w.setR.Name, "To route")
+		w.toForward_i("", w.setR.Name, "To route")
 	}
 
 	if vpn != nil {
 		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
 	}
-	if share != "" {
-		w.toMasq_i(share, w.setR.Name, "To Masq")
-	}
-	w.toMasq_i(input, w.setR.Name, "To Masq")
+	w.toMasq_i("", w.setR.Name, "To Masq")
 }
 
 func (w *WorkerImpl) createVPN() {
