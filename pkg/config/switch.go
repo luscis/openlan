@@ -171,13 +171,12 @@ func (s *Switch) Dir(elem0, elem1 string) string {
 }
 
 func (s *Switch) RemarshalNetwork(obj *Network, format string) {
+	context := obj.Specifies
+
+	obj.NewSpecifies()
 	if obj.Specifies == nil {
 		return
 	}
-
-	context := obj.Specifies
-	obj.NewSpecifies()
-
 	if format == "" {
 		format = "json"
 		if s.IsYaml() {
