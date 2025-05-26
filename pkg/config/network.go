@@ -125,7 +125,6 @@ func (n *Network) LoadRoute() {
 }
 
 func (n *Network) LoadOutput() {
-
 	file := n.Dir("output")
 	if err := libol.UnmarshalLoad(&n.Outputs, file); err != nil {
 		libol.Error("Network.LoadOutput... %n", err)
