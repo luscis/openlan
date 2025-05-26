@@ -191,7 +191,7 @@
     <div class="point">
         <div class="panel-header">
             <p>
-                <span>The point accessed to, and total </span><span>{{ len .Clients }}+{{ len .Points }}</span>.
+                <span>The point accessed to, and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -221,7 +221,7 @@
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
-                {{ range .Points }}
+                {{ range .Access }}
                     <tr>
                         <td>{{ .UUID }}</td>
                         <td>{{ prettyTime .AliveTime }}</td>

@@ -89,7 +89,6 @@ func (l *Link) Start() error {
 		args := []string{
 			"-alias", l.cfg.Connection + "@" + l.cfg.Network,
 			"-conf", file,
-			"-terminal", "ww",
 		}
 		l.out.Debug("Link.Start %s %v", l.Path(), args)
 		cmd := exec.Command(l.Path(), args...)
