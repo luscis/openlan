@@ -770,6 +770,11 @@ func (w *WorkerImpl) toRelated(output, comment string) {
 		CtState: "RELATED,ESTABLISHED",
 		Comment: comment,
 	})
+	w.fire.Filter.For.AddRule(cn.IPRule{
+		Input:   output,
+		CtState: "RELATED,ESTABLISHED",
+		Comment: comment,
+	})
 }
 
 func (w *WorkerImpl) GetCfgs() (*co.Network, *co.OpenVPN) {
