@@ -167,7 +167,7 @@ func UnmarshalLoad(v interface{}, file string) error {
 	}
 
 	if IsYaml(file) {
-		return Unmarshal(v, contents)
+		return UnmarshalYaml(v, contents)
 	} else {
 		return Unmarshal(v, contents)
 	}
