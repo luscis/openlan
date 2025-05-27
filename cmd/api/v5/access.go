@@ -27,13 +27,13 @@ func (u Access) Tmpl() string {
 }
 
 func (u Access) List(c *cli.Context) error {
-	url := u.Url(c.String("url"), "")
+	name := c.String("name")
+	url := u.Url(c.String("url"), name)
 	clt := u.NewHttp(c.String("token"))
 	var items []schema.Access
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
-	name := c.String("name")
 	if len(name) > 0 {
 		tmp := items[:0]
 		for _, obj := range items {

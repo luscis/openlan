@@ -1,7 +1,7 @@
 package schema
 
 type Access struct {
-	Uptime    int64             `json:"upTime"`
+	Uptime    int64             `json:"uptime"`
 	UUID      string            `json:"uuid"`
 	Network   string            `json:"network"`
 	User      string            `json:"user"`
@@ -17,4 +17,5 @@ type Access struct {
 	System    string            `json:"system"`
 	Address   string            `json:"address"`
 	Names     map[string]string `json:"names"`
+	Fallback  string            `json:"fallback"`
 }
