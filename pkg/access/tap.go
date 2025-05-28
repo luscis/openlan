@@ -3,7 +3,6 @@ package access
 import (
 	"bytes"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -33,7 +32,7 @@ type TapWorker struct {
 	neighbor   Neighbors
 	devCfg     network.TapConfig
 	pinCfg     *config.Access
-	ifAddr     string
+	ifAddr     net.IP
 	writeQueue chan *libol.FrameMessage
 	done       chan bool
 	out        *libol.SubLogger
@@ -41,12 +40,13 @@ type TapWorker struct {
 }
 
 func NewTapWorker(devCfg network.TapConfig, pinCfg *config.Access) (a *TapWorker) {
+	module := pinCfg.Connection + "|" + pinCfg.Network
 	a = &TapWorker{
 		devCfg:     devCfg,
 		pinCfg:     pinCfg,
 		done:       make(chan bool, 2),
 		writeQueue: make(chan *libol.FrameMessage, pinCfg.Queue.TapWr),
-		out:        libol.NewSubLogger(pinCfg.Id()),
+		out:        libol.NewSubLogger(module),
 		eventQueue: make(chan *WorkerEvent, 32),
 	}
 	return
@@ -86,22 +86,17 @@ func (a *TapWorker) IsTun() bool {
 }
 
 func (a *TapWorker) setIpAddr(ipaddr string) {
-	// format ip address.
-	if addr, err := libol.IPNetmask(ipaddr); err == nil {
-		ifAddr := strings.SplitN(addr, "/", 2)[0]
-		a.ether.IpAddr = net.ParseIP(ifAddr).To4()
-		if a.ether.IpAddr == nil {
-			a.ether.IpAddr = []byte{0x00, 0x00, 0x00, 0x00}
-		}
-		a.out.Info("TapWorker.setEther: srcIp % x", a.ether.IpAddr)
+	if addr := libol.ParseAddr(ipaddr); addr != nil {
+		a.ether.IpAddr = addr.To4()
+		a.out.Info("TapWorker.setEther: srcIp %s", addr)
 		// changed address need open device again.
-		if a.ifAddr != "" && a.ifAddr != addr {
+		if !addr.Equal(a.ifAddr) {
 			a.out.Warn("TapWorker.setEther changed %s->%s", a.ifAddr, addr)
 			a.eventQueue <- NewEvent(EvTapReset, "ifAddr changed")
 		}
 		a.ifAddr = addr
 	} else {
-		a.out.Warn("TapWorker.setEther: %s: %s", addr, err)
+		a.out.Warn("TapWorker.setEther: %s ", ipaddr)
 	}
 }
 func (a *TapWorker) setAddr(ipAddr string, hwAddr []byte) {

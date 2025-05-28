@@ -53,6 +53,7 @@ type SocketWorker struct {
 }
 
 func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker {
+	module := client.String() + "|" + c.Network
 	t := &SocketWorker{
 		client:     client,
 		network:    models.NewNetwork(c.Network, c.Interface.Address),
@@ -64,7 +65,7 @@ func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker 
 		eventQueue: make(chan *WorkerEvent, 32),
 		writeQueue: make(chan *libol.FrameMessage, c.Queue.SockWr),
 		jobber:     make([]jobTimer, 0, 32),
-		out:        libol.NewSubLogger(c.Id()),
+		out:        libol.NewSubLogger(module),
 	}
 	t.user = &models.User{
 		Alias:    c.Alias,

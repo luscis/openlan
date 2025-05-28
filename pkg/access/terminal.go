@@ -77,8 +77,7 @@ func (t *Terminal) CmdShow(args []string) {
 			fmt.Printf("%s\n", out)
 		}
 	case "statistics":
-		if c := t.Acceser.Client(); c != nil {
-			v := c.Statistics()
+		if v := t.Acceser.Statistics(); v != nil {
 			if out, err := libol.Marshal(v, true); err == nil {
 				fmt.Printf("%s\n", out)
 			}

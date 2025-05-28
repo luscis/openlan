@@ -38,6 +38,7 @@ type Access struct {
 	StatusFile  string    `json:"status,omitempty" yaml:"status,omitempty"`
 	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
 	Forward     []string  `json:"forward,omitempty" yaml:"forward,omitempty"`
+	Fallback    string    `json:"fallback,omitempty" yaml:"fallback,omitempty"`
 }
 
 func (i *Interface) Correct() {
@@ -64,7 +65,7 @@ func (ap *Access) Parse() {
 }
 
 func (ap *Access) Id() string {
-	return ap.Connection + ":" + ap.Network
+	return ap.Connection + "|" + ap.Network
 }
 
 func (ap *Access) Initialize() error {
@@ -87,6 +88,9 @@ func (ap *Access) Correct() {
 		}
 	}
 	SetListen(&ap.Connection, 10002)
+	if ap.Fallback != "" {
+		SetListen(&ap.Fallback, 10002)
+	}
 	if runtime.GOOS == "darwin" {
 		ap.Interface.Provider = "tun"
 	}

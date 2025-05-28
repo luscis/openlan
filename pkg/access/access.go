@@ -14,14 +14,13 @@ type Acceser interface {
 	Addr() string
 	IfName() string
 	IfAddr() string
-	Client() libol.SocketClient
-	Device() network.Taper
 	Status() libol.SocketStatus
 	UpTime() int64
 	UUID() string
 	Protocol() string
 	User() string
 	Record() map[string]int64
+	Statistics() map[string]int64
 	Tenant() string
 	Alias() string
 	Config() *config.Access
@@ -78,7 +77,7 @@ func (p *MixAccess) UUID() string {
 }
 
 func (p *MixAccess) Status() libol.SocketStatus {
-	client := p.Client()
+	client := p.client()
 	if client == nil {
 		return 0
 	}
@@ -90,25 +89,27 @@ func (p *MixAccess) Addr() string {
 }
 
 func (p *MixAccess) IfName() string {
-	device := p.Device()
+	device := p.device()
 	if device == nil {
 		return ""
 	}
 	return device.Name()
 }
 
-func (p *MixAccess) Client() libol.SocketClient {
-	if p.worker.conWorker == nil {
+func (p *MixAccess) client() libol.SocketClient {
+	conn := p.worker.conWorker
+	if conn == nil {
 		return nil
 	}
-	return p.worker.conWorker.client
+	return conn.client
 }
 
-func (p *MixAccess) Device() network.Taper {
-	if p.worker.tapWorker == nil {
+func (p *MixAccess) device() network.Taper {
+	tap := p.worker.tapWorker
+	if tap == nil {
 		return nil
 	}
-	return p.worker.tapWorker.device
+	return tap.device
 }
 
 func (p *MixAccess) UpTime() int64 {
@@ -147,4 +148,12 @@ func (p *MixAccess) Network() *models.Network {
 
 func (p *MixAccess) Protocol() string {
 	return p.config.Protocol
+}
+
+func (p *MixAccess) Statistics() map[string]int64 {
+	client := p.client()
+	if client == nil {
+		return nil
+	}
+	return client.Statistics()
 }

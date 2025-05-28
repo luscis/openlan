@@ -48,7 +48,7 @@ func (p *Access) DelAddr(addr string) error {
 	}
 	ipAddr, err := netlink.ParseAddr(addr)
 	if err != nil {
-		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", addr, err)
+		p.out.Error("Access.DelAddr.ParseCIDR %s: %s", addr, err)
 		return err
 	}
 	if err := netlink.AddrDel(p.link, ipAddr); err != nil {

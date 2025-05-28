@@ -82,23 +82,27 @@ type PrefixRule struct {
 	NextHop     net.IP
 }
 
-func GetSocketClient(p *config.Access) libol.SocketClient {
+func GetSocketClient(p *config.Access, remote string) libol.SocketClient {
 	crypt := p.Crypt
 	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
+
+	if remote == "" {
+		remote = p.Connection
+	}
 	switch p.Protocol {
 	case "kcp":
 		c := libol.NewKcpConfig()
 		c.Block = block
 		c.RdQus = p.Queue.SockRd
 		c.WrQus = p.Queue.SockWr
-		return libol.NewKcpClient(p.Connection, c)
+		return libol.NewKcpClient(remote, c)
 	case "tcp":
 		c := &libol.TcpConfig{
 			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libol.NewTcpClient(p.Connection, c)
+		return libol.NewTcpClient(remote, c)
 	case "udp":
 		c := &libol.UdpConfig{
 			Block:   block,
@@ -106,13 +110,13 @@ func GetSocketClient(p *config.Access) libol.SocketClient {
 			RdQus:   p.Queue.SockRd,
 			WrQus:   p.Queue.SockWr,
 		}
-		return libol.NewUdpClient(p.Connection, c)
+		return libol.NewUdpClient(remote, c)
 	case "ws":
 		c := &libol.WebConfig{
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libol.NewWebClient(p.Connection, c)
+		return libol.NewWebClient(remote, c)
 	case "wss":
 		c := &libol.WebConfig{
 			Block: block,
@@ -125,7 +129,7 @@ func GetSocketClient(p *config.Access) libol.SocketClient {
 				RootCa:   p.Cert.CaFile,
 			}
 		}
-		return libol.NewWebClient(p.Connection, c)
+		return libol.NewWebClient(remote, c)
 	default:
 		c := &libol.TcpConfig{
 			Block: block,
@@ -138,7 +142,7 @@ func GetSocketClient(p *config.Access) libol.SocketClient {
 				RootCAs:            p.Cert.GetCertPool(),
 			}
 		}
-		return libol.NewTcpClient(p.Connection, c)
+		return libol.NewTcpClient(remote, c)
 	}
 }
 
@@ -163,6 +167,7 @@ type Worker struct {
 	ifAddr    string
 	listener  WorkerListener
 	conWorker *SocketWorker
+	sosWorker []*SocketWorker
 	tapWorker *TapWorker
 	cfg       *config.Access
 	uuid      string
@@ -186,6 +191,7 @@ func NewWorker(cfg *config.Access) *Worker {
 		ticker:    time.NewTicker(2 * time.Second),
 		nameCache: make(map[string]string),
 		addrCache: make(map[string]string),
+		sosWorker: make([]*SocketWorker, 2),
 	}
 }
 
@@ -198,21 +204,28 @@ func (w *Worker) Initialize() {
 		_, _ = fp.WriteString(fmt.Sprintf("%d", pid))
 	}
 	w.out.Info("Worker.Initialize")
-	client := GetSocketClient(w.cfg)
+	client := GetSocketClient(w.cfg, "")
 	w.conWorker = NewSocketWorker(client, w.cfg)
+	if w.cfg.Fallback != "" {
+		back := GetSocketClient(w.cfg, w.cfg.Fallback)
+		w.sosWorker[1] = NewSocketWorker(back, w.cfg)
+	}
+	w.sosWorker[0] = w.conWorker
 
 	tapCfg := GetTapCfg(w.cfg)
 	// register listener
 	w.tapWorker = NewTapWorker(tapCfg, w.cfg)
 
-	w.conWorker.SetUUID(w.UUID())
-	w.conWorker.listener = SocketWorkerListener{
-		OnClose:   w.OnClose,
-		OnSuccess: w.OnSuccess,
-		OnIpAddr:  w.OnIpAddr,
-		ReadAt:    w.tapWorker.Write,
+	for _, conn := range w.sosWorker {
+		conn.SetUUID(w.UUID())
+		conn.listener = SocketWorkerListener{
+			OnClose:   w.OnClose,
+			OnSuccess: w.OnSuccess,
+			OnIpAddr:  w.OnIpAddr,
+			ReadAt:    w.tapWorker.Write,
+		}
+		conn.Initialize()
 	}
-	w.conWorker.Initialize()
 
 	w.tapWorker.listener = TapWorkerListener{
 		OnOpen: func(t *TapWorker) error {
@@ -229,7 +242,15 @@ func (w *Worker) Initialize() {
 			}
 			return nil
 		},
-		ReadAt:   w.conWorker.Write,
+		ReadAt: func(frame *libol.FrameMessage) error {
+			for _, conn := range w.sosWorker {
+				if !conn.client.Have(libol.ClAuth) {
+					continue
+				}
+				return conn.Write(frame)
+			}
+			return nil
+		},
 		FindNext: w.FindNext,
 	}
 	w.tapWorker.Initialize()
@@ -274,7 +295,10 @@ func (w *Worker) SaveStatus() {
 func (w *Worker) Start() {
 	w.out.Debug("Worker.Start linux.")
 	w.tapWorker.Start()
-	w.conWorker.Start()
+
+	for _, conn := range w.sosWorker {
+		conn.Start()
+	}
 
 	libol.Go(func() {
 		for {
@@ -294,7 +318,9 @@ func (w *Worker) Stop() {
 	}
 	w.done <- true
 	w.FreeIpAddr()
-	w.conWorker.Stop()
+	for _, conn := range w.sosWorker {
+		conn.Stop()
+	}
 	w.tapWorker.Stop()
 	w.conWorker = nil
 	w.tapWorker = nil
@@ -324,20 +350,26 @@ func (w *Worker) FindNext(dest []byte) []byte {
 }
 
 func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
+	if n.Address == "" {
+		w.out.Debug("Worker.OnIpAddr: nil")
+		return nil
+	}
+
 	addr := fmt.Sprintf("%s/%s", n.Address, n.Netmask)
 	if models.NetworkEqual(w.network, n) {
 		w.out.Debug("Worker.OnIpAddr: %s noChanged", addr)
 		return nil
 	}
 
-	w.out.Cmd("Worker.OnIpAddr: %s", addr)
-	w.out.Cmd("Worker.OnIpAddr: %s", n.Routes)
+	w.out.Info("Worker.OnIpAddr: %s %s", addr, n.Routes)
 
-	prefix := libol.Netmask2Len(n.Netmask)
-	ipStr := fmt.Sprintf("%s/%d", n.Address, prefix)
-	w.tapWorker.OnIpAddr(ipStr)
-	if w.listener.AddAddr != nil {
-		_ = w.listener.AddAddr(ipStr, n.Gateway)
+	if w.network == nil {
+		prefix := libol.Netmask2Len(n.Netmask)
+		ipStr := fmt.Sprintf("%s/%d", n.Address, prefix)
+		w.tapWorker.OnIpAddr(ipStr)
+		if w.listener.AddAddr != nil {
+			_ = w.listener.AddAddr(ipStr, n.Gateway)
+		}
 	}
 
 	if n.Gateway != "" && runtime.GOOS == "darwin" {
