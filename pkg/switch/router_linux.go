@@ -8,7 +8,8 @@ import (
 
 type RouterWorker struct {
 	*WorkerImpl
-	spec *co.RouterSpecifies
+	spec      *co.RouterSpecifies
+	addresses []*nl.Addr
 }
 
 func NewRouterWorker(c *co.Network) *RouterWorker {
@@ -21,6 +22,19 @@ func NewRouterWorker(c *co.Network) *RouterWorker {
 
 func (w *RouterWorker) Initialize() {
 	w.WorkerImpl.Initialize()
+
+	spec := w.spec
+	if spec.Loopback != "" {
+		if addr, err := nl.ParseAddr(spec.Loopback); err == nil {
+			w.addresses = append(w.addresses, addr)
+		}
+	}
+	for _, _addr := range spec.Addresses {
+		if addr, err := nl.ParseAddr(_addr); err == nil {
+			w.addresses = append(w.addresses, addr)
+		}
+	}
+
 	w.Forward()
 }
 
@@ -40,23 +54,17 @@ func (w *RouterWorker) Forward() {
 }
 
 func (w *RouterWorker) addAddress() error {
-	spec := w.spec
-	if spec.Loopback == "" {
-		return nil
-	}
 	link, err := nl.LinkByName("lo")
 	if err != nil {
 		w.out.Warn("addAddress: %s", err)
 		return err
 	}
-	addr, err := nl.ParseAddr(spec.Loopback)
-	if err != nil {
-		w.out.Warn("addAddress: %s", err)
-		return err
-	}
-	if err := nl.AddrAdd(link, addr); err != nil {
-		w.out.Warn("addAddress: %s", err)
-		return err
+	for _, addr := range w.addresses {
+		if err := nl.AddrAdd(link, addr); err != nil {
+			w.out.Warn("addAddress: %s: %s", addr, err)
+			continue
+		}
+		w.out.Info("addAddress %s on lo", addr)
 	}
 	return nil
 }
@@ -68,23 +76,17 @@ func (w *RouterWorker) Start(v api.Switcher) {
 }
 
 func (w *RouterWorker) delAddress() error {
-	spec := w.spec
-	if spec.Loopback == "" {
-		return nil
-	}
 	link, err := nl.LinkByName("lo")
 	if err != nil {
 		w.out.Warn("delAddress: %s", err)
 		return err
 	}
-	addr, err := nl.ParseAddr(spec.Loopback)
-	if err != nil {
-		w.out.Warn("delAddress: %s", err)
-		return err
-	}
-	if err := nl.AddrDel(link, addr); err != nil {
-		w.out.Warn("delAddress: %s", err)
-		return err
+	for _, addr := range w.addresses {
+		if err := nl.AddrDel(link, addr); err != nil {
+			w.out.Warn("delAddress: %s: %s", addr, err)
+			continue
+		}
+		w.out.Info("delAddress %s on lo", addr)
 	}
 	return nil
 }

@@ -30,7 +30,7 @@ func (s *IPSecTunnel) Id() string {
 }
 
 type IPSecSpecifies struct {
-	Name    string         `json:"name" yaml:"name"`
+	Name    string         `json:"-" yaml:"-"`
 	Tunnels []*IPSecTunnel `json:"tunnels" yaml:"tunnels"`
 }
 

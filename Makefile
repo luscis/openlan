@@ -95,7 +95,7 @@ docker-deb: docker-bin ## build image for debian
 docker-bin:
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
-docker: docker-deb docker-rhel ## build docker images
+docker: docker-deb ## build docker images
 
 docker-builder: builder ## create a builder
 

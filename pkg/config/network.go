@@ -45,11 +45,11 @@ func (n *Network) NewSpecifies() interface{} {
 func (n *Network) Correct(sw *Switch) {
 	ipAddr := ""
 	ipMask := ""
-	if n.Bridge == nil {
-		n.Bridge = &Bridge{}
-	}
 	if n.Snat == "" {
 		n.Snat = "enable"
+	}
+	if n.Bridge == nil {
+		n.Bridge = &Bridge{}
 	}
 	switch n.Provider {
 	case "router":
