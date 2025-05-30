@@ -89,11 +89,6 @@ func (a *TapWorker) setIpAddr(ipaddr string) {
 	if addr := libol.ParseAddr(ipaddr); addr != nil {
 		a.ether.IpAddr = addr.To4()
 		a.out.Info("TapWorker.setEther: srcIp %s", addr)
-		// changed address need open device again.
-		if !addr.Equal(a.ifAddr) {
-			a.out.Warn("TapWorker.setEther changed %s->%s", a.ifAddr, addr)
-			a.eventQueue <- NewEvent(EvTapReset, "ifAddr changed")
-		}
 		a.ifAddr = addr
 	} else {
 		a.out.Warn("TapWorker.setEther: %s ", ipaddr)
