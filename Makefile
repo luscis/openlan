@@ -6,12 +6,13 @@ SHELL := /bin/bash
 ## version
 LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
 VER = $(shell ./dist/version.sh)
-ARCH = $(shell uname -m)
 
 ## declare directory
 SD = $(shell pwd)
 BD = "$(SD)/build"
 CD = "$(SD)/build/coverage"
+
+ARCH ?=amd64
 LIN_DIR ?= "openlan-$(VER).$(ARCH)"
 WIN_DIR ?= "openceci-windows-$(VER).$(ARCH)"
 MAC_DIR ?= "openceci-darwin-$(VER).$(ARCH)"
@@ -110,19 +111,19 @@ docker-compose: ## create a compose files
 ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
 
 linux: linux-access linux-switch linux-ceci linux-proxy ## build linux binary
-	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 
 linux-access:
-	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
 
 linux-switch:
-	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
 
 linux-ceci:
-	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
 
 linux-proxy:
-	GOOS=linux go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 
 linux-gzip: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
@@ -154,10 +155,10 @@ install: env linux ## install packages
 windows: windows-ceci windows-access ## build windows binary
 
 windows-ceci:
-	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.exe ./cmd/ceci
+	GOOS=windows GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.exe ./cmd/ceci
 
 windows-access:
-	GOOS=windows GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.exe ./cmd/access
+	GOOS=windows GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.exe ./cmd/access
 
 windows-gzip: env windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
@@ -172,12 +173,10 @@ osx: darwin
 darwin: darwin-ceci darwin-access ## build darwin binary
 
 darwin-ceci:
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.dar ./cmd/ceci
-	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.arm64.dar ./cmd/ceci
+	GOOS=darwin GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci.dar ./cmd/ceci
 
 darwin-access:
-	GOOS=darwin GOARCH=amd64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.dar ./cmd/access
-	GOOS=darwin GOARCH=arm64 go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.arm64.dar ./cmd/access
+	GOOS=darwin GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.dar ./cmd/access
 
 darwin-gzip: env darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
