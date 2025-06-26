@@ -191,7 +191,6 @@ func NewWorker(cfg *config.Access) *Worker {
 		ticker:    time.NewTicker(2 * time.Second),
 		nameCache: make(map[string]string),
 		addrCache: make(map[string]string),
-		sosWorker: make([]*SocketWorker, 2),
 	}
 }
 
@@ -206,11 +205,11 @@ func (w *Worker) Initialize() {
 	w.out.Info("Worker.Initialize")
 	client := GetSocketClient(w.cfg, "")
 	w.conWorker = NewSocketWorker(client, w.cfg)
+	w.sosWorker = append(w.sosWorker, w.conWorker)
 	if w.cfg.Fallback != "" {
 		back := GetSocketClient(w.cfg, w.cfg.Fallback)
-		w.sosWorker[1] = NewSocketWorker(back, w.cfg)
+		w.sosWorker = append(w.sosWorker, NewSocketWorker(back, w.cfg))
 	}
-	w.sosWorker[0] = w.conWorker
 
 	tapCfg := GetTapCfg(w.cfg)
 	// register listener
