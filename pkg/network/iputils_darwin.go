@@ -43,6 +43,7 @@ func AddrShow(name string) []string {
 }
 
 func RouteAdd(name, prefix, nexthop string, opts ...string) ([]byte, error) {
+	RouteDel("", prefix, nexthop)
 	args := []string{"add", "-net", prefix}
 	if name != "" {
 		args = append(args, "-iface", name)
@@ -55,7 +56,6 @@ func RouteAdd(name, prefix, nexthop string, opts ...string) ([]byte, error) {
 }
 
 func RouteDel(name, prefix, nexthop string, opts ...string) ([]byte, error) {
-
 	args := []string{"delete", "-net", prefix}
 	if name != "" {
 		args = append(args, "-iface", name)
