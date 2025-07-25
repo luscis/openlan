@@ -5,11 +5,11 @@ export ARCH=amd64
 export VERSION=unknown
 
 ## functions
-function version() {
+version() {
   $PWD/../dist/version.sh
 }
 
-function flush() {
+flush() {
   local out=$1
 
   while IFS= read -r line; do
@@ -17,7 +17,7 @@ function flush() {
   done
 }
 
-function wait() {
+wait() {
   set +x
   local cmd=$1; local match=$2
   local count=$3; local code=1
@@ -52,10 +52,18 @@ function wait() {
   return $code
 }
 
-function pause() {
+pause() {
   echo "Press ENTER to continue: "
   read
 }
 
 export VERSION=$(version)
 export IMAGE="luscis/openlan:$VERSION.$ARCH.deb"
+
+main() {
+  setup
+  if [[ $PAUSE == true ]]; then
+    pause
+  fi
+  cleanup
+}

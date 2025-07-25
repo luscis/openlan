@@ -4,7 +4,7 @@ set -ex
 
 pushd $(dirname $0)
 
-source access.ut
-source switch.ut
+source access.sh
+source switch.sh
 
 popd

@@ -1,13 +1,15 @@
 # OpenLAN Access UT.
 
-source $PWD/macro.ut
+source $PWD/macro.sh
 
-function setup() {
+setup_net() {
   docker network inspect net1 || {
     docker network create net1 \
       --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
   }
+}
 
+setup_sw1() {
   mkdir -p /opt/openlan/sw1
   mkdir -p /opt/openlan/sw1/etc/openlan/switch
   cat > /opt/openlan/sw1/etc/openlan/switch/switch.yaml <<EOF
@@ -29,7 +31,9 @@ EOF
   # Add users
   docker exec sw1 openlan user add --name t1@example --password 123456
   docker exec sw1 openlan user add --name t2@example --password 123457
+}
 
+setup_ac1() {
   mkdir -p /opt/openlan/sw1/etc/openlan/access
   # Start access: ac1
   cat > /opt/openlan/sw1/etc/openlan/access/t1.yaml <<EOF
@@ -48,6 +52,9 @@ EOF
     --name sw1.ac1 $IMAGE /usr/bin/openlan-access -conf /etc/openlan/access/t1.yaml
 
   wait "docker logs -f sw1.ac1" Worker.OnSuccess 30
+}
+
+setup_ac2() {
   # Start access: ac2
   cat > /opt/openlan/sw1/etc/openlan/access/t2.yaml <<EOF
 protocol: tcp
@@ -65,12 +72,22 @@ EOF
     --name sw1.ac2 $IMAGE /usr/bin/openlan-access -conf /etc/openlan/access/t2.yaml
 
   wait "docker logs -f sw1.ac2" Worker.OnSuccess
+}
 
+ping() {
   wait "docker exec sw1.ac1 ping -c 3 172.11.0.1" "3 received" 5
   wait "docker exec sw1.ac1 ping -c 3 172.11.0.12" "3 received" 5
 }
 
-function cleanup() {
+setup() {
+  setup_net
+  setup_sw1
+  setup_ac1
+  setup_ac2
+  ping
+}
+
+cleanup() {
   # Stop containd
   docker stop sw1.ac1
   docker stop sw1.ac2
@@ -80,8 +97,4 @@ function cleanup() {
   rm -rvf /opt/openlan/sw1
 }
 
-setup
-if [[ $PAUSE == true ]]; then
-  pause
-fi
-cleanup
+main
