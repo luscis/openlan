@@ -1,0 +1,41 @@
+bgpd=yes
+ospfd=no
+ospf6d=no
+ripd=no
+ripngd=no
+isisd=no
+pimd=no
+pim6d=no
+ldpd=no
+nhrpd=no
+eigrpd=no
+babeld=no
+sharpd=no
+pbrd=no
+bfdd=no
+fabricd=no
+vrrpd=no
+pathd=no
+
+vtysh_enable=yes
+zebra_options="  -A 127.0.0.1 --limit-fds=100000 -s 90000000 --limit-fds=100000"
+mgmtd_options="  -A 127.0.0.1 --limit-fds=100000"
+bgpd_options="   -A 127.0.0.1 --limit-fds=100000"
+ospfd_options="  -A 127.0.0.1 --limit-fds=100000"
+ospf6d_options=" -A ::1 --limit-fds=100000"
+ripd_options="   -A 127.0.0.1 --limit-fds=100000"
+ripngd_options=" -A ::1 --limit-fds=100000"
+isisd_options="  -A 127.0.0.1 --limit-fds=100000"
+pimd_options="   -A 127.0.0.1 --limit-fds=100000"
+pim6d_options="  -A ::1 --limit-fds=100000"
+ldpd_options="   -A 127.0.0.1 --limit-fds=100000"
+nhrpd_options="  -A 127.0.0.1 --limit-fds=100000"
+eigrpd_options=" -A 127.0.0.1 --limit-fds=100000"
+babeld_options=" -A 127.0.0.1 --limit-fds=100000"
+sharpd_options=" -A 127.0.0.1 --limit-fds=100000"
+pbrd_options="   -A 127.0.0.1 --limit-fds=100000"
+staticd_options="-A 127.0.0.1 --limit-fds=100000"
+bfdd_options="   -A 127.0.0.1 --limit-fds=100000"
+fabricd_options="-A 127.0.0.1 --limit-fds=100000"
+vrrpd_options="  -A 127.0.0.1 --limit-fds=100000"
+pathd_options="  -A 127.0.0.1 --limit-fds=100000"

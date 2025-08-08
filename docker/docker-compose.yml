@@ -9,6 +9,14 @@ services:
     volumes:
       - /opt/openlan/etc/ipsec.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
+  frr:
+    restart: always
+    image: "quay.io/frrouting/frr:10.2.1"
+    network_mode: host
+    privileged: true
+    entrypoint: ["/usr/lib/frr/docker-start"]
+    volumes:
+      - /opt/openlan/etc/frr:/etc/frr
   switch:
     restart: always
     image: "luscis/openlan:latest.x86_64"
