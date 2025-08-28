@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/xtaci/kcp-go/v5"
 	"net"
 	"time"
+
+	"github.com/xtaci/kcp-go/v5"
 )
 
 const (
@@ -213,9 +214,9 @@ func NewControlFrame(action string, body []byte) *FrameMessage {
 	return m.Encode()
 }
 
-//operator: request is '= ', and response is  ': '
-//action: login, network etc.
-//body: json string.
+// operator: request is '= ', and response is  ': '
+// action: login, network etc.
+// body: json string.
 func NewControlMessage(action, opr string, body []byte) *ControlMessage {
 	c := ControlMessage{
 		control:  true,
@@ -339,7 +340,7 @@ func (s *StreamMessagerImpl) read(conn net.Conn, tmp []byte) (int, error) {
 	return n, nil
 }
 
-//340Mib
+// 340Mib
 func (s *StreamMessagerImpl) readX(conn net.Conn, buf []byte) error {
 	if conn == nil {
 		return NewErr("connection is nil")
@@ -526,6 +527,10 @@ func GetKcpBlock(algo string, key string) kcp.BlockCrypt {
 		block, _ = kcp.NewAESBlockCrypt(pass[:32])
 	case "xor":
 		block, _ = kcp.NewSimpleXORBlockCrypt(pass)
+	case "sm4":
+		block, _ = kcp.NewSM4BlockCrypt(pass[:16])
+	case "salsa20":
+		block, _ = kcp.NewSalsa20BlockCrypt(pass[:32])
 	default:
 		block, _ = kcp.NewNoneBlockCrypt(pass)
 	}
