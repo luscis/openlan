@@ -17,5 +17,5 @@ type Access struct {
 	System    string            `json:"system"`
 	Address   string            `json:"address"`
 	Names     map[string]string `json:"names"`
-	Fallback  string            `json:"fallback"`
+	Fallback  string            `json:"fallback,omitempty"`
 }

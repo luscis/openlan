@@ -10,5 +10,4 @@ func (l *Output) Update() {
 		l.RxBytes = sts.RxBytes
 		l.TxBytes = sts.TxBytes
 	}
-	return
 }

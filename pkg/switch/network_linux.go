@@ -138,7 +138,8 @@ func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 
 func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 	mtu := 0
-	if port.Protocol == "gre" {
+	switch port.Protocol {
+	case "gre":
 		mtu = 1450
 		link := &LinuxLink{
 			link: &nl.Gretap{
@@ -158,7 +159,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			return
 		}
 		port.Linker = link
-	} else if port.Protocol == "vxlan" {
+	case "vxlan":
 		dport := 8472
 		if port.DstPort > 0 {
 			dport = port.DstPort
@@ -183,8 +184,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		}
 		cn.LinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
-	} else if port.Protocol == "tcp" || port.Protocol == "tls" ||
-		port.Protocol == "wss" {
+	case "tcp", "tls", "wss":
 		port.Link = cn.Taps.GenName()
 		name, pass := SplitCombined(port.Secret)
 		algo, secret := SplitCombined(port.Crypt)
@@ -200,6 +200,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				File: "/dev/null",
 			},
 			Connection: port.Remote,
+			Fallback:   port.Fallback,
 			Protocol:   port.Protocol,
 			Username:   name,
 			Password:   pass,
@@ -214,7 +215,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		link.Initialize()
 		link.Start()
 		port.Linker = link
-	} else {
+	default:
 		link, err := nl.LinkByName(port.Remote)
 		if link == nil {
 			w.out.Error("WorkerImpl.addOutput %s %s", port.Remote, err)
@@ -256,6 +257,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		Segment:  port.Segment,
 		Device:   port.Link,
 		Secret:   port.Secret,
+		Fallback: port.Fallback,
 	}
 	cache.Output.Add(port.Link, out)
 
@@ -921,7 +923,6 @@ func (w *WorkerImpl) delIpSet(rt co.PrefixRoute) {
 		return
 	}
 	w.setR.Del(rt.Prefix)
-	return
 }
 
 func (w *WorkerImpl) forwardSubnet() {
@@ -1087,6 +1088,7 @@ func (w *WorkerImpl) AddOutput(data schema.Output) {
 		DstPort:  data.DstPort,
 		Secret:   data.Secret,
 		Crypt:    data.Crypt,
+		Fallback: data.Fallback,
 	}
 	if !w.cfg.AddOutput(output) {
 		w.out.Info("WorkerImple.AddOutput %s already existed", output.Id())

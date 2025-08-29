@@ -27,6 +27,7 @@ func (o Output) Add(c *cli.Context) error {
 		DstPort:  c.Int("dstport"),
 		Secret:   c.String("secret"),
 		Crypt:    c.String("crypt"),
+		Fallback: c.String("fallback"),
 	}
 	url := o.Url(c.String("url"), network)
 	clt := o.NewHttp(c.String("token"))
@@ -94,6 +95,7 @@ func (o Output) Commands() *cli.Command {
 				Usage: "Add an output for the network",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
+					&cli.StringFlag{Name: "fallback"},
 					&cli.IntFlag{Name: "segment"},
 					&cli.StringFlag{Name: "protocol"},
 					&cli.StringFlag{Name: "dstport"},

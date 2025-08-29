@@ -10,6 +10,7 @@ type Output struct {
 	Segment  int    `json:"segment" yaml:"segment"`
 	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"` // gre, vxlan, tcp/tls/wss etc.
 	Remote   string `json:"remote" yaml:"remote"`
+	Fallback string `json:"fallback,omitempty" yaml:"fallback,omitempty"`
 	DstPort  int    `json:"dstport,omitempty" yaml:"dstport,omitempty"`
 	Link     string `json:"link,omitempty" yaml:"link,omitempty"` // link name
 	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`

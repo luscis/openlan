@@ -5,7 +5,7 @@ type Link struct {
 	UUID      string `json:"uuid"`
 	Alias     string `json:"alias"`
 	Network   string `json:"network"`
-	User      string `json:"user"`
+	User      string `json:"user,omitempty"`
 	Protocol  string `json:"protocol"`
 	Server    string `json:"server"`
 	Device    string `json:"device"`

@@ -106,6 +106,7 @@ func NewOutputSchema(o *Output) schema.Output {
 		Network:   o.Network,
 		Protocol:  o.Protocol,
 		Remote:    o.Remote,
+		Fallback:  o.Fallback,
 		Segment:   o.Segment,
 		Device:    o.Device,
 		RxBytes:   o.RxBytes,

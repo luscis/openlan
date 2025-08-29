@@ -13,6 +13,7 @@ type Output struct {
 	TxBytes  uint64
 	ErrPkt   uint64
 	NewTime  int64
+	Fallback string
 }
 
 func (o *Output) UpTime() int64 {
