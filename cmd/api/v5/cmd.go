@@ -41,4 +41,5 @@ func Commands(app *api.App) {
 	ZTrust{}.Commands(app)
 	Rate{}.Commands(app)
 	Ceci{}.Commands(app)
+	BGP{}.Commands(app)
 }

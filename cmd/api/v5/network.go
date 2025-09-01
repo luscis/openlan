@@ -206,12 +206,12 @@ func (s SNAT) Commands() *cli.Command {
 		Subcommands: []*cli.Command{
 			{
 				Name:   "enable",
-				Usage:  "enable snat",
+				Usage:  "Enable snat",
 				Action: s.Enable,
 			},
 			{
 				Name:   "disable",
-				Usage:  "disable snat",
+				Usage:  "Disable snat",
 				Action: s.Disable,
 			},
 		},

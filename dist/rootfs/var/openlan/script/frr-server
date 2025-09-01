@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import socket
+import os
+import logging
+
+SOCKET_PATH = "/var/openlan/frr/reloader.sock"
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+logger = logging.getLogger(__name__)
+
+def handle_reload():
+    code = os.system("/usr/lib/frr/frr-reload")
+    if code == 0:
+        return "success"
+    return "fail"
+
+def handle_client(server):
+    try:
+        client, _ = server.accept()
+        with client:
+            data = client.recv(1024)
+            message = data.decode('utf-8')
+            logger.debug(f"Received action: {message}")
+
+            response = "unsupport"
+            if message == "reload":
+                response = handle_reload()
+
+            client.send(response.encode('utf-8'))
+            logger.debug(f"Sent response: {response}")
+            client.close()
+    except Exception as e:
+        logger.error(f"Error handling client: {e}")
+
+def start_server():
+    if os.path.exists(SOCKET_PATH):
+        os.unlink(SOCKET_PATH)
+
+    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        server.bind(SOCKET_PATH)
+        server.listen(5)
+        logger.info(f"Start server at {SOCKET_PATH}")
+
+        while True:
+            handle_client(server)
+
+    except Exception as e:
+        logger.error(f"Server error: {e}")
+
+    finally:
+        server.close()
+        if os.path.exists(SOCKET_PATH):
+            os.unlink(SOCKET_PATH)
+
+if __name__ == "__main__":
+    try:
+        start_server()
+    except KeyboardInterrupt:
+        logger.info("\nServer terminated by user")

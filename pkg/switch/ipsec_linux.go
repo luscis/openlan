@@ -143,10 +143,11 @@ func (w *IPSecWorker) startConn(name string) {
 
 func (w *IPSecWorker) restartTunnel(tun *co.IPSecTunnel) {
 	name := tun.Name
-	if tun.Transport == "vxlan" {
+	switch tun.Transport {
+	case "vxlan":
 		w.startConn(name + "-c1")
 		w.startConn(name + "-c2")
-	} else if tun.Transport == "gre" {
+	case "gre":
 		w.startConn(name + "-c1")
 	}
 }
@@ -156,10 +157,11 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 	secTmpl := ""
 
 	name := tun.Name
-	if tun.Transport == "vxlan" {
+	switch tun.Transport {
+	case "vxlan":
 		connTmpl = ipsecTmpl["vxlan"]
 		secTmpl = ipsecTmpl["secret"]
-	} else if tun.Transport == "gre" {
+	case "gre":
 		connTmpl = ipsecTmpl["gre"]
 		secTmpl = ipsecTmpl["secret"]
 	}
@@ -192,10 +194,11 @@ func (w *IPSecWorker) Start(v api.Switcher) {
 
 func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	name := tun.Name
-	if tun.Transport == "vxlan" {
+	switch tun.Transport {
+	case "vxlan":
 		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c1")
 		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c2")
-	} else if tun.Transport == "gre" {
+	case "gre":
 		libol.Exec(IPSecBin, "auto", "--delete", "--asynchronous", name+"-c1")
 	}
 	cfile := fmt.Sprintf("%s/%s.conf", IPSecEtcDir, name)

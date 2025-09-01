@@ -33,11 +33,11 @@ function requires() {
     yum update -y
     yum install -y epel-release
     yum install -y openssl net-tools iptables iputils iperf3 tcpdump
-    yum install -y openvpn dnsmasq bridge-utils ipset procps wget
+    yum install -y openvpn dnsmasq bridge-utils ipset procps wget frr
   elif [ "$sys"x == "debian"x ]; then
     apt-get update -y
     apt install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3
-    apt install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping
+    apt install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
   fi
   ## Install libreswan from github.
   if [ "$sys"x == "redhat"x ]; then

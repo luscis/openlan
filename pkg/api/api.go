@@ -125,9 +125,18 @@ type IPSecer interface {
 	ListTunnels(call func(obj schema.IPSecTunnel))
 }
 
+type Bgper interface {
+	Enable(data schema.Bgp)
+	Disable()
+	AddNeighbor(data schema.BgpNeighbor)
+	DelNeighbor(data schema.BgpNeighbor)
+	ListNeighbor(call func(obj schema.BgpNeighbor))
+}
+
 type APICall struct {
-	workers map[string]Networker
 	secer   IPSecer
+	bgper   Bgper
+	workers map[string]Networker
 }
 
 func (i *APICall) AddWorker(name string, obj Networker) {
@@ -150,6 +159,14 @@ func (i *APICall) SetIPSecer(value IPSecer) {
 
 func (i *APICall) GetIPSecer() IPSecer {
 	return i.secer
+}
+
+func (i *APICall) SetBgper(value Bgper) {
+	i.bgper = value
+}
+
+func (i *APICall) GetBgper() Bgper {
+	return i.bgper
 }
 
 var Call = &APICall{

@@ -30,12 +30,14 @@ type Network struct {
 	FindHop   map[string]*FindHop `json:"findhop,omitempty" yaml:"findhop,omitempty"`
 }
 
-func (n *Network) NewSpecifies() interface{} {
+func (n *Network) NewSpecifies() any {
 	switch n.Provider {
 	case "ipsec":
 		n.Specifies = &IPSecSpecifies{}
 	case "router":
 		n.Specifies = &RouterSpecifies{}
+	case "bgp":
+		n.Specifies = &BgpSpecifies{}
 	default:
 		n.Specifies = nil
 	}
@@ -61,6 +63,12 @@ func (n *Network) Correct(sw *Switch) {
 	case "ipsec":
 		spec := n.Specifies
 		if obj, ok := spec.(*IPSecSpecifies); ok {
+			obj.Correct()
+			obj.Name = n.Name
+		}
+	case "bgp":
+		spec := n.Specifies
+		if obj, ok := spec.(*BgpSpecifies); ok {
 			obj.Correct()
 			obj.Name = n.Name
 		}

@@ -1,0 +1,14 @@
+{
+  "name": "bgp",
+  "provider": "bgp",
+  "specifies": {
+    "localas": 30,
+    "routeid": "192.168.11.1",
+    "neighbors": [
+      {
+        "remoteas": 32,
+        "address": "192.168.11.11"
+      }
+     ]
+  }
+}

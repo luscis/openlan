@@ -1,0 +1,25 @@
+!
+ip prefix-list 192.168.11.252-out seq 10 permit 192.168.44.0/24
+ip prefix-list 192.168.11.252-out seq 11 permit 192.168.45.0/24
+!
+router bgp 1
+ bgp router-id 192.168.11.254
+ no bgp default ipv4-unicast
+ neighbor 192.168.11.252 remote-as 2
+ !
+ address-family ipv4 unicast
+  redistribute connected
+  redistribute kernel
+  neighbor 192.168.11.252 activate
+  neighbor 192.168.11.252 route-map 192.168.11.252-in in
+  neighbor 192.168.11.252 route-map 192.168.11.252-out out
+ exit-address-family
+exit
+!
+route-map 192.168.11.252-in permit 10
+exit
+!
+route-map 192.168.11.252-out permit 10
+ match ip address prefix-list 192.168.11.252-out
+exit
+!

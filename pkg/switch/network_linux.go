@@ -24,6 +24,10 @@ func NewNetworker(c *co.Network) api.Networker {
 		secer := NewIPSecWorker(c)
 		api.Call.SetIPSecer(secer)
 		obj = secer
+	case "bgp":
+		bgper := NewBgpWorker(c)
+		api.Call.SetBgper(bgper)
+		obj = bgper
 	case "router":
 		obj = NewRouterWorker(c)
 	default:
