@@ -20,7 +20,7 @@ func (s *BgpNeighbor) Id() string {
 type BgpSpecifies struct {
 	Name      string         `json:"-" yaml:"-"`
 	LocalAs   int            `json:"localas" yaml:"localas"`
-	RouteId   string         `json:"routeid" yaml:"routeid"`
+	RouterId  string         `json:"routerid" yaml:"routerid"`
 	Neighbors []*BgpNeighbor `json:"neighbors" yaml:"neighbors"`
 }
 

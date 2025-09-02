@@ -8,6 +8,6 @@ type BgpNeighbor struct {
 
 type Bgp struct {
 	LocalAs   int           `json:"localas"`
-	RouteId   string        `json:"routeid"`
+	RouterId  string        `json:"routerid"`
 	Neighbors []BgpNeighbor `json:"neighbors"`
 }

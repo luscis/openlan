@@ -29,14 +29,9 @@ func NewBgpWorker(c *co.Network) *BgpWorker {
 }
 
 var BgpTmpl = `! GENERATE BY OPENALN
-{{- range .Neighbors }}
-!
-ip prefix-list {{ .Address }}-out seq 10 permit any
-ip prefix-list {{ .Address }}-in seq 10 permit any
-{{- end }}
-!
+{{- if .RouterId }}
 router bgp {{ .LocalAs }}
- bgp router-id {{ .RouteId }}
+ bgp router-id {{ .RouterId }}
  no bgp default ipv4-unicast
  {{- range .Neighbors }}
  neighbor {{ .Address }} remote-as {{ .RemoteAs }}
@@ -54,6 +49,12 @@ router bgp {{ .LocalAs }}
 exit
 {{- range .Neighbors }}
 !
+ip prefix-list {{ .Address }}-out seq 10 permit any
+ip prefix-list {{ .Address }}-in seq 10 permit any
+{{- end }}
+!
+{{- range .Neighbors }}
+!
 route-map {{ .Address }}-in permit 10
  match ip address prefix-list {{ .Address }}-in
 exit
@@ -63,6 +64,7 @@ exit
 route-map {{ .Address }}-out permit 10
  match ip address prefix-list {{ .Address }}-out
 exit
+{{- end }}
 {{- end }}
 !
 `
@@ -108,11 +110,29 @@ func (w *BgpWorker) Stop() {
 
 func (w *BgpWorker) Enable(data schema.Bgp) {
 	w.spec.LocalAs = data.LocalAs
-	w.spec.RouteId = data.RouteId
+	w.spec.RouterId = data.RouterId
 	w.reload()
 }
 
 func (w *BgpWorker) Disable() {
+	w.spec.RouterId = ""
+	w.spec.LocalAs = 0
+	w.reload()
+}
+
+func (w *BgpWorker) Get() *schema.Bgp {
+	data := &schema.Bgp{
+		LocalAs:  w.spec.LocalAs,
+		RouterId: w.spec.RouterId,
+	}
+	for _, nei := range w.spec.Neighbors {
+		obj := schema.BgpNeighbor{
+			Address:  nei.Address,
+			RemoteAs: nei.RemoteAs,
+		}
+		data.Neighbors = append(data.Neighbors, obj)
+	}
+	return data
 }
 
 func (w *BgpWorker) Reload(v api.Switcher) {
@@ -140,15 +160,5 @@ func (w *BgpWorker) DelNeighbor(data schema.BgpNeighbor) {
 	cfg.Correct()
 	if _, removed := w.spec.DelNeighbor(cfg); removed {
 		w.reload()
-	}
-}
-
-func (w *BgpWorker) ListNeighbor(call func(obj schema.BgpNeighbor)) {
-	for _, nei := range w.spec.Neighbors {
-		obj := schema.BgpNeighbor{
-			Address:  nei.Address,
-			RemoteAs: nei.RemoteAs,
-		}
-		call(obj)
 	}
 }

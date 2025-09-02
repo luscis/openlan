@@ -5,9 +5,10 @@ import "github.com/gorilla/mux"
 func Add(router *mux.Router, switcher Switcher) {
 	Link{Switcher: switcher}.Router(router)
 	User{}.Router(router)
+	Bgp{}.Router(router)
+	IPSec{}.Router(router)
 	Neighbor{}.Router(router)
 	Access{}.Router(router)
-	Network{Switcher: switcher}.Router(router)
 	OnLine{}.Router(router)
 	Lease{}.Router(router)
 	Server{Switcher: switcher}.Router(router)
@@ -23,8 +24,8 @@ func Add(router *mux.Router, switcher Switcher) {
 	Output{Switcher: switcher}.Router(router)
 	ACL{}.Router(router)
 	Route{Switcher: switcher}.Router(router)
-	IPSec{}.Router(router)
 	FindHop{}.Router(router)
 	Rate{Switcher: switcher}.Router(router)
 	SNAT{}.Router(router)
+	Network{Switcher: switcher}.Router(router)
 }

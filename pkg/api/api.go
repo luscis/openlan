@@ -128,9 +128,9 @@ type IPSecer interface {
 type Bgper interface {
 	Enable(data schema.Bgp)
 	Disable()
+	Get() *schema.Bgp
 	AddNeighbor(data schema.BgpNeighbor)
 	DelNeighbor(data schema.BgpNeighbor)
-	ListNeighbor(call func(obj schema.BgpNeighbor))
 }
 
 type APICall struct {

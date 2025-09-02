@@ -2,10 +2,11 @@ package v5
 
 import (
 	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
 
-// openlan bgp enable --route-id 1.1.1.1 --as-path 30
+// openlan bgp enable --router-id 1.1.1.1 --local-as 30
 // openlan bgp disable
 // openlan bgp add neighbor --address 1.1.1.2 --remote-as 32
 
@@ -14,18 +15,38 @@ type BGP struct {
 }
 
 func (b BGP) Url(prefix string) string {
-	return prefix + "/api/bgp"
+	return prefix + "/api/network/bgp"
 }
 
 func (b BGP) List(c *cli.Context) error {
-	return nil
+	url := b.Url(c.String("url"))
+	clt := b.NewHttp(c.String("token"))
+	var data schema.Bgp
+	if err := clt.GetJSON(url, &data); err != nil {
+		return err
+	}
+	return b.Out(data, "yaml", "")
 }
 
 func (b BGP) Enable(c *cli.Context) error {
+	data := &schema.Bgp{
+		LocalAs:  c.Int("local-as"),
+		RouterId: c.String("router-id"),
+	}
+	url := b.Url(c.String("url"))
+	clt := b.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, data, nil); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (b BGP) Disable(c *cli.Context) error {
+	url := b.Url(c.String("url"))
+	clt := b.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -41,8 +62,12 @@ func (b BGP) Commands(app *api.App) {
 				Action:  b.List,
 			},
 			{
-				Name:   "enable",
-				Usage:  "Enable bgp",
+				Name:  "enable",
+				Usage: "Enable bgp",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "router-id", Required: true},
+					&cli.IntFlag{Name: "local-as", Required: true},
+				},
 				Action: b.Enable,
 			},
 			{
@@ -60,28 +85,31 @@ type Neighbor struct {
 }
 
 func (s Neighbor) Url(prefix string) string {
-	return prefix + "/api/bgp/neighbor/"
+	return prefix + "/api/network/bgp/neighbor"
 }
 
 func (s Neighbor) Add(c *cli.Context) error {
+	data := &schema.BgpNeighbor{
+		RemoteAs: c.Int("remote-as"),
+		Address:  c.String("address"),
+	}
 	url := s.Url(c.String("url"))
-
 	clt := s.NewHttp(c.String("token"))
-	if err := clt.PostJSON(url, nil, nil); err != nil {
+	if err := clt.PostJSON(url, data, nil); err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (s Neighbor) Remove(c *cli.Context) error {
+	data := &schema.BgpNeighbor{
+		Address: c.String("address"),
+	}
 	url := s.Url(c.String("url"))
-
 	clt := s.NewHttp(c.String("token"))
-	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+	if err := clt.DeleteJSON(url, data, nil); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -91,15 +119,22 @@ func (s Neighbor) Commands() *cli.Command {
 		Usage: "BGP neighbor",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "add",
-				Usage:  "Add BGP neighbor",
+				Name:  "add",
+				Usage: "Add BGP neighbor",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "address", Required: true},
+					&cli.IntFlag{Name: "remote-as", Required: true},
+				},
 				Action: s.Add,
 			},
 			{
 				Name:    "remove",
 				Aliases: []string{"rm"},
 				Usage:   "Remove BGP neighbor",
-				Action:  s.Remove,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "address", Required: true},
+				},
+				Action: s.Remove,
 			},
 		},
 	}
