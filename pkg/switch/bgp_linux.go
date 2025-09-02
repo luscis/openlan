@@ -29,6 +29,8 @@ func NewBgpWorker(c *co.Network) *BgpWorker {
 }
 
 var BgpTmpl = `! GENERATE BY OPENALN
+!
+service integrated-vtysh-config
 {{- if .RouterId }}
 router bgp {{ .LocalAs }}
  bgp router-id {{ .RouterId }}
@@ -46,24 +48,23 @@ router bgp {{ .LocalAs }}
   neighbor {{ .Address }} route-map {{ .Address }}-out out
   {{- end }}
  exit-address-family
-exit
-{{- range .Neighbors }}
 !
+
+{{- range .Neighbors }}
 ip prefix-list {{ .Address }}-out seq 10 permit any
 ip prefix-list {{ .Address }}-in seq 10 permit any
 {{- end }}
-!
+
 {{- range .Neighbors }}
-!
 route-map {{ .Address }}-in permit 10
  match ip address prefix-list {{ .Address }}-in
-exit
-{{- end }}
-{{- range .Neighbors }}
 !
+{{- end }}
+
+{{- range .Neighbors }}
 route-map {{ .Address }}-out permit 10
  match ip address prefix-list {{ .Address }}-out
-exit
+!
 {{- end }}
 {{- end }}
 !
