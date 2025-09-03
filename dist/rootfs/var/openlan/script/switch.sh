@@ -40,10 +40,10 @@ EOF
 fi
 
 for dir in acl findhop link output route network qos; do
-  if [ -e /etc/openlan/switch/$dir ]; then
+  if [ -e "/etc/openlan/switch/$dir" ]; then
     continue
   fi
-  mkdir -p /etc/openlan/switch/$dir
+  mkdir -p "/etc/openlan/switch/$dir"
 done
 
 # wait ipsec service
