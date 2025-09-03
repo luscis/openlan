@@ -50,10 +50,17 @@ router bgp {{ .LocalAs }}
  exit-address-family
 !
 
-{{- range .Neighbors }}
-ip prefix-list {{ .Address }}-out seq 10 permit any
-ip prefix-list {{ .Address }}-in seq 10 permit any
+{{- range $nei := .Neighbors }}
+{{- range $seq, $prefix := .Advertis }}
+ip prefix-list {{ $nei.Address }}-out seq {{ inc $seq }} permit {{ $prefix }} le 32
 {{- end }}
+ip prefix-list {{ $nei.Address }}-out seq 65535 deny any
+{{- range $seq, $prefix := .Receives }}
+ip prefix-list {{ $nei.Address }}-in seq {{ inc $seq }} permit {{ $prefix }} le 32
+{{- end }}
+ip prefix-list {{ $nei.Address }}-in seq 65535 deny any
+{{- end }}
+!
 
 {{- range .Neighbors }}
 route-map {{ .Address }}-in permit 10
@@ -81,7 +88,13 @@ func (w *BgpWorker) save() {
 		return
 	}
 	defer out.Close()
-	if obj, err := template.New("main").Parse(BgpTmpl); err != nil {
+
+	maps := template.FuncMap{
+		"inc": func(i int) int {
+			return i + 1
+		},
+	}
+	if obj, err := template.New("main").Funcs(maps).Parse(BgpTmpl); err != nil {
 		w.out.Warn("BgpWorker.save: %s", err)
 	} else {
 		if err := obj.Execute(out, w.spec); err != nil {
@@ -130,6 +143,8 @@ func (w *BgpWorker) Get() *schema.Bgp {
 		obj := schema.BgpNeighbor{
 			Address:  nei.Address,
 			RemoteAs: nei.RemoteAs,
+			Receives: nei.Receives,
+			Advertis: nei.Advertis,
 		}
 		data.Neighbors = append(data.Neighbors, obj)
 	}
@@ -161,5 +176,49 @@ func (w *BgpWorker) DelNeighbor(data schema.BgpNeighbor) {
 	cfg.Correct()
 	if _, removed := w.spec.DelNeighbor(cfg); removed {
 		w.reload()
+	}
+}
+
+func (w *BgpWorker) AddReceives(data schema.BgpPrefix) {
+	obj := &co.BgpNeighbor{
+		Address: data.Neighbor,
+	}
+	if nei, _ := w.spec.FindNeighbor(obj); nei != nil {
+		if nei.AddReceives(data.Prefix) {
+			w.reload()
+		}
+	}
+}
+
+func (w *BgpWorker) DelReceives(data schema.BgpPrefix) {
+	obj := &co.BgpNeighbor{
+		Address: data.Neighbor,
+	}
+	if nei, _ := w.spec.FindNeighbor(obj); nei != nil {
+		if nei.DelReceives(data.Prefix) {
+			w.reload()
+		}
+	}
+}
+
+func (w *BgpWorker) AddAdvertis(data schema.BgpPrefix) {
+	obj := &co.BgpNeighbor{
+		Address: data.Neighbor,
+	}
+	if nei, _ := w.spec.FindNeighbor(obj); nei != nil {
+		if nei.AddAdvertis(data.Prefix) {
+			w.reload()
+		}
+	}
+}
+
+func (w *BgpWorker) DelAdvertis(data schema.BgpPrefix) {
+	obj := &co.BgpNeighbor{
+		Address: data.Neighbor,
+	}
+	if nei, _ := w.spec.FindNeighbor(obj); nei != nil {
+		if nei.DelAdvertis(data.Prefix) {
+			w.reload()
+		}
 	}
 }

@@ -3,11 +3,13 @@ package config
 import "fmt"
 
 type BgpNeighbor struct {
-	Name     string `json:"-" yaml:"-"`
-	Address  string `json:"address" yaml:"address"`
-	RemoteAs int    `json:"remoteas" yaml:"remoteas"`
-	Secret   string `json:"secret,omitempty" yaml:"secret,omitempty"`
-	State    string `json:"state,omitempty" yaml:"state,omitempty"`
+	Name     string   `json:"-" yaml:"-"`
+	Address  string   `json:"address" yaml:"address"`
+	RemoteAs int      `json:"remoteas" yaml:"remoteas"`
+	Secret   string   `json:"secret,omitempty" yaml:"secret,omitempty"`
+	State    string   `json:"state,omitempty" yaml:"state,omitempty"`
+	Advertis []string `json:"advertis,omitempty" yaml:"advertis,omitempty"`
+	Receives []string `json:"receives,omitempty" yaml:"receives,omitempty"`
 }
 
 func (s *BgpNeighbor) Correct() {
@@ -15,6 +17,56 @@ func (s *BgpNeighbor) Correct() {
 
 func (s *BgpNeighbor) Id() string {
 	return fmt.Sprintf("%s", s.Address)
+}
+
+func (s *BgpNeighbor) FindReceives(value string) int {
+	for index, obj := range s.Receives {
+		if obj == value {
+			return index
+		}
+	}
+	return -1
+}
+
+func (s *BgpNeighbor) AddReceives(value string) bool {
+	find := s.FindReceives(value)
+	if find == -1 {
+		s.Receives = append(s.Receives, value)
+	}
+	return find == -1
+}
+
+func (s *BgpNeighbor) DelReceives(value string) bool {
+	find := s.FindReceives(value)
+	if find != -1 {
+		s.Receives = append(s.Receives[:find], s.Receives[find+1:]...)
+	}
+	return find != -1
+}
+
+func (s *BgpNeighbor) FindAdvertis(value string) int {
+	for index, obj := range s.Advertis {
+		if obj == value {
+			return index
+		}
+	}
+	return -1
+}
+
+func (s *BgpNeighbor) AddAdvertis(value string) bool {
+	find := s.FindAdvertis(value)
+	if find == -1 {
+		s.Advertis = append(s.Advertis, value)
+	}
+	return find == -1
+}
+
+func (s *BgpNeighbor) DelAdvertis(value string) bool {
+	find := s.FindAdvertis(value)
+	if find != -1 {
+		s.Advertis = append(s.Advertis[:find], s.Advertis[find+1:]...)
+	}
+	return find != -1
 }
 
 type BgpSpecifies struct {

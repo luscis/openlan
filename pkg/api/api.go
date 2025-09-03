@@ -131,6 +131,10 @@ type Bgper interface {
 	Get() *schema.Bgp
 	AddNeighbor(data schema.BgpNeighbor)
 	DelNeighbor(data schema.BgpNeighbor)
+	AddReceives(data schema.BgpPrefix)
+	DelReceives(data schema.BgpPrefix)
+	AddAdvertis(data schema.BgpPrefix)
+	DelAdvertis(data schema.BgpPrefix)
 }
 
 type APICall struct {

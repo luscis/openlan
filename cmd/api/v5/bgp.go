@@ -8,7 +8,9 @@ import (
 
 // openlan bgp enable --router-id 1.1.1.1 --local-as 30
 // openlan bgp disable
-// openlan bgp add neighbor --address 1.1.1.2 --remote-as 32
+// openlan bgp neighbor add --address 1.1.1.2 --remote-as 32
+// openlan bgp advertis add --neighbor 1.1.1.2 --prefix 192.168.1.0/24
+// openlan bgp receives add --neighbor 1.1.1.2 --prefix 192.168.2.0/24
 
 type BGP struct {
 	Cmd
@@ -76,6 +78,8 @@ func (b BGP) Commands(app *api.App) {
 				Action: b.Disable,
 			},
 			Neighbor{}.Commands(),
+			Advertis{}.Commands(),
+			Receives{}.Commands(),
 		},
 	})
 }
@@ -133,6 +137,130 @@ func (s Neighbor) Commands() *cli.Command {
 				Usage:   "Remove BGP neighbor",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "address", Required: true},
+				},
+				Action: s.Remove,
+			},
+		},
+	}
+}
+
+type Advertis struct {
+	Cmd
+}
+
+func (s Advertis) Url(prefix string) string {
+	return prefix + "/api/network/bgp/advertis"
+}
+
+func (s Advertis) Add(c *cli.Context) error {
+	data := &schema.BgpPrefix{
+		Prefix:   c.String("prefix"),
+		Neighbor: c.String("neighbor"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Advertis) Remove(c *cli.Context) error {
+	data := &schema.BgpPrefix{
+		Prefix:   c.String("prefix"),
+		Neighbor: c.String("neighbor"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Advertis) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "advertis",
+		Usage: "Neighbor advertised routes",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add advertis prefix",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "neighbor", Required: true},
+					&cli.StringFlag{Name: "prefix", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:    "remove",
+				Aliases: []string{"rm"},
+				Usage:   "Remove advertis prefix",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "neighbor", Required: true},
+					&cli.StringFlag{Name: "prefix", Required: true},
+				},
+				Action: s.Remove,
+			},
+		},
+	}
+}
+
+type Receives struct {
+	Cmd
+}
+
+func (s Receives) Url(prefix string) string {
+	return prefix + "/api/network/bgp/receives"
+}
+
+func (s Receives) Add(c *cli.Context) error {
+	data := &schema.BgpPrefix{
+		Prefix:   c.String("prefix"),
+		Neighbor: c.String("neighbor"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Receives) Remove(c *cli.Context) error {
+	data := &schema.BgpPrefix{
+		Prefix:   c.String("prefix"),
+		Neighbor: c.String("neighbor"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Receives) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "receives",
+		Usage: "Neighbor received prefix",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add received prefix",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "neighbor", Required: true},
+					&cli.StringFlag{Name: "prefix", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:    "remove",
+				Aliases: []string{"rm"},
+				Usage:   "Remove received prefix",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "neighbor", Required: true},
+					&cli.StringFlag{Name: "prefix", Required: true},
 				},
 				Action: s.Remove,
 			},
