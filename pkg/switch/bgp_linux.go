@@ -2,6 +2,7 @@ package cswitch
 
 import (
 	"os/exec"
+	"strings"
 	"text/template"
 
 	"github.com/luscis/openlan/pkg/api"
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	BgpBin = "/var/openlan/script/frr-reload"
+	BgpBin = "/var/openlan/script/frr-client"
 	BgpEtc = "/etc/frr/frr.conf"
 )
 
@@ -108,7 +109,7 @@ func (w *BgpWorker) save() {
 
 func (w *BgpWorker) reload() {
 	w.save()
-	cmd := exec.Command(BgpBin)
+	cmd := exec.Command(BgpBin, "--reload")
 	if err := cmd.Run(); err != nil {
 		w.out.Warn("BgpWorker.reload: %s", err)
 		return
@@ -142,6 +143,19 @@ func (w *BgpWorker) Get() *schema.Bgp {
 		LocalAs:  w.spec.LocalAs,
 		RouterId: w.spec.RouterId,
 	}
+
+	show := map[string]struct {
+		State string `json:"state"`
+	}{}
+	out, err := exec.Command(BgpBin, "--show-neighbors").CombinedOutput()
+	if err == nil {
+		if err := libol.Unmarshal(&show, out); err != nil {
+			w.out.Warn("BgpWorker.Get.Status: %s", err)
+		}
+	} else {
+		w.out.Warn("BgpWorker.Get.Status: %s", err)
+	}
+
 	for _, nei := range w.spec.Neighbors {
 		obj := schema.BgpNeighbor{
 			Address:  nei.Address,
@@ -149,6 +163,9 @@ func (w *BgpWorker) Get() *schema.Bgp {
 			Password: nei.Password,
 			Receives: nei.Receives,
 			Advertis: nei.Advertis,
+		}
+		if state, ok := show[nei.Address]; ok {
+			obj.State = strings.ToLower(state.State)
 		}
 		data.Neighbors = append(data.Neighbors, obj)
 	}

@@ -3,6 +3,8 @@
 import socket
 import os
 import logging
+import subprocess
+import json
 
 SOCKET_PATH = "/var/openlan/frr/reloader.sock"
 
@@ -13,11 +15,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def do_vtyshell(command):
+    proc = subprocess.Popen(['vtysh', '-c', command], stdout=subprocess.PIPE, text=True)
+    stdout, stderr = proc.communicate()
+    if proc.returncode == 0:
+        return True, stdout
+    return False, stderr
+
 def handle_reload():
     code = os.system("/usr/lib/frr/frr-reload")
     if code == 0:
         return "success"
     return "fail"
+
+def handle_show_neighbors():
+    ok, data = do_vtyshell('show bgp neighbor json')
+    if not ok:
+        return ""
+
+    neighbors = json.loads(data)
+    status = {}
+    for addr, nei in neighbors.items():
+        status[addr] = {"state": nei.get('bgpState')}
+
+    return json.dumps(status)
 
 def handle_client(server):
     try:
@@ -30,6 +51,8 @@ def handle_client(server):
             response = "unsupport"
             if message == "reload":
                 response = handle_reload()
+            elif message == "show-neighbors":
+                response = handle_show_neighbors()
 
             client.send(response.encode('utf-8'))
             logger.debug(f"Sent response: {response}")
