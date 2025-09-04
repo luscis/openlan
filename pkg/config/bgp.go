@@ -6,7 +6,7 @@ type BgpNeighbor struct {
 	Name     string   `json:"-" yaml:"-"`
 	Address  string   `json:"address" yaml:"address"`
 	RemoteAs int      `json:"remoteas" yaml:"remoteas"`
-	Secret   string   `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Password string   `json:"password,omitempty" yaml:"password,omitempty"`
 	State    string   `json:"state,omitempty" yaml:"state,omitempty"`
 	Advertis []string `json:"advertis,omitempty" yaml:"advertis,omitempty"`
 	Receives []string `json:"receives,omitempty" yaml:"receives,omitempty"`

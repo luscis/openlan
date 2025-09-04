@@ -6,9 +6,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// openlan bgp enable --router-id 1.1.1.1 --local-as 30
+// openlan bgp enable --router-id 1.1.1.1 --local-as 31
 // openlan bgp disable
+//
 // openlan bgp neighbor add --address 1.1.1.2 --remote-as 32
+// openlan bgp neighbor add --address 1.1.1.3 --remote-as 33
+//
 // openlan bgp advertis add --neighbor 1.1.1.2 --prefix 192.168.1.0/24
 // openlan bgp receives add --neighbor 1.1.1.2 --prefix 192.168.2.0/24
 
@@ -96,6 +99,7 @@ func (s Neighbor) Add(c *cli.Context) error {
 	data := &schema.BgpNeighbor{
 		RemoteAs: c.Int("remote-as"),
 		Address:  c.String("address"),
+		Password: c.String("password"),
 	}
 	url := s.Url(c.String("url"))
 	clt := s.NewHttp(c.String("token"))
@@ -128,6 +132,7 @@ func (s Neighbor) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "address", Required: true},
 					&cli.IntFlag{Name: "remote-as", Required: true},
+					&cli.StringFlag{Name: "password"},
 				},
 				Action: s.Add,
 			},

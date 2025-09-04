@@ -37,6 +37,9 @@ router bgp {{ .LocalAs }}
  no bgp default ipv4-unicast
  {{- range .Neighbors }}
  neighbor {{ .Address }} remote-as {{ .RemoteAs }}
+ {{-  if .Password }}
+ neighbor {{ .Address }} password {{ .Password }}
+ {{- end }}
  {{- end }}
  !
  address-family ipv4 unicast
@@ -143,6 +146,7 @@ func (w *BgpWorker) Get() *schema.Bgp {
 		obj := schema.BgpNeighbor{
 			Address:  nei.Address,
 			RemoteAs: nei.RemoteAs,
+			Password: nei.Password,
 			Receives: nei.Receives,
 			Advertis: nei.Advertis,
 		}
@@ -158,23 +162,28 @@ func (w *BgpWorker) Reload(v api.Switcher) {
 }
 
 func (w *BgpWorker) AddNeighbor(data schema.BgpNeighbor) {
-	cfg := &co.BgpNeighbor{
+	obj := &co.BgpNeighbor{
 		Address:  data.Address,
 		RemoteAs: data.RemoteAs,
+		Password: data.Password,
 	}
-	cfg.Correct()
-	if w.spec.AddNeighbor(cfg) {
-		w.reload()
+	obj.Correct()
+	if nei, _ := w.spec.FindNeighbor(obj); nei == nil {
+		w.spec.AddNeighbor(obj)
+	} else {
+		nei.RemoteAs = data.RemoteAs
+		nei.Password = data.Password
 	}
+	w.reload()
 }
 
 func (w *BgpWorker) DelNeighbor(data schema.BgpNeighbor) {
-	cfg := &co.BgpNeighbor{
+	obj := &co.BgpNeighbor{
 		Address:  data.Address,
 		RemoteAs: data.RemoteAs,
 	}
-	cfg.Correct()
-	if _, removed := w.spec.DelNeighbor(cfg); removed {
+	obj.Correct()
+	if _, removed := w.spec.DelNeighbor(obj); removed {
 		w.reload()
 	}
 }
