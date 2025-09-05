@@ -7,6 +7,7 @@ func Add(router *mux.Router, switcher Switcher) {
 	User{}.Router(router)
 	Bgp{}.Router(router)
 	IPSec{}.Router(router)
+	Prefix{}.Router(router)
 	Neighbor{}.Router(router)
 	Access{}.Router(router)
 	OnLine{}.Router(router)

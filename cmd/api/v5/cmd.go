@@ -42,4 +42,5 @@ func Commands(app *api.App) {
 	Rate{}.Commands(app)
 	Ceci{}.Commands(app)
 	BGP{}.Commands(app)
+	Prefix{}.Commands(app)
 }

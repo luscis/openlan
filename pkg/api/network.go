@@ -138,7 +138,7 @@ func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.DoSnat()
+		obj.EnableSnat()
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
@@ -152,7 +152,7 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.UndoSnat()
+		obj.DisableSnat()
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return

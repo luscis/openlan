@@ -313,7 +313,6 @@ func (w *IPSecWorker) RestartTunnel(data schema.IPSecTunnel) {
 func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
 	status := w.Status()
 	for _, tun := range w.spec.Tunnels {
-		state := status[tun.Name+"-c1"]
 		obj := schema.IPSecTunnel{
 			Left:      tun.Left,
 			LeftId:    tun.LeftId,
@@ -323,7 +322,9 @@ func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
 			RightPort: tun.RightPort,
 			Secret:    tun.Secret,
 			Transport: tun.Transport,
-			State:     state,
+		}
+		if state, ok := status[tun.Name+"-c1"]; ok {
+			obj.State = state
 		}
 		call(obj)
 	}

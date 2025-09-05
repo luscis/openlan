@@ -112,10 +112,10 @@ type Networker interface {
 	Qoser() Qoser
 	ACLer() ACLer
 	FindHoper() FindHoper
-	DoZTrust()
-	UndoZTrust()
-	DoSnat()
-	UndoSnat()
+	EnableZTrust()
+	DisableZTrust()
+	EnableSnat()
+	DisableSnat()
 }
 
 type IPSecer interface {

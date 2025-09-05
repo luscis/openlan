@@ -1,8 +1,9 @@
 package libol
 
 import (
-	"github.com/vishvananda/netlink"
 	"net"
+
+	"github.com/vishvananda/netlink"
 )
 
 func GetLocalByGw(addr string) (net.IP, error) {
@@ -42,4 +43,46 @@ func GetLocalByGw(addr string) (net.IP, error) {
 	}
 	Info("GetLocalByGw: find %s on %s", addr, local)
 	return local, nil
+}
+
+func ListRoutes() ([]Prefix, error) {
+	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []Prefix
+	for _, rte := range routes {
+		link, err := netlink.LinkByIndex(rte.LinkIndex)
+		if err != nil {
+			continue
+		}
+
+		entry := Prefix{
+			Protocol: rte.Protocol,
+			Priority: rte.Priority,
+			Link:     link.Attrs().Name,
+		}
+
+		if rte.Dst == nil {
+			entry.Dst = "0.0.0.0/0"
+		} else {
+			entry.Dst = rte.Dst.String()
+		}
+
+		if len(rte.Gw) == 0 {
+			entry.Gw = ""
+		} else {
+			entry.Gw = rte.Gw.String()
+		}
+
+		if len(rte.Src) == 0 {
+			entry.Src = ""
+		} else {
+			entry.Src = rte.Src.String()
+		}
+
+		data = append(data, entry)
+	}
+	return data, nil
 }

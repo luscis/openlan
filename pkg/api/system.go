@@ -1,13 +1,42 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/network"
-	"github.com/luscis/openlan/pkg/schema"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/network"
+	"github.com/luscis/openlan/pkg/schema"
 )
+
+type Prefix struct {
+}
+
+func (l Prefix) Router(router *mux.Router) {
+	router.HandleFunc("/api/prefix", l.List).Methods("GET")
+}
+
+func (l Prefix) List(w http.ResponseWriter, r *http.Request) {
+	var items []schema.PrefixRoute
+
+	routes, _ := libol.ListRoutes()
+	for _, prefix := range routes {
+		item := schema.PrefixRoute{
+			Link:    prefix.Link,
+			Metric:  prefix.Priority,
+			Table:   prefix.Table,
+			Source:  prefix.Src,
+			NextHop: prefix.Gw,
+			Prefix:  prefix.Dst,
+		}
+		items = append(items, item)
+
+	}
+
+	ResponseJson(w, items)
+}
 
 type Device struct {
 }
@@ -88,4 +117,29 @@ func (h Device) Get(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, vars["id"], http.StatusNotFound)
 	}
+}
+
+type Log struct {
+}
+
+func (l Log) Router(router *mux.Router) {
+	router.HandleFunc("/api/log", l.List).Methods("GET")
+	router.HandleFunc("/api/log", l.Add).Methods("POST")
+}
+
+func (l Log) List(w http.ResponseWriter, r *http.Request) {
+	log := schema.NewLogSchema()
+	ResponseJson(w, log)
+}
+
+func (l Log) Add(w http.ResponseWriter, r *http.Request) {
+	log := &schema.Log{}
+	if err := GetData(r, log); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	libol.SetLevel(log.Level)
+
+	ResponseMsg(w, 0, "")
 }

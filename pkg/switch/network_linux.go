@@ -386,33 +386,33 @@ func (w *WorkerImpl) SetMss(mss int) {
 	}
 }
 
-func (w *WorkerImpl) doSnat() {
+func (w *WorkerImpl) enableSnat() {
 	w.fire.Nat.Post.AddRuleX(cn.IPRule{
 		Jump:    w.snat.Chain().Name,
 		Comment: "Goto SNAT",
 	})
 }
 
-func (w *WorkerImpl) undoSnat() {
+func (w *WorkerImpl) disableSnat() {
 	w.fire.Nat.Post.DelRuleX(cn.IPRule{
 		Jump:    w.snat.Chain().Name,
 		Comment: "Goto SNAT",
 	})
 }
 
-func (w *WorkerImpl) DoSnat() {
+func (w *WorkerImpl) EnableSnat() {
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat == "disable" {
 		cfg.Snat = "enable"
-		w.doSnat()
+		w.enableSnat()
 	}
 }
 
-func (w *WorkerImpl) UndoSnat() {
+func (w *WorkerImpl) DisableSnat() {
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat != "disable" {
 		cfg.Snat = "disable"
-		w.undoSnat()
+		w.disableSnat()
 	}
 }
 
@@ -425,7 +425,7 @@ func (w *WorkerImpl) doTrust() {
 	})
 }
 
-func (w *WorkerImpl) undoTrust() {
+func (w *WorkerImpl) disableTrust() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -434,7 +434,7 @@ func (w *WorkerImpl) undoTrust() {
 	})
 }
 
-func (w *WorkerImpl) DoZTrust() {
+func (w *WorkerImpl) EnableZTrust() {
 	cfg, _ := w.GetCfgs()
 	if cfg.ZTrust != "enable" {
 		cfg.ZTrust = "enable"
@@ -442,11 +442,11 @@ func (w *WorkerImpl) DoZTrust() {
 	}
 }
 
-func (w *WorkerImpl) UndoZTrust() {
+func (w *WorkerImpl) DisableZTrust() {
 	cfg, _ := w.GetCfgs()
 	if cfg.ZTrust == "enable" {
 		cfg.ZTrust = "disable"
-		w.undoTrust()
+		w.disableTrust()
 	}
 }
 
@@ -515,7 +515,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	w.fire.Start()
 	w.snat.Install()
 	if cfg.Snat != "disable" {
-		w.doSnat()
+		w.enableSnat()
 	}
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
@@ -603,7 +603,7 @@ func (w *WorkerImpl) Stop() {
 
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat != "disable" {
-		w.undoSnat()
+		w.disableSnat()
 	}
 
 	w.snat.Cancel()
