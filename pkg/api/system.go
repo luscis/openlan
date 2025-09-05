@@ -24,12 +24,13 @@ func (l Prefix) List(w http.ResponseWriter, r *http.Request) {
 	routes, _ := libol.ListRoutes()
 	for _, prefix := range routes {
 		item := schema.PrefixRoute{
-			Link:    prefix.Link,
-			Metric:  prefix.Priority,
-			Table:   prefix.Table,
-			Source:  prefix.Src,
-			NextHop: prefix.Gw,
-			Prefix:  prefix.Dst,
+			Link:     prefix.Link,
+			Metric:   prefix.Priority,
+			Table:    prefix.Table,
+			Source:   prefix.Src,
+			NextHop:  prefix.Gw,
+			Prefix:   prefix.Dst,
+			Protocol: prefix.Protocol,
 		}
 		items = append(items, item)
 

@@ -5,7 +5,7 @@ type Prefix struct {
 	Dst      string
 	Src      string
 	Gw       string
-	Protocol int
+	Protocol string
 	Priority int
 	Table    int
 }

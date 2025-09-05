@@ -16,6 +16,7 @@ type PrefixRoute struct {
 	Link      string      `json:"link,omitempty"`
 	Table     int         `json:"table,omitempty"`
 	Source    string      `json:"source,omitempty"`
+	Protocol  string      `json:"protocol,omitempty"`
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 }
 

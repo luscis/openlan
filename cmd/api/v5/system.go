@@ -19,9 +19,9 @@ func (r Prefix) Url(prefix string) string {
 
 func (r Prefix) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -18 "destination"}} {{ps -15 "nexthop"}} {{ps -16 "link"}} {{ps -15 "source"}} {{"metric"}}
+{{ps -18 "destination"}} {{ps -15 "nexthop"}} {{ps -16 "link"}} {{ps -15 "source"}} {{ps -6 "metric" }} {{ "protocol" }}
 {{- range . }}
-{{ps -18 .Prefix}} {{ps -15 .NextHop}} {{ps -16 .Link}} {{ps -15 .Source}} {{.Metric}}
+{{ps -18 .Prefix}} {{ps -15 .NextHop}} {{ps -16 .Link}} {{ps -15 .Source}} {{pi -6 .Metric}} {{ .Protocol }}
 {{- end }}
 `
 }
