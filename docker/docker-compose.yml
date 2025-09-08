@@ -2,7 +2,7 @@ version: "2.3"
 services:
   ipsec:
     restart: always
-    image: "luscis/openlan:latest.x86_64"
+    image: "luscis/openlan:latest.amd64.deb"
     privileged: true
     network_mode: host
     entrypoint: ["/var/openlan/script/ipsec.sh"]
@@ -11,7 +11,7 @@ services:
       - /opt/openlan/run/pluto:/run/pluto
   frr:
     restart: always
-    image: "luscis/openlan:latest.x86_64"
+    image: "luscis/openlan:latest.amd64.deb"
     network_mode: host
     privileged: true
     entrypoint: ["/var/openlan/script/frr.sh"]
@@ -20,7 +20,7 @@ services:
       - /opt/openlan/var/openlan/frr:/var/openlan/frr
   switch:
     restart: always
-    image: "luscis/openlan:latest.x86_64"
+    image: "luscis/openlan:latest.amd64.deb"
     privileged: true
     network_mode: host
     entrypoint: ["/var/openlan/script/switch.sh", "start"]
@@ -35,7 +35,7 @@ services:
       - frr
   proxy:
     restart: always
-    image: "luscis/openlan:latest.x86_64"
+    image: "luscis/openlan:latest.amd64.deb"
     network_mode: host
     entrypoint: ["/usr/bin/openlan-proxy", "-conf", "/etc/openlan/proxy.json", "-log:file", "/dev/null"]
     volumes:
