@@ -246,6 +246,29 @@ func (w *user) SetCert(cfg *libol.CertConfig) {
 	w.Cert = cfg.Crt
 }
 
+func (w *user) ExpireTime() string {
+	if w.Cert == "" {
+		return ""
+	}
+
+	pemData, err := os.ReadFile(w.Cert)
+	if err != nil {
+		return ""
+	}
+
+	block, rest := pem.Decode(pemData)
+	if block == nil || len(rest) > 0 {
+		return ""
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return ""
+	}
+
+	return cert.NotAfter.Format(time.RFC3339)
+}
+
 var User = user{
 	Users: libol.NewSafeStrMap(1024),
 }
