@@ -93,16 +93,16 @@ func (o *OpenVPN) Merge(obj *OpenVPN) {
 	if o.Cipher == "" {
 		o.Cipher = obj.Cipher
 	}
-	if o.Routes == nil || len(o.Routes) == 0 {
+	if len(o.Routes) == 0 {
 		o.Routes = append(o.Routes, obj.Routes...)
 	}
-	if o.Push == nil || len(o.Push) == 0 {
+	if len(o.Push) == 0 {
 		o.Push = append(o.Push, obj.Push...)
 	}
 	if o.Script == "" {
 		o.Script = o.AuthBin(obj)
 	}
-	if o.Clients == nil || len(o.Clients) == 0 {
+	if len(o.Clients) == 0 {
 		o.Clients = append(o.Clients, obj.Clients...)
 	}
 }

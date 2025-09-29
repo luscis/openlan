@@ -14,9 +14,9 @@
     ],
     "clients": [
       {
-        "name": "hi",
-        "address": "172.32.195.233",
-        "netmask": "172.32.195.234"
+        "name": "hi@example",
+        "address": "172.32.195.234",
+        "netmask": "172.32.195.233"
       }
     ]
   },
