@@ -90,10 +90,7 @@ func (n *Network) Correct(sw *Switch) {
 	CorrectRoutes(n.Routes, ipAddr)
 
 	if n.OpenVPN != nil {
-		n.OpenVPN.Network = n.Name
-		obj := DefaultOpenVPN()
-		n.OpenVPN.Merge(obj)
-		n.OpenVPN.Correct(sw)
+		n.OpenVPN.Correct(sw.AddrPool, n.Name)
 	}
 
 	for key, value := range n.FindHop {

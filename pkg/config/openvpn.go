@@ -50,10 +50,6 @@ var defaultVpn = &OpenVPN{
 	Script:    "/usr/bin/openlan",
 }
 
-func DefaultOpenVPN() *OpenVPN {
-	return defaultVpn
-}
-
 func (o *OpenVPN) AuthBin(obj *OpenVPN) string {
 	bin := obj.Script
 	bin += " -l " + obj.Url
@@ -62,62 +58,58 @@ func (o *OpenVPN) AuthBin(obj *OpenVPN) string {
 	return bin
 }
 
-func (o *OpenVPN) Merge(obj *OpenVPN) {
-	if obj == nil {
-		return
-	}
-	if o.Network == "" {
-		o.Network = obj.Network
-	}
+func (o *OpenVPN) Correct(pool, network string) {
+	o.Network = network
+
 	if o.Auth == "" {
-		o.Auth = obj.Auth
+		o.Auth = defaultVpn.Auth
 	}
 	if o.Protocol == "" {
-		o.Protocol = obj.Protocol
+		o.Protocol = defaultVpn.Protocol
 	}
 	if o.DhPem == "" {
-		o.DhPem = obj.DhPem
+		o.DhPem = defaultVpn.DhPem
 	}
 	if o.RootCa == "" {
-		o.RootCa = obj.RootCa
+		o.RootCa = defaultVpn.RootCa
 	}
 	if o.ServerCrt == "" {
-		o.ServerCrt = obj.ServerCrt
+		o.ServerCrt = defaultVpn.ServerCrt
 	}
 	if o.ServerKey == "" {
-		o.ServerKey = obj.ServerKey
+		o.ServerKey = defaultVpn.ServerKey
 	}
 	if o.TlsAuth == "" {
-		o.TlsAuth = obj.TlsAuth
+		o.TlsAuth = defaultVpn.TlsAuth
 	}
 	if o.Cipher == "" {
-		o.Cipher = obj.Cipher
+		o.Cipher = defaultVpn.Cipher
 	}
-	if len(o.Routes) == 0 {
-		o.Routes = append(o.Routes, obj.Routes...)
-	}
-	if len(o.Push) == 0 {
-		o.Push = append(o.Push, obj.Push...)
-	}
-	if o.Script == "" {
-		o.Script = o.AuthBin(obj)
-	}
-	if len(o.Clients) == 0 {
-		o.Clients = append(o.Clients, obj.Clients...)
-	}
-}
 
-func (o *OpenVPN) Correct(sw *Switch) {
+	if o.Script == "" {
+		o.Script = o.AuthBin(defaultVpn)
+	}
+
 	o.Directory = VarDir("openvpn", o.Network)
 	if !strings.Contains(o.Listen, ":") {
 		o.Listen += ":1194"
 	}
+
 	_, port := libol.GetHostPort(o.Listen)
 	o.Device = fmt.Sprintf("tun%s", port)
-	pool := sw.AddrPool
+
 	if o.Subnet == "" {
 		value, _ := strconv.Atoi(port)
 		o.Subnet = fmt.Sprintf("%s.%d.0/24", pool, value&0xff)
+	}
+
+	for _, c := range o.Clients {
+		if c.Name == "" || c.Address == "" {
+			continue
+		}
+		if !strings.Contains(c.Name, "@") {
+			c.Name = c.Name + "@" + o.Network
+		}
 	}
 }
 

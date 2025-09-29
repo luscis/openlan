@@ -127,8 +127,7 @@ func (s *Switch) Correct() {
 	}
 	s.Http.Correct()
 
-	vpn := DefaultOpenVPN()
-	vpn.Url = s.Http.GetUrl()
+	defaultVpn.Url = s.Http.GetUrl()
 
 	if s.Timeout == 0 {
 		s.Timeout = 120
