@@ -284,19 +284,18 @@ func (t *HttpProxy) openConn(protocol, remote string, insecure bool) (net.Conn, 
 		}
 		caFile := t.cfg.CaCert
 		if caFile != "" && libol.FileExist(caFile) == nil {
-			caCertPool := x509.NewCertPool()
+			roots, err := x509.SystemCertPool()
 			// Load CA cert
 			caCert, err := os.ReadFile(caFile)
 			if err != nil {
 				t.out.Warn("HttpProxy.openConn %s", err)
 			} else {
-				caCertPool.AppendCertsFromPEM(caCert)
-				conf.RootCAs = caCertPool
+				roots.AppendCertsFromPEM(caCert)
+				conf.RootCAs = roots
 			}
 		}
 		dialer := &net.Dialer{Timeout: 10 * time.Second}
 		return tls.DialWithDialer(dialer, "tcp", remote, conf)
-
 	}
 	return net.DialTimeout("tcp", remote, 10*time.Second)
 }
