@@ -1,0 +1,4 @@
+connection: <remote-server>
+protocol: tcp
+username: <username>@<network>
+password: <password>

@@ -64,7 +64,10 @@ type Router interface {
 }
 
 type VPNer interface {
-	RestartVPN()
+	StartVPN()
+	AddVPNClient(name, local string) error
+	DelVPNClient(name string) error
+	ListClients(call func(name, local string))
 }
 
 type Qoser interface {
@@ -121,7 +124,7 @@ type Networker interface {
 type IPSecer interface {
 	AddTunnel(data schema.IPSecTunnel)
 	DelTunnel(data schema.IPSecTunnel)
-	RestartTunnel(data schema.IPSecTunnel)
+	StartTunnel(data schema.IPSecTunnel)
 	ListTunnels(call func(obj schema.IPSecTunnel))
 }
 

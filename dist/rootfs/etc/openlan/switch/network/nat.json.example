@@ -1,0 +1,22 @@
+{
+  "name": "nat",
+  "provider": "nat",
+  "specifies": {
+    "rules": [
+      {
+        "action": "dnat",
+        "protocol": "tcp",
+        "ipdest": "192.168.11.1",
+        "portdest": "8080",
+        "toipdest": "192.168.11.11:8081",
+        "toportdest": "192.168.11.11:8081"
+      },
+      {
+        "action": "snat",
+        "protocol": "tcp",
+        "ipsource": "192.168.11.0/24",
+        "toipsource": "100.100.100.100"
+      }
+     ]
+  }
+}

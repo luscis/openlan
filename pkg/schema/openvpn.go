@@ -5,7 +5,6 @@ type VPNClient struct {
 	Name      string `json:"name"`
 	UUID      string `json:"uuid"`
 	Network   string `json:"network"`
-	User      string `json:"user"`
 	Remote    string `json:"remote"`
 	Device    string `json:"device"`
 	RxBytes   uint64 `json:"rxBytes"`

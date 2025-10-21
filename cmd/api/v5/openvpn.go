@@ -36,6 +36,37 @@ func (u VPNClient) List(c *cli.Context) error {
 	return u.Out(items, c.String("format"), u.Tmpl())
 }
 
+func (u VPNClient) Add(c *cli.Context) error {
+	url := u.Url(c.String("url"), c.String("name"))
+
+	value := &schema.VPNClient{
+		Name:    c.String("user"),
+		Address: c.String("address"),
+	}
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u VPNClient) Remove(c *cli.Context) error {
+	url := u.Url(c.String("url"), c.String("name"))
+
+	value := &schema.VPNClient{
+		Name: c.String("user"),
+	}
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (u VPNClient) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "client",
@@ -46,6 +77,24 @@ func (u VPNClient) Commands() *cli.Command {
 				Usage:   "Display all clients",
 				Aliases: []string{"ls"},
 				Action:  u.List,
+			},
+			{
+				Name:  "add",
+				Usage: "Add a client",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "user", Required: true},
+					&cli.StringFlag{Name: "address", Required: true},
+				},
+				Action: u.Add,
+			},
+			{
+				Name:    "remove",
+				Usage:   "Remove a client",
+				Aliases: []string{"rm"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "user", Required: true},
+				},
+				Action: u.Remove,
 			},
 		},
 	}

@@ -104,7 +104,6 @@ func (t *TcpProxy) Start() {
 			}
 		}
 	})
-	return
 }
 
 func (t *TcpProxy) Stop() {

@@ -119,17 +119,13 @@ func (u Network) Commands(app *api.App) {
 				Name:    "list",
 				Usage:   "Display all network",
 				Aliases: []string{"ls"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
-				},
-				Action: u.List,
+				Action:  u.List,
 			},
 			{
 				Name:  "add",
 				Usage: "Add a network",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "file"},
-					&cli.StringFlag{Name: "name"},
 					&cli.StringFlag{Name: "provider"},
 					&cli.StringFlag{Name: "address"},
 					&cli.StringFlag{Name: "namespace"},
@@ -140,19 +136,13 @@ func (u Network) Commands(app *api.App) {
 				Name:    "remove",
 				Usage:   "Remove a network",
 				Aliases: []string{"rm"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
-				},
-				Action: u.Remove,
+				Action:  u.Remove,
 			},
 			{
 				Name:    "save",
 				Usage:   "Save a network",
 				Aliases: []string{"sa"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "name"},
-				},
-				Action: u.Save,
+				Action:  u.Save,
 			},
 			Access{}.Commands(),
 			Qos{}.Commands(),

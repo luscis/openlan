@@ -131,8 +131,8 @@ func (c Cmd) Tmpl() string {
 }
 
 func (c Cmd) Out(data interface{}, format string, tmpl string) error {
-	if tmpl == "" && format == "table" {
-		format = "json"
+	if tmpl == "" {
+		format = "yaml"
 	}
 	return api.Out(data, format, tmpl)
 }

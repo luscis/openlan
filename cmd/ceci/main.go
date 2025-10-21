@@ -31,25 +31,26 @@ func main() {
 	libol.PreNotify()
 
 	var x proxy.Proxyer
-	if mode == "name" {
+	switch mode {
+	case "name":
 		c := &config.NameProxy{Conf: conf}
 		if err := c.Initialize(); err != nil {
 			return
 		}
 		x = proxy.NewNameProxy(c)
-	} else if mode == "socks" {
+	case "socks":
 		c := &config.SocksProxy{Conf: conf}
 		if err := c.Initialize(); err != nil {
 			return
 		}
 		x = proxy.NewSocksProxy(c)
-	} else if mode == "tcp" {
+	case "tcp":
 		c := &config.TcpProxy{Conf: conf}
 		if err := c.Initialize(); err != nil {
 			return
 		}
 		x = proxy.NewTcpProxy(c)
-	} else {
+	default:
 		c := &config.HttpProxy{Conf: conf}
 		if err := c.Initialize(); err != nil {
 			return

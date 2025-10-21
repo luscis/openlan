@@ -450,7 +450,7 @@ func (w *WorkerImpl) DisableZTrust() {
 	}
 }
 
-func (w *WorkerImpl) letVPN2VRF() {
+func (w *WorkerImpl) setVPN2VRF() {
 	_, vpn := w.GetCfgs()
 	promise := libol.NewPromise()
 	promise.Go(func() error {
@@ -501,7 +501,7 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 	if !(w.vpn == nil) {
 		w.vpn.Start()
 		if !(w.vrf == nil) {
-			w.letVPN2VRF()
+			w.setVPN2VRF()
 		}
 		w.fire.Mangle.In.AddRule(cn.IPRule{
 			Input:   vpn.Device,
@@ -574,12 +574,12 @@ func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
 		w.findhop.UnloadHop(rt.FindHop, &nlr)
 		return
 	}
-	w.out.Debug("WorkerImpl.UnLoadRoute: %s", nlr.String())
+	w.out.Debug("WorkerImpl.unloadRoute: %s", nlr.String())
 	if err := nl.RouteDel(&nlr); err != nil {
-		w.out.Warn("WorkerImpl.UnLoadRoute: %s", err)
+		w.out.Warn("WorkerImpl.unloadRoute: %s", err)
 		return
 	}
-	w.out.Info("WorkerImpl.UnLoadRoute: %v", rt.String())
+	w.out.Info("WorkerImpl.unloadRoute: %v", rt.String())
 }
 
 func (w *WorkerImpl) unloadRoutes() {
@@ -589,13 +589,46 @@ func (w *WorkerImpl) unloadRoutes() {
 	}
 }
 
-func (w *WorkerImpl) RestartVPN() {
-	if w.vpn != nil {
-		w.vpn.Restart()
-		if !(w.vrf == nil) {
-			w.letVPN2VRF()
-		}
+func (w *WorkerImpl) StartVPN() {
+	vpn := w.vpn
+	if vpn == nil {
+		return
 	}
+
+	vpn.Stop()
+	vpn.checkAlreadyClose(vpn.Pid(true))
+	vpn.Initialize()
+	vpn.Start()
+	if !(w.vrf == nil) {
+		w.setVPN2VRF()
+	}
+}
+
+func (w *WorkerImpl) AddVPNClient(name, address string) error {
+	vpn := w.vpn
+	if vpn == nil {
+		return libol.NewErr("VPN was disabled")
+	}
+
+	return vpn.AddClient(name, address)
+}
+
+func (w *WorkerImpl) DelVPNClient(name string) error {
+	vpn := w.vpn
+	if vpn == nil {
+		return libol.NewErr("VPN was disabled")
+	}
+
+	return vpn.DelClient(name)
+}
+
+func (w *WorkerImpl) ListClients(call func(name, local string)) {
+	vpn := w.vpn
+	if vpn == nil {
+		return
+	}
+
+	vpn.ListClients(call)
 }
 
 func (w *WorkerImpl) Stop() {

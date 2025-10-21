@@ -362,6 +362,7 @@ func (o *OpenVPN) writeClientConfig() error {
 	if err := os.Mkdir(ccd, 0600); err != nil {
 		o.out.Info("OpenVPN.writeClientConfig %s", err)
 	}
+	o.cleanClientConfig()
 	for _, fic := range o.Cfg.Clients {
 		if fic.Name == "" || fic.Address == "" {
 			continue
@@ -372,12 +373,42 @@ func (o *OpenVPN) writeClientConfig() error {
 			o.out.Warn("OpenVPN.writeClientConfig %s", err)
 		}
 	}
-
 	return nil
 }
 
+func (o *OpenVPN) cleanClientConfig() {
+	ccd := o.DirectoryClientConfig()
+	files, err := filepath.Glob(path.Join(ccd, "*"))
+	if err != nil {
+		libol.Warn("OpenVPN.cleanClientConfig %v", err)
+	}
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			o.out.Warn("OpenVPN.cleanClientConfig %s", err)
+		}
+	}
+}
+
+func (o *OpenVPN) AddClient(name, address string) error {
+	if o.Cfg.AddClient(name, address) {
+		o.writeClientConfig()
+	}
+	return nil
+}
+
+func (o *OpenVPN) DelClient(name string) error {
+	if _, ok := o.Cfg.DelClient(name); ok {
+		o.writeClientConfig()
+	}
+	return nil
+}
+
+func (o *OpenVPN) ListClients(call func(name, address string)) {
+	o.Cfg.ListClients(call)
+}
+
 func createExecutableFile(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
 }
 
 func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
@@ -404,7 +435,7 @@ func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
 
 	clientDisConnectFile := filepath.Join(cid, "client-disconnect.sh")
 	fp2, err := createExecutableFile(clientDisConnectFile)
-	if err != nil || fp == nil {
+	if err != nil || fp2 == nil {
 		return err
 	}
 	defer fp2.Close()
@@ -421,18 +452,7 @@ func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
 }
 
 func (o *OpenVPN) Clean() {
-	ccd := o.DirectoryClientConfig()
-	for _, fic := range o.Cfg.Clients {
-		if fic.Name == "" || fic.Address == "" {
-			continue
-		}
-		file := filepath.Join(ccd, fic.Name)
-		if err := libol.FileExist(file); err == nil {
-			if err := os.Remove(file); err != nil {
-				o.out.Warn("OpenVPN.Clean %s", err)
-			}
-		}
-	}
+	o.cleanClientConfig()
 	files := []string{o.FileStats(true), o.FileIpp(true), o.FileClient(true)}
 	for _, file := range files {
 		if err := libol.FileExist(file); err == nil {
@@ -524,13 +544,6 @@ func (o *OpenVPN) Stop() {
 		}
 	}
 	o.Clean()
-}
-
-func (o *OpenVPN) Restart() {
-	o.Stop()
-	o.checkAlreadyClose(o.Pid(true))
-	o.Initialize()
-	o.Start()
 }
 
 func (o *OpenVPN) checkAlreadyClose(pid string) {

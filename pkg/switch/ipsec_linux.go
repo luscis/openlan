@@ -297,7 +297,7 @@ func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
 	}
 }
 
-func (w *IPSecWorker) RestartTunnel(data schema.IPSecTunnel) {
+func (w *IPSecWorker) StartTunnel(data schema.IPSecTunnel) {
 	cfg := &co.IPSecTunnel{
 		Left:      data.Left,
 		Right:     data.Right,
