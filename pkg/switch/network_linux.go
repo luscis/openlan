@@ -774,7 +774,6 @@ func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
-
 }
 
 func (w *WorkerImpl) toMasq_i(input, pfxSet, comment string) {

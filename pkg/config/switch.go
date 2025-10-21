@@ -221,10 +221,7 @@ func (s *Switch) UnmarshalNetwork(data []byte) (*Network, error) {
 		obj.Bridge = &Bridge{}
 	}
 
-	obj.LoadLink()
-	obj.LoadRoute()
-	obj.LoadOutput()
-	obj.LoadFindHop()
+	obj.Load()
 
 	s.Network[obj.Name] = obj
 	return obj, nil

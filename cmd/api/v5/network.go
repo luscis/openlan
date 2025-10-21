@@ -153,6 +153,7 @@ func (u Network) Commands(app *api.App) {
 			Link{}.Commands(),
 			FindHop{}.Commands(),
 			SNAT{}.Commands(),
+			DNAT{}.Commands(),
 		},
 	})
 }
@@ -192,7 +193,7 @@ func (s SNAT) Disable(c *cli.Context) error {
 func (s SNAT) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "snat",
-		Usage: "Control SNAT",
+		Usage: "Configure SNAT",
 		Subcommands: []*cli.Command{
 			{
 				Name:   "enable",
@@ -203,6 +204,81 @@ func (s SNAT) Commands() *cli.Command {
 				Name:   "disable",
 				Usage:  "Disable snat",
 				Action: s.Disable,
+			},
+		},
+	}
+}
+
+type DNAT struct {
+	Cmd
+}
+
+func (s DNAT) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/dnat"
+}
+
+func (s DNAT) Add(c *cli.Context) error {
+	url := s.Url(c.String("url"), c.String("name"))
+	value := &schema.DNAT{
+		Protocol: c.String("protocol"),
+		Dport:    c.Int("dport"),
+		ToDport:  c.Int("todport"),
+		Dest:     c.String("dest"),
+		ToDest:   c.String("todest"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s DNAT) Delete(c *cli.Context) error {
+	url := s.Url(c.String("url"), c.String("name"))
+	value := &schema.DNAT{
+		Protocol: c.String("protocol"),
+		Dport:    c.Int("dport"),
+		ToDport:  c.Int("todport"),
+		Dest:     c.String("dest"),
+		ToDest:   c.String("todest"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s DNAT) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "dnat",
+		Usage: "Configure DNAT",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add a dnat",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "protocol", Required: true},
+					&cli.IntFlag{Name: "dport", Required: true},
+					&cli.StringFlag{Name: "dest", Required: true},
+					&cli.StringFlag{Name: "todest", Required: true},
+					&cli.IntFlag{Name: "todport", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:  "remove",
+				Usage: "Remove a snat",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "protocol", Required: true},
+					&cli.IntFlag{Name: "dport", Required: true},
+					&cli.StringFlag{Name: "dest", Required: true},
+					&cli.StringFlag{Name: "todest", Required: true},
+					&cli.IntFlag{Name: "todport", Required: true},
+				},
+				Action: s.Delete,
 			},
 		},
 	}

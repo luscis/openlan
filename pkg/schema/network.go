@@ -44,3 +44,11 @@ type FindHop struct {
 	NextHop   string `json:"nexthop"`
 	Available string `json:"available"`
 }
+
+type DNAT struct {
+	Protocol string `json:"protocol"`
+	Dest     string `json:"destination"`
+	Dport    int    `json:"dport"`
+	ToDest   string `json:"todestination"`
+	ToDport  int    `json:"todport"`
+}

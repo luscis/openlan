@@ -1,0 +1,16 @@
+[
+      {
+        "protocol": "tcp",
+        "destination": "192.168.11.1",
+        "dport": 8080,
+        "todport": 8081,
+        "todestination": "192.168.11.11"
+      },
+      {
+        "protocol": "tcp",
+        "destination": "192.168.11.1",
+        "dport": 80,
+        "todport": 80,
+        "todestination": "192.168.11.11"
+      }
+]

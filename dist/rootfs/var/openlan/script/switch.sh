@@ -39,7 +39,7 @@ if [ ! -e /etc/openlan/switch/network/bgp.json ]; then
 EOF
 fi
 
-for dir in acl findhop link output route network qos; do
+for dir in acl findhop link output route network qos dnat; do
   if [ -e "/etc/openlan/switch/$dir" ]; then
     continue
   fi

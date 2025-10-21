@@ -1,11 +1,30 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"path/filepath"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
+
+type Dnat struct {
+	Protocol string `json:"protocol" yaml:"protocol"`
+	Dest     string `json:"destination" yaml:"destination"`
+	Dport    int    `json:"dport" yaml:"dport"`
+	ToDest   string `json:"todestination" yaml:"todestination"`
+	ToDport  int    `json:"todport" yaml:"todport"`
+}
+
+func (d *Dnat) Id() string {
+	return fmt.Sprintf("%s:%s:%d", d.Protocol, d.Dest, d.Dport)
+}
+
+func (d *Dnat) Correct() {
+	if d.ToDport == 0 {
+		d.ToDport = d.Dport
+	}
+}
 
 type Network struct {
 	ConfDir   string              `json:"-" yaml:"-"`
@@ -28,6 +47,7 @@ type Network struct {
 	Snat      string              `json:"snat,omitempty" yaml:"snat,omitempty"`
 	Namespace string              `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	FindHop   map[string]*FindHop `json:"findhop,omitempty" yaml:"findhop,omitempty"`
+	Dnat      []*Dnat             `json:"dnat,omitempty" yaml:"dnat,omitempty"`
 }
 
 func (n *Network) NewSpecifies() any {
@@ -115,6 +135,14 @@ func (n *Network) IsYaml() bool {
 	return libol.IsYaml(n.File)
 }
 
+func (n *Network) Load() {
+	n.LoadLink()
+	n.LoadRoute()
+	n.LoadOutput()
+	n.LoadFindHop()
+	n.LoadDnat()
+}
+
 func (n *Network) LoadLink() {
 	file := n.Dir("link")
 	if err := libol.UnmarshalLoad(&n.Links, file); err != nil {
@@ -143,6 +171,13 @@ func (n *Network) LoadFindHop() {
 	}
 }
 
+func (n *Network) LoadDnat() {
+	file := n.Dir("dnat")
+	if err := libol.UnmarshalLoad(&n.Dnat, file); err != nil {
+		libol.Error("Network.LoadDnat... %n", err)
+	}
+}
+
 func (n *Network) Save() {
 	obj := *n
 	obj.Routes = nil
@@ -155,6 +190,7 @@ func (n *Network) Save() {
 	n.SaveLink()
 	n.SaveOutput()
 	n.SaveFindHop()
+	n.SaveDnat()
 }
 
 func (n *Network) SaveRoute() {
@@ -182,6 +218,13 @@ func (n *Network) SaveFindHop() {
 	file := n.Dir("findhop")
 	if err := libol.MarshalSave(n.FindHop, file, true); err != nil {
 		libol.Error("Network.SaveFindHop %s %s", n.Name, err)
+	}
+}
+
+func (n *Network) SaveDnat() {
+	file := n.Dir("dnat")
+	if err := libol.MarshalSave(n.Dnat, file, true); err != nil {
+		libol.Error("Network.SaveDnat %s %s", n.Name, err)
 	}
 }
 
@@ -270,4 +313,31 @@ func (n *Network) DelFindHop(value *FindHop) (*FindHop, bool) {
 		return older, true
 	}
 	return value, false
+}
+
+func (n *Network) FindDnat(value *Dnat) (*Dnat, int) {
+	for index, obj := range n.Dnat {
+		if obj.Id() == value.Id() {
+			return obj, index
+		}
+	}
+	return nil, -1
+}
+
+func (n *Network) AddDnat(value *Dnat) bool {
+	_, index := n.FindDnat(value)
+	if index == -1 {
+		n.Dnat = append(n.Dnat, value)
+		return true
+	}
+	return false
+}
+
+func (n *Network) DelDnat(value *Dnat) (*Dnat, bool) {
+	older, index := n.FindDnat(value)
+	if index != -1 {
+		n.Dnat = append(n.Dnat[:index], n.Dnat[index+1:]...)
+		return older, true
+	}
+	return older, false
 }
