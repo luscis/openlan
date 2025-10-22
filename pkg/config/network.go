@@ -180,12 +180,16 @@ func (n *Network) LoadDnat() {
 
 func (n *Network) Save() {
 	obj := *n
+
 	obj.Routes = nil
 	obj.Links = nil
 	obj.Outputs = nil
+	obj.Dnat = nil
+	obj.FindHop = nil
 	if err := libol.MarshalSave(&obj, obj.File, true); err != nil {
 		libol.Error("Network.Save %s %s", obj.Name, err)
 	}
+
 	n.SaveRoute()
 	n.SaveLink()
 	n.SaveOutput()
@@ -340,4 +344,10 @@ func (n *Network) DelDnat(value *Dnat) (*Dnat, bool) {
 		return older, true
 	}
 	return older, false
+}
+
+func (n *Network) ListDnat(call func(value Dnat)) {
+	for _, obj := range n.Dnat {
+		call(*obj)
+	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Route struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (rt Route) Router(router *mux.Router) {
@@ -52,7 +52,7 @@ func (rt Route) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := worker.AddRoute(pr, rt.Switcher); err != nil {
+	if err := worker.AddRoute(pr, rt.cs); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -76,7 +76,7 @@ func (rt Route) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := worker.DelRoute(pr, rt.Switcher); err != nil {
+	if err := worker.DelRoute(pr, rt.cs); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

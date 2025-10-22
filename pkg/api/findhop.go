@@ -8,7 +8,7 @@ import (
 )
 
 type FindHop struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (rt FindHop) Router(router *mux.Router) {

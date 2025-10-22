@@ -116,7 +116,7 @@ func (w *BgpWorker) reload() {
 	}
 }
 
-func (w *BgpWorker) Start(v api.Switcher) {
+func (w *BgpWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.out.Info("BgpWorker.Start")
 	w.reload()
@@ -172,7 +172,7 @@ func (w *BgpWorker) Get() *schema.Bgp {
 	return data
 }
 
-func (w *BgpWorker) Reload(v api.Switcher) {
+func (w *BgpWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)

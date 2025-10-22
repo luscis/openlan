@@ -196,14 +196,16 @@ func (s SNAT) Commands() *cli.Command {
 		Usage: "Configure SNAT",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "enable",
-				Usage:  "Enable snat",
-				Action: s.Enable,
+				Name:    "enable",
+				Usage:   "Enable snat",
+				Aliases: []string{"en"},
+				Action:  s.Enable,
 			},
 			{
-				Name:   "disable",
-				Usage:  "Disable snat",
-				Action: s.Disable,
+				Name:    "disable",
+				Usage:   "Disable snat",
+				Aliases: []string{"dis"},
+				Action:  s.Disable,
 			},
 		},
 	}
@@ -251,16 +253,35 @@ func (s DNAT) Delete(c *cli.Context) error {
 	return nil
 }
 
+func (s DNAT) List(c *cli.Context) error {
+	url := s.Url(c.String("url"), c.String("name"))
+	clt := s.NewHttp(c.String("token"))
+
+	var items []schema.DNAT
+	if err := clt.GetJSON(url, &items); err == nil {
+		return s.Out(items, c.String("format"), "")
+	} else {
+		return err
+	}
+
+}
+
 func (s DNAT) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "dnat",
 		Usage: "Configure DNAT",
 		Subcommands: []*cli.Command{
 			{
+				Name:    "list",
+				Usage:   "Liat all dnat",
+				Aliases: []string{"ls"},
+				Action:  s.List,
+			},
+			{
 				Name:  "add",
 				Usage: "Add a dnat",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "protocol", Required: true},
+					&cli.StringFlag{Name: "protocol", Value: "tcp"},
 					&cli.IntFlag{Name: "dport", Required: true},
 					&cli.StringFlag{Name: "dest", Required: true},
 					&cli.StringFlag{Name: "todest", Required: true},
@@ -269,14 +290,13 @@ func (s DNAT) Commands() *cli.Command {
 				Action: s.Add,
 			},
 			{
-				Name:  "remove",
-				Usage: "Remove a snat",
+				Name:    "remove",
+				Usage:   "Remove a snat",
+				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "protocol", Required: true},
+					&cli.StringFlag{Name: "protocol", Value: "tcp"},
 					&cli.IntFlag{Name: "dport", Required: true},
 					&cli.StringFlag{Name: "dest", Required: true},
-					&cli.StringFlag{Name: "todest", Required: true},
-					&cli.IntFlag{Name: "todport", Required: true},
 				},
 				Action: s.Delete,
 			},

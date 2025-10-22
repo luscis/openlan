@@ -9,6 +9,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
+	"github.com/luscis/openlan/pkg/config"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
@@ -17,8 +18,9 @@ import (
 	nl "github.com/vishvananda/netlink"
 )
 
-func NewNetworker(c *co.Network) api.Networker {
-	var obj api.Networker
+func NewNetworker(c *co.Network) api.NetworkApi {
+	var obj api.NetworkApi
+
 	switch c.Provider {
 	case "ipsec":
 		secer := NewIPSecWorker(c)
@@ -62,6 +64,7 @@ type WorkerImpl struct {
 	acl     *ACL
 	findhop *FindHop
 	snat    *cn.FireWallChain
+	dnat    *cn.FireWallChain
 }
 
 func NewWorkerApi(c *co.Network) *WorkerImpl {
@@ -107,6 +110,7 @@ func (w *WorkerImpl) Initialize() {
 
 	w.fire = cn.NewFireWallTable(cfg.Name)
 	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
+	w.dnat = cn.NewFireWallChain("XTT_"+cfg.Name+"_DNAT", cn.TNat, "")
 
 	w.setV.Clear()
 	w.setR.Clear()
@@ -342,7 +346,7 @@ func (w *WorkerImpl) loadVRF() {
 	}
 }
 
-func (w *WorkerImpl) setMss() {
+func (w *WorkerImpl) doMss() {
 	cfg, _ := w.GetCfgs()
 
 	mss := cfg.Bridge.Mss
@@ -382,18 +386,20 @@ func (w *WorkerImpl) SetMss(mss int) {
 	cfg, _ := w.GetCfgs()
 	if cfg.Bridge.Mss != mss {
 		cfg.Bridge.Mss = mss
-		w.setMss()
+		w.doMss()
 	}
 }
 
-func (w *WorkerImpl) enableSnat() {
+func (w *WorkerImpl) doSnat() {
+	w.out.Info("WorkerImpl: doSnat")
 	w.fire.Nat.Post.AddRuleX(cn.IPRule{
 		Jump:    w.snat.Chain().Name,
 		Comment: "Goto SNAT",
 	})
 }
 
-func (w *WorkerImpl) disableSnat() {
+func (w *WorkerImpl) undoSnat() {
+	w.out.Info("WorkerImpl: undoSnat")
 	w.fire.Nat.Post.DelRuleX(cn.IPRule{
 		Jump:    w.snat.Chain().Name,
 		Comment: "Goto SNAT",
@@ -404,7 +410,7 @@ func (w *WorkerImpl) EnableSnat() {
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat == "disable" {
 		cfg.Snat = "enable"
-		w.enableSnat()
+		w.doSnat()
 	}
 }
 
@@ -412,8 +418,95 @@ func (w *WorkerImpl) DisableSnat() {
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat != "disable" {
 		cfg.Snat = "disable"
-		w.disableSnat()
+		w.undoSnat()
 	}
+}
+
+func (w *WorkerImpl) doDnat() {
+	cfg, _ := w.GetCfgs()
+	w.out.Info("WorkerImpl: doDnat")
+
+	w.fire.Nat.Pre.AddRuleX(cn.IPRule{
+		Jump:    w.dnat.Chain().Name,
+		Comment: "Goto DNAT",
+	})
+	for _, obj := range cfg.Dnat {
+		if err := w.dnat.AddRuleX(cn.IPRule{
+			Proto:   obj.Protocol,
+			Dest:    obj.Dest,
+			DstPort: fmt.Sprintf("%d", obj.Dport),
+			ToDest:  fmt.Sprintf("%s:%d", obj.ToDest, obj.ToDport),
+			Jump:    "DNAT",
+			Comment: "DNAT " + obj.Id(),
+		}); err != nil {
+			w.out.Warn("WorkerImple: doDnat: %s", err)
+		}
+	}
+}
+
+func (w *WorkerImpl) AddDnat(data schema.DNAT) error {
+	cfg, _ := w.GetCfgs()
+	obj := config.Dnat{
+		Protocol: data.Protocol,
+		Dest:     data.Dest,
+		Dport:    data.Dport,
+		ToDest:   data.ToDest,
+		ToDport:  data.ToDport,
+	}
+	obj.Correct()
+
+	if ok := cfg.AddDnat(&obj); ok {
+		if err := w.dnat.AddRuleX(cn.IPRule{
+			Proto:   obj.Protocol,
+			Dest:    obj.Dest,
+			DstPort: fmt.Sprintf("%d", obj.Dport),
+			ToDest:  fmt.Sprintf("%s:%d", obj.ToDest, obj.ToDport),
+			Jump:    "DNAT",
+			Comment: "DNAT " + obj.Id(),
+		}); err != nil {
+			w.out.Warn("WorkerImple: AddDnat: %s", err)
+		}
+	}
+	return nil
+}
+
+func (w *WorkerImpl) DelDnat(data schema.DNAT) error {
+	cfg, _ := w.GetCfgs()
+	obj := config.Dnat{
+		Protocol: data.Protocol,
+		Dest:     data.Dest,
+		Dport:    data.Dport,
+		ToDest:   data.ToDest,
+		ToDport:  data.ToDport,
+	}
+	obj.Correct()
+
+	if _, ok := cfg.DelDnat(&obj); ok {
+		if err := w.dnat.DelRuleX(cn.IPRule{
+			Proto:   obj.Protocol,
+			Dest:    obj.Dest,
+			DstPort: fmt.Sprintf("%d", obj.Dport),
+			ToDest:  fmt.Sprintf("%s:%d", obj.ToDest, obj.ToDport),
+			Jump:    "DNAT",
+			Comment: "DNAT " + obj.Id(),
+		}); err != nil {
+			w.out.Warn("WorkerImple: DelDnat: %s", err)
+		}
+	}
+	return nil
+}
+
+func (w *WorkerImpl) ListDnat(call func(data schema.DNAT)) {
+	cfg, _ := w.GetCfgs()
+	cfg.ListDnat(func(value config.Dnat) {
+		call(schema.DNAT{
+			Protocol: value.Protocol,
+			Dest:     value.Dest,
+			Dport:    value.Dport,
+			ToDest:   value.ToDest,
+			ToDport:  value.ToDport,
+		})
+	})
 }
 
 func (w *WorkerImpl) doTrust() {
@@ -425,7 +518,7 @@ func (w *WorkerImpl) doTrust() {
 	})
 }
 
-func (w *WorkerImpl) disableTrust() {
+func (w *WorkerImpl) undoTrust() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -446,7 +539,7 @@ func (w *WorkerImpl) DisableZTrust() {
 	cfg, _ := w.GetCfgs()
 	if cfg.ZTrust == "enable" {
 		cfg.ZTrust = "disable"
-		w.disableTrust()
+		w.undoTrust()
 	}
 }
 
@@ -482,7 +575,7 @@ func (w *WorkerImpl) setVPN2VRF() {
 	})
 }
 
-func (w *WorkerImpl) Start(v api.Switcher) {
+func (w *WorkerImpl) Start(v api.SwitchApi) {
 	cfg, vpn := w.GetCfgs()
 
 	w.out.Info("WorkerImpl.Start")
@@ -514,12 +607,15 @@ func (w *WorkerImpl) Start(v api.Switcher) {
 
 	w.fire.Start()
 	w.snat.Install()
+	w.dnat.Install()
+
+	w.doDnat()
 	if cfg.Snat != "disable" {
-		w.enableSnat()
+		w.doSnat()
 	}
 	if cfg.Bridge.Mss > 0 {
 		// forward to remote
-		w.setMss()
+		w.doMss()
 	}
 
 	w.findhop.Start()
@@ -636,10 +732,11 @@ func (w *WorkerImpl) Stop() {
 
 	cfg, _ := w.GetCfgs()
 	if cfg.Snat != "disable" {
-		w.disableSnat()
+		w.undoSnat()
 	}
 
 	w.snat.Cancel()
+	w.dnat.Cancel()
 	w.fire.Stop()
 	w.findhop.Stop()
 	w.acl.Stop()
@@ -707,7 +804,7 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 	return nil
 }
 
-func (w *WorkerImpl) Reload(v api.Switcher) {
+func (w *WorkerImpl) Reload(v api.SwitchApi) {
 }
 
 func (w *WorkerImpl) toACL(input string) {
@@ -1069,7 +1166,7 @@ func (w *WorkerImpl) ListRoute(call func(obj schema.PrefixRoute)) {
 	})
 }
 
-func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
+func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, v api.SwitchApi) error {
 	rt := w.correctRoute(route)
 	if !w.cfg.AddRoute(rt) {
 		w.out.Info("WorkerImpl.AddRoute: %s route exist", route.Prefix)
@@ -1086,7 +1183,7 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, switcher api.Switcher) 
 	return nil
 }
 
-func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, switcher api.Switcher) error {
+func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, v api.SwitchApi) error {
 	correctRt := w.correctRoute(route)
 	delRt, removed := w.cfg.DelRoute(correctRt)
 	if !removed {
@@ -1107,7 +1204,7 @@ func (w *WorkerImpl) SaveRoute() {
 	w.cfg.SaveRoute()
 }
 
-func (w *WorkerImpl) Router() api.Router {
+func (w *WorkerImpl) Router() api.RouteApi {
 	return w
 }
 
@@ -1146,18 +1243,19 @@ func (w *WorkerImpl) DelOutput(data schema.Output) {
 func (w *WorkerImpl) SaveOutput() {
 	w.cfg.SaveOutput()
 }
-func (w *WorkerImpl) ZTruster() api.ZTruster {
+
+func (w *WorkerImpl) ZTruster() api.ZTrustApi {
 	return w.ztrust
 }
 
-func (w *WorkerImpl) Qoser() api.Qoser {
+func (w *WorkerImpl) Qoser() api.QosApi {
 	return w.qos
 }
 
-func (w *WorkerImpl) ACLer() api.ACLer {
+func (w *WorkerImpl) ACLer() api.ACLApi {
 	return w.acl
 }
 
-func (w *WorkerImpl) FindHoper() api.FindHoper {
+func (w *WorkerImpl) FindHoper() api.FindHopApi {
 	return w.findhop
 }

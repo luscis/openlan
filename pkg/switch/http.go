@@ -31,7 +31,7 @@ func NotAllowed(w http.ResponseWriter, r *http.Request) {
 }
 
 type Http struct {
-	switcher   api.Switcher
+	cs         api.SwitchApi
 	listen     string
 	adminToken string
 	adminFile  string
@@ -42,10 +42,10 @@ type Http struct {
 	router     *mux.Router
 }
 
-func NewHttp(switcher api.Switcher) (h *Http) {
+func NewHttp(cs api.SwitchApi) (h *Http) {
 	c := co.Get()
 	h = &Http{
-		switcher:  switcher,
+		cs:        cs,
 		listen:    c.Http.Listen,
 		adminFile: c.TokenFile,
 		pubDir:    c.Http.Public,
@@ -136,7 +136,7 @@ func (h *Http) LoadRouter() {
 	h.Prome(router)
 	router.HandleFunc("/api/index", h.GetIndex).Methods("GET")
 	router.HandleFunc("/api/urls", h.GetApi).Methods("GET")
-	api.Add(router, h.switcher)
+	api.Add(router, h.cs)
 }
 
 func (h *Http) LoadToken() {
@@ -244,7 +244,7 @@ func (h *Http) PubFile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version = schema.NewVersionSchema()
-	body.Worker = api.NewWorkerSchema(h.switcher)
+	body.Worker = api.NewWorkerSchema(h.cs)
 
 	// display accessed Access.
 	for p := range cache.Access.List() {

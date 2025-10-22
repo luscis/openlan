@@ -11,7 +11,7 @@ import (
 )
 
 type Link struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h Link) Router(router *mux.Router) {

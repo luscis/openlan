@@ -8,7 +8,7 @@ import (
 )
 
 type Rate struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h Rate) Router(router *mux.Router) {
@@ -25,11 +25,11 @@ func (h Rate) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.Switcher.AddRate(device, rate.Speed)
+	h.cs.AddRate(device, rate.Speed)
 }
 
 func (h Rate) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	device := vars["id"]
-	h.Switcher.DelRate(device)
+	h.cs.DelRate(device)
 }

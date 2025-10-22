@@ -7,17 +7,17 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type QosApi struct {
+type Qos struct {
 }
 
-func (h QosApi) Router(router *mux.Router) {
+func (h Qos) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/qos", h.List).Methods("GET")
 	router.HandleFunc("/api/network/{id}/qos", h.Add).Methods("POST")
 	router.HandleFunc("/api/network/{id}/qos", h.Del).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/qos", h.Save).Methods("PUT")
 }
 
-func (h QosApi) List(w http.ResponseWriter, r *http.Request) {
+func (h Qos) List(w http.ResponseWriter, r *http.Request) {
 
 	qosList := make([]schema.Qos, 0, 1024)
 	vars := mux.Vars(r)
@@ -37,7 +37,7 @@ func (h QosApi) List(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, qosList)
 }
 
-func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
+func (h Qos) Add(w http.ResponseWriter, r *http.Request) {
 
 	qos := &schema.Qos{}
 	if err := GetData(r, qos); err != nil {
@@ -65,7 +65,7 @@ func (h QosApi) Add(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h QosApi) Del(w http.ResponseWriter, r *http.Request) {
+func (h Qos) Del(w http.ResponseWriter, r *http.Request) {
 
 	qos := &schema.Qos{}
 	if err := GetData(r, qos); err != nil {
@@ -93,7 +93,7 @@ func (h QosApi) Del(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h QosApi) Save(w http.ResponseWriter, r *http.Request) {
+func (h Qos) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 

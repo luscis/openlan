@@ -11,7 +11,7 @@ import (
 )
 
 type Output struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h Output) Router(router *mux.Router) {
@@ -45,7 +45,7 @@ func (h Output) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cs := h.Switcher.Config()
+	cs := h.cs.Config()
 	if cs.Network[name] == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
@@ -68,7 +68,7 @@ func (h Output) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cs := h.Switcher.Config()
+	cs := h.cs.Config()
 	if cs.Network[name] == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return

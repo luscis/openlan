@@ -1,12 +1,13 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type Config struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (c Config) Router(router *mux.Router) {
@@ -18,18 +19,18 @@ func (c Config) Router(router *mux.Router) {
 func (c Config) List(w http.ResponseWriter, r *http.Request) {
 	format := GetQueryOne(r, "format")
 	if format == "yaml" {
-		ResponseYaml(w, c.Switcher.Config())
+		ResponseYaml(w, c.cs.Config())
 	} else {
-		ResponseJson(w, c.Switcher.Config())
+		ResponseJson(w, c.cs.Config())
 	}
 }
 
 func (c Config) Reload(w http.ResponseWriter, r *http.Request) {
-	c.Switcher.Reload()
+	c.cs.Reload()
 	ResponseMsg(w, 0, "success")
 }
 
 func (c Config) Save(w http.ResponseWriter, r *http.Request) {
-	c.Switcher.Save()
+	c.cs.Save()
 	ResponseMsg(w, 0, "success")
 }

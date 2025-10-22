@@ -9,7 +9,7 @@ import (
 )
 
 type IPSec struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h IPSec) Router(router *mux.Router) {
@@ -22,11 +22,11 @@ func (h IPSec) Router(router *mux.Router) {
 func (h IPSec) Get(w http.ResponseWriter, r *http.Request) {
 	libol.Debug("IPSec.Get %s")
 	tunnels := make([]schema.IPSecTunnel, 0, 1024)
-	if Call.secer == nil {
+	if Call.ipsecApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.secer.ListTunnels(func(obj schema.IPSecTunnel) {
+	Call.ipsecApi.ListTunnels(func(obj schema.IPSecTunnel) {
 		tunnels = append(tunnels, obj)
 	})
 	ResponseJson(w, tunnels)
@@ -38,11 +38,11 @@ func (h IPSec) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.secer == nil {
+	if Call.ipsecApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.secer.AddTunnel(*tun)
+	Call.ipsecApi.AddTunnel(*tun)
 	ResponseMsg(w, 0, "")
 }
 
@@ -52,11 +52,11 @@ func (h IPSec) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.secer == nil {
+	if Call.ipsecApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.secer.DelTunnel(*tun)
+	Call.ipsecApi.DelTunnel(*tun)
 	ResponseMsg(w, 0, "")
 }
 
@@ -66,10 +66,10 @@ func (h IPSec) Start(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.secer == nil {
+	if Call.ipsecApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.secer.StartTunnel(*tun)
+	Call.ipsecApi.StartTunnel(*tun)
 	ResponseMsg(w, 0, "")
 }

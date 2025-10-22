@@ -2,8 +2,8 @@ package api
 
 import "github.com/gorilla/mux"
 
-func Add(router *mux.Router, switcher Switcher) {
-	Link{Switcher: switcher}.Router(router)
+func Add(router *mux.Router, cs SwitchApi) {
+	Link{cs: cs}.Router(router)
 	User{}.Router(router)
 	Bgp{}.Router(router)
 	IPSec{}.Router(router)
@@ -12,21 +12,22 @@ func Add(router *mux.Router, switcher Switcher) {
 	Access{}.Router(router)
 	OnLine{}.Router(router)
 	Lease{}.Router(router)
-	Server{Switcher: switcher}.Router(router)
+	Server{cs: cs}.Router(router)
 	Device{}.Router(router)
 	VPNClient{}.Router(router)
 	PProf{}.Router(router)
-	Config{Switcher: switcher}.Router(router)
+	Config{cs: cs}.Router(router)
 	Version{}.Router(router)
 	Log{}.Router(router)
 	OpenAPI{}.Router(router)
 	ZTrust{}.Router(router)
-	QosApi{}.Router(router)
-	Output{Switcher: switcher}.Router(router)
+	Qos{}.Router(router)
+	Output{cs: cs}.Router(router)
 	ACL{}.Router(router)
-	Route{Switcher: switcher}.Router(router)
+	Route{cs: cs}.Router(router)
 	FindHop{}.Router(router)
-	Rate{Switcher: switcher}.Router(router)
+	Rate{cs: cs}.Router(router)
 	SNAT{}.Router(router)
-	Network{Switcher: switcher}.Router(router)
+	DNAT{}.Router(router)
+	Network{cs: cs}.Router(router)
 }

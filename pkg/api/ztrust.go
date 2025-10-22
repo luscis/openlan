@@ -11,7 +11,7 @@ import (
 )
 
 type ZTrust struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h ZTrust) Router(router *mux.Router) {

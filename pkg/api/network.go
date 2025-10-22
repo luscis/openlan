@@ -12,7 +12,7 @@ import (
 )
 
 type Network struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h Network) Router(router *mux.Router) {
@@ -23,7 +23,7 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}", h.Delete).Methods("DELETE")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/ovpn", h.Profile).Methods("GET")
-	router.HandleFunc("/api/network/{id}/openvpn/restart", h.RestartVPN).Methods("POST")
+	router.HandleFunc("/api/network/{id}/openvpn/restart", h.StartVPN).Methods("POST")
 }
 
 func (h Network) List(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cs := h.Switcher.Config()
+	cs := h.cs.Config()
 	obj, err := cs.AddNetwork(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -67,7 +67,7 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 
 	cs.CorrectNetwork(obj, "json")
 	if obj := cs.GetNetwork(obj.Name); obj != nil {
-		h.Switcher.AddNetwork(obj.Name)
+		h.cs.AddNetwork(obj.Name)
 	} else {
 		http.Error(w, obj.Name+" not found", http.StatusBadRequest)
 		return
@@ -84,7 +84,7 @@ func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network not found", http.StatusBadRequest)
 		return
 	}
-	h.Switcher.DelNetwork(network)
+	h.cs.DelNetwork(network)
 	ResponseJson(w, "success")
 }
 
@@ -94,7 +94,7 @@ func (h Network) Save(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.Switcher.SaveNetwork(network.Name)
+	h.cs.SaveNetwork(network.Name)
 	ResponseJson(w, "success")
 }
 
@@ -109,7 +109,7 @@ func (h Network) Profile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
+func (h Network) StartVPN(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -124,7 +124,7 @@ func (h Network) RestartVPN(w http.ResponseWriter, r *http.Request) {
 }
 
 type SNAT struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h SNAT) Router(router *mux.Router) {
@@ -157,5 +157,78 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ResponseJson(w, "success")
+}
+
+type DNAT struct {
+	cs SwitchApi
+}
+
+func (h DNAT) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/dnat", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/{id}/dnat", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/dnat", h.Delete).Methods("DELETE")
+}
+
+func (h DNAT) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	caller := Call.GetWorker(name)
+	if caller == nil {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	var items []schema.DNAT
+	caller.ListDnat(func(data schema.DNAT) {
+		items = append(items, data)
+	})
+	ResponseJson(w, items)
+}
+
+func (h DNAT) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	caller := Call.GetWorker(name)
+	if caller == nil {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.DNAT{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.AddDnat(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h DNAT) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	caller := Call.GetWorker(name)
+	if caller == nil {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.DNAT{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.DelDnat(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseJson(w, "success")
 }

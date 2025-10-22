@@ -8,7 +8,7 @@ import (
 )
 
 type ACL struct {
-	Switcher Switcher
+	SwitchApi SwitchApi
 }
 
 func (h ACL) Router(router *mux.Router) {

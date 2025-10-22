@@ -9,7 +9,7 @@ import (
 )
 
 type Bgp struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (h Bgp) Router(router *mux.Router) {
@@ -26,11 +26,11 @@ func (h Bgp) Router(router *mux.Router) {
 
 func (h Bgp) Get(w http.ResponseWriter, r *http.Request) {
 	libol.Debug("Bgp.Get %s")
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	data := Call.bgper.Get()
+	data := Call.bgpApi.Get()
 	ResponseJson(w, data)
 }
 
@@ -40,20 +40,20 @@ func (h Bgp) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.Enable(data)
+	Call.bgpApi.Enable(data)
 	ResponseMsg(w, 0, "")
 }
 
 func (h Bgp) Remove(w http.ResponseWriter, r *http.Request) {
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.Disable()
+	Call.bgpApi.Disable()
 	ResponseMsg(w, 0, "")
 }
 
@@ -63,11 +63,11 @@ func (h Bgp) RemoveNeighbor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.DelNeighbor(nei)
+	Call.bgpApi.DelNeighbor(nei)
 	ResponseMsg(w, 0, "")
 }
 
@@ -77,11 +77,11 @@ func (h Bgp) AddNeighbor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.AddNeighbor(nei)
+	Call.bgpApi.AddNeighbor(nei)
 	ResponseMsg(w, 0, "")
 }
 
@@ -91,11 +91,11 @@ func (h Bgp) RemoveAdvertis(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.DelAdvertis(data)
+	Call.bgpApi.DelAdvertis(data)
 	ResponseMsg(w, 0, "")
 }
 
@@ -105,11 +105,11 @@ func (h Bgp) AddAdvertis(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.AddAdvertis(data)
+	Call.bgpApi.AddAdvertis(data)
 	ResponseMsg(w, 0, "")
 }
 
@@ -119,11 +119,11 @@ func (h Bgp) RemoveReceivess(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.DelReceives(data)
+	Call.bgpApi.DelReceives(data)
 	ResponseMsg(w, 0, "")
 }
 
@@ -133,10 +133,10 @@ func (h Bgp) AddReceivess(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if Call.bgper == nil {
+	if Call.bgpApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.bgper.AddReceives(data)
+	Call.bgpApi.AddReceives(data)
 	ResponseMsg(w, 0, "")
 }

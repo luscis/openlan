@@ -1,12 +1,13 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type Server struct {
-	Switcher Switcher
+	cs SwitchApi
 }
 
 func (l Server) Router(router *mux.Router) {
@@ -15,14 +16,14 @@ func (l Server) Router(router *mux.Router) {
 }
 
 func (l Server) List(w http.ResponseWriter, r *http.Request) {
-	server := l.Switcher.Server()
+	server := l.cs.Server()
 	data := &struct {
 		UpTime     int64            `json:"uptime"`
 		Total      int              `json:"total"`
 		Statistic  map[string]int64 `json:"statistic"`
 		Connection []interface{}    `json:"connection"`
 	}{
-		UpTime:     l.Switcher.UpTime(),
+		UpTime:     l.cs.UpTime(),
 		Statistic:  server.Statistics(),
 		Connection: make([]interface{}, 0, 1024),
 		Total:      server.TotalClient(),

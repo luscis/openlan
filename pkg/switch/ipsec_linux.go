@@ -184,7 +184,7 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 	return nil
 }
 
-func (w *IPSecWorker) Start(v api.Switcher) {
+func (w *IPSecWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.out.Info("IPSecWorker.Start")
 	for _, tun := range w.spec.Tunnels {
@@ -261,7 +261,7 @@ func (w *IPSecWorker) Stop() {
 	}
 }
 
-func (w *IPSecWorker) Reload(v api.Switcher) {
+func (w *IPSecWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)

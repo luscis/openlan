@@ -86,7 +86,7 @@ func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 	}
 }
 
-func (w *OpenLANWorker) Start(v api.Switcher) {
+func (w *OpenLANWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.startTime = time.Now().Unix()
 
@@ -143,7 +143,7 @@ func (w *OpenLANWorker) DelLink(addr string) {
 	}
 }
 
-func (w *OpenLANWorker) Reload(v api.Switcher) {
+func (w *OpenLANWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)

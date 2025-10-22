@@ -9,12 +9,12 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type Rater interface {
+type RateApi interface {
 	AddRate(device string, mbit int)
 	DelRate(device string)
 }
 
-type Switcher interface {
+type SwitchApi interface {
 	UUID() string
 	UpTime() int64
 	Alias() string
@@ -25,10 +25,10 @@ type Switcher interface {
 	AddNetwork(network string)
 	DelNetwork(network string)
 	SaveNetwork(network string)
-	Rater
+	RateApi
 }
 
-func NewWorkerSchema(s Switcher) schema.Worker {
+func NewWorkerSchema(s SwitchApi) schema.Worker {
 	protocol := ""
 	if cfg := s.Config(); cfg != nil {
 		protocol = cfg.Protocol
@@ -41,14 +41,14 @@ func NewWorkerSchema(s Switcher) schema.Worker {
 	}
 }
 
-type ACLer interface {
+type ACLApi interface {
 	AddRule(rule *schema.ACLRule) error
 	DelRule(rule *schema.ACLRule) error
 	ListRules(call func(obj schema.ACLRule))
 	SaveRule()
 }
 
-type ZTruster interface {
+type ZTrustApi interface {
 	AddGuest(name, source string) error
 	DelGuest(name, source string) error
 	Knock(name string, protocol, dest, port string, age int) error
@@ -56,21 +56,21 @@ type ZTruster interface {
 	ListKnock(name string, call func(obj schema.KnockRule))
 }
 
-type Router interface {
-	AddRoute(route *schema.PrefixRoute, switcher Switcher) error
-	DelRoute(route *schema.PrefixRoute, switcher Switcher) error
+type RouteApi interface {
+	AddRoute(route *schema.PrefixRoute, switchApi SwitchApi) error
+	DelRoute(route *schema.PrefixRoute, switchApi SwitchApi) error
 	ListRoute(call func(obj schema.PrefixRoute))
 	SaveRoute()
 }
 
-type VPNer interface {
+type VPNApi interface {
 	StartVPN()
 	AddVPNClient(name, local string) error
 	DelVPNClient(name string) error
 	ListClients(call func(name, local string))
 }
 
-type Qoser interface {
+type QosApi interface {
 	AddQos(name string, inSpeed float64) error
 	UpdateQos(name string, inSpeed float64) error
 	DelQos(name string) error
@@ -78,57 +78,68 @@ type Qoser interface {
 	SaveQos()
 }
 
-type Outputer interface {
+type OutputApi interface {
 	AddOutput(data schema.Output)
 	DelOutput(data schema.Output)
 	SaveOutput()
 }
 
-type FindHoper interface {
+type FindHopApi interface {
 	AddHop(data schema.FindHop) error
 	DelHop(data schema.FindHop) error
 	ListHop(call func(obj schema.FindHop))
 	SaveHop()
 }
 
-type Super interface {
+type SNATApi interface {
+	EnableSnat()
+	DisableSnat()
+}
+
+type DNATApi interface {
+	AddDnat(data schema.DNAT) error
+	DelDnat(data schema.DNAT) error
+	ListDnat(call func(obj schema.DNAT))
+}
+
+type SupeApi interface {
 	String() string
 	ID() string
 	Initialize()
-	Start(v Switcher)
+	Start(v SwitchApi)
 	Stop()
-	Reload(v Switcher)
+	Reload(v SwitchApi)
 }
 
-type Networker interface {
-	Super
+type NetworkApi interface {
+	SupeApi
 	Config() *co.Network
 	Subnet() *net.IPNet
 	Provider() string
 	IfAddr() string
 	SetMss(mss int)
-	Outputer
-	Router
-	VPNer
+	OutputApi
+	RouteApi
+	VPNApi
 	Bridger() cn.Bridger
-	ZTruster() ZTruster
-	Qoser() Qoser
-	ACLer() ACLer
-	FindHoper() FindHoper
+	ZTruster() ZTrustApi
+	Qoser() QosApi
+	ACLer() ACLApi
+	FindHoper() FindHopApi
 	EnableZTrust()
 	DisableZTrust()
-	EnableSnat()
-	DisableSnat()
+	SNATApi
+	DNATApi
 }
 
-type IPSecer interface {
+type IPSecApi interface {
 	AddTunnel(data schema.IPSecTunnel)
 	DelTunnel(data schema.IPSecTunnel)
 	StartTunnel(data schema.IPSecTunnel)
 	ListTunnels(call func(obj schema.IPSecTunnel))
 }
 
-type Bgper interface {
+type BgpApi interface {
 	Enable(data schema.Bgp)
 	Disable()
 	Get() *schema.Bgp
@@ -140,42 +151,34 @@ type Bgper interface {
 	DelAdvertis(data schema.BgpPrefix)
 }
 
-type APICall struct {
-	secer   IPSecer
-	bgper   Bgper
-	workers map[string]Networker
+type callApi struct {
+	ipsecApi IPSecApi
+	bgpApi   BgpApi
+	workers  map[string]NetworkApi
 }
 
-func (i *APICall) AddWorker(name string, obj Networker) {
+func (i *callApi) AddWorker(name string, obj NetworkApi) {
 	i.workers[name] = obj
 }
 
-func (i *APICall) GetWorker(name string) Networker {
+func (i *callApi) GetWorker(name string) NetworkApi {
 	return i.workers[name]
 }
 
-func (i *APICall) ListWorker(call func(w Networker)) {
-	for _, worker := range i.workers {
-		call(worker)
+func (i *callApi) ListWorker(call func(w NetworkApi)) {
+	for _, w := range i.workers {
+		call(w)
 	}
 }
 
-func (i *APICall) SetIPSecer(value IPSecer) {
-	i.secer = value
+func (i *callApi) SetIPSecer(value IPSecApi) {
+	i.ipsecApi = value
 }
 
-func (i *APICall) GetIPSecer() IPSecer {
-	return i.secer
+func (i *callApi) SetBgper(value BgpApi) {
+	i.bgpApi = value
 }
 
-func (i *APICall) SetBgper(value Bgper) {
-	i.bgper = value
-}
-
-func (i *APICall) GetBgper() Bgper {
-	return i.bgper
-}
-
-var Call = &APICall{
-	workers: make(map[string]Networker),
+var Call = &callApi{
+	workers: make(map[string]NetworkApi),
 }

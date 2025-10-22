@@ -69,7 +69,7 @@ func (w *RouterWorker) addAddress() error {
 	return nil
 }
 
-func (w *RouterWorker) Start(v api.Switcher) {
+func (w *RouterWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.WorkerImpl.Start(v)
 	w.addAddress()
@@ -96,7 +96,7 @@ func (w *RouterWorker) Stop() {
 	w.WorkerImpl.Stop()
 }
 
-func (w *RouterWorker) Reload(v api.Switcher) {
+func (w *RouterWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)
