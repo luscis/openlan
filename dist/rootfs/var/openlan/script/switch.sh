@@ -14,15 +14,20 @@ sysctl -p /etc/sysctl.d/90-openlan.conf
 /usr/bin/env find /var/openlan/openvpn -name '*client.ovpn' -delete
 /usr/bin/env find /var/openlan/openvpn -name '*client.tmpl' -delete
 
-if [ ! -e /etc/openlan/switch/switch.yaml ]; then
-  cat > /etc/openlan/switch/switch.yaml << EOF
-crypt
-  secret: cb2ff088a34d
+cs_dir="/etc/openlan/switch"
+
+if [ ! -e $cs_dir/switch.json ]; then
+  cat > $cs_dir/switch.json << EOF
+{
+  "crypt": {
+    "secret": "cb2ff088a34d"
+  }
+}
 EOF
 fi
 
-if [ ! -e /etc/openlan/switch/network/ipsec.json ]; then
-  cat > /etc/openlan/switch/network/ipsec.json << EOF
+if [ ! -e $cs_dir/network/ipsec.json ]; then
+  cat > $cs_dir/network/ipsec.json << EOF
 {
   "name": "ipsec",
   "provider": "ipsec"
@@ -30,8 +35,8 @@ if [ ! -e /etc/openlan/switch/network/ipsec.json ]; then
 EOF
 fi
 
-if [ ! -e /etc/openlan/switch/network/bgp.json ]; then
-  cat > /etc/openlan/switch/network/bgp.json << EOF
+if [ ! -e $cs_dir/network/bgp.json ]; then
+  cat > $cs_dir/network/bgp.json << EOF
 {
   "name": "bgp",
   "provider": "bgp"
@@ -39,11 +44,20 @@ if [ ! -e /etc/openlan/switch/network/bgp.json ]; then
 EOF
 fi
 
+if [ ! -e $cs_dir/network/proxy.json ]; then
+  cat > $cs_dir/network/proxy.json << EOF
+{
+  "name": "proxy",
+  "provider": "proxy"
+}
+EOF
+fi
+
 for dir in acl findhop link output route network qos dnat; do
-  if [ -e "/etc/openlan/switch/$dir" ]; then
+  if [ -e "$cs_dir/$dir" ]; then
     continue
   fi
-  mkdir -p "/etc/openlan/switch/$dir"
+  mkdir -p "$cs_dir/$dir"
 done
 
 # wait ipsec service
@@ -54,4 +68,4 @@ while true; do
   sleep 5
 done
 
-exec /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+exec /usr/bin/openlan-switch -conf:dir $cs_dir -log:level 20

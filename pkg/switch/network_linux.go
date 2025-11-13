@@ -32,6 +32,10 @@ func NewNetworker(c *co.Network) api.NetworkApi {
 		obj = bgper
 	case "router":
 		obj = NewRouterWorker(c)
+	case "ceci":
+		cecer := NewCeciWorker(c)
+		//api.Call.SetBgper(bgper)
+		obj = cecer
 	default:
 		obj = NewOpenLANWorker(c)
 	}

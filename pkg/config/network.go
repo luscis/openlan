@@ -58,6 +58,8 @@ func (n *Network) NewSpecifies() any {
 		n.Specifies = &RouterSpecifies{}
 	case "bgp":
 		n.Specifies = &BgpSpecifies{}
+	case "ceci":
+		n.Specifies = &CeciSpecifies{}
 	default:
 		n.Specifies = nil
 	}
@@ -89,6 +91,12 @@ func (n *Network) Correct(sw *Switch) {
 	case "bgp":
 		spec := n.Specifies
 		if obj, ok := spec.(*BgpSpecifies); ok {
+			obj.Correct()
+			obj.Name = n.Name
+		}
+	case "ceci":
+		spec := n.Specifies
+		if obj, ok := spec.(*CeciSpecifies); ok {
 			obj.Correct()
 			obj.Name = n.Name
 		}
@@ -186,6 +194,7 @@ func (n *Network) Save() {
 	obj.Outputs = nil
 	obj.Dnat = nil
 	obj.FindHop = nil
+
 	if err := libol.MarshalSave(&obj, obj.File, true); err != nil {
 		libol.Error("Network.Save %s %s", obj.Name, err)
 	}
