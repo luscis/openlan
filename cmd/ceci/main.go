@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/luscis/openlan/pkg/config"
@@ -9,14 +10,23 @@ import (
 	"github.com/luscis/openlan/pkg/proxy"
 )
 
+func writepid(file string) {
+	pid := fmt.Sprintf("%d", os.Getpid())
+	if err := os.WriteFile(file, []byte(pid), 0644); err != nil {
+		libol.Warn("Ceci: write pid:%s: %s", pid, err)
+	}
+}
+
 func main() {
 	mode := "http"
 	conf := ""
 	nodate := false
+	pidfile := ""
 
 	flag.StringVar(&mode, "mode", "http", "Proxy mode for http, socks, tcp and name")
 	flag.StringVar(&conf, "conf", "ceci.yaml", "The configuration file")
 	flag.BoolVar(&nodate, "nodate", nodate, "Dont display message datetime")
+	flag.StringVar(&pidfile, "write-pid", pidfile, "Write pid to a file")
 	flag.Parse()
 
 	if nodate {
@@ -59,6 +69,9 @@ func main() {
 	}
 
 	libol.Go(x.Start)
+	if pidfile != "" {
+		writepid(pidfile)
+	}
 	libol.SdNotify()
 	libol.Wait()
 	x.Stop()
