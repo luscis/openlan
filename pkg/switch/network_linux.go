@@ -24,17 +24,17 @@ func NewNetworker(c *co.Network) api.NetworkApi {
 	switch c.Provider {
 	case "ipsec":
 		secer := NewIPSecWorker(c)
-		api.Call.SetIPSecer(secer)
+		api.Call.SetIPSecApi(secer)
 		obj = secer
 	case "bgp":
 		bgper := NewBgpWorker(c)
-		api.Call.SetBgper(bgper)
+		api.Call.SetBgpApi(bgper)
 		obj = bgper
 	case "router":
 		obj = NewRouterWorker(c)
 	case "ceci":
 		cecer := NewCeciWorker(c)
-		//api.Call.SetBgper(bgper)
+		api.Call.SetCeciApi(cecer)
 		obj = cecer
 	default:
 		obj = NewOpenLANWorker(c)

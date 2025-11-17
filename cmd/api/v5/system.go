@@ -89,10 +89,9 @@ func (v Log) Add(c *cli.Context) error {
 
 func (v Log) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "log",
-		Aliases: []string{"v"},
-		Usage:   "show log information",
-		Action:  v.List,
+		Name:   "log",
+		Usage:  "show log information",
+		Action: v.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "set",

@@ -33,9 +33,8 @@ func (v Version) List(c *cli.Context) error {
 
 func (v Version) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:    "version",
-		Aliases: []string{"v"},
-		Usage:   "show version information",
-		Action:  v.List,
+		Name:   "version",
+		Usage:  "show version information",
+		Action: v.List,
 	})
 }

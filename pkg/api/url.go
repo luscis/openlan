@@ -5,6 +5,7 @@ import "github.com/gorilla/mux"
 func Add(router *mux.Router, cs SwitchApi) {
 	Link{cs: cs}.Router(router)
 	User{}.Router(router)
+	Ceci{}.Router(router)
 	Bgp{}.Router(router)
 	IPSec{}.Router(router)
 	Prefix{}.Router(router)

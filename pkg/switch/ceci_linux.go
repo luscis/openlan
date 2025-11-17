@@ -1,15 +1,18 @@
 package cswitch
 
 import (
+	"os"
 	"os/exec"
 
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 const (
 	CeciBin = "/usr/bin/openceci"
+	CeciDir = "/var/openlan/ceci/"
 )
 
 type CeciWorker struct {
@@ -29,43 +32,37 @@ func (w *CeciWorker) Initialize() {
 	w.out.Info("CeciWorker.Initialize")
 }
 
+func (w *CeciWorker) killPid(name string) {
+	if libol.FileExist(name) != nil {
+		return
+	}
+
+	pid, _ := os.ReadFile(name)
+	kill, _ := exec.LookPath("kill")
+	cmd := exec.Command(kill, string(pid))
+	if err := cmd.Run(); err != nil {
+		w.out.Warn("CeciWorker.killPid:%s: %s", pid, err)
+		return
+	}
+}
+
 func (w *CeciWorker) reloadTcp(obj *co.CeciTcp) {
-	name := "/var/openlan/ceci/" + obj.Id()
+	name := CeciDir + obj.Id()
 	out, err := libol.CreateFile(name + ".log")
 	if err != nil {
 		w.out.Warn("CeciWorker.reloadTcp: %s", err)
 		return
 	}
 
+	w.killPid(name + ".pid")
 	libol.MarshalSave(obj, name+".yaml", true)
 	libol.Go(func() {
 		w.out.Info("CeciWorker.reloadTcp: %s", obj.Id())
-		cmd := exec.Command(CeciBin, "-mode", "tcp", "-conf", name+".yaml")
+		cmd := exec.Command(CeciBin, "-mode", obj.Mode, "-conf", name+".yaml", "-write-pid", name+".pid")
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err := cmd.Run(); err != nil {
 			w.out.Warn("CeciWorker.reloadTcp: %s", err)
-			return
-		}
-	})
-}
-
-func (w *CeciWorker) reloadHttp(obj *co.CeciHttp) {
-	name := "/var/openlan/ceci/" + obj.Id()
-	out, err := libol.CreateFile(name + ".log")
-	if err != nil {
-		w.out.Warn("CeciWorker.reloadTcp: %s", err)
-		return
-	}
-
-	libol.MarshalSave(obj, name+".yaml", true)
-	libol.Go(func() {
-		w.out.Info("CeciWorker.reloadHttp: %s", obj.Id())
-		cmd := exec.Command(CeciBin, "-mode", "http", "-conf", name+".yaml")
-		cmd.Stdout = out
-		cmd.Stderr = out
-		if err := cmd.Run(); err != nil {
-			w.out.Warn("CeciWorker.reloadHttp: %s", err)
 			return
 		}
 	})
@@ -78,9 +75,6 @@ func (w *CeciWorker) Start(v api.SwitchApi) {
 	for _, obj := range w.spec.Tcp {
 		w.reloadTcp(obj)
 	}
-	for _, obj := range w.spec.Http {
-		w.reloadHttp(obj)
-	}
 }
 
 func (w *CeciWorker) Stop() {
@@ -91,4 +85,32 @@ func (w *CeciWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)
+}
+
+func (w *CeciWorker) AddTcp(data schema.CeciTcp) {
+	obj := &co.CeciTcp{
+		Mode:   data.Mode,
+		Listen: data.Listen,
+		Target: data.Target,
+	}
+
+	obj.Correct()
+	if t, _ := w.spec.FindTcp(obj); t == nil {
+		w.spec.AddTcp(obj)
+	} else {
+		t.Target = data.Target
+	}
+
+	w.reloadTcp(obj)
+}
+
+func (w *CeciWorker) DelTcp(data schema.CeciTcp) {
+	obj := &co.CeciTcp{
+		Listen: data.Listen,
+	}
+	obj.Correct()
+	if _, removed := w.spec.DelTcp(obj); removed {
+		name := CeciDir + obj.Id()
+		w.killPid(name + ".pid")
+	}
 }

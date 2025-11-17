@@ -151,9 +151,15 @@ type BgpApi interface {
 	DelAdvertis(data schema.BgpPrefix)
 }
 
+type CeciApi interface {
+	AddTcp(data schema.CeciTcp)
+	DelTcp(data schema.CeciTcp)
+}
+
 type callApi struct {
 	ipsecApi IPSecApi
 	bgpApi   BgpApi
+	ceciApi  CeciApi
 	workers  map[string]NetworkApi
 }
 
@@ -171,12 +177,16 @@ func (i *callApi) ListWorker(call func(w NetworkApi)) {
 	}
 }
 
-func (i *callApi) SetIPSecer(value IPSecApi) {
+func (i *callApi) SetIPSecApi(value IPSecApi) {
 	i.ipsecApi = value
 }
 
-func (i *callApi) SetBgper(value BgpApi) {
+func (i *callApi) SetBgpApi(value BgpApi) {
 	i.bgpApi = value
+}
+
+func (i *callApi) SetCeciApi(value CeciApi) {
+	i.ceciApi = value
 }
 
 var Call = &callApi{
