@@ -47,7 +47,7 @@ type FindHop struct {
 
 type DNAT struct {
 	Protocol string `json:"protocol"`
-	Dest     string `json:"destination"`
+	Dest     string `json:"destination,omitempty"`
 	Dport    int    `json:"dport"`
 	ToDest   string `json:"todestination"`
 	ToDport  int    `json:"todport"`

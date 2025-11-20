@@ -10,7 +10,7 @@ import (
 
 type Dnat struct {
 	Protocol string `json:"protocol" yaml:"protocol"`
-	Dest     string `json:"destination" yaml:"destination"`
+	Dest     string `json:"destination,omitempty" yaml:"destination,omitempty"`
 	Dport    int    `json:"dport" yaml:"dport"`
 	ToDest   string `json:"todestination" yaml:"todestination"`
 	ToDport  int    `json:"todport" yaml:"todport"`

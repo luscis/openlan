@@ -283,7 +283,7 @@ func (s DNAT) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "protocol", Value: "tcp"},
 					&cli.IntFlag{Name: "dport", Required: true},
-					&cli.StringFlag{Name: "dest", Required: true},
+					&cli.StringFlag{Name: "dest"},
 					&cli.StringFlag{Name: "todest", Required: true},
 					&cli.IntFlag{Name: "todport", Required: true},
 				},
@@ -296,7 +296,7 @@ func (s DNAT) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "protocol", Value: "tcp"},
 					&cli.IntFlag{Name: "dport", Required: true},
-					&cli.StringFlag{Name: "dest", Required: true},
+					&cli.StringFlag{Name: "dest"},
 				},
 				Action: s.Delete,
 			},
