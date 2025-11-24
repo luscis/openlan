@@ -57,15 +57,15 @@ func (w *RouterWorker) Forward() {
 func (w *RouterWorker) addAddress() error {
 	link, err := nl.LinkByName("lo")
 	if err != nil {
-		w.out.Warn("addAddress: %s", err)
+		w.out.Warn("RouterWorker.addAddress: %s", err)
 		return err
 	}
 	for _, addr := range w.addresses {
 		if err := nl.AddrAdd(link, addr); err != nil {
-			w.out.Warn("addAddress: %s: %s", addr, err)
+			w.out.Warn("RouterWorker.addAddress: %s: %s", addr, err)
 			continue
 		}
-		w.out.Info("addAddress %s on lo", addr)
+		w.out.Info("RouterWorker.addAddress %s on lo", addr)
 	}
 	return nil
 }
@@ -84,15 +84,15 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 func (w *RouterWorker) delAddress() error {
 	link, err := nl.LinkByName("lo")
 	if err != nil {
-		w.out.Warn("delAddress: %s", err)
+		w.out.Warn("RouterWorker.delAddress: %s", err)
 		return err
 	}
 	for _, addr := range w.addresses {
 		if err := nl.AddrDel(link, addr); err != nil {
-			w.out.Warn("delAddress: %s: %s", addr, err)
+			w.out.Warn("RouterWorker.delAddress: %s: %s", addr, err)
 			continue
 		}
-		w.out.Info("delAddress %s on lo", addr)
+		w.out.Info("RouterWorker.delAddress %s on lo", addr)
 	}
 	return nil
 }
@@ -125,7 +125,7 @@ func (w *RouterWorker) AddTunnel(data *co.RouterTunnel) {
 			Remote: libol.ParseAddr(data.Remote),
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("WorkerImpl.AddTunnel.gre %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.AddTunnel.gre %s %s", data.Id(), err)
 			return
 		}
 	case "ipip":
@@ -137,7 +137,7 @@ func (w *RouterWorker) AddTunnel(data *co.RouterTunnel) {
 			Remote: libol.ParseAddr(data.Remote),
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("WorkerImpl.AddTunnel.ip %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.AddTunnel.ip %s %s", data.Id(), err)
 			return
 		}
 	}
@@ -149,12 +149,13 @@ func (w *RouterWorker) AddTunnel(data *co.RouterTunnel) {
 	addr, err := nl.ParseAddr(data.Address)
 	if err == nil {
 		if err := nl.AddrAdd(link, addr); err != nil {
-			w.out.Warn("WorkerImpl.AddTunnel.addAddr: %s: %s", addr, err)
+			w.out.Warn("RouterWorker.AddTunnel.addAddr: %s: %s", addr, err)
 			return
 		}
+
 	}
 	if err := nl.LinkSetUp(link); err != nil {
-		w.out.Warn("WorkerImpl.AddTunnel.up: %s: %s", data.Id(), err)
+		w.out.Warn("RouterWorker.AddTunnel.up: %s: %s", data.Id(), err)
 	}
 }
 
@@ -164,7 +165,7 @@ func (w *RouterWorker) DelTunnel(data *co.RouterTunnel) {
 	}
 	if link, err := nl.LinkByName(data.Link); err == nil {
 		if err := nl.LinkDel(link); err != nil {
-			w.out.Error("WorkerImpl.DelTunnel %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.DelTunnel %s %s", data.Id(), err)
 			return
 		}
 	}
