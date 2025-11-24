@@ -232,3 +232,52 @@ func (h DNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	ResponseJson(w, "success")
 }
+
+type RouterTunnel struct {
+	cs SwitchApi
+}
+
+func (h RouterTunnel) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/router/tunnel", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/router/tunnel", h.Delete).Methods("DELETE")
+}
+
+func (h RouterTunnel) Post(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterTunnel{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.AddTunnel(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h RouterTunnel) Delete(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterTunnel{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.DelTunnel(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}

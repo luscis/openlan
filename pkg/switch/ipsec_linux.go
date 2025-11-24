@@ -28,6 +28,8 @@ func NewIPSecWorker(c *co.Network) *IPSecWorker {
 	w := &IPSecWorker{
 		WorkerImpl: NewWorkerApi(c),
 	}
+	api.Call.SetIPSecApi(w)
+
 	w.spec, _ = c.Specifies.(*co.IPSecSpecifies)
 	return w
 }
@@ -102,6 +104,7 @@ func (w *IPSecWorker) Initialize() {
 	if err := os.Mkdir(IPSecLogDir, 0600); err != nil {
 		w.out.Warn("IPSecWorker.Initialize %s", err)
 	}
+	w.addCache()
 }
 
 func (w *IPSecWorker) saveSec(name, tmpl string, data interface{}) error {

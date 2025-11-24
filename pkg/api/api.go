@@ -156,11 +156,17 @@ type CeciApi interface {
 	DelTcp(data schema.CeciTcp)
 }
 
+type RouterApi interface {
+	AddTunnel(data schema.RouterTunnel) error
+	DelTunnel(data schema.RouterTunnel) error
+}
+
 type callApi struct {
-	ipsecApi IPSecApi
-	bgpApi   BgpApi
-	ceciApi  CeciApi
-	workers  map[string]NetworkApi
+	ipsecApi  IPSecApi
+	bgpApi    BgpApi
+	ceciApi   CeciApi
+	routerApi RouterApi
+	workers   map[string]NetworkApi
 }
 
 func (i *callApi) AddWorker(name string, obj NetworkApi) {
@@ -187,6 +193,10 @@ func (i *callApi) SetBgpApi(value BgpApi) {
 
 func (i *callApi) SetCeciApi(value CeciApi) {
 	i.ceciApi = value
+}
+
+func (i *callApi) SetRouterApi(value RouterApi) {
+	i.routerApi = value
 }
 
 var Call = &callApi{

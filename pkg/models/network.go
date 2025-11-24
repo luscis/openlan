@@ -45,10 +45,10 @@ type Network struct {
 	Name    string      `json:"name"`
 	Tenant  string      `json:"tenant,omitempty"`
 	Gateway string      `json:"gateway,omitempty"`
-	Address string      `json:"address"`
+	Address string      `json:"address,omitempty"`
 	IpStart string      `json:"startAt,omitempty"`
 	IpEnd   string      `json:"endAt,omitempty"`
-	Netmask string      `json:"netmask"`
+	Netmask string      `json:"netmask,omitempty"`
 	Routes  []*Route    `json:"routes,omitempty"`
 	Config  interface{} `json:"config,omitempty"`
 }

@@ -43,4 +43,5 @@ func Commands(app *api.App) {
 	BGP{}.Commands(app)
 	Ceci{}.Commands(app)
 	Prefix{}.Commands(app)
+	Router{}.Commands(app)
 }

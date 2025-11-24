@@ -59,9 +59,13 @@ func (n *Network) NewSpecifies() any {
 	case "bgp":
 		n.Specifies = &BgpSpecifies{}
 	case "ceci":
+
 		n.Specifies = &CeciSpecifies{}
 	default:
 		n.Specifies = nil
+	}
+	if n.Specifies != nil {
+		n.Name = n.Provider
 	}
 	return n.Specifies
 }

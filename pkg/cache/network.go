@@ -16,12 +16,10 @@ type network struct {
 }
 
 func (w *network) Add(n *models.Network) {
-	libol.Debug("network.Add %v", *n)
 	_ = w.Networks.Set(n.Name, n)
 }
 
 func (w *network) Del(name string) {
-	libol.Debug("network.Del %s", name)
 	w.Networks.Del(name)
 }
 

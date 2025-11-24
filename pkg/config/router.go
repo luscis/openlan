@@ -47,3 +47,30 @@ func (n *RouterSpecifies) Correct() {
 		t.Correct()
 	}
 }
+
+func (n *RouterSpecifies) FindTunnel(value *RouterTunnel) (*RouterTunnel, int) {
+	for index, obj := range n.Tunnels {
+		if obj.Id() == value.Id() {
+			return obj, index
+		}
+	}
+	return nil, -1
+}
+
+func (n *RouterSpecifies) AddTunnel(value *RouterTunnel) bool {
+	_, index := n.FindTunnel(value)
+	if index == -1 {
+		n.Tunnels = append(n.Tunnels, value)
+		return true
+	}
+	return false
+}
+
+func (n *RouterSpecifies) DelTunnel(value *RouterTunnel) (*RouterTunnel, bool) {
+	older, index := n.FindTunnel(value)
+	if index != -1 {
+		n.Tunnels = append(n.Tunnels[:index], n.Tunnels[index+1:]...)
+		return older, true
+	}
+	return older, false
+}

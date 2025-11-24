@@ -23,19 +23,13 @@ func NewNetworker(c *co.Network) api.NetworkApi {
 
 	switch c.Provider {
 	case "ipsec":
-		secer := NewIPSecWorker(c)
-		api.Call.SetIPSecApi(secer)
-		obj = secer
+		obj = NewIPSecWorker(c)
 	case "bgp":
-		bgper := NewBgpWorker(c)
-		api.Call.SetBgpApi(bgper)
-		obj = bgper
+		obj = NewBgpWorker(c)
 	case "router":
 		obj = NewRouterWorker(c)
 	case "ceci":
-		cecer := NewCeciWorker(c)
-		api.Call.SetCeciApi(cecer)
-		obj = cecer
+		obj = NewCeciWorker(c)
 	default:
 		obj = NewOpenLANWorker(c)
 	}
@@ -85,6 +79,21 @@ func (w *WorkerImpl) Provider() string {
 	return w.cfg.Provider
 }
 
+func (w *WorkerImpl) addCache() {
+	cfg := w.cfg
+	n := models.Network{
+		Name:   cfg.Name,
+		Config: cfg,
+	}
+	if cfg.Subnet != nil {
+		n.IpStart = cfg.Subnet.Start
+		n.IpEnd = cfg.Subnet.End
+		n.Netmask = cfg.Subnet.Netmask
+		n.Address = cfg.Bridge.Address
+	}
+	cache.Network.Add(&n)
+}
+
 func (w *WorkerImpl) Initialize() {
 	cfg := w.cfg
 
@@ -96,18 +105,8 @@ func (w *WorkerImpl) Initialize() {
 	w.acl = NewACL(cfg.Name)
 	w.acl.Initialize()
 
+	w.addCache()
 	w.findhop = NewFindHop(cfg.Name, cfg)
-	if cfg.Subnet != nil {
-		n := models.Network{
-			Name:    cfg.Name,
-			IpStart: cfg.Subnet.Start,
-			IpEnd:   cfg.Subnet.End,
-			Netmask: cfg.Subnet.Netmask,
-			Address: cfg.Bridge.Address,
-			Config:  cfg,
-		}
-		cache.Network.Add(&n)
-	}
 
 	w.updateVPN()
 	w.createVPN()

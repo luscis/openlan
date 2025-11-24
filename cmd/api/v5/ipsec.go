@@ -10,12 +10,32 @@ type IPSec struct {
 	Cmd
 }
 
+func (o IPSec) Url(prefix string) string {
+	return prefix + "/api/network/ipsec"
+}
+
+func (o IPSec) List(c *cli.Context) error {
+	url := o.Url(c.String("url"))
+	clt := o.NewHttp(c.String("token"))
+	var data schema.Network
+	if err := clt.GetJSON(url, &data); err != nil {
+		return err
+	}
+	return o.Out(data, "yaml", "")
+}
+
 func (o IPSec) Commands(app *api.App) {
 	tunnel := IPSecTunnel{}
 	app.Command(&cli.Command{
 		Name:  "ipsec",
 		Usage: "IPSec configuration",
 		Subcommands: []*cli.Command{
+			{
+				Name:    "ls",
+				Usage:   "Display ipsec network",
+				Aliases: []string{"ls"},
+				Action:  o.List,
+			},
 			tunnel.Commands(),
 		},
 	})

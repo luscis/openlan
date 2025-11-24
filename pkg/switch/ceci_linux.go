@@ -24,12 +24,14 @@ func NewCeciWorker(c *co.Network) *CeciWorker {
 	w := &CeciWorker{
 		WorkerImpl: NewWorkerApi(c),
 	}
+	api.Call.SetCeciApi(w)
 	w.spec, _ = c.Specifies.(*co.CeciSpecifies)
 	return w
 }
 
 func (w *CeciWorker) Initialize() {
 	w.out.Info("CeciWorker.Initialize")
+	w.addCache()
 }
 
 func (w *CeciWorker) killPid(name string) {

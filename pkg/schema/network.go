@@ -52,3 +52,9 @@ type DNAT struct {
 	ToDest   string `json:"todestination"`
 	ToDport  int    `json:"todport"`
 }
+
+type RouterTunnel struct {
+	Protocol string `json:"protocol"`
+	Remote   string `json:"remote"`
+	Address  string `json:"address"`
+}

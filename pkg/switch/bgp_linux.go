@@ -25,6 +25,7 @@ func NewBgpWorker(c *co.Network) *BgpWorker {
 	w := &BgpWorker{
 		WorkerImpl: NewWorkerApi(c),
 	}
+	api.Call.SetBgpApi(w)
 	w.spec, _ = c.Specifies.(*co.BgpSpecifies)
 	return w
 }
@@ -83,6 +84,7 @@ route-map {{ .Address }}-out permit 10
 
 func (w *BgpWorker) Initialize() {
 	w.out.Info("BgpWorker.Initialize")
+	w.addCache()
 }
 
 func (w *BgpWorker) save() {
