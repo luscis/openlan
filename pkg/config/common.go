@@ -9,11 +9,20 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
-var index = 99
+var genindexs map[string]int
 
-func GenName(prefix string) string {
+func init() {
+	genindexs = make(map[string]int, 32)
+}
+
+func GenName(name string) string {
+	index, ok := genindexs[name]
+	if !ok {
+		index = 99
+	}
 	index += 1
-	return fmt.Sprintf("%s%d", prefix, index)
+	genindexs[name] = index
+	return fmt.Sprintf("%s%d", name, index)
 }
 
 func VarDir(name ...string) string {

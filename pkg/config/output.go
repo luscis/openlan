@@ -23,15 +23,15 @@ func (o *Output) Id() string {
 }
 
 func (o *Output) GenName() {
-	if o.Link == "" {
-		if o.Protocol == "gre" {
-			o.Link = fmt.Sprintf("%s%d", "gre", o.Segment)
-		} else if o.Protocol == "vxlan" {
-			o.Link = fmt.Sprintf("%s%d", "vxlan", o.Segment)
-		} else if o.Protocol == "tcp" || o.Protocol == "tls" ||
-			o.Protocol == "wss" {
-			o.Link = o.Remote
-		} else if o.Segment > 0 {
+	switch o.Protocol {
+	case "gre":
+		o.Link = fmt.Sprintf("%s%d", "gei", o.Segment)
+	case "vxlan":
+		o.Link = fmt.Sprintf("%s%d", "xei", o.Segment)
+	case "tcp", "tls", "wss":
+		o.Link = o.Remote
+	default:
+		if o.Segment > 0 {
 			o.Link = fmt.Sprintf("%s.%d", o.Remote, o.Segment)
 		} else {
 			o.Link = o.Remote

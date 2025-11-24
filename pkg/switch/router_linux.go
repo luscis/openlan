@@ -3,6 +3,7 @@ package cswitch
 import (
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
+	"github.com/luscis/openlan/pkg/libol"
 	nl "github.com/vishvananda/netlink"
 )
 
@@ -71,6 +72,11 @@ func (w *RouterWorker) addAddress() error {
 
 func (w *RouterWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
+
+	for _, tun := range w.spec.Tunnels {
+		w.AddTunnel(tun)
+	}
+
 	w.WorkerImpl.Start(v)
 	w.addAddress()
 }
@@ -94,10 +100,72 @@ func (w *RouterWorker) delAddress() error {
 func (w *RouterWorker) Stop() {
 	w.delAddress()
 	w.WorkerImpl.Stop()
+
+	for _, tun := range w.spec.Tunnels {
+		w.DelTunnel(tun)
+	}
 }
 
 func (w *RouterWorker) Reload(v api.SwitchApi) {
 	w.Stop()
 	w.Initialize()
 	w.Start(v)
+}
+
+func (w *RouterWorker) AddTunnel(data *co.RouterTunnel) {
+	var link nl.Link
+
+	switch data.Protocol {
+	case "gre":
+		link = &nl.Gretun{
+			LinkAttrs: nl.LinkAttrs{
+				Name: data.Link,
+			},
+			Local:  libol.ParseAddr("0.0.0.0"),
+			Remote: libol.ParseAddr(data.Remote),
+		}
+		if err := nl.LinkAdd(link); err != nil {
+			w.out.Error("WorkerImpl.AddTunnel.gre %s %s", data.Id(), err)
+			return
+		}
+	case "ipip":
+		link = &nl.Iptun{
+			LinkAttrs: nl.LinkAttrs{
+				Name: data.Link,
+			},
+			Local:  libol.ParseAddr("0.0.0.0"),
+			Remote: libol.ParseAddr(data.Remote),
+		}
+		if err := nl.LinkAdd(link); err != nil {
+			w.out.Error("WorkerImpl.AddTunnel.ip %s %s", data.Id(), err)
+			return
+		}
+	}
+
+	if link == nil {
+		return
+	}
+
+	addr, err := nl.ParseAddr(data.Address)
+	if err == nil {
+		if err := nl.AddrAdd(link, addr); err != nil {
+			w.out.Warn("WorkerImpl.AddTunnel.addAddr: %s: %s", addr, err)
+			return
+		}
+	}
+	if err := nl.LinkSetUp(link); err != nil {
+		w.out.Warn("WorkerImpl.AddTunnel.up: %s: %s", data.Id(), err)
+	}
+}
+
+func (w *RouterWorker) DelTunnel(data *co.RouterTunnel) {
+	if data.Link == "" {
+		return
+	}
+	if link, err := nl.LinkByName(data.Link); err == nil {
+		if err := nl.LinkDel(link); err != nil {
+			w.out.Error("WorkerImpl.DelTunnel %s %s", data.Id(), err)
+			return
+		}
+	}
 }
