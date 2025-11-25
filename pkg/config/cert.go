@@ -43,7 +43,7 @@ func (c *Cert) Correct() {
 		c.KeyFile = fmt.Sprintf("%s/key", c.Dir)
 	}
 	if c.CaFile == "" {
-		c.CaFile = fmt.Sprintf("%s/ca-trusted.crt", c.Dir)
+		c.CaFile = fmt.Sprintf("%s/ca.crt", c.Dir)
 	}
 }
 
