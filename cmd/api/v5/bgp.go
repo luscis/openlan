@@ -20,7 +20,7 @@ type BGP struct {
 }
 
 func (b BGP) Url(prefix string) string {
-	return prefix + "/api/network/bgp"
+	return prefix + "/api/network/bgp/global"
 }
 
 func (b BGP) List(c *cli.Context) error {

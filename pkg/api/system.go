@@ -11,14 +11,14 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type Prefix struct {
+type KernelRoute struct {
 }
 
-func (l Prefix) Router(router *mux.Router) {
-	router.HandleFunc("/api/prefix", l.List).Methods("GET")
+func (l KernelRoute) Router(router *mux.Router) {
+	router.HandleFunc("/api/kernel/route", l.List).Methods("GET")
 }
 
-func (l Prefix) List(w http.ResponseWriter, r *http.Request) {
+func (l KernelRoute) List(w http.ResponseWriter, r *http.Request) {
 	var items []schema.PrefixRoute
 
 	routes, _ := libol.ListRoutes()

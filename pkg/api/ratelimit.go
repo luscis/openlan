@@ -7,16 +7,16 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type Rate struct {
+type RateLimit struct {
 	cs SwitchApi
 }
 
-func (h Rate) Router(router *mux.Router) {
+func (h RateLimit) Router(router *mux.Router) {
 	router.HandleFunc("/api/interface/{id}/rate", h.Post).Methods("POST")
 	router.HandleFunc("/api/interface/{id}/rate", h.Delete).Methods("DELETE")
 }
 
-func (h Rate) Post(w http.ResponseWriter, r *http.Request) {
+func (h RateLimit) Post(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	device := vars["id"]
 
@@ -28,7 +28,7 @@ func (h Rate) Post(w http.ResponseWriter, r *http.Request) {
 	h.cs.AddRate(device, rate.Speed)
 }
 
-func (h Rate) Delete(w http.ResponseWriter, r *http.Request) {
+func (h RateLimit) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	device := vars["id"]
 	h.cs.DelRate(device)

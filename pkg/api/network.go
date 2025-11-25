@@ -288,3 +288,438 @@ func (h RouterTunnel) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	ResponseJson(w, "success")
 }
+
+type Bgp struct {
+	cs SwitchApi
+}
+
+func (h Bgp) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/bgp/global", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/bgp/global", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/bgp/global", h.Remove).Methods("DELETE")
+	router.HandleFunc("/api/network/bgp/neighbor", h.RemoveNeighbor).Methods("DELETE")
+	router.HandleFunc("/api/network/bgp/neighbor", h.AddNeighbor).Methods("POST")
+	router.HandleFunc("/api/network/bgp/advertis", h.RemoveAdvertis).Methods("DELETE")
+	router.HandleFunc("/api/network/bgp/advertis", h.AddAdvertis).Methods("POST")
+	router.HandleFunc("/api/network/bgp/receives", h.RemoveReceivess).Methods("DELETE")
+	router.HandleFunc("/api/network/bgp/receives", h.AddReceivess).Methods("POST")
+}
+
+func (h Bgp) Get(w http.ResponseWriter, r *http.Request) {
+	libol.Debug("Bgp.Get %s")
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	data := Call.bgpApi.Get()
+	ResponseJson(w, data)
+}
+
+func (h Bgp) Post(w http.ResponseWriter, r *http.Request) {
+	data := schema.Bgp{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.Enable(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) Remove(w http.ResponseWriter, r *http.Request) {
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.Disable()
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) RemoveNeighbor(w http.ResponseWriter, r *http.Request) {
+	nei := schema.BgpNeighbor{}
+	if err := GetData(r, &nei); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.DelNeighbor(nei)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) AddNeighbor(w http.ResponseWriter, r *http.Request) {
+	nei := schema.BgpNeighbor{}
+	if err := GetData(r, &nei); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.AddNeighbor(nei)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) RemoveAdvertis(w http.ResponseWriter, r *http.Request) {
+	data := schema.BgpPrefix{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.DelAdvertis(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) AddAdvertis(w http.ResponseWriter, r *http.Request) {
+	data := schema.BgpPrefix{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.AddAdvertis(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) RemoveReceivess(w http.ResponseWriter, r *http.Request) {
+	data := schema.BgpPrefix{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.DelReceives(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Bgp) AddReceivess(w http.ResponseWriter, r *http.Request) {
+	data := schema.BgpPrefix{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.bgpApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.bgpApi.AddReceives(data)
+	ResponseMsg(w, 0, "")
+}
+
+type Ceci struct {
+	cs SwitchApi
+}
+
+func (h Ceci) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/ceci/tcp", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/ceci/tcp", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/ceci/tcp", h.Remove).Methods("DELETE")
+}
+
+func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
+	libol.Debug("Ceci.Get %s")
+	ResponseJson(w, nil)
+}
+
+func (h Ceci) Post(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciTcp{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ceciApi.AddTcp(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciTcp{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ceciApi.DelTcp(data)
+	ResponseMsg(w, 0, "")
+}
+
+type IPSec struct {
+	cs SwitchApi
+}
+
+func (h IPSec) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/ipsec/tunnel", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/ipsec/tunnel", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/ipsec/tunnel", h.Delete).Methods("DELETE")
+	router.HandleFunc("/api/network/ipsec/tunnel/restart", h.Start).Methods("PUT")
+}
+
+func (h IPSec) Get(w http.ResponseWriter, r *http.Request) {
+	libol.Debug("IPSec.Get %s")
+	tunnels := make([]schema.IPSecTunnel, 0, 1024)
+	if Call.ipsecApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ipsecApi.ListTunnels(func(obj schema.IPSecTunnel) {
+		tunnels = append(tunnels, obj)
+	})
+	ResponseJson(w, tunnels)
+}
+
+func (h IPSec) Post(w http.ResponseWriter, r *http.Request) {
+	tun := &schema.IPSecTunnel{}
+	if err := GetData(r, tun); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ipsecApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ipsecApi.AddTunnel(*tun)
+	ResponseMsg(w, 0, "")
+}
+
+func (h IPSec) Delete(w http.ResponseWriter, r *http.Request) {
+	tun := &schema.IPSecTunnel{}
+	if err := GetData(r, tun); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ipsecApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ipsecApi.DelTunnel(*tun)
+	ResponseMsg(w, 0, "")
+}
+
+func (h IPSec) Start(w http.ResponseWriter, r *http.Request) {
+	tun := &schema.IPSecTunnel{}
+	if err := GetData(r, tun); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ipsecApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ipsecApi.StartTunnel(*tun)
+	ResponseMsg(w, 0, "")
+}
+
+type PrefixRoute struct {
+	cs SwitchApi
+}
+
+func (rt PrefixRoute) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/route", rt.List).Methods("GET")
+	router.HandleFunc("/api/network/{id}/route", rt.Add).Methods("POST")
+	router.HandleFunc("/api/network/{id}/route", rt.Del).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/route", rt.Save).Methods("PUT")
+}
+
+func (rt PrefixRoute) List(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	routes := make([]schema.PrefixRoute, 0, 1024)
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	worker.ListRoute(func(obj schema.PrefixRoute) {
+		routes = append(routes, obj)
+	})
+	ResponseJson(w, routes)
+}
+
+func (rt PrefixRoute) Add(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	pr := &schema.PrefixRoute{}
+	if err := GetData(r, pr); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := worker.AddRoute(pr, rt.cs); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ResponseJson(w, true)
+}
+
+func (rt PrefixRoute) Del(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	pr := &schema.PrefixRoute{}
+	if err := GetData(r, pr); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := worker.DelRoute(pr, rt.cs); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ResponseJson(w, true)
+}
+
+func (rt PrefixRoute) Save(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	worker.SaveRoute()
+
+	ResponseJson(w, true)
+}
+
+type ClientQoS struct {
+}
+
+func (h ClientQoS) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/qos", h.List).Methods("GET")
+	router.HandleFunc("/api/network/{id}/qos", h.Add).Methods("POST")
+	router.HandleFunc("/api/network/{id}/qos", h.Del).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/qos", h.Save).Methods("PUT")
+}
+
+func (h ClientQoS) List(w http.ResponseWriter, r *http.Request) {
+
+	qosList := make([]schema.Qos, 0, 1024)
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	var qos = worker.Qoser()
+	qos.ListQos(func(obj schema.Qos) {
+		qosList = append(qosList, obj)
+	})
+
+	ResponseJson(w, qosList)
+}
+
+func (h ClientQoS) Add(w http.ResponseWriter, r *http.Request) {
+
+	qos := &schema.Qos{}
+	if err := GetData(r, qos); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	if qos != nil {
+		if err := worker.Qoser().AddQos(qos.Name, qos.InSpeed); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		ResponseJson(w, true)
+	} else {
+		http.Error(w, vars["id"], http.StatusNotFound)
+	}
+}
+
+func (h ClientQoS) Del(w http.ResponseWriter, r *http.Request) {
+
+	qos := &schema.Qos{}
+	if err := GetData(r, qos); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	if qos != nil {
+		if err := worker.Qoser().DelQos(qos.Name); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		ResponseJson(w, true)
+	} else {
+		http.Error(w, vars["id"], http.StatusNotFound)
+	}
+}
+
+func (h ClientQoS) Save(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	qos := worker.Qoser()
+	qos.SaveQos()
+
+	ResponseJson(w, "success")
+}
