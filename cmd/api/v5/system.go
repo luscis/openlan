@@ -216,3 +216,123 @@ func (u PProf) Commands(app *api.App) {
 		},
 	})
 }
+
+type RateLimit struct {
+	Cmd
+}
+
+func (u RateLimit) Url(prefix, name string) string {
+	return prefix + "/api/interface/" + name + "/rate"
+}
+
+func (u RateLimit) Tmpl() string {
+	return `# total {{ len . }}
+{{ps -16 "device"}} {{ps -8 "speed"}}
+{{- range . }}
+{{ps -16 .Device}} {{pi .Speed}}
+{{- end }}
+`
+}
+
+func (u RateLimit) List(c *cli.Context) error {
+	url := u.Url(c.String("url"), "")
+	clt := u.NewHttp(c.String("token"))
+	var items []schema.Rate
+	if err := clt.GetJSON(url, &items); err != nil {
+		return err
+	}
+	return u.Out(items, c.String("format"), u.Tmpl())
+}
+
+func (u RateLimit) Add(c *cli.Context) error {
+	name := c.String("device")
+	rate := &schema.Rate{
+		Device: name,
+		Speed:  c.Int("speed"),
+	}
+	url := u.Url(c.String("url"), name)
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, rate, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u RateLimit) Remove(c *cli.Context) error {
+	name := c.String("device")
+
+	url := u.Url(c.String("url"), name)
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u RateLimit) Commands(app *api.App) {
+	app.Command(&cli.Command{
+		Name:  "rate",
+		Usage: "Rate Limit",
+		Subcommands: []*cli.Command{
+			{
+				Name:    "list",
+				Usage:   "Display all rate limits",
+				Aliases: []string{"ls"},
+				Action:  u.List,
+			},
+			{
+				Name:  "add",
+				Usage: "Add a rate limit",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "device", Required: true},
+					&cli.StringFlag{Name: "speed", Required: true},
+				},
+				Action: u.Add,
+			},
+			{
+				Name:    "remove",
+				Usage:   "Remove a rate limit",
+				Aliases: []string{"rm"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "device", Required: true},
+				},
+				Action: u.Remove,
+			},
+		},
+	})
+}
+
+type Server struct {
+	Cmd
+}
+
+func (u Server) Url(prefix, name string) string {
+	return prefix + "/api/server"
+}
+
+func (u Server) List(c *cli.Context) error {
+	url := u.Url(c.String("url"), "")
+	url += "?format=" + c.String("format")
+	clt := u.NewHttp(c.String("token"))
+	if data, err := clt.GetBody(url); err == nil {
+		fmt.Println(string(data))
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (u Server) Commands(app *api.App) {
+	app.Command(&cli.Command{
+		Name:  "server",
+		Usage: "Socket server status",
+		Subcommands: []*cli.Command{
+			{
+				Name:    "list",
+				Usage:   "Display server status",
+				Aliases: []string{"ls"},
+				Action:  u.List,
+			},
+		},
+	})
+}

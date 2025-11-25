@@ -24,6 +24,15 @@ func (o IPSec) List(c *cli.Context) error {
 	return o.Out(data, "yaml", "")
 }
 
+func (o IPSec) Save(c *cli.Context) error {
+	url := o.Url(c.String("url"))
+	clt := o.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o IPSec) Commands(app *api.App) {
 	tunnel := IPSecTunnel{}
 	app.Command(&cli.Command{
@@ -35,6 +44,12 @@ func (o IPSec) Commands(app *api.App) {
 				Usage:   "Display ipsec network",
 				Aliases: []string{"ls"},
 				Action:  o.List,
+			},
+			{
+				Name:    "save",
+				Usage:   "Save ipsec network",
+				Aliases: []string{"sa"},
+				Action:  o.Save,
 			},
 			tunnel.Commands(),
 		},

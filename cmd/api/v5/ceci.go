@@ -26,6 +26,15 @@ func (u Ceci) List(c *cli.Context) error {
 	return u.Out(data, "yaml", "")
 }
 
+func (u Ceci) Save(c *cli.Context) error {
+	url := u.Url(c.String("url"))
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (u Ceci) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:  "ceci",
@@ -35,6 +44,12 @@ func (u Ceci) Commands(app *api.App) {
 				Name:   "ls",
 				Usage:  "List a ceci TCP",
 				Action: u.List,
+			},
+			{
+				Name:    "save",
+				Usage:   "Save ceci network",
+				Aliases: []string{"sa"},
+				Action:  u.Save,
 			},
 			CeciTCP{}.Commands(app),
 		},

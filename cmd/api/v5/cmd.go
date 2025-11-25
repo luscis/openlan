@@ -39,7 +39,7 @@ func Commands(app *api.App) {
 	Version{}.Commands(app)
 	Log{}.Commands(app)
 	ZTrust{}.Commands(app)
-	Rate{}.Commands(app)
+	RateLimit{}.Commands(app)
 	BGP{}.Commands(app)
 	Ceci{}.Commands(app)
 	Prefix{}.Commands(app)

@@ -70,15 +70,30 @@ func (n *Network) NewSpecifies() any {
 	return n.Specifies
 }
 
+func (n *Network) Init() {
+	switch n.Provider {
+	case "router", "ipsec", "bgp", "ceci":
+		// Special network.
+	default:
+		if n.Bridge == nil {
+			n.Bridge = &Bridge{}
+		}
+		if n.Subnet == nil {
+			n.Subnet = &Subnet{}
+		}
+		n.Bridge.Network = n.Name
+	}
+}
+
 func (n *Network) Correct(sw *Switch) {
 	ipAddr := ""
 	ipMask := ""
+
+	n.Init()
 	if n.Snat == "" {
 		n.Snat = "enable"
 	}
-	if n.Bridge == nil {
-		n.Bridge = &Bridge{}
-	}
+
 	switch n.Provider {
 	case "router":
 		spec := n.Specifies
@@ -105,20 +120,16 @@ func (n *Network) Correct(sw *Switch) {
 			obj.Name = n.Name
 		}
 	default:
-		br := n.Bridge
-		br.Network = n.Name
-		br.Correct()
-		if _i, _n, err := net.ParseCIDR(br.Address); err == nil {
+		n.Bridge.Correct()
+		if _i, _n, err := net.ParseCIDR(n.Bridge.Address); err == nil {
 			ipAddr = _i.String()
 			ipMask = net.IP(_n.Mask).String()
 		}
+		if n.Subnet.Netmask == "" {
+			n.Subnet.Netmask = ipMask
+		}
 	}
-	if n.Subnet == nil {
-		n.Subnet = &Subnet{}
-	}
-	if n.Subnet.Netmask == "" {
-		n.Subnet.Netmask = ipMask
-	}
+
 	CorrectRoutes(n.Routes, ipAddr)
 
 	if n.OpenVPN != nil {

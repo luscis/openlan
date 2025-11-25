@@ -33,6 +33,15 @@ func (b BGP) List(c *cli.Context) error {
 	return b.Out(data, "yaml", "")
 }
 
+func (b BGP) Save(c *cli.Context) error {
+	url := b.Url(c.String("url"))
+	clt := b.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b BGP) Enable(c *cli.Context) error {
 	data := &schema.Bgp{
 		LocalAs:  c.Int("local-as"),
@@ -79,6 +88,12 @@ func (b BGP) Commands(app *api.App) {
 				Name:   "disable",
 				Usage:  "Disable bgp",
 				Action: b.Disable,
+			},
+			{
+				Name:    "save",
+				Usage:   "Save bgp network",
+				Aliases: []string{"sa"},
+				Action:  b.Save,
 			},
 			Neighbor{}.Commands(),
 			Advertis{}.Commands(),

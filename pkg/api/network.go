@@ -21,6 +21,7 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network", h.Save).Methods("PUT")
 	router.HandleFunc("/api/network/{id}", h.Get).Methods("GET")
 	router.HandleFunc("/api/network/{id}", h.Delete).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}", h.Save).Methods("PUT")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.StartVPN).Methods("POST")
@@ -69,7 +70,7 @@ func (h Network) Post(w http.ResponseWriter, r *http.Request) {
 	if obj := cs.GetNetwork(obj.Name); obj != nil {
 		h.cs.AddNetwork(obj.Name)
 	} else {
-		http.Error(w, obj.Name+" not found", http.StatusBadRequest)
+		http.Error(w, network.Name+" not found", http.StatusBadRequest)
 		return
 	}
 
@@ -89,10 +90,16 @@ func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Network) Save(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 	network := &schema.Network{}
-	if err := GetData(r, network); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if name, ok := vars["id"]; ok {
+		network.Name = name
+	}
+	if network.Name == "" {
+		if err := GetData(r, network); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	h.cs.SaveNetwork(network.Name)
 	ResponseJson(w, "success")

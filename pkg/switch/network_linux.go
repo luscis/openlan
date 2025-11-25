@@ -89,7 +89,9 @@ func (w *WorkerImpl) addCache() {
 		n.IpStart = cfg.Subnet.Start
 		n.IpEnd = cfg.Subnet.End
 		n.Netmask = cfg.Subnet.Netmask
-		n.Address = cfg.Bridge.Address
+		if cfg.Bridge != nil {
+			n.Address = cfg.Bridge.Address
+		}
 	}
 	cache.Network.Add(&n)
 }
@@ -124,7 +126,7 @@ func (w *WorkerImpl) Initialize() {
 	w.qos = NewQosCtrl(cfg.Name)
 	w.qos.Initialize()
 
-	if cfg.Dhcp == "enable" {
+	if cfg.Dhcp == "enable" && cfg.Bridge != nil {
 		name := cfg.Bridge.Name
 		if w.br != nil {
 			name = w.br.L3Name()
@@ -352,6 +354,10 @@ func (w *WorkerImpl) loadVRF() {
 func (w *WorkerImpl) doMss() {
 	cfg, _ := w.GetCfgs()
 
+	if cfg.Bridge == nil || cfg.Bridge.Mss <= 0 {
+		return
+	}
+
 	mss := cfg.Bridge.Mss
 	w.fire.Mangle.Post.AddRuleX(cn.IPRule{
 		Order:   "-I",
@@ -387,6 +393,10 @@ func (w *WorkerImpl) doMss() {
 
 func (w *WorkerImpl) SetMss(mss int) {
 	cfg, _ := w.GetCfgs()
+	if cfg.Bridge == nil {
+		return
+	}
+
 	if cfg.Bridge.Mss != mss {
 		cfg.Bridge.Mss = mss
 		w.doMss()
@@ -587,11 +597,13 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	w.loadRoutes()
 
 	w.acl.Start()
-	w.toACL(cfg.Bridge.Name)
 
-	for _, output := range cfg.Outputs {
-		output.GenName()
-		w.addOutput(cfg.Bridge.Name, output)
+	if cfg.Bridge != nil {
+		w.toACL(cfg.Bridge.Name)
+		for _, output := range cfg.Outputs {
+			output.GenName()
+			w.addOutput(cfg.Bridge.Name, output)
+		}
 	}
 
 	if !(w.vpn == nil) {
@@ -616,7 +628,7 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	if cfg.Snat != "disable" {
 		w.doSnat()
 	}
-	if cfg.Bridge.Mss > 0 {
+	if cfg.Bridge != nil {
 		// forward to remote
 		w.doMss()
 	}
@@ -758,8 +770,10 @@ func (w *WorkerImpl) Stop() {
 		w.vrf.Down()
 	}
 
-	for _, output := range cfg.Outputs {
-		w.delOutput(cfg.Bridge.Name, output)
+	if cfg.Bridge != nil {
+		for _, output := range cfg.Outputs {
+			w.delOutput(cfg.Bridge.Name, output)
+		}
 	}
 
 	w.setR.Destroy()
@@ -784,6 +798,10 @@ func (w *WorkerImpl) Config() *co.Network {
 
 func (w *WorkerImpl) Subnet() *net.IPNet {
 	cfg := w.cfg
+
+	if cfg.Bridge == nil {
+		return nil
+	}
 
 	ipAddr := cfg.Bridge.Address
 	ipMask := cfg.Subnet.Netmask
@@ -1064,19 +1082,19 @@ func (w *WorkerImpl) delIpSet(rt co.PrefixRoute) {
 func (w *WorkerImpl) forwardSubnet() {
 	cfg, vpn := w.GetCfgs()
 
-	input := cfg.Bridge.Name
-	if w.br != nil {
-		input = w.br.L3Name()
-		w.forwardZone(input)
+	if cfg.Bridge != nil {
+		input := cfg.Bridge.Name
+		if w.br != nil {
+			input = w.br.L3Name()
+			w.forwardZone(input)
+		}
+		ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
+		if ifAddr == "" {
+			return
+		}
+		// Enable MASQUERADE, and FORWARD it.
+		w.toRelated(input, "Accept related")
 	}
-
-	ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
-	if ifAddr == "" {
-		return
-	}
-
-	// Enable MASQUERADE, and FORWARD it.
-	w.toRelated(input, "Accept related")
 	for _, rt := range cfg.Routes {
 		if !w.addIpSet(rt) {
 			break

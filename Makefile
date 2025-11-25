@@ -36,9 +36,8 @@ help: ## show make targets
 bin: linux windows darwin ## build all platform binary
 
 ## prepare environment
-env: update
+init:
 	mkdir -p $(BD)
-	go version
 	gofmt -w -s ./pkg ./cmd
 
 update: ## update source code
@@ -138,7 +137,7 @@ linux-bin: linux-gzip ## build linux install binary
 	chmod +x $(BD)/$(LIN_DIR).bin && \
 	echo "Save to $(LIN_DIR).bin"
 
-install: env linux ## install packages
+install: init linux ## install packages
 	@mkdir -p $(LIN_DIR)
 	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LIN_DIR)
 	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,access,dhcp}
@@ -160,7 +159,7 @@ windows-ceci:
 windows-access:
 	GOOS=windows GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.exe ./cmd/access
 
-windows-gzip: env windows ## build windows packages
+windows-gzip: init windows ## build windows packages
 	@rm -rf $(WIN_DIR) && mkdir -p $(WIN_DIR)
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/http/http.yaml.example $(WIN_DIR)/ceci.yaml
 	@cp -rf $(BD)/{openlan-access,openceci.exe} $(WIN_DIR)
@@ -196,7 +195,7 @@ test: ## execute unit test
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/network
 
 ## coverage
-cover: env ## execute unit test and output coverage
+cover: init ## execute unit test and output coverage
 	@rm -rvf $(CD) && mkdir -p $(CD)
 	go test -mod=vendor github.com/luscis/openlan/pkg/access -coverprofile=$(CD)/0.out -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/libol -coverprofile=$(CD)/1.out -race -covermode=atomic

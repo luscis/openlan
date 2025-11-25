@@ -28,6 +28,15 @@ func (b Router) List(c *cli.Context) error {
 	return b.Out(data, "yaml", "")
 }
 
+func (b Router) Save(c *cli.Context) error {
+	url := b.Url(c.String("url"))
+	clt := b.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b Router) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:  "router",
@@ -38,6 +47,12 @@ func (b Router) Commands(app *api.App) {
 				Usage:   "Display router network",
 				Aliases: []string{"ls"},
 				Action:  b.List,
+			},
+			{
+				Name:    "save",
+				Usage:   "Save router network",
+				Aliases: []string{"sa"},
+				Action:  b.Save,
 			},
 			RouterTunnel{}.Commands(),
 		},

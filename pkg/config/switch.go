@@ -217,10 +217,8 @@ func (s *Switch) UnmarshalNetwork(data []byte) (*Network, error) {
 	if _, ok := s.Network[obj.Name]; ok {
 		return nil, libol.NewErr("already existed")
 	}
-	if obj.Bridge == nil {
-		obj.Bridge = &Bridge{}
-	}
 
+	obj.Init()
 	obj.Load()
 
 	s.Network[obj.Name] = obj
