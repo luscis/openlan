@@ -69,6 +69,16 @@ func (v Version) Update(c *cli.Context) error {
 	return nil
 }
 
+func (v Version) Get(c *cli.Context) error {
+	url := v.Url(c.String("url"), "cert")
+	clt := v.NewHttp(c.String("token"))
+	var item schema.VersionCert
+	if err := clt.GetJSON(url, &item); err != nil {
+		return err
+	}
+	return v.Out(item, "yaml", "")
+}
+
 func (v Version) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "version",
@@ -77,13 +87,13 @@ func (v Version) Commands(app *api.App) {
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
-				Usage:   "Display all network",
+				Usage:   "Display cert details",
 				Aliases: []string{"ls"},
-				Action:  v.List,
+				Action:  v.Get,
 			},
 			{
 				Name:  "update",
-				Usage: "update cert from file",
+				Usage: "Update cert from file",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "cert"},
 					&cli.StringFlag{Name: "key"},

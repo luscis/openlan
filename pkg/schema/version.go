@@ -16,8 +16,9 @@ func NewVersionSchema() Version {
 }
 
 type VersionCert struct {
-	Ca     string `json:"ca"`
-	Cert   string `json:"cert"`
-	Key    string `json:"key"`
-	Expire string `json:"expire"`
+	Ca         string `json:"ca,omitempty"`
+	Cert       string `json:"crt,omitempty"`
+	Key        string `json:"key,omitempty"`
+	CertExpire string `json:"crtExpire,omitempty"`
+	CaExpire   string `json:"caExpire,omitempty"`
 }

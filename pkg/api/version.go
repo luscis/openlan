@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -20,13 +19,13 @@ func (l Version) Router(router *mux.Router) {
 
 func (l Version) List(w http.ResponseWriter, r *http.Request) {
 	ver := schema.NewVersionSchema()
-	ver.Expire = cache.User.ExpireTime()
+	ce := l.cs.GetCert()
+	ver.Expire = ce.CertExpire
 	ResponseJson(w, ver)
 }
 
 func (l Version) CertList(w http.ResponseWriter, r *http.Request) {
-	ce := schema.VersionCert{}
-	ce.Cert = cache.User.GetCert()
+	ce := l.cs.GetCert()
 	ResponseJson(w, ce)
 }
 

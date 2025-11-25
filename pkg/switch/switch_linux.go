@@ -2,7 +2,9 @@ package cswitch
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strings"
@@ -319,6 +321,45 @@ func (v *Switch) UpdateCert(data schema.VersionCert) {
 			v.out.Info("Switch.UpdateCert: please restart for cert ca")
 		}
 	}
+}
+
+func (v *Switch) GetCert() (ce schema.VersionCert) {
+	cert := v.cfg.Cert
+	if cert == nil {
+		return ce
+	}
+
+	certData, err := os.ReadFile(cert.CrtFile)
+	if err != nil {
+		return ce
+	}
+	ce.Cert = string(certData)
+	block, rest := pem.Decode(certData)
+	if block == nil || len(rest) > 0 {
+		return ce
+	}
+	xcert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return ce
+	}
+	ce.CertExpire = xcert.NotAfter.Format(time.RFC3339)
+
+	certData, err = os.ReadFile(cert.CaFile)
+	if err != nil {
+		return ce
+	}
+	ce.Ca = string(certData)
+	block, rest = pem.Decode(certData)
+	if block == nil || len(rest) > 0 {
+		return ce
+	}
+	xcert, err = x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return ce
+	}
+	ce.CaExpire = xcert.NotAfter.Format(time.RFC3339)
+
+	return ce
 }
 
 func (v *Switch) onFrame(client libol.SocketClient, frame *libol.FrameMessage) error {

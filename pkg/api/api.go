@@ -27,6 +27,7 @@ type SwitchApi interface {
 	SaveNetwork(network string)
 	RateLimitApi
 	UpdateCert(data schema.VersionCert)
+	GetCert() schema.VersionCert
 }
 
 func NewWorkerSchema(s SwitchApi) schema.Worker {
