@@ -37,8 +37,9 @@ func (u Ceci) Save(c *cli.Context) error {
 
 func (u Ceci) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "ceci",
-		Usage: "Ceci TCP proxy",
+		Name:   "ceci",
+		Usage:  "Ceci TCP proxy",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:   "ls",

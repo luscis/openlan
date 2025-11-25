@@ -112,7 +112,8 @@ func (u Network) Commands(app *api.App) {
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "name", Value: ""},
 		},
-		Usage: "Logical network",
+		Usage:  "Logical network",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

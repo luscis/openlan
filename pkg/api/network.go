@@ -654,7 +654,6 @@ func (h ClientQoS) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ClientQoS) Add(w http.ResponseWriter, r *http.Request) {
-
 	qos := &schema.Qos{}
 	if err := GetData(r, qos); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -669,16 +668,11 @@ func (h ClientQoS) Add(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
-
-	if qos != nil {
-		if err := worker.Qoser().AddQos(qos.Name, qos.InSpeed); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		ResponseJson(w, true)
-	} else {
-		http.Error(w, vars["id"], http.StatusNotFound)
+	if err := worker.Qoser().AddQos(qos.Name, qos.InSpeed); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	ResponseJson(w, true)
 }
 
 func (h ClientQoS) Del(w http.ResponseWriter, r *http.Request) {
@@ -698,15 +692,11 @@ func (h ClientQoS) Del(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if qos != nil {
-		if err := worker.Qoser().DelQos(qos.Name); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		ResponseJson(w, true)
-	} else {
-		http.Error(w, vars["id"], http.StatusNotFound)
+	if err := worker.Qoser().DelQos(qos.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	ResponseJson(w, true)
 }
 
 func (h ClientQoS) Save(w http.ResponseWriter, r *http.Request) {

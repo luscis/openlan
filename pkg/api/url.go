@@ -15,7 +15,7 @@ func Add(router *mux.Router, cs SwitchApi) {
 	VPNClient{}.Router(router)
 	PProf{}.Router(router)
 	Config{cs: cs}.Router(router)
-	Version{}.Router(router)
+	Version{cs: cs}.Router(router)
 	Log{}.Router(router)
 	RateLimit{cs: cs}.Router(router)
 	Ceci{}.Router(router)

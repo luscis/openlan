@@ -136,6 +136,7 @@ func (o IPSecTunnel) Commands() *cli.Command {
 		Name:    "tunnel",
 		Aliases: []string{"tun"},
 		Usage:   "IPSec Tunnel configuration",
+		Action:  o.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

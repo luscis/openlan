@@ -14,3 +14,10 @@ func NewVersionSchema() Version {
 		Date:    libol.Date,
 	}
 }
+
+type VersionCert struct {
+	Ca     string `json:"ca"`
+	Cert   string `json:"cert"`
+	Key    string `json:"key"`
+	Expire string `json:"expire"`
+}

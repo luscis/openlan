@@ -9,7 +9,7 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 )
 
-type RateApi interface {
+type RateLimitApi interface {
 	AddRate(device string, mbit int)
 	DelRate(device string)
 }
@@ -25,7 +25,8 @@ type SwitchApi interface {
 	AddNetwork(network string)
 	DelNetwork(network string)
 	SaveNetwork(network string)
-	RateApi
+	RateLimitApi
+	UpdateCert(data schema.VersionCert)
 }
 
 func NewWorkerSchema(s SwitchApi) schema.Worker {

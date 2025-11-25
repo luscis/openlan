@@ -16,6 +16,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
+	"github.com/luscis/openlan/pkg/schema"
 )
 
 const (
@@ -285,6 +286,38 @@ func (v *Switch) Initialize() {
 		cache.User.SetCert(&libol.CertConfig{
 			Crt: cert.CrtFile,
 		})
+	}
+}
+
+func (v *Switch) UpdateCert(data schema.VersionCert) {
+	cert := v.cfg.Cert
+	if cert == nil {
+		return
+	}
+
+	value := data.Cert
+	if value != "" {
+		if err := os.WriteFile(cert.CrtFile, []byte(value), 0600); err != nil {
+			v.out.Warn("Switch.UpdateCert: %s", err)
+		}
+	}
+
+	value = data.Key
+	if value != "" {
+		if err := os.WriteFile(cert.KeyFile, []byte(value), 0600); err != nil {
+			v.out.Warn("Switch.UpdateCert: %s", err)
+		} else {
+			v.out.Info("Switch.UpdateCert: please restart for cert key")
+		}
+	}
+
+	value = data.Ca
+	if value != "" {
+		if err := os.WriteFile(cert.CaFile, []byte(value), 0600); err != nil {
+			v.out.Warn("Switch.UpdateCert: %s", err)
+		} else {
+			v.out.Info("Switch.UpdateCert: please restart for cert ca")
+		}
 	}
 }
 

@@ -39,8 +39,9 @@ func (b Router) Save(c *cli.Context) error {
 
 func (b Router) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "router",
-		Usage: "Router",
+		Name:   "router",
+		Usage:  "Router",
+		Action: b.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "ls",

@@ -246,6 +246,19 @@ func (w *user) SetCert(cfg *libol.CertConfig) {
 	w.Cert = cfg.Crt
 }
 
+func (w *user) GetCert() string {
+	if w.Cert == "" {
+		return ""
+	}
+
+	pemData, err := os.ReadFile(w.Cert)
+	if err != nil {
+		return ""
+	}
+
+	return string(pemData)
+}
+
 func (w *user) ExpireTime() string {
 	if w.Cert == "" {
 		return ""
