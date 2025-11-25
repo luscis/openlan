@@ -570,7 +570,6 @@ func (o *OpenVPN) checkAlreadyClose(pid string) {
 				return
 			}
 		}
-
 	}
 }
 

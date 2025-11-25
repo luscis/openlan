@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"text/template"
+	"time"
 
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
@@ -21,7 +23,9 @@ const (
 
 type IPSecWorker struct {
 	*WorkerImpl
-	spec *co.IPSecSpecifies
+	spec    *co.IPSecSpecifies
+	lock    sync.Mutex
+	running bool
 }
 
 func NewIPSecWorker(c *co.Network) *IPSecWorker {
@@ -190,9 +194,12 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 func (w *IPSecWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.out.Info("IPSecWorker.Start")
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	for _, tun := range w.spec.Tunnels {
 		w.addTunnel(tun)
 	}
+	libol.Go(w.UpdateState)
 }
 
 func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
@@ -220,7 +227,7 @@ func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 	return nil
 }
 
-func (w *IPSecWorker) Status() map[string]string {
+func (w *IPSecWorker) status() map[string]string {
 	status := make(map[string]string)
 	out, err := exec.Command(IPSecBin, "status").CombinedOutput()
 	if err != nil {
@@ -259,6 +266,8 @@ func (w *IPSecWorker) Status() map[string]string {
 
 func (w *IPSecWorker) Stop() {
 	w.out.Info("IPSecWorker.Stop")
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	for _, tun := range w.spec.Tunnels {
 		w.removeTunnel(tun)
 	}
@@ -271,6 +280,8 @@ func (w *IPSecWorker) Reload(v api.SwitchApi) {
 }
 
 func (w *IPSecWorker) AddTunnel(data schema.IPSecTunnel) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	cfg := &co.IPSecTunnel{
 		Left:      data.Left,
 		LeftPort:  data.LeftPort,
@@ -288,6 +299,8 @@ func (w *IPSecWorker) AddTunnel(data schema.IPSecTunnel) {
 }
 
 func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	cfg := &co.IPSecTunnel{
 		Left:      data.Left,
 		Right:     data.Right,
@@ -301,6 +314,8 @@ func (w *IPSecWorker) DelTunnel(data schema.IPSecTunnel) {
 }
 
 func (w *IPSecWorker) StartTunnel(data schema.IPSecTunnel) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	cfg := &co.IPSecTunnel{
 		Left:      data.Left,
 		Right:     data.Right,
@@ -314,7 +329,8 @@ func (w *IPSecWorker) StartTunnel(data schema.IPSecTunnel) {
 }
 
 func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
-	status := w.Status()
+	w.lock.Lock()
+	defer w.lock.Unlock()
 	for _, tun := range w.spec.Tunnels {
 		obj := schema.IPSecTunnel{
 			Left:      tun.Left,
@@ -325,10 +341,26 @@ func (w *IPSecWorker) ListTunnels(call func(obj schema.IPSecTunnel)) {
 			RightPort: tun.RightPort,
 			Secret:    tun.Secret,
 			Transport: tun.Transport,
-		}
-		if state, ok := status[tun.Name+"-c1"]; ok {
-			obj.State = state
+			State:     tun.State,
 		}
 		call(obj)
+	}
+}
+
+func (w *IPSecWorker) UpdateState() {
+	if w.running {
+		return
+	}
+	w.running = true
+	ticker := time.Tick(2 * time.Second)
+	for range ticker {
+		w.lock.Lock()
+		status := w.status()
+		for _, tun := range w.spec.Tunnels {
+			if state, ok := status[tun.Name+"-c1"]; ok {
+				tun.State = state
+			}
+		}
+		w.lock.Unlock()
 	}
 }
