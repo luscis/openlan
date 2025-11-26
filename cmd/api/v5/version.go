@@ -22,7 +22,8 @@ func (v Version) Url(prefix, name string) string {
 
 func (v Version) Tmpl() string {
 	return `Version  :  {{ .Version }}
-Build at :  {{ .Date}}
+Build at :  {{ .Date }}
+Commit id:  {{ .Commit }}
 Expire at:  {{ .Expire }}
 `
 }

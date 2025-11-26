@@ -5,6 +5,7 @@ import "github.com/luscis/openlan/pkg/libol"
 type Version struct {
 	Version string `json:"version"`
 	Date    string `json:"date"`
+	Commit  string `json:"commit"`
 	Expire  string `json:"expire"`
 }
 
@@ -12,6 +13,7 @@ func NewVersionSchema() Version {
 	return Version{
 		Version: libol.Version,
 		Date:    libol.Date,
+		Commit:  libol.Commit,
 	}
 }
 

@@ -12,6 +12,8 @@ func main() {
 	config.Update(c)
 
 	libol.SetLogger(c.Log.File, c.Log.Verbose)
+	libol.ShowVersion()
+
 	cache.Init(&c.Perf)
 	s := cswitch.NewSwitch(c)
 	libol.PreNotify()

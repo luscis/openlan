@@ -19,8 +19,9 @@ MAC_DIR ?= "openceci-darwin-$(VER).$(ARCH)"
 
 ## declare flags
 MOD = github.com/luscis/openlan/pkg/libol
-LDFLAGS += -X $(MOD).Date=$(shell date +%FT%T%z)
+LDFLAGS += -X $(MOD).Date=$(shell date +%F)
 LDFLAGS += -X $(MOD).Version=$(VER)
+LDFLAGS += -X $(MOD).Commit=$(shell git rev-parse --short HEAD)
 
 build: test pkg
 
@@ -95,6 +96,9 @@ docker-deb: docker-bin ## build image for debian
 docker-bin:
 	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-bin"
 
+docker-tar:
+	docker exec openlan_builder bash -c "cd /opt/openlan && make linux-tar"
+
 docker: docker-deb ## build docker images
 
 docker-builder: builder ## create a builder
@@ -124,13 +128,13 @@ linux-ceci:
 linux-proxy:
 	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-proxy ./cmd/proxy
 
-linux-gzip: install ## build linux packages
+linux-tar: install ## build linux packages
 	@rm -rf $(LIN_DIR).tar.gz
 	tar -cf $(LIN_DIR).tar $(LIN_DIR) && mv $(LIN_DIR).tar $(BD)
 	@rm -rf $(LIN_DIR)
 	gzip -f $(BD)/$(LIN_DIR).tar
 
-linux-bin: linux-gzip ## build linux install binary
+linux-bin: update linux-tar ## build linux install binary
 	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LIN_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
 	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \

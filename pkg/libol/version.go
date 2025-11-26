@@ -6,7 +6,8 @@ var (
 	Commit  string
 )
 
-func init() {
-	Debug("version is %s", Version)
-	Debug("built on %s", Date)
+func ShowVersion() {
+	Info("Version is %s", Version)
+	Info("Built   on %s", Date)
+	Info("Commit  id %s", Commit)
 }
