@@ -29,10 +29,10 @@ func GetPair(name string) (string, string) {
 	s1 := ""
 	if strings.HasPrefix(name, "br-") {
 		s0 = strings.Replace(name, "br-", "hi-", 1)
-		s1 = strings.Replace(name, "br-", "si-", 1)
+		s1 = strings.Replace(name, "br-", "bi-", 1)
 	} else {
 		s0 = fmt.Sprintf("hi-%s", name)
-		s1 = fmt.Sprintf("si-%s", name)
+		s1 = fmt.Sprintf("bi-%s", name)
 	}
 	return GetName(s0), GetName(s1)
 }
