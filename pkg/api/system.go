@@ -19,23 +19,46 @@ func (l KernelRoute) Router(router *mux.Router) {
 }
 
 func (l KernelRoute) List(w http.ResponseWriter, r *http.Request) {
-	var items []schema.PrefixRoute
+	var items []schema.KernelRoute
 
-	routes, _ := libol.ListRoutes()
-	for _, prefix := range routes {
-		item := schema.PrefixRoute{
-			Link:     prefix.Link,
-			Metric:   prefix.Priority,
-			Table:    prefix.Table,
-			Source:   prefix.Src,
-			NextHop:  prefix.Gw,
-			Prefix:   prefix.Dst,
-			Protocol: prefix.Protocol,
+	values, _ := libol.ListRoutes()
+	for _, val := range values {
+		item := schema.KernelRoute{
+			Link:     val.Link,
+			Metric:   val.Priority,
+			Table:    val.Table,
+			Source:   val.Src,
+			NextHop:  val.Gw,
+			Prefix:   val.Dst,
+			Protocol: val.Protocol,
 		}
 		items = append(items, item)
 
 	}
+	ResponseJson(w, items)
+}
 
+type KernelNeighbor struct {
+}
+
+func (l KernelNeighbor) Router(router *mux.Router) {
+	router.HandleFunc("/api/kernel/neighbor", l.List).Methods("GET")
+}
+
+func (l KernelNeighbor) List(w http.ResponseWriter, r *http.Request) {
+	var items []schema.KernelNeighbor
+
+	values, _ := libol.ListNeighbrs()
+	for _, val := range values {
+		item := schema.KernelNeighbor{
+			Link:    val.Link,
+			Address: val.Address,
+			HwAddr:  val.HwAddr,
+			State:   val.State,
+		}
+		items = append(items, item)
+
+	}
 	ResponseJson(w, items)
 }
 

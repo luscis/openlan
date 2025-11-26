@@ -20,6 +20,23 @@ type PrefixRoute struct {
 	MultiPath []MultiPath `json:"multipath,omitempty"`
 }
 
+type KernelRoute struct {
+	Prefix   string `json:"prefix"`
+	NextHop  string `json:"nexthop,omitempty"`
+	Metric   int    `json:"metric"`
+	Link     string `json:"link,omitempty"`
+	Table    int    `json:"table,omitempty"`
+	Source   string `json:"source,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+}
+
+type KernelNeighbor struct {
+	Link    string `json:"link,omitempty"`
+	Address string `json:"address,omitempty"`
+	HwAddr  string `json:"hwaddr,omitempty"`
+	State   string `json:"state,omitempty"`
+}
+
 type MultiPath struct {
 	NextHop string `json:"nexthop"`
 	Weight  int    `json:"weight"`

@@ -85,40 +85,84 @@ func RouteProtocol(code int) string {
 }
 
 func ListRoutes() ([]Prefix, error) {
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	var items []Prefix
+
+	values, err := netlink.RouteList(nil, netlink.FAMILY_V4)
 	if err != nil {
 		return nil, err
 	}
-
-	var data []Prefix
-	for _, rte := range routes {
+	for _, value := range values {
 		entry := Prefix{
-			Protocol: RouteProtocol(rte.Protocol),
-			Priority: rte.Priority,
+			Protocol: RouteProtocol(value.Protocol),
+			Priority: value.Priority,
 		}
-		link, err := netlink.LinkByIndex(rte.LinkIndex)
+		link, err := netlink.LinkByIndex(value.LinkIndex)
 		if err == nil {
 			entry.Link = link.Attrs().Name
 		}
-		if rte.Dst == nil {
+		if value.Dst == nil {
 			entry.Dst = "0.0.0.0/0"
 		} else {
-			entry.Dst = rte.Dst.String()
+			entry.Dst = value.Dst.String()
 		}
-
-		if len(rte.Gw) == 0 {
+		if len(value.Gw) == 0 {
 			entry.Gw = "0.0.0.0"
 		} else {
-			entry.Gw = rte.Gw.String()
+			entry.Gw = value.Gw.String()
 		}
-
-		if len(rte.Src) == 0 {
+		if len(value.Src) == 0 {
 			entry.Src = "0.0.0.0"
 		} else {
-			entry.Src = rte.Src.String()
+			entry.Src = value.Src.String()
 		}
-
-		data = append(data, entry)
+		items = append(items, entry)
 	}
-	return data, nil
+	return items, nil
+}
+
+func StateCode(code int) string {
+	switch code {
+	case 0x00:
+		return "NONE"
+	case 0x01:
+		return "INCOMPLETE"
+	case 0x02:
+		return "REACHABLE"
+	case 0x04:
+		return "STALE"
+	case 0x08:
+		return "DELAY"
+	case 0x10:
+		return "PROBE"
+	case 0x20:
+		return "FAILED"
+	case 0x40:
+		return "NOARP"
+	case 0x80:
+		return "PERMANENT"
+	default:
+		return fmt.Sprintf("%d", code)
+	}
+}
+
+func ListNeighbrs() ([]Neighbor, error) {
+	var items []Neighbor
+
+	values, err := netlink.NeighList(0, netlink.FAMILY_V4)
+	if err != nil {
+		return nil, err
+	}
+	for _, value := range values {
+		entry := Neighbor{
+			Address: value.IP.String(),
+			HwAddr:  value.HardwareAddr.String(),
+			State:   StateCode(value.State),
+		}
+		link, err := netlink.LinkByIndex(value.LinkIndex)
+		if err == nil {
+			entry.Link = link.Attrs().Name
+		}
+		items = append(items, entry)
+	}
+	return items, nil
 }

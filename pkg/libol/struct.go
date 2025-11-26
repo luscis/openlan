@@ -9,3 +9,10 @@ type Prefix struct {
 	Priority int
 	Table    int
 }
+
+type Neighbor struct {
+	Link    string
+	Address string
+	HwAddr  string
+	State   string
+}

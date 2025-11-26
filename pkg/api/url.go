@@ -6,6 +6,7 @@ func Add(router *mux.Router, cs SwitchApi) {
 	Link{cs: cs}.Router(router)
 	User{}.Router(router)
 	KernelRoute{}.Router(router)
+	KernelNeighbor{}.Router(router)
 	Neighbor{}.Router(router)
 	Access{}.Router(router)
 	OnLine{}.Router(router)

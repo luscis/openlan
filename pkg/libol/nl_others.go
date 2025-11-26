@@ -10,5 +10,9 @@ func GetLocalByGw(addr string) (net.IP, error) {
 }
 
 func ListRoutes() ([]Prefix, error) {
-	return nil, NewErr("ListRoute notSupport")
+	return nil, NewErr("ListRoutes notSupport")
+}
+
+func ListNeighbrs() ([]Neighbor, error) {
+	return nil, NewErr("ListNeighbors notSupport")
 }
