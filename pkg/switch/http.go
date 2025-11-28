@@ -9,6 +9,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -40,6 +41,7 @@ type Http struct {
 	keyFile    string
 	pubDir     string
 	router     *mux.Router
+	lock       sync.Mutex
 }
 
 func NewHttp(cs api.SwitchApi) (h *Http) {
@@ -93,6 +95,8 @@ func (h *Http) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		libol.Info("Http.Middleware %s %s", r.Method, r.URL.Path)
 		if h.IsAuth(w, r) {
+			h.lock.Lock()
+			defer h.lock.Unlock()
 			next.ServeHTTP(w, r)
 		} else {
 			w.Header().Set("WWW-Authenticate", "Basic")
