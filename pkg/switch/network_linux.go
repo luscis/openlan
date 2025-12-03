@@ -494,14 +494,14 @@ func (w *WorkerImpl) DelDnat(data schema.DNAT) error {
 	}
 	obj.Correct()
 
-	if _, ok := cfg.DelDnat(&obj); ok {
+	if older, ok := cfg.DelDnat(&obj); ok {
 		if err := w.dnat.DelRuleX(cn.IPRule{
-			Proto:   obj.Protocol,
-			Dest:    obj.Dest,
-			DstPort: fmt.Sprintf("%d", obj.Dport),
-			ToDest:  fmt.Sprintf("%s:%d", obj.ToDest, obj.ToDport),
+			Proto:   older.Protocol,
+			Dest:    older.Dest,
+			DstPort: fmt.Sprintf("%d", older.Dport),
+			ToDest:  fmt.Sprintf("%s:%d", older.ToDest, older.ToDport),
 			Jump:    "DNAT",
-			Comment: "DNAT " + obj.Id(),
+			Comment: "DNAT " + older.Id(),
 		}); err != nil {
 			w.out.Warn("WorkerImple: DelDnat: %s", err)
 		}
