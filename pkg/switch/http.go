@@ -272,18 +272,6 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	sort.SliceStable(body.Neighbors, func(i, j int) bool {
 		return body.Neighbors[i].IpAddr > body.Neighbors[j].IpAddr
 	})
-	// display links.
-	for l := range cache.Link.List() {
-		if l == nil {
-			break
-		}
-		body.Links = append(body.Links, models.NewLinkSchema(l))
-	}
-	sort.SliceStable(body.Links, func(i, j int) bool {
-		ii := body.Links[i]
-		jj := body.Links[j]
-		return ii.Network+ii.Server > jj.Network+jj.Server
-	})
 	// display online flow.
 	for l := range cache.Online.List() {
 		if l == nil {

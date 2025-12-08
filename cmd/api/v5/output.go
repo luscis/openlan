@@ -66,15 +66,6 @@ func (o Output) Save(c *cli.Context) error {
 	return nil
 }
 
-func (o Output) Tmpl() string {
-	return `# total {{ len . }}
-{{ps -24 "network"}} {{ps -15 "protocol"}} {{ps -15 "Remote"}} {{ps -15 "segment"}} {{ps -15 "device"}}
-{{- range . }}
-{{ps -24 .Network}} {{ps -15 .Protocol}} {{ps -15 .Remote}} {{ if .Segment }}{{pi -15 .Segment }}{{ else }}{{ps -15 .Secret}}{{ end }} {{ps -15 .Device}} {{.Crypt}}
-{{- end }}
-`
-}
-
 func (o Output) List(c *cli.Context) error {
 	url := o.Url(c.String("url"), c.String("name"))
 	clt := o.NewHttp(c.String("token"))
@@ -82,7 +73,7 @@ func (o Output) List(c *cli.Context) error {
 	if err := clt.GetJSON(url, &items); err != nil {
 		return err
 	}
-	return o.Out(items, c.String("format"), o.Tmpl())
+	return o.Out(items, c.String("format"), "")
 }
 
 func (o Output) Commands() *cli.Command {

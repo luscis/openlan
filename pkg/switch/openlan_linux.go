@@ -48,23 +48,6 @@ func (w *OpenLANWorker) Initialize() {
 	w.WorkerImpl.Initialize()
 }
 
-func (w *OpenLANWorker) LoadLinks() {
-	if w.cfg.Links != nil {
-		for _, link := range w.cfg.Links {
-			link.Correct()
-			w.AddLink(link)
-		}
-	}
-}
-
-func (w *OpenLANWorker) UnLoadLinks() {
-	w.links.lock.RLock()
-	defer w.links.lock.RUnlock()
-	for _, l := range w.links.links {
-		l.Stop()
-	}
-}
-
 func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 	master := w.br
 	// new it and configure address
@@ -89,12 +72,8 @@ func (w *OpenLANWorker) UpBridge(cfg *co.Bridge) {
 func (w *OpenLANWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
 	w.startTime = time.Now().Unix()
-
 	w.out.Info("OpenLANWorker.Start")
-
 	w.UpBridge(w.cfg.Bridge)
-	w.LoadLinks()
-
 	w.WorkerImpl.Start(v)
 }
 
@@ -105,7 +84,6 @@ func (w *OpenLANWorker) downBridge() {
 func (w *OpenLANWorker) Stop() {
 	w.out.Info("OpenLANWorker.Close")
 	w.WorkerImpl.Stop()
-	w.UnLoadLinks()
 	w.startTime = 0
 	w.downBridge()
 }
@@ -115,32 +93,6 @@ func (w *OpenLANWorker) UpTime() int64 {
 		return time.Now().Unix() - w.startTime
 	}
 	return 0
-}
-
-func (w *OpenLANWorker) AddLink(c co.Access) {
-	br := w.cfg.Bridge
-
-	c.Alias = w.alias
-	c.Network = w.cfg.Name
-	c.RequestAddr = false
-	c.Interface.Name = cn.Taps.GenName()
-	c.Interface.Bridge = br.Name
-	c.Interface.Address = br.Address
-	c.Interface.Provider = br.Provider
-	c.Interface.IPMtu = br.IPMtu
-	c.Log.File = "/dev/null"
-
-	l := NewLink(&c)
-	l.Initialize()
-	cache.Link.Add(l.uuid, l.Model())
-	w.links.Add(l)
-	l.Start()
-}
-
-func (w *OpenLANWorker) DelLink(addr string) {
-	if l := w.links.Remove(addr); l != nil {
-		cache.Link.Del(l.uuid)
-	}
 }
 
 func (w *OpenLANWorker) Reload(v api.SwitchApi) {

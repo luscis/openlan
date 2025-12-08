@@ -4,7 +4,6 @@ type Index struct {
 	Version   Version     `json:"version"`
 	Worker    Worker      `json:"worker"`
 	Access    []Access    `json:"access"`
-	Links     []Link      `json:"links"`
 	Neighbors []Neighbor  `json:"neighbors"`
 	OnLines   []OnLine    `json:"online"`
 	Network   []Network   `json:"network"`

@@ -14,4 +14,5 @@ type Output struct {
 	ErrPkt    uint64 `json:"errors,omitempty"`
 	AliveTime int64  `json:"aliveTime"`
 	Fallback  string `json:"fallback,omitempty"`
+	State     string `json:"state,omitempty"`
 }

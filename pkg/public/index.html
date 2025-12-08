@@ -138,7 +138,7 @@
     <div class="link">
         <div class="panel-header">
             <div>
-                <span>The link which connect to other, and total </span><span>{{ len .Links }}</span>.
+                <span>The link which connect to other, and total </span><span>{{ len .Outputs }}</span>.
             </div>
         </div>
         <div class="panel-body">
@@ -147,6 +147,7 @@
                 <tr>
                     <th>UUID</th>
                     <th>Alive</th>
+                    <th>Network</th>
                     <th>Device</th>
                     <th>Segment</th>
                     <th>Protocol</th>
@@ -160,6 +161,7 @@
                         <tr>
                             <td>output</td>
                             <td>{{ prettyTime .AliveTime }}</td>
+                            <td>{{ .Network }}</td>
                             <td>{{ .Device }}</td>
                             <td>ID:{{ .Segment }}</td>
                             <td>{{ .Protocol }}</td>
@@ -167,22 +169,10 @@
                             <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                             <td>
                                 {{ if .RxBytes }}<span class="success">success</span>
-                                {{ else }}<span class="unknown">unknown</span>
+                                {{ else }}<span class="unknown">{{ .State }}</span>
                                 {{ end}}
                             </td>
                         </tr>
-                {{ end }}
-                {{ range .Links }}
-                    <tr>
-                        <td>{{ .UUID }}</td>
-                        <td>{{ prettyTime .AliveTime }}</td>
-                        <td>{{ .Device }}</td>
-                        <td>{{ .User }}@{{ .Network }}</td>
-                        <td>{{ .Protocol }}</td>
-                        <td><a href="https://{{ getIpAddr .Server }}:10000">{{ getIpAddr .Server }}</a></td>
-                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
-                        <td><span class="{{ .State }}">{{ .State }}</span></td>
-                    </tr>
                 {{ end }}
                 </tbody>
             </table>

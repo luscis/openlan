@@ -6,7 +6,6 @@ import (
 
 func Init(cfg *config.Perf) {
 	Access.Init(cfg.Access)
-	Link.Init(cfg.Link)
 	Neighbor.Init(cfg.Neighbor)
 	Online.Init(cfg.OnLine)
 	User.Init(cfg.User)

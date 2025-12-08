@@ -26,24 +26,6 @@ func NewAccessSchema(p *Access) schema.Access {
 	}
 }
 
-func NewLinkSchema(l *Link) schema.Link {
-	sts := l.Status()
-	return schema.Link{
-		UUID:      sts.UUID,
-		User:      sts.User,
-		Uptime:    sts.Uptime,
-		Device:    sts.Device,
-		Protocol:  sts.Protocol,
-		Server:    sts.Remote,
-		State:     sts.State,
-		RxBytes:   sts.RxBytes,
-		TxBytes:   sts.TxBytes,
-		ErrPkt:    sts.ErrPkt,
-		Network:   sts.Network,
-		AliveTime: sts.AliveTime,
-	}
-}
-
 func NewNeighborSchema(n *Neighbor) schema.Neighbor {
 	return schema.Neighbor{
 		Uptime:  n.UpTime(),
@@ -113,5 +95,6 @@ func NewOutputSchema(o *Output) schema.Output {
 		TxBytes:   o.TxBytes,
 		Secret:    o.Secret,
 		AliveTime: o.UpTime(),
+		State:     o.GetState(),
 	}
 }

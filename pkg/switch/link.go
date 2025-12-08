@@ -9,7 +9,6 @@ import (
 
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
 	nl "github.com/vishvananda/netlink"
 )
 
@@ -30,16 +29,6 @@ func NewLink(cfg *co.Access) *Link {
 		uuid: uuid,
 		cfg:  cfg,
 		out:  libol.NewSubLogger(cfg.Network),
-	}
-}
-
-func (l *Link) Model() *models.Link {
-	cfg := l.Conf()
-	return &models.Link{
-		User:       cfg.Username,
-		Network:    cfg.Network,
-		Protocol:   cfg.Protocol,
-		StatusFile: l.StatusFile(),
 	}
 }
 

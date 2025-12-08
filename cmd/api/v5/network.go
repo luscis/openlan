@@ -150,7 +150,6 @@ func (u Network) Commands(app *api.App) {
 			OpenVPN{}.Commands(),
 			Output{}.Commands(),
 			PrefixRoute{}.Commands(),
-			Link{}.Commands(),
 			FindHop{}.Commands(),
 			SNAT{}.Commands(),
 			DNAT{}.Commands(),

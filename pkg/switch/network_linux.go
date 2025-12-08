@@ -151,6 +151,11 @@ func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 
 func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 	mtu := 0
+	out := &models.Output{
+		Network: w.cfg.Name,
+		NewTime: time.Now().Unix(),
+	}
+
 	switch port.Protocol {
 	case "gre":
 		mtu = 1450
@@ -209,9 +214,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				Name:   port.Link,
 				Bridge: bridge,
 			},
-			Log: co.Log{
-				File: "/dev/null",
-			},
+			Log:        co.Log{File: "/dev/null"},
 			Connection: port.Remote,
 			Fallback:   port.Fallback,
 			Protocol:   port.Protocol,
@@ -228,6 +231,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		link.Initialize()
 		link.Start()
 		port.Linker = link
+		out.StatsFile = link.StatusFile()
 	default:
 		link, err := nl.LinkByName(port.Remote)
 		if link == nil {
@@ -262,16 +266,12 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		}
 	}
 
-	out := &models.Output{
-		Network:  w.cfg.Name,
-		NewTime:  time.Now().Unix(),
-		Protocol: port.Protocol,
-		Remote:   port.Remote,
-		Segment:  port.Segment,
-		Device:   port.Link,
-		Secret:   port.Secret,
-		Fallback: port.Fallback,
-	}
+	out.Protocol = port.Protocol
+	out.Remote = port.Remote
+	out.Segment = port.Segment
+	out.Device = port.Link
+	out.Secret = port.Secret
+	out.Fallback = port.Fallback
 	cache.Output.Add(port.Link, out)
 
 	w.out.Info("WorkerImpl.addOutput %s %s", port.Link, port.Id())
