@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
@@ -131,7 +132,6 @@ func (n *Network) Correct(sw *Switch) {
 	}
 
 	CorrectRoutes(n.Routes, ipAddr)
-
 	if n.OpenVPN != nil {
 		n.OpenVPN.Correct(sw.AddrPool, n.Name)
 	}
@@ -139,6 +139,9 @@ func (n *Network) Correct(sw *Switch) {
 	for key, value := range n.FindHop {
 		value.Correct()
 		n.FindHop[key] = value
+	}
+	for _, value := range n.Outputs {
+		value.Correct()
 	}
 }
 
@@ -159,7 +162,6 @@ func (n *Network) IsYaml() bool {
 }
 
 func (n *Network) Load() {
-	n.LoadLink()
 	n.LoadRoute()
 	n.LoadOutput()
 	n.LoadFindHop()
@@ -180,11 +182,32 @@ func (n *Network) LoadRoute() {
 	}
 }
 
+func UserShort(value string) string {
+	return strings.SplitN(value, "@", 2)[0]
+}
+
 func (n *Network) LoadOutput() {
 	file := n.Dir("output")
 	if err := libol.UnmarshalLoad(&n.Outputs, file); err != nil {
 		libol.Error("Network.LoadOutput... %n", err)
 	}
+
+	n.LoadLink()
+	// Clone link to outputs.
+	for _, link := range n.Links {
+		link.Correct()
+		username := UserShort(link.Username)
+		value := &Output{
+			Protocol: link.Protocol,
+			Remote:   link.Connection,
+			Secret:   username + ":" + link.Password,
+			Crypt:    link.Crypt.Short(),
+		}
+		if _, index := n.FindOutput(value); index == -1 {
+			n.Outputs = append(n.Outputs, value)
+		}
+	}
+	n.Links = nil
 }
 
 func (n *Network) LoadFindHop() {
@@ -203,19 +226,14 @@ func (n *Network) LoadDnat() {
 
 func (n *Network) Save() {
 	obj := *n
-
 	obj.Routes = nil
-	obj.Links = nil
 	obj.Outputs = nil
 	obj.Dnat = nil
-	obj.FindHop = nil
-
+	obj.FindHop = nil // Clear sub dirs.
 	if err := libol.MarshalSave(&obj, obj.File, true); err != nil {
 		libol.Error("Network.Save %s %s", obj.Name, err)
 	}
-
 	n.SaveRoute()
-	n.SaveLink()
 	n.SaveOutput()
 	n.SaveFindHop()
 	n.SaveDnat()
@@ -225,13 +243,6 @@ func (n *Network) SaveRoute() {
 	file := n.Dir("route")
 	if err := libol.MarshalSave(n.Routes, file, true); err != nil {
 		libol.Error("Network.SaveRoute %s %s", n.Name, err)
-	}
-}
-
-func (n *Network) SaveLink() {
-	file := n.Dir("link")
-	if err := libol.MarshalSave(n.Links, file, true); err != nil {
-		libol.Error("Network.SaveLink %s %s", n.Name, err)
 	}
 }
 
@@ -316,6 +327,12 @@ func (n *Network) DelOutput(value *Output) (*Output, bool) {
 		n.Outputs = append(n.Outputs[:index], n.Outputs[index+1:]...)
 	}
 	return obj, index != -1
+}
+
+func (n *Network) ListOutput(call func(value Output)) {
+	for _, obj := range n.Outputs {
+		call(*obj)
+	}
 }
 
 func (n *Network) FindFindHop(value *FindHop) *FindHop {

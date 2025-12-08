@@ -14,7 +14,7 @@ sysctl -p /etc/sysctl.d/90-openlan.conf
 ## END
 
 ## START: prepare external dir.
-for dir in network acl findhop link output route qos dnat; do
+for dir in network acl findhop output route qos dnat; do
   [ -e "$cs_dir/$dir" ] || mkdir -p "$cs_dir/$dir"
 done
 ## END

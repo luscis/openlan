@@ -22,7 +22,7 @@ func (o *Output) Id() string {
 	return fmt.Sprintf("%s-%s-%d", o.Protocol, o.Remote, o.Segment)
 }
 
-func (o *Output) GenName() {
+func (o *Output) Correct() {
 	switch o.Protocol {
 	case "gre":
 		o.Link = fmt.Sprintf("%s%d", "gei", o.Segment)

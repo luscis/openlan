@@ -24,6 +24,10 @@ func (c *Crypt) Correct() {
 	}
 }
 
+func (c *Crypt) Short() string {
+	return c.Algo + ":" + c.Secret
+}
+
 type Cert struct {
 	Dir      string `json:"directory" yaml:"directory"`
 	CrtFile  string `json:"cert" yaml:"cert"`

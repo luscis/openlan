@@ -601,7 +601,6 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	if cfg.Bridge != nil {
 		w.toACL(cfg.Bridge.Name)
 		for _, output := range cfg.Outputs {
-			output.GenName()
 			w.addOutput(cfg.Bridge.Name, output)
 		}
 	}
@@ -1248,7 +1247,7 @@ func (w *WorkerImpl) AddOutput(data schema.Output) {
 		w.out.Info("WorkerImple.AddOutput %s already existed", output.Id())
 		return
 	}
-	output.GenName()
+	output.Correct()
 	w.addOutput(w.cfg.Bridge.Name, output)
 }
 

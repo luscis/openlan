@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
-	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -25,7 +24,6 @@ func (h Output) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["id"]
 
-	libol.Debug("Output.Get %s")
 	outputs := make([]schema.Output, 0, 1024)
 	for l := range cache.Output.List(name) {
 		if l == nil {
