@@ -221,6 +221,9 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			Username:   name,
 			Password:   pass,
 		}
+		if port.DstPort != 0 {
+			ac.Connection = fmt.Sprintf("%s:%d", port.Remote, port.DstPort)
+		}
 		if secret != "" {
 			ac.Crypt = &co.Crypt{
 				Algo:   algo,

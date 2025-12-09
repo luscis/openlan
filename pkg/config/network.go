@@ -197,12 +197,14 @@ func (n *Network) LoadOutput() {
 	for _, link := range n.Links {
 		link.Correct()
 		username := UserShort(link.Username)
+		remote, port := SplitSecret(link.Connection)
 		value := &Output{
 			Protocol: link.Protocol,
-			Remote:   link.Connection,
+			Remote:   remote,
 			Secret:   username + ":" + link.Password,
 			Crypt:    link.Crypt.Short(),
 		}
+		fmt.Sscanf(port, "%d", &value.DstPort)
 		if _, index := n.FindOutput(value); index == -1 {
 			n.Outputs = append(n.Outputs, value)
 		}
