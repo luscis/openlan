@@ -205,6 +205,13 @@ func UnixTime(value int64) string {
 	return time.Unix(value, 0).UTC().String()
 }
 
+func ToSegment(id int, sec string) string {
+	if id != 0 {
+		return fmt.Sprintf("ID:%d", id)
+	}
+	return fmt.Sprintf("USER:%s", strings.SplitN(sec, ":", 2)[0])
+}
+
 func PrettyTime(t int64) string {
 	s := ""
 	if t < 0 {
@@ -242,6 +249,7 @@ func PrettyBytes(b uint64) string {
 	g, d := split(m, 1024)
 	return fmt.Sprintf("%d.%02dG", g, d)
 }
+
 func GetIPAddr(addr string) string {
 	_addr, _ := GetHostPort(addr)
 	return _addr

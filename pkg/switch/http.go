@@ -319,6 +319,7 @@ func (h *Http) ParseFiles(w http.ResponseWriter, name string, data interface{}) 
 		"prettyTime":  libol.PrettyTime,
 		"prettyBytes": libol.PrettyBytes,
 		"getIpAddr":   libol.GetIPAddr,
+		"toSegment":   libol.ToSegment,
 	}).ParseFiles(name)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, "template.ParseFiles %s", err)

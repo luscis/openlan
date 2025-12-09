@@ -163,7 +163,7 @@
                             <td>{{ prettyTime .AliveTime }}</td>
                             <td>{{ .Network }}</td>
                             <td>{{ .Device }}</td>
-                            <td>ID:{{ .Segment }}</td>
+                            <td>{{ toSegment .Segment .Secret }}</td>
                             <td>{{ .Protocol }}</td>
                             <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
                             <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
