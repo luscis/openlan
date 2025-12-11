@@ -44,5 +44,5 @@ func (l Server) List(w http.ResponseWriter, r *http.Request) {
 			Statistic:  u.Statistics(),
 		})
 	}
-	ResponseJson(w, data)
+	ResponseYaml(w, data)
 }

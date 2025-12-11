@@ -3,6 +3,7 @@ package libol
 import (
 	"crypto/tls"
 	"fmt"
+
 	"github.com/go-ldap/ldap"
 )
 
@@ -18,8 +19,9 @@ type LDAPConfig struct {
 }
 
 type LDAPService struct {
-	Conn *ldap.Conn
-	Cfg  LDAPConfig
+	Conn  *ldap.Conn
+	Cfg   LDAPConfig
+	Error string
 }
 
 func NewLDAPService(cfg LDAPConfig) (*LDAPService, error) {
@@ -43,29 +45,37 @@ func NewLDAPService(cfg LDAPConfig) (*LDAPService, error) {
 }
 
 func (l *LDAPService) Login(userName, password string) (bool, error) {
+	cfg := l.Cfg
+	if err := l.Conn.Bind(cfg.BindUser, cfg.BindPass); err != nil {
+		Error("LDAPService.Login bind %v: %s", err)
+		return false, nil
+	}
+
 	request := ldap.NewSearchRequest(
-		l.Cfg.BaseDN,
+		cfg.BaseDN,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases,
 		0, 0, false,
-		fmt.Sprintf(l.Cfg.Filter, userName),
-		[]string{l.Cfg.Attr},
-		nil,
+		"("+fmt.Sprintf(cfg.Filter, userName)+")",
+		[]string{cfg.Attr}, nil,
 	)
-	Debug("LDAPService.Login %v", request)
 	result, err := l.Conn.Search(request)
 	if err != nil {
 		return false, err
 	}
 	if len(result.Entries) <= 0 {
-		return false, fmt.Errorf("user not found")
+		return false, fmt.Errorf("User not found")
 	}
+
 	obj := result.Entries[0]
-	Debug("LDAPService.Login %v", obj)
 	if err = l.Conn.Bind(obj.DN, password); err != nil {
 		return false, err
 	}
-	if err = l.Conn.Bind(l.Cfg.BindUser, l.Cfg.BindPass); err != nil {
-		return false, nil
-	}
 	return true, nil
+}
+
+func (l *LDAPService) State() string {
+	if l.Conn.IsClosing() {
+		return "closing"
+	}
+	return "success"
 }

@@ -14,6 +14,11 @@ type RateLimitApi interface {
 	DelRate(device string)
 }
 
+type LdapApi interface {
+	AddLdap(value schema.LDAP) error
+	DelLdap()
+}
+
 type SwitchApi interface {
 	UUID() string
 	UpTime() int64
@@ -28,6 +33,7 @@ type SwitchApi interface {
 	RateLimitApi
 	UpdateCert(data schema.VersionCert)
 	GetCert() schema.VersionCert
+	LdapApi
 }
 
 func NewWorkerSchema(s SwitchApi) schema.Worker {

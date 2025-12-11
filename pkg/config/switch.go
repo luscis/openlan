@@ -338,16 +338,20 @@ func (s *Switch) Load() error {
 }
 
 func (s *Switch) Save() {
+	s.SaveGlobal()
+	s.SaveAcl()
+	s.SaveQos()
+	s.SaveNetwork()
+}
+
+func (s *Switch) SaveGlobal() {
 	tmp := *s
 	tmp.Acl = nil
 	tmp.Qos = nil
 	tmp.Network = nil
 	if err := libol.MarshalSave(&tmp, tmp.File, true); err != nil {
-		libol.Error("Switch.Save %s", err)
+		libol.Error("Switch.SaveGlobal %s", err)
 	}
-	s.SaveAcl()
-	s.SaveQos()
-	s.SaveNetwork()
 }
 
 func (s *Switch) SaveQos() {

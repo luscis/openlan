@@ -226,38 +226,6 @@ func (v *Switch) openPorts() {
 	v.enablePort("tcp", strings.Join(TcpPorts, ","))
 }
 
-func (v *Switch) SetPass(file string) {
-	cache.User.SetFile(file)
-}
-
-func (v *Switch) LoadPass() {
-	cache.User.Load()
-}
-
-func (v *Switch) LoadLDAP() {
-	ldap := v.cfg.Ldap
-	if ldap == nil {
-		return
-	}
-	ldapCfg := libol.LDAPConfig{
-		Server:    ldap.Server,
-		BindUser:  ldap.BindDN,
-		BindPass:  ldap.BindPass,
-		BaseDN:    ldap.BaseDN,
-		Attr:      ldap.Attribute,
-		Filter:    ldap.Filter,
-		EnableTls: ldap.Tls,
-	}
-	promise := &libol.Promise{
-		First:  time.Second * 2,
-		MaxInt: time.Minute,
-		MinInt: time.Second * 10,
-	}
-	promise.Go(func() error {
-		return cache.User.SetLdap(&ldapCfg)
-	})
-}
-
 func (v *Switch) Initialize() {
 	v.lock.Lock()
 	defer v.lock.Unlock()
@@ -277,10 +245,21 @@ func (v *Switch) Initialize() {
 		w.Initialize()
 	}
 	// Load password for guest access
-	v.SetPass(v.cfg.PassFile)
-	v.LoadPass()
-
-	v.LoadLDAP()
+	cache.User.SetFile(v.cfg.PassFile)
+	cache.User.Load()
+	ldap := v.cfg.Ldap
+	if ldap != nil {
+		cfg := &libol.LDAPConfig{
+			Server:    ldap.Server,
+			BindUser:  ldap.BindDN,
+			BindPass:  ldap.BindPass,
+			BaseDN:    ldap.BaseDN,
+			Attr:      ldap.Attribute,
+			Filter:    ldap.Filter,
+			EnableTls: ldap.Tls,
+		}
+		cache.User.SetLdap(cfg)
+	}
 
 	// Enable cert verify for access
 	cert := v.cfg.Cert
@@ -706,10 +685,39 @@ func (v *Switch) AddRate(device string, mbit int) {
 func (v *Switch) DelRate(device string) {
 	out, err := libol.Exec("tc", "qdisc", "del", "dev", device, "root")
 	if err != nil {
-		v.out.Warn("Switch.AddRate: %s %s", device, out)
+		v.out.Debug("Switch.AddRate: %s %s", device, out)
 	}
 	out, err = libol.Exec("tc", "qdisc", "del", "dev", device, "ingress")
 	if err != nil {
-		v.out.Warn("Switch.AddRate: %s %s", device, out)
+		v.out.Debug("Switch.AddRate: %s %s", device, out)
 	}
+}
+
+func (v *Switch) AddLdap(value schema.LDAP) error {
+	v.cfg.Ldap = &co.LDAP{
+		Server:    value.Server,
+		BindDN:    value.BindDN,
+		BindPass:  value.BindPass,
+		BaseDN:    value.BaseDN,
+		Filter:    value.Filter,
+		Attribute: value.Attribute,
+		Tls:       value.EnableTls,
+	}
+	ldap := v.cfg.Ldap
+	cfg := &libol.LDAPConfig{
+		Server:    ldap.Server,
+		BindUser:  ldap.BindDN,
+		BindPass:  ldap.BindPass,
+		BaseDN:    ldap.BaseDN,
+		Attr:      ldap.Attribute,
+		Filter:    ldap.Filter,
+		EnableTls: ldap.Tls,
+	}
+	cache.User.SetLdap(cfg)
+	return nil
+}
+
+func (v *Switch) DelLdap() {
+	v.cfg.Ldap = nil
+	cache.User.ClearLdap()
 }

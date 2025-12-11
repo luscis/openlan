@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
@@ -165,5 +166,51 @@ func (l Log) Add(w http.ResponseWriter, r *http.Request) {
 
 	libol.SetLevel(log.Level)
 
+	ResponseMsg(w, 0, "")
+}
+
+type Ldap struct {
+	cs SwitchApi
+}
+
+func (l Ldap) Router(router *mux.Router) {
+	router.HandleFunc("/api/ldap", l.List).Methods("GET")
+	router.HandleFunc("/api/ldap", l.Add).Methods("POST")
+	router.HandleFunc("/api/ldap", l.Del).Methods("DELETE")
+}
+
+func (l Ldap) List(w http.ResponseWriter, r *http.Request) {
+	config := l.cs.Config()
+	if config != nil && config.Ldap != nil {
+		cfg := config.Ldap
+		value := schema.LDAP{
+			BaseDN:    cfg.BaseDN,
+			Attribute: cfg.Attribute,
+			BindDN:    cfg.BindDN,
+			BindPass:  cfg.BindPass,
+			Server:    cfg.Server,
+			EnableTls: cfg.Tls,
+			Filter:    cfg.Filter,
+			State:     cache.User.LdapState(),
+		}
+		ResponseJson(w, value)
+		return
+	}
+	ResponseJson(w, nil)
+}
+
+func (l Ldap) Add(w http.ResponseWriter, r *http.Request) {
+	value := schema.LDAP{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	l.cs.AddLdap(value)
+	ResponseMsg(w, 0, "")
+}
+
+func (l Ldap) Del(w http.ResponseWriter, r *http.Request) {
+	l.cs.DelLdap()
 	ResponseMsg(w, 0, "")
 }

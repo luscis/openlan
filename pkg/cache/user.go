@@ -141,28 +141,29 @@ func (w *user) List() <-chan *models.User {
 }
 
 func (w *user) CheckLdap(obj *models.User) *models.User {
-	svc := w.GetLdap()
-	if svc == nil {
+	ldap := w.GetLdap()
+	if ldap == nil {
 		return nil
 	}
+
 	u := w.Get(obj.Id())
 	libol.Debug("CheckLdap %s", u)
-	if u != nil && u.Role != "ldap" {
-		return nil
+	if u == nil || u.Role == "ldap" {
+		if ok, err := ldap.Login(obj.Id(), obj.Password); !ok {
+			libol.Warn("CheckLdap %s", err)
+			return nil
+		}
+		user := &models.User{
+			Name:     obj.Id(),
+			Password: obj.Password,
+			Role:     "ldap",
+			Alias:    obj.Alias,
+		}
+		user.Update()
+		w.Add(user)
+		return user
 	}
-	if ok, err := svc.Login(obj.Id(), obj.Password); !ok {
-		libol.Warn("CheckLdap %s", err)
-		return nil
-	}
-	user := &models.User{
-		Name:     obj.Id(),
-		Password: obj.Password,
-		Role:     "ldap",
-		Alias:    obj.Alias,
-	}
-	user.Update()
-	w.Add(user)
-	return user
+	return nil
 }
 
 func (w *user) Timeout(user *models.User) bool {
@@ -217,29 +218,52 @@ func (w *user) GetLdap() *libol.LDAPService {
 	if w.LdapCfg == nil {
 		return nil
 	}
-	if w.LdapSvc == nil || w.LdapSvc.Conn.IsClosing() {
-		if l, err := libol.NewLDAPService(*w.LdapCfg); err != nil {
-			libol.Warn("user.GetLdap %s", err)
-			w.LdapSvc = nil
-		} else {
-			w.LdapSvc = l
-		}
-	}
 	return w.LdapSvc
 }
 
 func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
 	w.Lock.Lock()
 	defer w.Lock.Unlock()
-	if l, err := libol.NewLDAPService(*cfg); err != nil {
-		libol.Warn("user.SetLdap %s", err)
-		return err
-	} else {
-		w.LdapCfg = cfg
-		w.LdapSvc = l
-		libol.Info("user.SetLdap %s", w.LdapCfg.Server)
-	}
+
+	w.LdapCfg = cfg
+	libol.Info("user.SetLdap %s", w.LdapCfg.Server)
+
+	libol.Go(func() {
+		for {
+			w.Lock.Lock()
+			cfg := w.LdapCfg
+			if cfg == nil {
+				w.LdapSvc = nil
+				w.Lock.Unlock()
+				return
+			} else {
+				w.Lock.Unlock()
+			}
+			if w.LdapSvc == nil || w.LdapSvc.Conn.IsClosing() {
+				if conn, err := libol.NewLDAPService(*cfg); err != nil {
+					libol.Warn("user.SetLdap %s", err)
+				} else {
+					w.LdapSvc = conn
+				}
+			}
+			time.Sleep(5 * time.Second)
+		}
+	})
 	return nil
+}
+
+func (w *user) ClearLdap() {
+	w.Lock.Lock()
+	defer w.Lock.Unlock()
+	w.LdapCfg = nil
+}
+
+func (w *user) LdapState() string {
+	ldap := w.GetLdap()
+	if ldap == nil {
+		return "unknown"
+	}
+	return ldap.State()
 }
 
 func (w *user) SetCert(cfg *libol.CertConfig) {

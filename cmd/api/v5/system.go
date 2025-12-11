@@ -38,8 +38,9 @@ func (r Prefix) List(c *cli.Context) error {
 
 func (r Prefix) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "prefix",
-		Usage: "System prefix",
+		Name:   "prefix",
+		Usage:  "System prefix",
+		Action: r.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
@@ -138,8 +139,9 @@ func (u Device) List(c *cli.Context) error {
 
 func (u Device) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "device",
-		Usage: "linux network device",
+		Name:   "device",
+		Usage:  "linux network device",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
@@ -275,12 +277,6 @@ func (u RateLimit) Commands(app *api.App) {
 		Usage: "Rate Limit",
 		Subcommands: []*cli.Command{
 			{
-				Name:    "list",
-				Usage:   "Display all rate limits",
-				Aliases: []string{"ls"},
-				Action:  u.List,
-			},
-			{
 				Name:  "add",
 				Usage: "Add a rate limit",
 				Flags: []cli.Flag{
@@ -312,7 +308,6 @@ func (u Server) Url(prefix, name string) string {
 
 func (u Server) List(c *cli.Context) error {
 	url := u.Url(c.String("url"), "")
-	url += "?format=" + c.String("format")
 	clt := u.NewHttp(c.String("token"))
 	if data, err := clt.GetBody(url); err == nil {
 		fmt.Println(string(data))
@@ -324,14 +319,97 @@ func (u Server) List(c *cli.Context) error {
 
 func (u Server) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "server",
-		Usage: "Socket server status",
+		Name:   "server",
+		Usage:  "Socket server status",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
 				Usage:   "Display server status",
 				Aliases: []string{"ls"},
 				Action:  u.List,
+			},
+		},
+	})
+}
+
+type Ldap struct {
+	Cmd
+}
+
+func (u Ldap) Url(prefix string) string {
+	return prefix + "/api/ldap"
+}
+
+func (u Ldap) List(c *cli.Context) error {
+	url := u.Url(c.String("url"))
+	clt := u.NewHttp(c.String("token"))
+	value := &schema.LDAP{}
+	if err := clt.GetJSON(url, &value); err == nil {
+		u.Out(value, "", "")
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (u Ldap) Add(c *cli.Context) error {
+	value := &schema.LDAP{
+		Server:    c.String("server"),
+		BindDN:    c.String("bindDN"),
+		BindPass:  c.String("bindPass"),
+		BaseDN:    c.String("baseDN"),
+		Attribute: c.String("attribute"),
+		Filter:    c.String("filter"),
+		EnableTls: c.Bool("isTLS"),
+	}
+	url := u.Url(c.String("url"))
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u Ldap) Remove(c *cli.Context) error {
+	url := u.Url(c.String("url"))
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, "", nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u Ldap) Commands(app *api.App) {
+	app.Command(&cli.Command{
+		Name:   "ldap",
+		Usage:  "Configure LDAP",
+		Action: u.List,
+		Subcommands: []*cli.Command{
+			{
+				Name:    "list",
+				Usage:   "Display ldap",
+				Aliases: []string{"ls"},
+				Action:  u.List,
+			},
+			{
+				Name:  "add",
+				Usage: "Add ladp server",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "server", Required: true},
+					&cli.StringFlag{Name: "bindDN", Required: true},
+					&cli.StringFlag{Name: "bindPass", Required: true},
+					&cli.StringFlag{Name: "baseDN", Required: true},
+					&cli.StringFlag{Name: "attribute", Required: true},
+					&cli.StringFlag{Name: "filter", Required: true},
+					&cli.BoolFlag{Name: "isTLS", Value: false},
+				},
+				Action: u.Add,
+			},
+			{
+				Name:   "remove",
+				Usage:  "Remove ladp server",
+				Action: u.Remove,
 			},
 		},
 	})
