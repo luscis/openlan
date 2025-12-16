@@ -39,5 +39,5 @@ func (q *Queue) Correct() {
 	if q.VirWrt == 0 {
 		q.VirWrt = QdVWr
 	}
-	libol.Debug("Queue.Correct %v", q)
+	libol.Info("Queue.Correct %v", q)
 }

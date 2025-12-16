@@ -49,6 +49,7 @@ type Network struct {
 	Namespace string              `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	FindHop   map[string]*FindHop `json:"findhop,omitempty" yaml:"findhop,omitempty"`
 	Dnat      []*Dnat             `json:"dnat,omitempty" yaml:"dnat,omitempty"`
+	AddrPool  string              `json:"-" yaml:"-"`
 }
 
 func (n *Network) NewSpecifies() any {
@@ -86,7 +87,7 @@ func (n *Network) Init() {
 	}
 }
 
-func (n *Network) Correct(sw *Switch) {
+func (n *Network) Correct() {
 	ipAddr := ""
 	ipMask := ""
 
@@ -133,7 +134,7 @@ func (n *Network) Correct(sw *Switch) {
 
 	CorrectRoutes(n.Routes, ipAddr)
 	if n.OpenVPN != nil {
-		n.OpenVPN.Correct(sw.AddrPool, n.Name)
+		n.OpenVPN.Correct(n.AddrPool, n.Name)
 	}
 
 	for key, value := range n.FindHop {

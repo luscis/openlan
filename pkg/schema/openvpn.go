@@ -15,3 +15,10 @@ type VPNClient struct {
 	Address   string `json:"address"`
 	System    string `json:"system"`
 }
+
+type OpenVPN struct {
+	Listen   string   `json:"listen"`
+	Protocol string   `json:"protocol,omitempty"`
+	Subnet   string   `json:"subnet"`
+	Push     []string `json:"push,omitempty"`
+}

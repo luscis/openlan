@@ -27,11 +27,11 @@ type SwitchApi interface {
 	Server() libol.SocketServer
 	Reload()
 	Save()
-	AddNetwork(network string)
-	DelNetwork(network string)
-	SaveNetwork(network string)
+	AddNetwork(string)
+	DelNetwork(string)
+	SaveNetwork(string)
 	RateLimitApi
-	UpdateCert(data schema.VersionCert)
+	UpdateCert(schema.VersionCert)
 	GetCert() schema.VersionCert
 	LdapApi
 }
@@ -72,6 +72,8 @@ type RouteApi interface {
 }
 
 type VPNApi interface {
+	AddVPN(schema.OpenVPN) error
+	DelVPN()
 	StartVPN()
 	AddVPNClient(name, local string) error
 	DelVPNClient(name string) error
@@ -138,6 +140,8 @@ type NetworkApi interface {
 	DisableZTrust()
 	SNATApi
 	DNATApi
+	AddAddress(string)
+	DelAddress()
 }
 
 type IPSecApi interface {

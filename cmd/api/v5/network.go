@@ -144,6 +144,7 @@ func (u Network) Commands(app *api.App) {
 				Aliases: []string{"sa"},
 				Action:  u.Save,
 			},
+			Address{}.Commands(),
 			Access{}.Commands(),
 			ClientQoS{}.Commands(),
 			VPNClient{}.Commands(),
@@ -155,6 +156,62 @@ func (u Network) Commands(app *api.App) {
 			DNAT{}.Commands(),
 		},
 	})
+}
+
+type Address struct {
+	Cmd
+}
+
+func (s Address) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/address"
+}
+
+func (s Address) Add(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+	value := schema.IPAddress{
+		Address: c.String("address"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, &value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s Address) Remove(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s Address) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "address",
+		Usage: "Configure Address",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add address",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "address", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:   "remove",
+				Usage:  "Remove address",
+				Action: s.Remove,
+			},
+		},
+	}
 }
 
 type SNAT struct {

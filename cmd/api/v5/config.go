@@ -65,8 +65,9 @@ func (u Config) Save(c *cli.Context) error {
 
 func (u Config) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "config",
-		Usage: "Switch configuration",
+		Name:   "config",
+		Usage:  "Switch configuration",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

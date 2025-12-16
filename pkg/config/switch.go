@@ -21,38 +21,40 @@ type Perf struct {
 
 func (p *Perf) Correct() {
 	if p.Access == 0 {
-		p.Access = 64
+		p.Access = 128
 	}
 	if p.Neighbor == 0 {
-		p.Neighbor = 64
+		p.Neighbor = 128
 	}
 	if p.OnLine == 0 {
-		p.OnLine = 64
+		p.OnLine = 128
 	}
 	if p.Link == 0 {
-		p.Link = 64
+		p.Link = 128
 	}
 	if p.User == 0 {
-		p.User = 1024
+		p.User = 128 * 8
 	}
 	if p.Esp == 0 {
-		p.Esp = 64
+		p.Esp = 128
 	}
 	if p.State == 0 {
-		p.State = 64 * 4
+		p.State = 128 * 2
 	}
 	if p.Policy == 0 {
-		p.Policy = 64 * 8
+		p.Policy = 128 * 4
 	}
 	if p.VxLAN == 0 {
-		p.VxLAN = 64
+		p.VxLAN = 128
 	}
+	libol.Info("Perf.Correct %v", p)
 }
 
 type Switch struct {
 	File      string              `json:"-" yaml:"-"`
 	Alias     string              `json:"alias" yaml:"alias"`
-	Perf      Perf                `json:"limit,omitempty" yaml:"limit,omitempty"`
+	Queue     Queue               `json:"-" yaml:"-"`
+	Perf      Perf                `json:"-" yaml:"-"`
 	Protocol  string              `json:"protocol" yaml:"protocol"` // tcp, tls, udp, kcp, ws and wss.
 	Listen    string              `json:"listen" yaml:"listen"`
 	Timeout   int                 `json:"timeout" yaml:"timeout"`
@@ -64,8 +66,7 @@ type Switch struct {
 	Acl       map[string]*ACL     `json:"acl,omitempty" yaml:"acl,omitempty"`
 	Qos       map[string]*Qos     `json:"qos,omitempty" yaml:"qos,omitempty"`
 	FireWall  []FlowRule          `json:"firewall,omitempty" yaml:"firewall,omitempty"`
-	Queue     Queue               `json:"queue" yaml:"queue"`
-	PassFile  string              `json:"password" yaml:"password"`
+	PassFile  string              `json:"-" yaml:"-"`
 	Ldap      *LDAP               `json:"ldap,omitempty" yaml:"ldap,omitempty"`
 	AddrPool  string              `json:"pool,omitempty" yaml:"pool,omitempty"`
 	ConfDir   string              `json:"-" yaml:"-"`
@@ -236,8 +237,9 @@ func (s *Switch) CorrectNetwork(obj *Network, format string) {
 	for _, link := range obj.Links {
 		link.Correct()
 	}
-	obj.Correct(s)
 	obj.Alias = s.Alias
+	obj.AddrPool = s.AddrPool
+	obj.Correct()
 	if obj.File == "" {
 		obj.File = s.Dir("network", obj.Name)
 	}

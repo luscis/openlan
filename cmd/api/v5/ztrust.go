@@ -124,8 +124,9 @@ func (u Guest) List(c *cli.Context) error {
 
 func (u Guest) Commands(user string) *cli.Command {
 	return &cli.Command{
-		Name:  "guest",
-		Usage: "zTrust Guest",
+		Name:   "guest",
+		Usage:  "zTrust Guest",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

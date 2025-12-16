@@ -82,8 +82,9 @@ func (r FindHop) List(c *cli.Context) error {
 
 func (r FindHop) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "findhop",
-		Usage: "FindHop configuration",
+		Name:   "findhop",
+		Usage:  "FindHop configuration",
+		Action: r.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

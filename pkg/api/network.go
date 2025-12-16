@@ -22,8 +22,12 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}", h.Get).Methods("GET")
 	router.HandleFunc("/api/network/{id}", h.Delete).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}", h.Save).Methods("PUT")
+	router.HandleFunc("/api/network/{id}/address", h.AddAddr).Methods("POST")
+	router.HandleFunc("/api/network/{id}/address", h.DelAddr).Methods("DELETE")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/ovpn", h.Profile).Methods("GET")
+	router.HandleFunc("/api/network/{id}/openvpn", h.AddVPN).Methods("POST")
+	router.HandleFunc("/api/network/{id}/openvpn", h.DelVPN).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.StartVPN).Methods("POST")
 }
 
@@ -89,6 +93,35 @@ func (h Network) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+func (h Network) AddAddr(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	value := schema.IPAddress{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	worker.AddAddress(value.Address)
+	ResponseJson(w, true)
+}
+
+func (h Network) DelAddr(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	worker.DelAddress()
+	ResponseJson(w, true)
+}
+
 func (h Network) Save(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	network := &schema.Network{}
@@ -116,10 +149,38 @@ func (h Network) Profile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h Network) AddVPN(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	value := schema.OpenVPN{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	worker.AddVPN(value)
+	ResponseJson(w, true)
+}
+
+func (h Network) DelVPN(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	worker.DelVPN()
+	ResponseJson(w, true)
+}
+
 func (h Network) StartVPN(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-
 	worker := Call.GetWorker(id)
 	if worker == nil {
 		http.Error(w, "Network not found", http.StatusBadRequest)

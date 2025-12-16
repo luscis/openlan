@@ -3,11 +3,11 @@ package config
 type Bridge struct {
 	Network  string `json:"-" yaml:"-"`
 	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
-	IPMtu    int    `json:"mtu,omitempty" yaml:"mtu,omitempty"`
+	IPMtu    int    `json:"-" yaml:"-"`
 	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
 	Provider string `json:"-" yaml:"-"`
-	Stp      string `json:"stp,omitempty" yaml:"stp,omitempty"`
-	Delay    int    `json:"delay,omitempty" yaml:"delay,omitempty"`
+	Stp      string `json:"-" yaml:"-"`
+	Delay    int    `json:"-" yaml:"-"`
 	Mss      int    `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
 }
 

@@ -191,6 +191,7 @@ type FireWallChain struct {
 	parent string
 	rules  IPRules
 	table  string
+	ready  bool
 }
 
 func NewFireWallChain(name, table, parent string) *FireWallChain {
@@ -198,6 +199,7 @@ func NewFireWallChain(name, table, parent string) *FireWallChain {
 		name:   name,
 		table:  table,
 		parent: parent,
+		ready:  false,
 	}
 }
 
@@ -226,7 +228,21 @@ func (ch *FireWallChain) Jump() IPRule {
 	}
 }
 
+func (ch *FireWallChain) Prepare() {
+	ch.lock.Lock()
+	defer ch.lock.Unlock()
+	if ch.ready {
+		return
+	}
+	c := ch.Chain()
+	if _, err := c.Opr("-N"); err != nil {
+		libol.Error("FireWallChain.Prepare %s", err)
+	}
+	ch.ready = true
+}
+
 func (ch *FireWallChain) AddRuleX(rule IPRule) error {
+	ch.Prepare()
 	chain := ch.Chain()
 	rule.Table = chain.Table
 	rule.Chain = chain.Name
@@ -258,14 +274,9 @@ func (ch *FireWallChain) AddRule(rule IPRule) {
 }
 
 func (ch *FireWallChain) Install() {
+	ch.Prepare()
 	ch.lock.Lock()
 	defer ch.lock.Unlock()
-
-	c := ch.Chain()
-	if _, err := c.Opr("-N"); err != nil {
-		libol.Error("FireWallChain.new %s", err)
-	}
-
 	for _, r := range ch.rules {
 		order := r.Order
 		if order == "" {
@@ -275,11 +286,10 @@ func (ch *FireWallChain) Install() {
 			libol.Error("FireWallChain.install %s", err)
 		}
 	}
-
 	j := ch.Jump()
 	if j.Chain != "" {
 		if _, err := j.Opr(j.Order); err != nil {
-			libol.Error("FireWallChain.new %s", err)
+			libol.Error("FireWallChain.Prepare %s", err)
 		}
 	}
 }
@@ -288,21 +298,16 @@ func (ch *FireWallChain) Cancel() {
 	ch.lock.Lock()
 	defer ch.lock.Unlock()
 
+	c := ch.Chain()
+	if _, err := c.Opr("-X"); err != nil {
+		libol.Error("FireWallChain.free %s", err)
+	}
+
 	j := ch.Jump()
 	if j.Chain != "" {
 		if _, err := j.Opr("-D"); err != nil {
 			libol.Error("FireWallChain.cancel %s", err)
 		}
-	}
-	for _, r := range ch.rules {
-		if _, err := r.Opr("-D"); err != nil {
-			libol.Warn("FireWall.cancel %s", err)
-		}
-	}
-
-	c := ch.Chain()
-	if _, err := c.Opr("-X"); err != nil {
-		libol.Error("FireWallChain.free %s", err)
 	}
 }
 

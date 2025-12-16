@@ -75,3 +75,7 @@ type RouterTunnel struct {
 	Remote   string `json:"remote"`
 	Address  string `json:"address"`
 }
+
+type IPAddress struct {
+	Address string `json:"address"`
+}

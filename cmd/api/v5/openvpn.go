@@ -1,6 +1,8 @@
 package v5
 
 import (
+	"strings"
+
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -104,19 +106,50 @@ type OpenVPN struct {
 	Cmd
 }
 
-func (o OpenVPN) Url(prefix, name string) string {
-	return prefix + "/api/network/" + name + "/openvpn/restart"
+func (o OpenVPN) Url(prefix, name, action string) string {
+	if action != "" {
+		return prefix + "/api/network/" + name + "/openvpn/" + action
+	}
+	return prefix + "/api/network/" + name + "/openvpn"
+}
+
+func (o OpenVPN) Add(c *cli.Context) error {
+	network := c.String("name")
+	url := o.Url(c.String("url"), network, "")
+
+	data := schema.OpenVPN{
+		Listen:   c.String("listen"),
+		Protocol: c.String("protocol"),
+		Subnet:   c.String("subnet"),
+	}
+	dns := strings.Split(c.String("dns"), ",")
+	for _, v := range dns {
+		data.Push = append(data.Push, "dhcp-option DNS "+v)
+	}
+	clt := o.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, &data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o OpenVPN) Remove(c *cli.Context) error {
+	network := c.String("name")
+	url := o.Url(c.String("url"), network, "")
+	clt := o.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o OpenVPN) Restart(c *cli.Context) error {
 	network := c.String("name")
-	url := o.Url(c.String("url"), network)
-
+	url := o.Url(c.String("url"), network, "restart")
 	clt := o.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, nil, nil); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -126,8 +159,24 @@ func (o OpenVPN) Commands() *cli.Command {
 		Usage: "Control OpenVPN",
 		Subcommands: []*cli.Command{
 			{
+				Name:  "add",
+				Usage: "Add openvpn",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "protocol", Value: "tcp"},
+					&cli.StringFlag{Name: "listen", Required: true},
+					&cli.StringFlag{Name: "subnet"},
+					&cli.StringFlag{Name: "dns"},
+				},
+				Action: o.Add,
+			},
+			{
+				Name:   "remove",
+				Usage:  "Remove openvpn",
+				Action: o.Remove,
+			},
+			{
 				Name:   "restart",
-				Usage:  "restart openvpn for the network",
+				Usage:  "Restart openvpn",
 				Action: o.Restart,
 			},
 		},

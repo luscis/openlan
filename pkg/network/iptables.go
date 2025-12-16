@@ -239,19 +239,19 @@ type IPChain struct {
 type IPChains []IPChain
 
 func (ch IPChain) Opr(opr string) ([]byte, error) {
-	libol.Debug("IPChainOpr: %s, %v", opr, ch)
 	table := iptables.Table(ch.Table)
 	name := ch.Name
 	switch runtime.GOOS {
 	case "linux":
-		if opr == "-N" {
+		switch opr {
+		case "-N":
 			if iptables.ExistChain(name, table) {
 				return nil, nil
 			}
 			if _, err := iptables.NewChain(name, table, true); err != nil {
 				return nil, err
 			}
-		} else if opr == "-X" {
+		case "-X":
 			if err := iptables.RemoveExistingChain(name, table); err != nil {
 				return nil, err
 			}

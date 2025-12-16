@@ -49,7 +49,7 @@ func LogFile(file string) string {
 
 type Http struct {
 	Listen string `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Public string `json:"public,omitempty" yaml:"public,omitempty"`
+	Public string `json:"-" yaml:"-"`
 }
 
 func (h *Http) Correct() {
