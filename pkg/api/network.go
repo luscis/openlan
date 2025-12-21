@@ -198,6 +198,7 @@ type SNAT struct {
 func (h SNAT) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/snat", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/{id}/snat", h.Delete).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/snat", h.Put).Methods("PUT")
 }
 
 func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
@@ -205,12 +206,11 @@ func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.EnableSnat()
+		obj.SetSnat("enable")
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
 	}
-
 	ResponseJson(w, "success")
 }
 
@@ -219,12 +219,24 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.DisableSnat()
+		obj.SetSnat("disable")
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
 	}
+	ResponseJson(w, "success")
+}
 
+func (h SNAT) Put(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		obj.SetSnat("openvpn")
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
 	ResponseJson(w, "success")
 }
 

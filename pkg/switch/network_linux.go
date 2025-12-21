@@ -142,6 +142,29 @@ func (w *WorkerImpl) Initialize() {
 	w.toVPN()
 }
 
+func (w *WorkerImpl) toSnat() {
+	w.snat.Prepare()
+	w.fire.Nat.Post.AddRuleX(cn.IPRule{
+		Jump:    w.snat.Chain().Name,
+		Comment: "Goto SNAT",
+	})
+}
+
+func (w *WorkerImpl) doSnat() {
+	w.snat.Flush()
+	cfg, vpn := w.GetCfgs()
+	if cfg.Snat == "disable" {
+		return
+	}
+	if cfg.Snat == "enable" {
+		w.toMasq_i("", w.setR.Name, "To Masq")
+	}
+	if vpn != nil && (cfg.Snat == "openvpn" || cfg.Snat == "enable") {
+		w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
+		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
+	}
+}
+
 func (w *WorkerImpl) AddPhysical(bridge string, output string) {
 	br := cn.NewBrCtl(bridge, 0)
 	if err := br.AddPort(output); err != nil {
@@ -281,7 +304,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 	w.AddPhysical(bridge, port.Link)
 }
 
-func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
+func (w *WorkerImpl) toRoute(rt co.PrefixRoute) {
 	// install routes
 	ifAddr := w.IfAddr()
 
@@ -312,31 +335,31 @@ func (w *WorkerImpl) loadRoute(rt co.PrefixRoute) {
 		w.findhop.LoadHop(rt.FindHop, &nlr)
 		return
 	}
-	w.out.Info("WorkerImpl.loadRoute: %s", nlr.String())
+	w.out.Info("WorkerImpl.toRoute: %s", nlr.String())
 
 	rt_c := rt
 	promise := libol.NewPromise()
 	promise.Go(func() error {
 		if err := nl.RouteReplace(&nlr); err != nil {
-			w.out.Warn("WorkerImpl.loadRoute: %v %s", nlr, err)
+			w.out.Warn("WorkerImpl.toRoute: %v %s", nlr, err)
 			return err
 		}
-		w.out.Info("WorkerImpl.loadRoute: %v success", rt_c.String())
+		w.out.Info("WorkerImpl.toRoute: %v success", rt_c.String())
 		return nil
 	})
 }
 
-func (w *WorkerImpl) loadRoutes() {
+func (w *WorkerImpl) toRoutes() {
 	// install routes
 	cfg := w.cfg
-	w.out.Info("WorkerImpl.LoadRoute: %v", cfg.Routes)
+	w.out.Info("WorkerImpl.toRoute: %v", cfg.Routes)
 
 	for _, rt := range cfg.Routes {
-		w.loadRoute(rt)
+		w.toRoute(rt)
 	}
 }
 
-func (w *WorkerImpl) loadVRF() {
+func (w *WorkerImpl) toVRF() {
 	if w.vrf == nil {
 		return
 	}
@@ -406,35 +429,12 @@ func (w *WorkerImpl) SetMss(mss int) {
 	}
 }
 
-func (w *WorkerImpl) doSnat() {
-	w.out.Info("WorkerImpl: doSnat")
-	w.fire.Nat.Post.AddRuleX(cn.IPRule{
-		Jump:    w.snat.Chain().Name,
-		Comment: "Goto SNAT",
-	})
-}
-
-func (w *WorkerImpl) undoSnat() {
-	w.out.Info("WorkerImpl: undoSnat")
-	w.fire.Nat.Post.DelRuleX(cn.IPRule{
-		Jump:    w.snat.Chain().Name,
-		Comment: "Goto SNAT",
-	})
-}
-
-func (w *WorkerImpl) EnableSnat() {
+func (w *WorkerImpl) SetSnat(value string) {
 	cfg, _ := w.GetCfgs()
-	if cfg.Snat == "disable" {
-		cfg.Snat = "enable"
+	switch value {
+	case "enable", "disable", "openvpn":
+		cfg.Snat = value
 		w.doSnat()
-	}
-}
-
-func (w *WorkerImpl) DisableSnat() {
-	cfg, _ := w.GetCfgs()
-	if cfg.Snat != "disable" {
-		cfg.Snat = "disable"
-		w.undoSnat()
 	}
 }
 
@@ -525,7 +525,7 @@ func (w *WorkerImpl) ListDnat(call func(data schema.DNAT)) {
 	})
 }
 
-func (w *WorkerImpl) doTrust() {
+func (w *WorkerImpl) toTrust() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.Pre.AddRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -534,7 +534,7 @@ func (w *WorkerImpl) doTrust() {
 	})
 }
 
-func (w *WorkerImpl) undoTrust() {
+func (w *WorkerImpl) leftTrust() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -547,7 +547,7 @@ func (w *WorkerImpl) EnableZTrust() {
 	cfg, _ := w.GetCfgs()
 	if cfg.ZTrust != "enable" {
 		cfg.ZTrust = "enable"
-		w.doTrust()
+		w.toTrust()
 	}
 }
 
@@ -555,7 +555,7 @@ func (w *WorkerImpl) DisableZTrust() {
 	cfg, _ := w.GetCfgs()
 	if cfg.ZTrust == "enable" {
 		cfg.ZTrust = "disable"
-		w.undoTrust()
+		w.leftTrust()
 	}
 }
 
@@ -581,7 +581,7 @@ func (w *WorkerImpl) setVPN2VRF() {
 			Table:     w.table,
 			LinkIndex: attr.Index,
 		}
-		w.out.Debug("WorkerImpl.LoadRoute: %s", rt.String())
+		w.out.Debug("WorkerImpl.toRoute: %s", rt.String())
 		if err := nl.RouteAdd(rt); err != nil {
 			w.out.Warn("Route add: %s", err)
 			return err
@@ -591,7 +591,7 @@ func (w *WorkerImpl) setVPN2VRF() {
 	})
 }
 
-func (w *WorkerImpl) doVPNQos() {
+func (w *WorkerImpl) toVPNQoS() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.In.AddRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -600,7 +600,7 @@ func (w *WorkerImpl) doVPNQos() {
 	})
 }
 
-func (w *WorkerImpl) undoVPNQos() {
+func (w *WorkerImpl) leftVPNQoS() {
 	_, vpn := w.GetCfgs()
 	w.fire.Mangle.In.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
@@ -614,8 +614,8 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 
 	w.out.Info("WorkerImpl.Start")
 
-	w.loadVRF()
-	w.loadRoutes()
+	w.toVRF()
+	w.toRoutes()
 
 	w.acl.Start()
 
@@ -631,7 +631,7 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 		if !(w.vrf == nil) {
 			w.setVPN2VRF()
 		}
-		w.doVPNQos()
+		w.toVPNQoS()
 		w.qos.Start()
 		w.ztrust.Start()
 	}
@@ -641,9 +641,9 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	w.dnat.Install()
 
 	w.doDnat()
-	if cfg.Snat != "disable" {
-		w.doSnat()
-	}
+	w.toSnat()
+	w.doSnat()
+
 	if cfg.Bridge != nil {
 		// forward to remote
 		w.doMss()
@@ -656,7 +656,7 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	}
 	if !(w.vpn == nil) {
 		if cfg.ZTrust == "enable" {
-			w.doTrust()
+			w.toTrust()
 		}
 	}
 }
@@ -683,7 +683,7 @@ func (w *WorkerImpl) delOutput(bridge string, port *co.Output) {
 	}
 }
 
-func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
+func (w *WorkerImpl) leftRoute(rt co.PrefixRoute) {
 	dst, err := libol.ParseNet(rt.Prefix)
 	if err != nil {
 		return
@@ -701,18 +701,18 @@ func (w *WorkerImpl) unloadRoute(rt co.PrefixRoute) {
 		w.findhop.UnloadHop(rt.FindHop, &nlr)
 		return
 	}
-	w.out.Debug("WorkerImpl.unloadRoute: %s", nlr.String())
+	w.out.Debug("WorkerImpl.leftRoute: %s", nlr.String())
 	if err := nl.RouteDel(&nlr); err != nil {
-		w.out.Warn("WorkerImpl.unloadRoute: %s", err)
+		w.out.Warn("WorkerImpl.leftRoute: %s", err)
 		return
 	}
-	w.out.Info("WorkerImpl.unloadRoute: %v", rt.String())
+	w.out.Info("WorkerImpl.leftRoute: %v", rt.String())
 }
 
-func (w *WorkerImpl) unloadRoutes() {
+func (w *WorkerImpl) leftRoutes() {
 	cfg := w.cfg
 	for _, rt := range cfg.Routes {
-		w.unloadRoute(rt)
+		w.leftRoute(rt)
 	}
 }
 
@@ -736,24 +736,26 @@ func (w *WorkerImpl) AddVPN(value schema.OpenVPN) error {
 	if !(w.vrf == nil) {
 		w.setVPN2VRF()
 	}
-	w.doVPNQos()
+	w.toVPNQoS()
 	if w.cfg.ZTrust == "enable" {
-		w.doTrust()
+		w.toTrust()
 	}
+	w.doSnat()
 	return nil
 }
 
 func (w *WorkerImpl) DelVPN() {
 	if w.vpn != nil {
 		w.leftVPN()
-		w.undoVPNQos()
+		w.leftVPNQoS()
 		w.vpn.Stop()
 		w.vpn.checkAlreadyClose(w.vpn.Pid(true))
 		if w.cfg.ZTrust == "enable" {
-			w.undoTrust()
+			w.leftTrust()
 		}
 		w.vpn = nil
 		w.cfg.OpenVPN = nil
+		w.doSnat()
 	}
 }
 
@@ -802,17 +804,13 @@ func (w *WorkerImpl) Stop() {
 	w.out.Info("WorkerImpl.Stop")
 
 	cfg, _ := w.GetCfgs()
-	if cfg.Snat != "disable" {
-		w.undoSnat()
-	}
-
 	w.snat.Cancel()
 	w.dnat.Cancel()
 	w.fire.Stop()
 	w.findhop.Stop()
 	w.acl.Stop()
 
-	w.unloadRoutes()
+	w.leftRoutes()
 
 	if !(w.vpn == nil) {
 		w.ztrust.Stop()
@@ -1006,6 +1004,17 @@ func (w *WorkerImpl) toMasq_i(input, pfxSet, comment string) {
 
 }
 
+func (w *WorkerImpl) leftMasq_i(input, pfxSet, comment string) {
+	// Enable masquerade from input to prefix.
+	w.snat.DelRuleX(cn.IPRule{
+		Mark:    uint32(w.table),
+		Input:   input,
+		DestSet: pfxSet,
+		Jump:    cn.CMasq,
+		Comment: comment,
+	})
+}
+
 func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
 	// Enable masquerade from source to prefix.
 	w.snat.AddRuleX(cn.IPRule{
@@ -1015,7 +1024,17 @@ func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
+}
 
+func (w *WorkerImpl) leftMasq_s(srcSet, prefix, comment string) {
+	// Enable masquerade from source to prefix.
+	w.snat.AddRuleX(cn.IPRule{
+		Mark:    uint32(w.table),
+		SrcSet:  srcSet,
+		Dest:    prefix,
+		Jump:    cn.CMasq,
+		Comment: comment,
+	})
 }
 
 func (w *WorkerImpl) toRelated(output, comment string) {
@@ -1183,7 +1202,6 @@ func (w *WorkerImpl) toVPN() {
 		} else {
 			w.toForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
 		}
-		w.toMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 	}
 }
 
@@ -1209,7 +1227,6 @@ func (w *WorkerImpl) leftVPN() {
 		} else {
 			w.leftForward_r(devName, vpn.Subnet, w.setV.Name, "From VPN")
 		}
-		w.leftMasq_r(vpn.Subnet, w.setV.Name, "From VPN")
 	}
 }
 
@@ -1240,8 +1257,7 @@ func (w *WorkerImpl) delIpSet(rt co.PrefixRoute) {
 }
 
 func (w *WorkerImpl) toSubnet() {
-	cfg, vpn := w.GetCfgs()
-
+	cfg, _ := w.GetCfgs()
 	if cfg.Bridge != nil {
 		input := cfg.Bridge.Name
 		if w.br != nil {
@@ -1266,11 +1282,6 @@ func (w *WorkerImpl) toSubnet() {
 	} else {
 		w.toForward_i("", w.setR.Name, "To route")
 	}
-
-	if vpn != nil {
-		w.toMasq_s(w.setR.Name, vpn.Subnet, "To VPN")
-	}
-	w.toMasq_i("", w.setR.Name, "To Masq")
 }
 
 func (w *WorkerImpl) newVPN() {
@@ -1358,7 +1369,7 @@ func (w *WorkerImpl) AddRoute(route *schema.PrefixRoute, v api.SwitchApi) error 
 		w.addVPNSet(inet.String())
 	}
 	w.addVPNRoute(rt)
-	w.loadRoute(rt)
+	w.toRoute(rt)
 	return nil
 }
 
@@ -1375,7 +1386,7 @@ func (w *WorkerImpl) DelRoute(route *schema.PrefixRoute, v api.SwitchApi) error 
 		w.delVPNSet(inet.String())
 	}
 	w.delVPNRoute(delRt)
-	w.unloadRoute(delRt)
+	w.leftRoute(delRt)
 	return nil
 }
 

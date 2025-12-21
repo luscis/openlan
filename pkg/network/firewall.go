@@ -311,6 +311,16 @@ func (ch *FireWallChain) Cancel() {
 	}
 }
 
+func (ch *FireWallChain) Flush() {
+	ch.lock.Lock()
+	defer ch.lock.Unlock()
+
+	c := ch.Chain()
+	if _, err := c.Opr("-F"); err != nil {
+		libol.Error("FireWallChain.flush %s", err)
+	}
+}
+
 type FireWallFilter struct {
 	name string
 	In   *FireWallChain

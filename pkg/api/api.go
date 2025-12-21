@@ -102,8 +102,7 @@ type FindHopApi interface {
 }
 
 type SNATApi interface {
-	EnableSnat()
-	DisableSnat()
+	SetSnat(string)
 }
 
 type DNATApi interface {

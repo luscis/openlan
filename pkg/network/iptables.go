@@ -255,6 +255,8 @@ func (ch IPChain) Opr(opr string) ([]byte, error) {
 			if err := iptables.RemoveExistingChain(name, table); err != nil {
 				return nil, err
 			}
+		case "-F":
+			iptables.Raw("-t", ch.Table, "-F", ch.Name)
 		}
 	default:
 		return nil, libol.NewErr("iptables notSupport %s", runtime.GOOS)
