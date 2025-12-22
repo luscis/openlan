@@ -19,7 +19,7 @@ func (s *SocketClientMock) String() string {
 }
 
 func TestInit(t *testing.T) {
-	cfg := &config.Perf{}
+	cfg := &config.Limit{}
 	cfg.Correct()
 	Init(cfg)
 	fmt.Println(Access)

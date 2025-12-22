@@ -21,7 +21,7 @@ type Online struct {
 
 func NewOnline(m Master) *Online {
 	c := config.Get()
-	ms := c.Perf.OnLine
+	ms := c.Limit.OnLine
 	return &Online{
 		maxSize:  ms,
 		lineMap:  make(map[string]*models.Line, ms),

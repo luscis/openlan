@@ -7,19 +7,59 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
-type Perf struct {
-	Access   int `json:"access" yaml:"access"`
-	Neighbor int `json:"neighbor" yaml:"neighbor"`
-	OnLine   int `json:"online" yaml:"online"`
-	Link     int `json:"link" yaml:"link"`
-	User     int `json:"user" yaml:"user"`
-	Esp      int `json:"esp" yaml:"esp"`
-	State    int `json:"state" yaml:"state"`
-	Policy   int `json:"policy" yaml:"policy"`
-	VxLAN    int `json:"vxlan" yaml:"vxlan"`
+type Queue struct {
+	SockWr int `json:"sockWr" yaml:"sockWr"` // per frames about 1572(1514+4+20+20+14)bytes
+	SockRd int `json:"sockRd" yaml:"sockRd"` // per frames
+	TapWr  int `json:"tapWr" yaml:"tapWr"`   // per frames about 1572((1514+4+20+20+14))bytes
+	TapRd  int `json:"tapRd" yaml:"tapRd"`   // per frames
+	VirSnd int `json:"virSnd" yaml:"virSnd"`
+	VirWrt int `json:"virWrt" yaml:"virWrt"`
 }
 
-func (p *Perf) Correct() {
+var (
+	QdSwr = 32 * 4
+	QdSrd = 32 * 4
+	QdTwr = 32 * 2
+	QdTrd = 2
+	QdVsd = 32 * 8
+	QdVWr = 32 * 4
+)
+
+func (q *Queue) Correct() {
+	if q.SockWr == 0 {
+		q.SockWr = QdSwr
+	}
+	if q.SockRd == 0 {
+		q.SockRd = QdSrd
+	}
+	if q.TapWr == 0 {
+		q.TapWr = QdTwr
+	}
+	if q.TapRd == 0 {
+		q.TapRd = QdTrd
+	}
+	if q.VirSnd == 0 {
+		q.VirSnd = QdVsd
+	}
+	if q.VirWrt == 0 {
+		q.VirWrt = QdVWr
+	}
+	libol.Info("Queue.Correct %v", *q)
+}
+
+type Limit struct {
+	Access   int `json:"access" yaml:"access"`
+	Neighbor int `json:"-" yaml:"-"`
+	OnLine   int `json:"-" yaml:"-"`
+	Link     int `json:"link" yaml:"link"`
+	User     int `json:"user" yaml:"user"`
+	Esp      int `json:"-" yaml:"-"`
+	State    int `json:"-" yaml:"-"`
+	Policy   int `json:"-" yaml:"-"`
+	VxLAN    int `json:"-" yaml:"-"`
+}
+
+func (p *Limit) Correct() {
 	if p.Access == 0 {
 		p.Access = 128
 	}
@@ -47,14 +87,14 @@ func (p *Perf) Correct() {
 	if p.VxLAN == 0 {
 		p.VxLAN = 128
 	}
-	libol.Info("Perf.Correct %v", p)
+	libol.Info("Limit.Correct %v", *p)
 }
 
 type Switch struct {
 	File      string              `json:"-" yaml:"-"`
 	Alias     string              `json:"alias" yaml:"alias"`
 	Queue     Queue               `json:"-" yaml:"-"`
-	Perf      Perf                `json:"-" yaml:"-"`
+	Limit     Limit               `json:"limit" yaml:"limit"`
 	Protocol  string              `json:"protocol" yaml:"protocol"` // tcp, tls, udp, kcp, ws and wss.
 	Listen    string              `json:"listen" yaml:"listen"`
 	Timeout   int                 `json:"timeout" yaml:"timeout"`
@@ -143,7 +183,7 @@ func (s *Switch) Correct() {
 		s.Crypt = &Crypt{}
 	}
 	s.Crypt.Correct()
-	s.Perf.Correct()
+	s.Limit.Correct()
 
 	s.PassFile = s.Dir("password", "")
 	if s.Protocol == "" {
