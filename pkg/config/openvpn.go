@@ -19,7 +19,6 @@ type OpenVPN struct {
 	Subnet    string           `json:"subnet" yaml:"subnet"`
 	Device    string           `json:"device" yaml:"device"`
 	Version   int              `json:"-" yaml:"-"`
-	Auth      string           `json:"-" yaml:"-"` // xauth or cert.
 	DhPem     string           `json:"-" yaml:"-"`
 	RootCa    string           `json:"-" yaml:"-"`
 	ServerCrt string           `json:"-" yaml:"-"`
@@ -67,7 +66,6 @@ func (c *OpenVPNClient) Correct(network string) {
 
 var defaultVpn = &OpenVPN{
 	Protocol:  "tcp",
-	Auth:      "xauth",
 	Device:    "tun0",
 	RootCa:    VarDir("cert/ca.crt"),
 	ServerCrt: VarDir("cert/crt"),
@@ -89,7 +87,6 @@ func (o *OpenVPN) AuthBin(obj *OpenVPN) string {
 func (o *OpenVPN) Correct(pool, network string) {
 	o.Network = network
 
-	o.Auth = defaultVpn.Auth
 	if o.Protocol == "" {
 		o.Protocol = defaultVpn.Protocol
 	}

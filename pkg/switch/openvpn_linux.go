@@ -46,7 +46,7 @@ type OpenVPNData struct {
 }
 
 const (
-	xAuthConfTmpl = `# Generate by OpenLAN
+	vConfTmpl = `# Generate by OpenLAN
 local {{ .Local }}
 port {{ .Port }}
 proto {{ .Protocol }}
@@ -69,6 +69,7 @@ push "{{ . }}"
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 cipher {{ .Cipher }}
+management {{ .Protocol }}{{ .Port }}server.sock unix
 status {{ .Protocol }}{{ .Port }}server.status 2
 client-connect "{{ .ClientStatusScriptDir }}/client-connect.sh"
 client-disconnect "{{ .ClientStatusScriptDir }}/client-disconnect.sh"
@@ -80,30 +81,6 @@ verify-client-cert none
 script-security 3
 auth-user-pass-verify "{{ .Script }}" via-env
 username-as-common-name
-client-config-dir {{ .ClientConfigDir }}
-verb 3
-`
-	certConfTmpl = `# Generate by OpenLAN
-local {{ .Local }}
-port {{ .Port }}
-proto {{ .Protocol }}
-dev {{ .Device }}
-reneg-sec {{ .Renego }}
-keepalive 10 120
-persist-key
-persist-tun
-ca {{ .Ca }}
-cert {{ .Cert }}
-key {{ .Key }}
-dh {{ .DhPem }}
-server {{ .Server }}
-{{- range .Routes }}
-push "route {{ . }}"
-{{- end }}
-ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
-tls-auth {{ .TlsAuth }} 0
-cipher {{ .Cipher }}
-status {{ .Protocol }}{{ .Port }}server.status 2
 client-config-dir {{ .ClientConfigDir }}
 verb 3
 `
@@ -272,10 +249,7 @@ func (o *OpenVPN) FileStats(full bool) string {
 }
 
 func (o *OpenVPN) ServerTmpl() string {
-	tmplStr := xAuthConfTmpl
-	if o.Cfg.Auth == "cert" {
-		tmplStr = certConfTmpl
-	}
+	tmplStr := vConfTmpl
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"server.tmpl")
 	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
@@ -574,11 +548,7 @@ func (o *OpenVPN) checkAlreadyClose(pid string) {
 }
 
 func (o *OpenVPN) ProfileTmpl() string {
-	tmplStr := xAuthClientProfile
-	if o.Cfg.Auth == "cert" {
-		tmplStr = certClientProfile
-	}
-
+	tmplStr := vClientProfile
 	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"client.tmpl")
 	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
 	return tmplStr
@@ -614,7 +584,7 @@ type OpenVPNProfile struct {
 }
 
 const (
-	xAuthClientProfile = `# Generate by OpenLAN
+	vClientProfile = `# Generate by OpenLAN
 client
 dev {{ .Device }}
 route-metric 300
@@ -637,29 +607,6 @@ cipher {{ .Cipher }}
 auth-nocache
 verb 4
 auth-user-pass
-`
-	certClientProfile = `# Generate by OpenLAN
-client
-dev {{ .Device }}
-route-metric 300
-proto {{ .Protocol }}
-remote {{ .Server }} {{ .Port }}
-reneg-sec {{ .Renego }}
-resolv-retry infinite
-nobind
-persist-key
-persist-tun
-<ca>
-{{ .Ca -}}
-</ca>
-remote-cert-tls server
-<tls-auth>
-{{ .TlsAuth -}}
-</tls-auth>
-key-direction 1
-cipher {{ .Cipher }}
-auth-nocache
-verb 4
 `
 )
 
