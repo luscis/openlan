@@ -23,26 +23,26 @@ const (
 )
 
 type OpenVPNData struct {
-	Local                 string
-	Port                  string
-	CertNot               bool
-	Ca                    string
-	Cert                  string
-	Key                   string
-	DhPem                 string
-	TlsAuth               string
-	Cipher                string
-	Server                string
-	Device                string
-	Protocol              string
-	Script                string
-	Routes                []string
-	Renego                int
-	Stats                 string
-	IpIp                  string
-	Push                  []string
-	ClientConfigDir       string
-	ClientStatusScriptDir string
+	Local         string
+	Port          string
+	CertNot       bool
+	Ca            string
+	Cert          string
+	Key           string
+	DhPem         string
+	TlsAuth       string
+	Cipher        string
+	Server        string
+	Device        string
+	Protocol      string
+	Script        string
+	Routes        []string
+	Renego        int
+	Stats         string
+	IpIp          string
+	Push          []string
+	ClientConfDir string
+	ClientPlatDir string
 }
 
 const (
@@ -70,9 +70,8 @@ ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 cipher {{ .Cipher }}
 management {{ .Protocol }}{{ .Port }}server.sock unix
-status {{ .Protocol }}{{ .Port }}server.status 2
-client-connect "{{ .ClientStatusScriptDir }}/client-connect.sh"
-client-disconnect "{{ .ClientStatusScriptDir }}/client-disconnect.sh"
+client-connect "{{ .ClientPlatDir }}/client-up.sh"
+client-disconnect "{{ .ClientPlatDir }}/client-down.sh"
 {{- if .CertNot }}
 client-cert-not-required
 {{- else }}
@@ -81,11 +80,11 @@ verify-client-cert none
 script-security 3
 auth-user-pass-verify "{{ .Script }}" via-env
 username-as-common-name
-client-config-dir {{ .ClientConfigDir }}
+client-config-dir {{ .ClientConfDir }}
 verb 3
 `
-	clientConnectScriptTmpl = `#!/bin/bash
-log_file="{{ .ClientStatusScriptDir }}/{{ .Protocol }}{{ .Port }}ivplat.status"
+	vClientUpTmpl = `#!/bin/bash
+log_file="{{ .ClientPlatDir }}/{{ .Protocol }}{{ .Port }}server.plat"
 if [ -n "$common_name" ]; then
     if grep -q "^$common_name," "$log_file"; then
         sed -i "s/^$common_name,.*/$common_name,$IV_PLAT/" "$log_file"
@@ -97,8 +96,8 @@ if [ -n "$common_name" ]; then
     fi
 fi
 `
-	clientDisConnectScriptTmpl = `#!/bin/bash
-log_file="{{ .ClientStatusScriptDir }}/{{ .Protocol }}{{ .Port }}ivplat.status"
+	vClientDownTmpl = `#!/bin/bash
+log_file="{{ .ClientPlatDir }}/{{ .Protocol }}{{ .Port }}server.plat"
 sed -i "/^$common_name,/d" "$log_file"
 `
 )
@@ -150,8 +149,8 @@ func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 			data.Routes = append(data.Routes, r)
 		}
 	}
-	data.ClientConfigDir = obj.DirectoryClientConfig()
-	data.ClientStatusScriptDir = obj.ClientIvplatDir()
+	data.ClientConfDir = obj.ClientConfDir()
+	data.ClientPlatDir = obj.ClientPlatDir()
 	return data
 }
 
@@ -237,40 +236,6 @@ func (o *OpenVPN) FilePid(full bool) string {
 	return filepath.Join(o.Cfg.Directory, name)
 }
 
-func (o *OpenVPN) FileStats(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "server.stats"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
-}
-
-func (o *OpenVPN) ServerTmpl() string {
-	tmplStr := vConfTmpl
-	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"server.tmpl")
-	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
-	return tmplStr
-}
-
-func (o *OpenVPN) ClientConnectScriptTmpl() string {
-	tmplStr := clientConnectScriptTmpl
-
-	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"connectivplat.tmpl")
-	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
-	return tmplStr
-}
-
-func (o *OpenVPN) ClientDisConnectScriptTmpl() string {
-	tmplStr := clientDisConnectScriptTmpl
-
-	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"disconnectivplat.tmpl")
-	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
-	return tmplStr
-}
-
 func (o *OpenVPN) FileIpp(full bool) string {
 	if o.Cfg == nil {
 		return ""
@@ -291,14 +256,14 @@ func (o *OpenVPN) Pid(full bool) string {
 	}
 }
 
-func (o *OpenVPN) DirectoryClientConfig() string {
+func (o *OpenVPN) ClientConfDir() string {
 	if o.Cfg == nil {
 		return path.Join(VPNCurDir, "ccd")
 	}
 	return path.Join(o.Cfg.Directory, "ccd")
 }
 
-func (o *OpenVPN) ClientIvplatDir() string {
+func (o *OpenVPN) ClientPlatDir() string {
 	if o.Cfg == nil {
 		return VPNCurDir
 	}
@@ -313,13 +278,13 @@ func (o *OpenVPN) WriteConf(path string) error {
 	defer fp.Close()
 	data := NewOpenVPNDataFromConf(o)
 	o.out.Debug("OpenVPN.WriteConf %v", data)
-	if data.ClientConfigDir != "" {
-		_ = o.writeClientConfig()
+	if data.ClientConfDir != "" {
+		_ = o.writeClientConf()
 	}
-	if data.ClientStatusScriptDir != "" {
-		_ = o.writeClientStatusScripts(data)
+	if data.ClientPlatDir != "" {
+		_ = o.writeClientPlat(data)
 	}
-	tmplStr := o.ServerTmpl()
+	tmplStr := vConfTmpl
 	if tmpl, err := template.New("main").Parse(tmplStr); err != nil {
 		return err
 	} else {
@@ -330,13 +295,13 @@ func (o *OpenVPN) WriteConf(path string) error {
 	return nil
 }
 
-func (o *OpenVPN) writeClientConfig() error {
+func (o *OpenVPN) writeClientConf() error {
 	// make client dir and config file
-	ccd := o.DirectoryClientConfig()
+	ccd := o.ClientConfDir()
 	if err := os.Mkdir(ccd, 0600); err != nil {
-		o.out.Info("OpenVPN.writeClientConfig %s", err)
+		o.out.Info("OpenVPN.writeClientConf %s", err)
 	}
-	o.cleanClientConfig()
+	o.cleanClientConf()
 	for _, fic := range o.Cfg.Clients {
 		if fic.Name == "" || fic.Address == "" {
 			continue
@@ -344,35 +309,35 @@ func (o *OpenVPN) writeClientConfig() error {
 		ficFile := filepath.Join(ccd, fic.Name)
 		pushIP := fmt.Sprintf("ifconfig-push %s %s", fic.Address, fic.Netmask)
 		if err := os.WriteFile(ficFile, []byte(pushIP), 0600); err != nil {
-			o.out.Warn("OpenVPN.writeClientConfig %s", err)
+			o.out.Warn("OpenVPN.writeClientConf %s", err)
 		}
 	}
 	return nil
 }
 
-func (o *OpenVPN) cleanClientConfig() {
-	ccd := o.DirectoryClientConfig()
+func (o *OpenVPN) cleanClientConf() {
+	ccd := o.ClientConfDir()
 	files, err := filepath.Glob(path.Join(ccd, "*"))
 	if err != nil {
-		libol.Warn("OpenVPN.cleanClientConfig %v", err)
+		libol.Warn("OpenVPN.cleanClientConf %v", err)
 	}
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
-			o.out.Warn("OpenVPN.cleanClientConfig %s", err)
+			o.out.Warn("OpenVPN.cleanClientConf %s", err)
 		}
 	}
 }
 
 func (o *OpenVPN) AddClient(name, address string) error {
 	if o.Cfg.AddClient(name, address) {
-		o.writeClientConfig()
+		o.writeClientConf()
 	}
 	return nil
 }
 
 func (o *OpenVPN) DelClient(name string) error {
 	if _, ok := o.Cfg.DelClient(name); ok {
-		o.writeClientConfig()
+		o.writeClientConf()
 	}
 	return nil
 }
@@ -381,24 +346,20 @@ func (o *OpenVPN) ListClients(call func(name, address string)) {
 	o.Cfg.ListClients(call)
 }
 
-func createExecutableFile(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
-}
-
-func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
+func (o *OpenVPN) writeClientPlat(data *OpenVPNData) error {
 	// make client dir and config file
-	cid := o.ClientIvplatDir()
+	cid := o.ClientPlatDir()
 	if err := os.Mkdir(cid, 0600); err != nil {
-		o.out.Info("OpenVPN.writeClientStatusScripts %s", err)
+		o.out.Info("OpenVPN.writeClientPlat %s", err)
 	}
-	clientConnectScriptFile := filepath.Join(cid, "client-connect.sh")
-	fp, err := createExecutableFile(clientConnectScriptFile)
+	clientConnectScriptFile := filepath.Join(cid, "client-up.sh")
+	fp, err := libol.CreateFileEx(clientConnectScriptFile)
 	if err != nil || fp == nil {
 		return err
 	}
 	defer fp.Close()
 
-	tmplStr := o.ClientConnectScriptTmpl()
+	tmplStr := vClientUpTmpl
 	if tmpl, err := template.New("clientScript").Parse(tmplStr); err != nil {
 		return err
 	} else {
@@ -407,14 +368,14 @@ func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
 		}
 	}
 
-	clientDisConnectFile := filepath.Join(cid, "client-disconnect.sh")
-	fp2, err := createExecutableFile(clientDisConnectFile)
+	clientDisConnectFile := filepath.Join(cid, "client-down.sh")
+	fp2, err := libol.CreateFileEx(clientDisConnectFile)
 	if err != nil || fp2 == nil {
 		return err
 	}
 	defer fp2.Close()
 
-	tmplDisConnectStr := o.ClientDisConnectScriptTmpl()
+	tmplDisConnectStr := vClientDownTmpl
 	if tmpl, err := template.New("clientDisConnectScript").Parse(tmplDisConnectStr); err != nil {
 		return err
 	} else {
@@ -426,8 +387,8 @@ func (o *OpenVPN) writeClientStatusScripts(data *OpenVPNData) error {
 }
 
 func (o *OpenVPN) Clean() {
-	o.cleanClientConfig()
-	files := []string{o.FileStats(true), o.FileIpp(true), o.FileClient(true)}
+	o.cleanClientConf()
+	files := []string{o.FileIpp(true), o.FileClient(true)}
 	for _, file := range files {
 		if err := libol.FileExist(file); err == nil {
 			if err := os.Remove(file); err != nil {
@@ -547,16 +508,9 @@ func (o *OpenVPN) checkAlreadyClose(pid string) {
 	}
 }
 
-func (o *OpenVPN) ProfileTmpl() string {
-	tmplStr := vClientProfile
-	cfgTmpl := filepath.Join(o.Cfg.Directory, o.ID()+"client.tmpl")
-	_ = os.WriteFile(cfgTmpl, []byte(tmplStr), 0600)
-	return tmplStr
-}
-
 func (o *OpenVPN) Profile() ([]byte, error) {
 	data := NewOpenVPNProfileFromConf(o)
-	tmplStr := o.ProfileTmpl()
+	tmplStr := vClientProfile
 	tmpl, err := template.New("main").Parse(tmplStr)
 	if err != nil {
 		return nil, err

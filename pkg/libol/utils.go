@@ -377,3 +377,7 @@ func IsProcessRunning(pid int) bool {
 	err = process.Signal(syscall.Signal(0))
 	return err == nil
 }
+
+func CreateFileEx(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
+}

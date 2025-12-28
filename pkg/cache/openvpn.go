@@ -3,6 +3,7 @@ package cache
 import (
 	"bufio"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,7 +44,7 @@ func (o *vpnClient) GetDevice(name string) string {
 	}
 	return ""
 }
-func (o *vpnClient) scanClientStatus(reader io.Reader,
+func (o *vpnClient) scanPlat(reader io.Reader,
 	clients map[string]*schema.VPNClient) error {
 	if clients == nil {
 		return nil
@@ -66,13 +67,16 @@ func (o *vpnClient) scanClientStatus(reader io.Reader,
 
 	return nil
 }
-func (o *vpnClient) scanStatus(network string, reader io.Reader,
+func (o *vpnClient) scanClient(network string, reader io.Reader,
 	clients map[string]*schema.VPNClient) error {
 	readAt := "header"
 	offset := 0
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if line == "END" {
+			break
+		}
 		if line == "OpenVPN CLIENT LIST" {
 			readAt = "common"
 			offset = 3
@@ -119,7 +123,7 @@ func (o *vpnClient) scanStatus(network string, reader io.Reader,
 						client.Uptime = uptime.Unix()
 						client.AliveTime = time.Now().Unix() - client.Uptime
 					} else {
-						libol.Warn("vpnClient.scanStatus %s", err)
+						libol.Warn("vpnClient.scanClient %s", err)
 					}
 				}
 				clients[remote] = client
@@ -146,17 +150,17 @@ func (o *vpnClient) Dir(args ...string) string {
 }
 
 func (o *vpnClient) statusFile(name string) []string {
-	files, err := filepath.Glob(o.Dir(name, "*server.status"))
+	files, err := filepath.Glob(o.Dir(name, "*server.sock"))
 	if err != nil {
 		libol.Warn("vpnClient.statusFile %v", err)
 	}
 	return files
 }
 
-func (o *vpnClient) clientStatusFile(name string) []string {
-	files, err := filepath.Glob(o.Dir(name, "*ivplat.status"))
+func (o *vpnClient) platFile(name string) []string {
+	files, err := filepath.Glob(o.Dir(name, "*server.plat"))
 	if err != nil {
-		libol.Warn("vpnClient.clientStatusFile %v", err)
+		libol.Warn("vpnClient.platFile %v", err)
 		return []string{}
 	}
 	return files
@@ -165,23 +169,24 @@ func (o *vpnClient) clientStatusFile(name string) []string {
 func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
 	clients := make(map[string]*schema.VPNClient, 32)
 	for _, file := range o.statusFile(network) {
-		reader, err := os.Open(file)
+		conn, err := net.Dial("unix", file)
 		if err != nil {
 			libol.Debug("vpnClient.readStatus %v", err)
 			return nil
 		}
-		if err := o.scanStatus(network, reader, clients); err != nil {
+		conn.Write([]byte("status\n"))
+		if err := o.scanClient(network, conn, clients); err != nil {
 			libol.Warn("vpnClient.readStatus %v", err)
 		}
-		reader.Close()
+		conn.Close()
 	}
-	for _, file := range o.clientStatusFile(network) {
+	for _, file := range o.platFile(network) {
 		reader, err := os.Open(file)
 		if err != nil {
 			libol.Debug("vpnClient.readStatus %v", err)
 			return nil
 		}
-		if err := o.scanClientStatus(reader, clients); err != nil {
+		if err := o.scanPlat(reader, clients); err != nil {
 			libol.Warn("vpnClient.readStatus %v", err)
 		}
 		reader.Close()
