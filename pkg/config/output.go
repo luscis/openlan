@@ -6,6 +6,7 @@ type Linker interface {
 	Start() error
 	Stop() error
 }
+
 type Output struct {
 	Segment  int    `json:"segment" yaml:"segment"`
 	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"` // gre, vxlan, tcp/tls/wss etc.

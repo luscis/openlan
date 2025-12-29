@@ -195,6 +195,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				PMtuDisc: 1,
 			},
 		}
+		link.Stop()
 		if err := link.Start(); err != nil {
 			w.out.Error("WorkerImpl.LinkStart %s %s", port.Id(), err)
 			return
@@ -213,6 +214,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				},
 			},
 		}
+		link.Stop()
 		opts := []string{"type", "vxlan",
 			"id", strconv.Itoa(port.Segment),
 			"remote", port.Remote,
