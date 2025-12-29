@@ -11,11 +11,15 @@ type VPNClient struct {
 	Cmd
 }
 
-func (u VPNClient) Url(prefix, name string) string {
+func (u VPNClient) Url(prefix, name, action string) string {
 	if name == "" {
 		return prefix + "/api/vpn/client"
 	} else {
-		return prefix + "/api/vpn/client/" + name
+		if action == "" {
+			return prefix + "/api/vpn/client/" + name
+		} else {
+			return prefix + "/api/vpn/client/" + name + "/" + action
+		}
 	}
 }
 
@@ -29,7 +33,7 @@ func (u VPNClient) Tmpl() string {
 }
 
 func (u VPNClient) List(c *cli.Context) error {
-	url := u.Url(c.String("url"), c.String("name"))
+	url := u.Url(c.String("url"), c.String("name"), "")
 	clt := u.NewHttp(c.String("token"))
 	var items []schema.VPNClient
 	if err := clt.GetJSON(url, &items); err != nil {
@@ -39,7 +43,7 @@ func (u VPNClient) List(c *cli.Context) error {
 }
 
 func (u VPNClient) Add(c *cli.Context) error {
-	url := u.Url(c.String("url"), c.String("name"))
+	url := u.Url(c.String("url"), c.String("name"), "")
 
 	value := &schema.VPNClient{
 		Name:    c.String("user"),
@@ -55,7 +59,7 @@ func (u VPNClient) Add(c *cli.Context) error {
 }
 
 func (u VPNClient) Remove(c *cli.Context) error {
-	url := u.Url(c.String("url"), c.String("name"))
+	url := u.Url(c.String("url"), c.String("name"), "")
 
 	value := &schema.VPNClient{
 		Name: c.String("user"),
@@ -63,6 +67,21 @@ func (u VPNClient) Remove(c *cli.Context) error {
 
 	clt := u.NewHttp(c.String("token"))
 	if err := clt.DeleteJSON(url, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u VPNClient) Kill(c *cli.Context) error {
+	url := u.Url(c.String("url"), c.String("name"), "kill")
+
+	value := &schema.VPNClient{
+		Name: c.String("user"),
+	}
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, value, nil); err != nil {
 		return err
 	}
 
@@ -97,6 +116,15 @@ func (u VPNClient) Commands() *cli.Command {
 					&cli.StringFlag{Name: "user", Required: true},
 				},
 				Action: u.Remove,
+			},
+			{
+				Name:    "kill",
+				Usage:   "kill a client",
+				Aliases: []string{"rm"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "user", Required: true},
+				},
+				Action: u.Kill,
 			},
 		},
 	}

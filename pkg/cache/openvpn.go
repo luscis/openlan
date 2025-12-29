@@ -2,6 +2,7 @@ package cache
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -174,7 +175,7 @@ func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
 			libol.Debug("vpnClient.readStatus %v", err)
 			return nil
 		}
-		conn.Write([]byte("status\n"))
+		fmt.Fprintf(conn, "status\n")
 		if err := o.scanClient(network, conn, clients); err != nil {
 			libol.Warn("vpnClient.readStatus %v", err)
 		}

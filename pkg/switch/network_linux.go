@@ -1469,3 +1469,12 @@ func (w *WorkerImpl) DelAddress() {
 	}
 	w.out.Info("WorkerImpl.AddAddress notSupport")
 }
+
+func (w *WorkerImpl) KillVPNClient(name string) error {
+	vpn := w.vpn
+	if vpn == nil {
+		return libol.NewErr("VPN was disabled")
+	}
+
+	return vpn.KillClient(name)
+}

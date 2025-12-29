@@ -78,6 +78,7 @@ type VPNApi interface {
 	AddVPNClient(name, local string) error
 	DelVPNClient(name string) error
 	ListClients(call func(name, local string))
+	KillVPNClient(name string) error
 }
 
 type QosApi interface {

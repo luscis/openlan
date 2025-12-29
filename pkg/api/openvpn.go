@@ -15,6 +15,7 @@ func (h VPNClient) Router(router *mux.Router) {
 	router.HandleFunc("/api/vpn/client", h.List).Methods("GET")
 	router.HandleFunc("/api/vpn/client/{id}", h.List).Methods("GET")
 	router.HandleFunc("/api/vpn/client/{id}", h.Add).Methods("POST")
+	router.HandleFunc("/api/vpn/client/{id}/kill", h.Kill).Methods("POST")
 	router.HandleFunc("/api/vpn/client/{id}", h.Remove).Methods("DELETE")
 }
 
@@ -109,6 +110,29 @@ func (h VPNClient) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := worker.DelVPNClient(value.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h VPNClient) Kill(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	worker := Call.GetWorker(name)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+
+	value := &schema.VPNClient{}
+	if err := GetData(r, value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := worker.KillVPNClient(value.Name); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

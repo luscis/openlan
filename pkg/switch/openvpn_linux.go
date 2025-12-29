@@ -3,6 +3,7 @@ package cswitch
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -241,6 +242,17 @@ func (o *OpenVPN) FileIpp(full bool) string {
 		return ""
 	}
 	name := o.ID() + "ipp"
+	if !full {
+		return name
+	}
+	return filepath.Join(o.Cfg.Directory, name)
+}
+
+func (o *OpenVPN) FileStatus(full bool) string {
+	if o.Cfg == nil {
+		return ""
+	}
+	name := o.ID() + "server.sock"
 	if !full {
 		return name
 	}
@@ -522,6 +534,17 @@ func (o *OpenVPN) Profile() ([]byte, error) {
 	} else {
 		return nil, err
 	}
+}
+
+func (o *OpenVPN) KillClient(name string) error {
+	conn, err := net.Dial("unix", o.FileStatus(true))
+	if err != nil {
+		libol.Debug("vpnClient.readStatus %v", err)
+		return nil
+	}
+	defer conn.Close()
+	fmt.Fprintf(conn, "kill %s\n", name)
+	return nil
 }
 
 type OpenVPNProfile struct {
