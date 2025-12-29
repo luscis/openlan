@@ -1,7 +1,7 @@
 package v5
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/luscis/openlan/cmd/api"
@@ -12,7 +12,7 @@ func Before(c *cli.Context) error {
 	token := c.String("token")
 	if token == "" {
 		tokenFile := api.AdminTokenFile
-		if data, err := ioutil.ReadFile(tokenFile); err == nil {
+		if data, err := os.ReadFile(tokenFile); err == nil {
 			token = strings.TrimSpace(string(data))
 		}
 		_ = c.Set("token", token)

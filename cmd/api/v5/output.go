@@ -78,8 +78,9 @@ func (o Output) List(c *cli.Context) error {
 
 func (o Output) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "output",
-		Usage: "Output links",
+		Name:   "output",
+		Usage:  "Output links",
+		Action: o.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
@@ -88,7 +89,7 @@ func (o Output) Commands() *cli.Command {
 					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.StringFlag{Name: "fallback"},
 					&cli.IntFlag{Name: "segment"},
-					&cli.StringFlag{Name: "protocol"},
+					&cli.StringFlag{Name: "protocol", Value: "vxlan"},
 					&cli.StringFlag{Name: "dstport"},
 					&cli.StringFlag{Name: "secret"},
 					&cli.StringFlag{Name: "crypt"},
