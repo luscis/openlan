@@ -4,6 +4,7 @@ import (
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 	nl "github.com/vishvananda/netlink"
 )
@@ -12,11 +13,13 @@ type RouterWorker struct {
 	*WorkerImpl
 	spec      *co.RouterSpecifies
 	addresses []*nl.Addr
+	setS      *cn.IPSet
 }
 
 func NewRouterWorker(c *co.Network) *RouterWorker {
 	w := &RouterWorker{
 		WorkerImpl: NewWorkerApi(c),
+		setS:       cn.NewIPSet(c.Name+"_s", "hash:net"),
 	}
 	api.Call.SetRouterApi(w)
 	w.spec, _ = c.Specifies.(*co.RouterSpecifies)
@@ -37,8 +40,7 @@ func (w *RouterWorker) Initialize() {
 			w.addresses = append(w.addresses, addr)
 		}
 	}
-
-	w.Forward()
+	w.setS.Clear()
 }
 
 func (w *RouterWorker) Forward() {
@@ -46,14 +48,14 @@ func (w *RouterWorker) Forward() {
 	// Enable MASQUERADE, and FORWARD it.
 	w.out.Debug("RouterWorker.Forward %v", w.cfg)
 	for _, sub := range spec.Subnets {
-		if sub.CIDR == "" {
+		if sub == "" {
 			continue
 		}
-		w.setR.Add(sub.CIDR)
+		w.setS.Add(sub)
 	}
 	w.toRelated(spec.Link, "Accept related")
-	w.toForward_s(spec.Link, w.setR.Name, "", "From route")
-	w.toMasq_s(w.setR.Name, "", "To Masq")
+	w.toForward_s(spec.Link, w.setS.Name, "", "From route")
+	w.toMasq_s(w.setS.Name, "", "To Masq")
 }
 
 func (w *RouterWorker) addAddress() error {
@@ -80,6 +82,8 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 	}
 
 	w.WorkerImpl.Start(v)
+
+	w.Forward()
 	w.addAddress()
 }
 
@@ -106,6 +110,7 @@ func (w *RouterWorker) Stop() {
 	for _, tun := range w.spec.Tunnels {
 		w.delTunnel(tun)
 	}
+	w.setS.Destroy()
 }
 
 func (w *RouterWorker) Reload(v api.SwitchApi) {
