@@ -120,7 +120,7 @@ func (u Device) Url(prefix, name string) string {
 
 func (u Device) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "name"}} {{ps -13 "mtu"}} {{ps -6 "provider"}} {{ps -16 ".Statistics"}}
+{{ps -15 "name"}} {{ps -13 "mtu"}} {{ps -6 "provider"}} {{ps -16 "Statistics"}}
 {{- range . }}
 {{ps -15 .Name}} {{pi -13 .Mtu}} {{ps -6 .Provider}} {{pi 8 .Recv}}/{{pi 8 .Send}}/{{pi 2 .Drop}}
 {{- end }}

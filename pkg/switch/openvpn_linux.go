@@ -1,6 +1,7 @@
 package cswitch
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"net"
@@ -24,26 +25,26 @@ const (
 )
 
 type OpenVPNData struct {
-	Local         string
-	Port          string
-	CertNot       bool
-	Ca            string
-	Cert          string
-	Key           string
-	DhPem         string
-	TlsAuth       string
-	Cipher        string
-	Server        string
-	Device        string
-	Protocol      string
-	Script        string
-	Routes        []string
-	Renego        int
-	Stats         string
-	IpIp          string
-	Push          []string
-	ClientConfDir string
-	ClientPlatDir string
+	Local     string
+	Port      string
+	CertNot   bool
+	Ca        string
+	Cert      string
+	Key       string
+	DhPem     string
+	TlsAuth   string
+	Cipher    string
+	Server    string
+	Device    string
+	Protocol  string
+	Script    string
+	Routes    []string
+	Renego    int
+	Stats     string
+	IpIp      string
+	Push      []string
+	ClientDir string
+	ServerDir string
 }
 
 const (
@@ -70,9 +71,9 @@ push "{{ . }}"
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 cipher {{ .Cipher }}
-management {{ .Protocol }}{{ .Port }}server.sock unix
-client-connect "{{ .ClientPlatDir }}/client-up.sh"
-client-disconnect "{{ .ClientPlatDir }}/client-down.sh"
+management {{ .ServerDir }}/{{ .Protocol }}{{ .Port }}server.sock unix
+client-connect "{{ .ServerDir }}/client-up.sh"
+client-disconnect "{{ .ServerDir }}/client-down.sh"
 {{- if .CertNot }}
 client-cert-not-required
 {{- else }}
@@ -81,11 +82,11 @@ verify-client-cert none
 script-security 3
 auth-user-pass-verify "{{ .Script }}" via-env
 username-as-common-name
-client-config-dir {{ .ClientConfDir }}
+client-config-dir {{ .ClientDir }}
 verb 3
 `
 	vClientUpTmpl = `#!/bin/bash
-log_file="{{ .ClientPlatDir }}/{{ .Protocol }}{{ .Port }}server.plat"
+log_file="{{ .ServerDir }}/{{ .Protocol }}{{ .Port }}server.plat"
 if [ -n "$common_name" ]; then
     if grep -q "^$common_name," "$log_file"; then
         sed -i "s/^$common_name,.*/$common_name,$IV_PLAT/" "$log_file"
@@ -98,7 +99,7 @@ if [ -n "$common_name" ]; then
 fi
 `
 	vClientDownTmpl = `#!/bin/bash
-log_file="{{ .ClientPlatDir }}/{{ .Protocol }}{{ .Port }}server.plat"
+log_file="{{ .ServerDir }}/{{ .Protocol }}{{ .Port }}server.plat"
 sed -i "/^$common_name,/d" "$log_file"
 `
 )
@@ -150,8 +151,8 @@ func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 			data.Routes = append(data.Routes, r)
 		}
 	}
-	data.ClientConfDir = obj.ClientConfDir()
-	data.ClientPlatDir = obj.ClientPlatDir()
+	data.ClientDir = obj.ClientDir()
+	data.ServerDir = obj.ServerDir()
 	return data
 }
 
@@ -268,14 +269,14 @@ func (o *OpenVPN) Pid(full bool) string {
 	}
 }
 
-func (o *OpenVPN) ClientConfDir() string {
+func (o *OpenVPN) ClientDir() string {
 	if o.Cfg == nil {
 		return path.Join(VPNCurDir, "ccd")
 	}
 	return path.Join(o.Cfg.Directory, "ccd")
 }
 
-func (o *OpenVPN) ClientPlatDir() string {
+func (o *OpenVPN) ServerDir() string {
 	if o.Cfg == nil {
 		return VPNCurDir
 	}
@@ -290,10 +291,10 @@ func (o *OpenVPN) WriteConf(path string) error {
 	defer fp.Close()
 	data := NewOpenVPNDataFromConf(o)
 	o.out.Debug("OpenVPN.WriteConf %v", data)
-	if data.ClientConfDir != "" {
+	if data.ClientDir != "" {
 		_ = o.writeClientConf()
 	}
-	if data.ClientPlatDir != "" {
+	if data.ServerDir != "" {
 		_ = o.writeClientPlat(data)
 	}
 	tmplStr := vConfTmpl
@@ -309,7 +310,7 @@ func (o *OpenVPN) WriteConf(path string) error {
 
 func (o *OpenVPN) writeClientConf() error {
 	// make client dir and config file
-	ccd := o.ClientConfDir()
+	ccd := o.ClientDir()
 	if err := os.Mkdir(ccd, 0600); err != nil {
 		o.out.Info("OpenVPN.writeClientConf %s", err)
 	}
@@ -328,7 +329,7 @@ func (o *OpenVPN) writeClientConf() error {
 }
 
 func (o *OpenVPN) cleanClientConf() {
-	ccd := o.ClientConfDir()
+	ccd := o.ClientDir()
 	files, err := filepath.Glob(path.Join(ccd, "*"))
 	if err != nil {
 		libol.Warn("OpenVPN.cleanClientConf %v", err)
@@ -360,7 +361,7 @@ func (o *OpenVPN) ListClients(call func(name, address string)) {
 
 func (o *OpenVPN) writeClientPlat(data *OpenVPNData) error {
 	// make client dir and config file
-	cid := o.ClientPlatDir()
+	cid := o.ServerDir()
 	if err := os.Mkdir(cid, 0600); err != nil {
 		o.out.Info("OpenVPN.writeClientPlat %s", err)
 	}
@@ -536,15 +537,41 @@ func (o *OpenVPN) Profile() ([]byte, error) {
 	}
 }
 
-func (o *OpenVPN) KillClient(name string) error {
+func (o *OpenVPN) Exec(cmd string) error {
 	conn, err := net.Dial("unix", o.FileStatus(true))
 	if err != nil {
-		libol.Debug("vpnClient.readStatus %v", err)
-		return nil
+		libol.Warn("OpenVPN.Exec %v", err)
+		return err
 	}
 	defer conn.Close()
-	fmt.Fprintf(conn, "kill %s\n", name)
+
+	// Read help info.
+	r := bufio.NewReader(conn)
+	out, _, err := r.ReadLine()
+	if err != nil {
+		libol.Warn("OpenVPN.Exec %v", err)
+		return err
+	}
+
+	libol.Info("OpenVPN.Exec %s", cmd)
+	_, err = fmt.Fprintln(conn, cmd)
+	if err != nil {
+		libol.Warn("OpenVPN.Exec %v", err)
+		return err
+	}
+	out, _, err = r.ReadLine()
+	if err != nil {
+		libol.Warn("OpenVPN.Exec %v", err)
+		return err
+	}
+	libol.Info("OpenVPN.Exec %s", out)
+
 	return nil
+}
+
+func (o *OpenVPN) KillClient(name string) error {
+	cmd := fmt.Sprintf("kill %s", name)
+	return o.Exec(cmd)
 }
 
 type OpenVPNProfile struct {
