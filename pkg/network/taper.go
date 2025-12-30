@@ -13,9 +13,9 @@ const (
 )
 
 type DeviceStats struct {
-	Send int64 `json:"send"`
-	Recv int64 `json:"recv"`
-	Drop int64 `json:"drop"`
+	Send uint64 `json:"send"`
+	Recv uint64 `json:"recv"`
+	Drop uint64 `json:"drop"`
 }
 
 type Taper interface {
@@ -35,6 +35,7 @@ type Taper interface {
 	Mtu() int
 	String() string
 	Has(v uint) bool
+	Stats() DeviceStats
 }
 
 func NewTaper(tenant string, c TapConfig) (Taper, error) {
@@ -81,9 +82,7 @@ func (t *tapers) Del(name string) {
 	if t.devices == nil {
 		return
 	}
-	if _, ok := t.devices[name]; ok {
-		delete(t.devices, name)
-	}
+	delete(t.devices, name)
 }
 
 func (t *tapers) List() <-chan Taper {

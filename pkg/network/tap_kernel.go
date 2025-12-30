@@ -40,9 +40,10 @@ func NewKernelTap(tenant string, c TapConfig) (*KernelTap, error) {
 }
 
 func (t *KernelTap) Has(v uint) bool {
-	if v == UsClose {
+	switch v {
+	case UsClose:
 		return t.device == nil
-	} else if v == UsUp {
+	case UsUp:
 		return t.device != nil
 	}
 	return false
@@ -152,4 +153,8 @@ func (t *KernelTap) String() string {
 
 func (t *KernelTap) Mtu() int {
 	return t.ipMtu
+}
+
+func (t *KernelTap) Stats() DeviceStats {
+	return GetStats(t.name)
 }

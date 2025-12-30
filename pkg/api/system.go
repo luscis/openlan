@@ -77,20 +77,28 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		if t == nil {
 			break
 		}
+		sts := t.Stats()
 		dev = append(dev, schema.Device{
 			Name:     t.Name(),
 			Mtu:      t.Mtu(),
 			Provider: t.Type(),
+			Recv:     sts.Recv,
+			Send:     sts.Send,
+			Drop:     sts.Drop,
 		})
 	}
 	for t := range network.Bridges.List() {
 		if t == nil {
 			break
 		}
+		sts := t.Stats()
 		dev = append(dev, schema.Device{
 			Name:     t.Name(),
 			Mtu:      t.Mtu(),
 			Provider: t.Type(),
+			Recv:     sts.Recv,
+			Send:     sts.Send,
+			Drop:     sts.Drop,
 		})
 	}
 	ResponseJson(w, dev)
@@ -129,15 +137,18 @@ func (h Device) Get(w http.ResponseWriter, r *http.Request) {
 				Provider: dev.Type(),
 			})
 		}
+		sts := br.Stats()
 		ResponseJson(w, schema.Bridge{
 			Device: schema.Device{
-				Name:     br.Name(),
+				Name:     br.L3Name(),
 				Mtu:      br.Mtu(),
 				Provider: br.Type(),
+				Recv:     sts.Recv,
+				Send:     sts.Send,
+				Drop:     sts.Drop,
 			},
 			Macs:   macs,
 			Slaves: slaves,
-			Stats:  br.Stats(),
 		})
 	} else {
 		http.Error(w, vars["id"], http.StatusNotFound)

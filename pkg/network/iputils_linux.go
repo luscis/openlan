@@ -2,6 +2,8 @@ package network
 
 import (
 	"os/exec"
+
+	nl "github.com/vishvananda/netlink"
 )
 
 func LinkAdd(name string, opts ...string) ([]byte, error) {
@@ -74,4 +76,16 @@ func RouteDel(name, prefix, nexthop string, opts ...string) ([]byte, error) {
 
 func RouteShow(name string) []string {
 	return nil
+}
+
+func GetStats(name string) DeviceStats {
+	if link, err := nl.LinkByName(name); err == nil {
+		sts := link.Attrs().Statistics
+		return DeviceStats{
+			Drop: sts.RxDropped,
+			Recv: sts.RxBytes,
+			Send: sts.TxBytes,
+		}
+	}
+	return DeviceStats{}
 }

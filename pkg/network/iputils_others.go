@@ -45,3 +45,7 @@ func RouteDel(name, prefix, nexthop string, opts ...string) ([]byte, error) {
 func RouteShow(name string) []string {
 	return nil
 }
+
+func GetStats(name string) DeviceStats {
+	return DeviceStats{}
+}

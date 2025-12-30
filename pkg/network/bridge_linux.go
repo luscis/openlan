@@ -13,7 +13,6 @@ func NewBridger(provider, name string, ifMtu int) Bridger {
 }
 
 type LinuxBridge struct {
-	sts     DeviceStats
 	address *nl.Addr
 	ipMtu   int
 	name    string
@@ -168,7 +167,7 @@ func (b *LinuxBridge) ListMac() <-chan *MacFdb {
 }
 
 func (b *LinuxBridge) Stats() DeviceStats {
-	return b.sts
+	return GetStats(b.l3if)
 }
 
 func (b *LinuxBridge) CallIptables(value int) error {
