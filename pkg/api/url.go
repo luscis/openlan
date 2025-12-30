@@ -33,5 +33,6 @@ func Add(router *mux.Router, cs SwitchApi) {
 	SNAT{}.Router(router)
 	DNAT{}.Router(router)
 	RouterTunnel{}.Router(router)
+	RouterPrivate{}.Router(router)
 	Network{cs: cs}.Router(router)
 }

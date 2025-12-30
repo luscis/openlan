@@ -362,6 +362,55 @@ func (h RouterTunnel) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+type RouterPrivate struct {
+	cs SwitchApi
+}
+
+func (h RouterPrivate) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/router/private", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/router/private", h.Delete).Methods("DELETE")
+}
+
+func (h RouterPrivate) Post(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterPrivate{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.AddPrivate(value.Subnet); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h RouterPrivate) Delete(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterPrivate{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.DelPrivate(value.Subnet); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
 type Bgp struct {
 	cs SwitchApi
 }

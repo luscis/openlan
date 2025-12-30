@@ -56,6 +56,7 @@ func (b Router) Commands(app *api.App) {
 				Action:  b.Save,
 			},
 			RouterTunnel{}.Commands(),
+			RouterPrivate{}.Commands(),
 		},
 	})
 }
@@ -117,6 +118,64 @@ func (s RouterTunnel) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.StringFlag{Name: "protocol", Value: "gre"},
+				},
+				Action: s.Remove,
+			},
+		},
+	}
+}
+
+type RouterPrivate struct {
+	Cmd
+}
+
+func (s RouterPrivate) Url(prefix string) string {
+	return prefix + "/api/network/router/private"
+}
+
+func (s RouterPrivate) Add(c *cli.Context) error {
+	data := &schema.RouterPrivate{
+		Subnet: c.String("subnet"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s RouterPrivate) Remove(c *cli.Context) error {
+	data := &schema.RouterPrivate{
+		Subnet: c.String("subnet"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s RouterPrivate) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "private",
+		Usage: "Router private subnet",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add private",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "subnet", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:    "remove",
+				Aliases: []string{"rm"},
+				Usage:   "Remove private",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "subnet", Required: true},
 				},
 				Action: s.Remove,
 			},

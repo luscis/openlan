@@ -13,13 +13,13 @@ type RouterWorker struct {
 	*WorkerImpl
 	spec      *co.RouterSpecifies
 	addresses []*nl.Addr
-	setS      *cn.IPSet
+	ipses     *cn.IPSet
 }
 
 func NewRouterWorker(c *co.Network) *RouterWorker {
 	w := &RouterWorker{
 		WorkerImpl: NewWorkerApi(c),
-		setS:       cn.NewIPSet(c.Name+"_s", "hash:net"),
+		ipses:      cn.NewIPSet(c.Name+"_s", "hash:net"),
 	}
 	api.Call.SetRouterApi(w)
 	w.spec, _ = c.Specifies.(*co.RouterSpecifies)
@@ -40,22 +40,19 @@ func (w *RouterWorker) Initialize() {
 			w.addresses = append(w.addresses, addr)
 		}
 	}
-	w.setS.Clear()
+	w.ipses.Clear()
 }
 
 func (w *RouterWorker) Forward() {
 	spec := w.spec
 	// Enable MASQUERADE, and FORWARD it.
 	w.out.Debug("RouterWorker.Forward %v", w.cfg)
-	for _, sub := range spec.Subnets {
-		if sub == "" {
-			continue
-		}
-		w.setS.Add(sub)
+	for _, sub := range spec.Private {
+		w.ipses.Add(sub)
 	}
-	w.toRelated(spec.Link, "Accept related")
-	w.toForward_s(spec.Link, w.setS.Name, "", "From route")
-	w.toMasq_s(w.setS.Name, "", "To Masq")
+	w.toRelated("", "Accept related")
+	w.toForward_s("", w.ipses.Name, "", "From route")
+	w.toMasq_s(w.ipses.Name, "", "To Masq")
 }
 
 func (w *RouterWorker) addAddress() error {
@@ -80,7 +77,6 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 	for _, tun := range w.spec.Tunnels {
 		w.addTunnel(tun)
 	}
-
 	w.WorkerImpl.Start(v)
 
 	w.Forward()
@@ -110,7 +106,7 @@ func (w *RouterWorker) Stop() {
 	for _, tun := range w.spec.Tunnels {
 		w.delTunnel(tun)
 	}
-	w.setS.Destroy()
+	w.ipses.Destroy()
 }
 
 func (w *RouterWorker) Reload(v api.SwitchApi) {
@@ -198,6 +194,20 @@ func (w *RouterWorker) DelTunnel(data schema.RouterTunnel) error {
 	obj.Correct()
 	if old, ok := w.spec.DelTunnel(obj); ok {
 		w.delTunnel(old)
+	}
+	return nil
+}
+
+func (w *RouterWorker) AddPrivate(data string) error {
+	if ok := w.spec.AddPrivate(data); ok {
+		w.ipses.Add(data)
+	}
+	return nil
+}
+
+func (w *RouterWorker) DelPrivate(data string) error {
+	if old, ok := w.spec.DelPrivate(data); ok {
+		w.ipses.Del(old)
 	}
 	return nil
 }

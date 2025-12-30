@@ -171,6 +171,8 @@ type CeciApi interface {
 type RouterApi interface {
 	AddTunnel(data schema.RouterTunnel) error
 	DelTunnel(data schema.RouterTunnel) error
+	AddPrivate(data string) error
+	DelPrivate(data string) error
 }
 
 type callApi struct {

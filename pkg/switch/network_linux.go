@@ -51,7 +51,7 @@ type WorkerImpl struct {
 	out     *libol.SubLogger
 	dhcp    *Dhcp
 	fire    *cn.FireWallTable
-	setR    *cn.IPSet
+	ipser   *cn.IPSet
 	vpn     *OpenVPN
 	ztrust  *ZTrust
 	qos     *QosCtrl
@@ -68,7 +68,7 @@ func NewWorkerApi(c *co.Network) *WorkerImpl {
 	return &WorkerImpl{
 		cfg:   c,
 		out:   libol.NewSubLogger(c.Name),
-		setR:  cn.NewIPSet(c.Name+"_r", "hash:net"),
+		ipser: cn.NewIPSet(c.Name+"_r", "hash:net"),
 		table: 0,
 	}
 }
@@ -115,7 +115,7 @@ func (w *WorkerImpl) Initialize() {
 	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
 	w.dnat = cn.NewFireWallChain("XTT_"+cfg.Name+"_DNAT", cn.TNat, "")
 
-	w.setR.Clear()
+	w.ipser.Clear()
 
 	w.ztrust = NewZTrust(cfg.Name, 30)
 	w.ztrust.Initialize()
@@ -154,10 +154,10 @@ func (w *WorkerImpl) doSnat() {
 		return
 	}
 	if cfg.Snat == "enable" {
-		w.toMasq_i("", w.setR.Name, "To Masq")
+		w.toMasq_i("", w.ipser.Name, "To Masq")
 	}
 	if vpn != nil && (cfg.Snat == "openvpn" || cfg.Snat == "enable") {
-		w.toMasq_r(vpn.Subnet, w.setR.Name, "From VPN")
+		w.toMasq_r(vpn.Subnet, w.ipser.Name, "From VPN")
 	}
 }
 
@@ -828,7 +828,7 @@ func (w *WorkerImpl) Stop() {
 		}
 	}
 
-	w.setR.Destroy()
+	w.ipser.Destroy()
 }
 
 func (w *WorkerImpl) String() string {
@@ -1179,9 +1179,9 @@ func (w *WorkerImpl) toVPN() {
 		w.toACL(devName)
 		w.addIPSet(co.PrefixRoute{Prefix: vpn.Subnet})
 		if w.vrf != nil {
-			w.toForward_r(w.vrf.Name(), vpn.Subnet, w.setR.Name, "From VPN")
+			w.toForward_r(w.vrf.Name(), vpn.Subnet, w.ipser.Name, "From VPN")
 		} else {
-			w.toForward_r(devName, vpn.Subnet, w.setR.Name, "From VPN")
+			w.toForward_r(devName, vpn.Subnet, w.ipser.Name, "From VPN")
 		}
 	}
 }
@@ -1202,9 +1202,9 @@ func (w *WorkerImpl) leftVPN() {
 		w.leftACL(devName)
 		w.delIPSet(co.PrefixRoute{Prefix: vpn.Subnet})
 		if w.vrf != nil {
-			w.leftForward_r(w.vrf.Name(), vpn.Subnet, w.setR.Name, "From VPN")
+			w.leftForward_r(w.vrf.Name(), vpn.Subnet, w.ipser.Name, "From VPN")
 		} else {
-			w.leftForward_r(devName, vpn.Subnet, w.setR.Name, "From VPN")
+			w.leftForward_r(devName, vpn.Subnet, w.ipser.Name, "From VPN")
 		}
 	}
 }
@@ -1215,10 +1215,10 @@ func (w *WorkerImpl) addIPSet(rt co.PrefixRoute) {
 	}
 
 	if rt.Prefix == "0.0.0.0/0" {
-		w.setR.Add("0.0.0.0/1")
-		w.setR.Add("128.0.0.0/1")
+		w.ipser.Add("0.0.0.0/1")
+		w.ipser.Add("128.0.0.0/1")
 	}
-	w.setR.Add(rt.Prefix)
+	w.ipser.Add(rt.Prefix)
 }
 
 func (w *WorkerImpl) delIPSet(rt co.PrefixRoute) {
@@ -1227,11 +1227,11 @@ func (w *WorkerImpl) delIPSet(rt co.PrefixRoute) {
 	}
 
 	if rt.Prefix == "0.0.0.0/0" {
-		w.setR.Del("0.0.0.0/1")
-		w.setR.Del("128.0.0.0/1")
+		w.ipser.Del("0.0.0.0/1")
+		w.ipser.Del("128.0.0.0/1")
 		return
 	}
-	w.setR.Del(rt.Prefix)
+	w.ipser.Del(rt.Prefix)
 }
 
 func (w *WorkerImpl) toSubnet() {
@@ -1254,9 +1254,9 @@ func (w *WorkerImpl) toSubnet() {
 	}
 
 	if w.vrf != nil {
-		w.toForward_i(w.vrf.Name(), w.setR.Name, "To route")
+		w.toForward_i(w.vrf.Name(), w.ipser.Name, "To route")
 	} else {
-		w.toForward_i("", w.setR.Name, "To route")
+		w.toForward_i("", w.ipser.Name, "To route")
 	}
 }
 

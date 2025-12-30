@@ -76,6 +76,10 @@ type RouterTunnel struct {
 	Address  string `json:"address"`
 }
 
+type RouterPrivate struct {
+	Subnet string `json:"subnet"`
+}
+
 type IPAddress struct {
 	Address string `json:"address"`
 }
