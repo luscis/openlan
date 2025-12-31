@@ -46,6 +46,6 @@ func RouteShow(name string) []string {
 	return nil
 }
 
-func GetStats(name string) DeviceStats {
+func GetDevStats(name string) DeviceStats {
 	return DeviceStats{}
 }

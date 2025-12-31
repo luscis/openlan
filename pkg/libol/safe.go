@@ -147,9 +147,7 @@ func (sm *SafeStrMap) Del(k string) {
 	sm.lock.Lock()
 	defer sm.lock.Unlock()
 
-	if _, ok := sm.data[k]; ok {
-		delete(sm.data, k)
-	}
+	delete(sm.data, k)
 }
 
 func (sm *SafeStrMap) Clear() {

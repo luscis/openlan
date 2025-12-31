@@ -1,14 +1,14 @@
 package api
 
 import (
-	"net"
 	"net/http"
-	"time"
+	"sort"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/network"
+	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -68,91 +68,77 @@ type Device struct {
 
 func (h Device) Router(router *mux.Router) {
 	router.HandleFunc("/api/device", h.List).Methods("GET")
-	router.HandleFunc("/api/device/{id}", h.Get).Methods("GET")
 }
 
 func (h Device) List(w http.ResponseWriter, r *http.Request) {
 	dev := make([]schema.Device, 0, 1024)
-	for t := range network.Taps.List() {
-		if t == nil {
+	for u := range cache.Network.List() {
+		if u == nil {
 			break
 		}
-		sts := t.Stats()
+		c := u.Config.(*co.Network)
+		if c == nil || c.Bridge == nil {
+			continue
+		}
+		name := c.Bridge.Name
+		br := cn.Bridges.Get(name)
+		if br == nil {
+			continue
+		}
+
+		// Bridge device
+		sts := cn.GetDevStats(br.L3Name())
 		dev = append(dev, schema.Device{
-			Name:     t.Name(),
-			Mtu:      t.Mtu(),
-			Provider: t.Type(),
-			Recv:     sts.Recv,
-			Send:     sts.Send,
-			Drop:     sts.Drop,
+			Name: name,
+			Mtu:  sts.Mtu,
+			Mac:  sts.Mac,
+			Recv: sts.Recv,
+			Send: sts.Send,
+			Drop: sts.Drop,
 		})
+
+		// OpenVPN device
+		if c.OpenVPN != nil {
+			name := c.OpenVPN.Device
+			sts := cn.GetDevStats(name)
+			dev = append(dev, schema.Device{
+				Name: name,
+				Mtu:  sts.Mtu,
+				Mac:  sts.Mac,
+				Recv: sts.Recv,
+				Send: sts.Send,
+				Drop: sts.Drop,
+			})
+		}
+
+		// Output devices
+		for _, l := range c.Outputs {
+			name := l.Link
+			if name == "" {
+				continue
+			}
+			sts := cn.GetDevStats(name)
+			dev = append(dev, schema.Device{
+				Name: name,
+				Mtu:  sts.Mtu,
+				Mac:  sts.Mac,
+				Recv: sts.Recv,
+				Send: sts.Send,
+				Drop: sts.Drop,
+			})
+		}
 	}
-	for t := range network.Bridges.List() {
-		if t == nil {
-			break
-		}
-		sts := t.Stats()
-		dev = append(dev, schema.Device{
-			Name:     t.Name(),
-			Mtu:      t.Mtu(),
-			Provider: t.Type(),
-			Recv:     sts.Recv,
-			Send:     sts.Send,
-			Drop:     sts.Drop,
-		})
+
+	sort.SliceStable(dev, func(i, j int) bool {
+		return dev[i].Name > dev[j].Name
+	})
+
+	for k, v := range dev {
+		d := &dev[k]
+		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
+		cache.Device.Add(v)
 	}
 	ResponseJson(w, dev)
-}
-
-func (h Device) Get(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["id"]
-	if dev := network.Taps.Get(name); dev != nil {
-		ResponseJson(w, schema.Device{
-			Name:     dev.Name(),
-			Mtu:      dev.Mtu(),
-			Provider: dev.Type(),
-		})
-	} else if br := network.Bridges.Get(name); br != nil {
-		now := time.Now().Unix()
-		macs := make([]schema.HwMacInfo, 0, 32)
-		for addr := range br.ListMac() {
-			if addr == nil {
-				break
-			}
-			macs = append(macs, schema.HwMacInfo{
-				Address: net.HardwareAddr(addr.Address).String(),
-				Device:  addr.Device.String(),
-				Uptime:  now - addr.Uptime,
-			})
-		}
-		slaves := make([]schema.Device, 0, 32)
-		for dev := range br.ListSlave() {
-			if dev == nil {
-				break
-			}
-			slaves = append(slaves, schema.Device{
-				Name:     dev.Name(),
-				Mtu:      dev.Mtu(),
-				Provider: dev.Type(),
-			})
-		}
-		sts := br.Stats()
-		ResponseJson(w, schema.Bridge{
-			Device: schema.Device{
-				Name:     br.L3Name(),
-				Mtu:      br.Mtu(),
-				Provider: br.Type(),
-				Recv:     sts.Recv,
-				Send:     sts.Send,
-				Drop:     sts.Drop,
-			},
-			Macs:   macs,
-			Slaves: slaves,
-		})
-	} else {
-		http.Error(w, vars["id"], http.StatusNotFound)
-	}
 }
 
 type Log struct {

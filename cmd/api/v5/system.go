@@ -110,25 +110,22 @@ type Device struct {
 	Cmd
 }
 
-func (u Device) Url(prefix, name string) string {
-	if name == "" {
-		return prefix + "/api/device"
-	} else {
-		return prefix + "/api/device/" + name
-	}
+func (u Device) Url(prefix string) string {
+	return prefix + "/api/device"
+
 }
 
 func (u Device) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "name"}} {{ps -13 "mtu"}} {{ps -6 "provider"}} {{ps -16 "Statistics"}}
+{{ps -15 "name"}} {{ps -13 "mtu"}} {{ps -18 "mac"}} {{ps -22 "Statistics"}} {{ps -8 "Speed"}}
 {{- range . }}
-{{ps -15 .Name}} {{pi -13 .Mtu}} {{ps -6 .Provider}} {{pi 8 .Recv}}/{{pi 8 .Send}}/{{pi 2 .Drop}}
+{{ps -15 .Name}} {{pi -13 .Mtu}} {{ps -18 .Mac}} {{pi -10 .Recv}}/{{pi -10 .Send}}/{{pi -2 .Drop}} {{pb .RxSpeed}}/{{pb .TxSpeed}}
 {{- end }}
 `
 }
 
 func (u Device) List(c *cli.Context) error {
-	url := u.Url(c.String("url"), "")
+	url := u.Url(c.String("url"))
 	clt := u.NewHttp(c.String("token"))
 	var items []schema.Device
 	if err := clt.GetJSON(url, &items); err != nil {

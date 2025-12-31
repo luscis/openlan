@@ -156,5 +156,5 @@ func (t *KernelTap) Mtu() int {
 }
 
 func (t *KernelTap) Stats() DeviceStats {
-	return GetStats(t.name)
+	return GetDevStats(t.name)
 }

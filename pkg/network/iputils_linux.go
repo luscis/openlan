@@ -78,13 +78,15 @@ func RouteShow(name string) []string {
 	return nil
 }
 
-func GetStats(name string) DeviceStats {
+func GetDevStats(name string) DeviceStats {
 	if link, err := nl.LinkByName(name); err == nil {
-		sts := link.Attrs().Statistics
+		attr := link.Attrs()
 		return DeviceStats{
-			Drop: sts.RxDropped,
-			Recv: sts.RxBytes,
-			Send: sts.TxBytes,
+			Drop: attr.Statistics.RxDropped,
+			Recv: attr.Statistics.RxBytes,
+			Send: attr.Statistics.TxBytes,
+			Mac:  attr.HardwareAddr.String(),
+			Mtu:  attr.MTU,
 		}
 	}
 	return DeviceStats{}

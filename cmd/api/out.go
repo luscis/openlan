@@ -72,6 +72,9 @@ func OutTable(data interface{}, tmpl string) error {
 		"ut": func(value int64) string {
 			return libol.UnixTime(value)
 		},
+		"pb": func(value uint64) string {
+			return libol.PrettyBytes(value)
+		},
 	}
 	if tmpl, err := template.New("main").Funcs(funcMap).Parse(tmpl); err != nil {
 		return err

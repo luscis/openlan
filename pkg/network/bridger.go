@@ -70,9 +70,7 @@ func (t *bridger) Del(name string) {
 	if t.devices == nil {
 		return
 	}
-	if _, ok := t.devices[name]; ok {
-		delete(t.devices, name)
-	}
+	delete(t.devices, name)
 }
 
 func (t *bridger) List() <-chan Bridger {

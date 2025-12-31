@@ -3,6 +3,7 @@ package cache
 import (
 	"encoding/binary"
 	"net"
+	"time"
 
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
@@ -155,4 +156,54 @@ var Network = network{
 	Networks: libol.NewSafeStrMap(128),
 	UUID:     libol.NewSafeStrMap(1024),
 	Addr:     libol.NewSafeStrMap(1024),
+}
+
+type device struct {
+	devices *libol.SafeStrMap
+}
+
+type devicevalue struct {
+	device   schema.Device
+	updateat int64
+}
+
+func (p *device) Init(size int) {
+	p.devices = libol.NewSafeStrMap(size)
+}
+
+func (p *device) Add(device schema.Device) {
+	value := &devicevalue{
+		device:   device,
+		updateat: time.Now().Unix(),
+	}
+	_ = p.devices.Mod(device.Name, value)
+}
+
+func (p *device) Get(key string) schema.Device {
+	ret := p.devices.Get(key)
+	if ret != nil {
+		value := ret.(*devicevalue)
+		return value.device
+	}
+	return schema.Device{}
+}
+
+func (p *device) Speed(device schema.Device) (uint64, uint64) {
+	ret := p.devices.Get(device.Name)
+	if ret != nil {
+		older := ret.(*devicevalue)
+		dt := uint64(time.Now().Unix() - older.updateat)
+		ds := device.Send - older.device.Send
+		dr := device.Recv - older.device.Recv
+		return ds / dt, dr / dt
+	}
+	return 0, 0
+}
+
+func (p *device) Del(key string) {
+	p.devices.Del(key)
+}
+
+var Device = device{
+	devices: libol.NewSafeStrMap(1024),
 }
