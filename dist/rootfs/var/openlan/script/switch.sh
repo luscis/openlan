@@ -31,28 +31,32 @@ EOF
 [ -e $cs_dir/network/ipsec.json ] || cat > $cs_dir/network/ipsec.json << EOF
 {
   "name": "ipsec",
-  "provider": "ipsec"
+  "provider": "ipsec",
+  "snat": "disable"
 }
 EOF
 
 [ -e $cs_dir/network/bgp.json ] || cat > $cs_dir/network/bgp.json << EOF
 {
   "name": "bgp",
-  "provider": "bgp"
+  "provider": "bgp",
+  "snat": "disable"
 }
 EOF
 
 [ -e $cs_dir/network/ceci.json ] || cat > $cs_dir/network/ceci.json << EOF
 {
   "name": "ceci",
-  "provider": "ceci"
+  "provider": "ceci",
+  "snat": "disable"
 }
 EOF
 
 [ -e $cs_dir/network/router.json ] || cat > $cs_dir/network/router.json << EOF
 {
   "name": "router",
-  "provider": "router"
+  "provider": "router",
+  "snat": "disable"
 }
 EOF
 ## END

@@ -90,8 +90,9 @@ func (u VPNClient) Kill(c *cli.Context) error {
 
 func (u VPNClient) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "client",
-		Usage: "OpenVPN's client",
+		Name:   "client",
+		Usage:  "OpenVPN's client",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",

@@ -335,8 +335,9 @@ func (s DNAT) List(c *cli.Context) error {
 
 func (s DNAT) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "dnat",
-		Usage: "Configure DNAT",
+		Name:   "dnat",
+		Usage:  "Configure DNAT",
+		Action: s.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:    "list",
