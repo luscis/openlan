@@ -99,7 +99,7 @@ func (h *Http) Middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			dt := time.Now().Unix() - latst
 			if dt > 2 {
-				libol.Warn("Http.Middleware %s %s long ", r.Method, r.URL.Path, dt)
+				libol.Warn("Http.Middleware %s %s long time %d", r.Method, r.URL.Path, dt)
 			}
 		} else {
 			w.Header().Set("WWW-Authenticate", "Basic")
