@@ -95,9 +95,12 @@ func (h *Http) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		libol.Info("Http.Middleware %s %s", r.Method, r.URL.Path)
 		if h.IsAuth(w, r) {
-			h.lock.Lock()
-			defer h.lock.Unlock()
+			latst := time.Now().Unix()
 			next.ServeHTTP(w, r)
+			dt := time.Now().Unix() - latst
+			if dt > 2 {
+				libol.Warn("Http.Middleware %s %s long ", r.Method, r.URL.Path, dt)
+			}
 		} else {
 			w.Header().Set("WWW-Authenticate", "Basic")
 			http.Error(w, "Authorization Required", http.StatusUnauthorized)
