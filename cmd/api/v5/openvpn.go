@@ -153,6 +153,9 @@ func (o OpenVPN) Add(c *cli.Context) error {
 	}
 	dns := strings.Split(c.String("dns"), ",")
 	for _, v := range dns {
+		if v == "" {
+			continue
+		}
 		data.Push = append(data.Push, "dhcp-option DNS "+v)
 	}
 	clt := o.NewHttp(c.String("token"))
