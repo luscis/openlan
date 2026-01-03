@@ -70,7 +70,6 @@ push "{{ . }}"
 {{- end }}
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
-cipher {{ .Cipher }}
 management {{ .ServerDir }}/{{ .Protocol }}{{ .Port }}server.sock unix
 client-connect "{{ .ServerDir }}/client-up.sh"
 client-disconnect "{{ .ServerDir }}/client-down.sh"
@@ -132,7 +131,6 @@ func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 		Key:      cfg.ServerKey,
 		DhPem:    cfg.DhPem,
 		TlsAuth:  cfg.TlsAuth,
-		Cipher:   cfg.Cipher,
 		Device:   cfg.Device,
 		Protocol: cfg.Protocol,
 		Script:   cfg.Script,
@@ -607,7 +605,6 @@ remote-cert-tls server
 {{ .TlsAuth -}}
 </tls-auth>
 key-direction 1
-cipher {{ .Cipher }}
 auth-nocache
 verb 4
 auth-user-pass
@@ -619,7 +616,6 @@ func NewOpenVPNProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
 	data := &OpenVPNProfile{
 		Server:   obj.Local,
 		Port:     obj.Port,
-		Cipher:   cfg.Cipher,
 		Device:   cfg.Device[:3],
 		Protocol: cfg.Protocol,
 		Renego:   cfg.Renego,

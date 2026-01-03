@@ -24,7 +24,6 @@ type OpenVPN struct {
 	ServerCrt string           `json:"-" yaml:"-"`
 	ServerKey string           `json:"-" yaml:"-"`
 	TlsAuth   string           `json:"-" yaml:"-"`
-	Cipher    string           `json:"-" yaml:"-"`
 	Routes    []string         `json:"-" yaml:"-"`
 	Renego    int              `json:"-" yaml:"-"`
 	Script    string           `json:"-" yaml:"-"`
@@ -72,7 +71,6 @@ var defaultVpn = &OpenVPN{
 	ServerKey: VarDir("cert/key"),
 	DhPem:     VarDir("openvpn/dh.pem"),
 	TlsAuth:   VarDir("openvpn/ta.key"),
-	Cipher:    "AES-256-CBC",
 	Script:    "/usr/bin/openlan",
 }
 
@@ -104,9 +102,6 @@ func (o *OpenVPN) Correct(pool, network string) {
 	}
 	if o.TlsAuth == "" {
 		o.TlsAuth = defaultVpn.TlsAuth
-	}
-	if o.Cipher == "" {
-		o.Cipher = defaultVpn.Cipher
 	}
 
 	o.Script = o.AuthBin(defaultVpn)
