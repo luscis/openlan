@@ -80,57 +80,76 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		if c == nil || c.Bridge == nil {
 			continue
 		}
-		name := c.Bridge.Name
-		br := cn.Bridges.Get(name)
-		if br == nil {
-			continue
-		}
 
 		// Bridge device
-		sts := cn.GetDevStats(br.L3Name())
-		dev = append(dev, schema.Device{
-			Name: name,
-			Mtu:  sts.Mtu,
-			Mac:  sts.Mac,
-			Recv: sts.Recv,
-			Send: sts.Send,
-			Drop: sts.Drop,
-		})
+		br := cn.Bridges.Get(c.Bridge.Name)
+		if br != nil {
+			name := br.L3Name()
+			sts := cn.GetDevStats(name)
+			dev = append(dev, schema.Device{
+				Network: c.Name,
+				Name:    name,
+				Mtu:     sts.Mtu,
+				Mac:     sts.Mac,
+				Recv:    sts.Recv,
+				Send:    sts.Send,
+				Drop:    sts.Drop,
+			})
+		}
 
 		// OpenVPN device
 		if c.OpenVPN != nil {
 			name := c.OpenVPN.Device
 			sts := cn.GetDevStats(name)
 			dev = append(dev, schema.Device{
-				Name: name,
-				Mtu:  sts.Mtu,
-				Mac:  sts.Mac,
-				Recv: sts.Recv,
-				Send: sts.Send,
-				Drop: sts.Drop,
-			})
-		}
-
-		// Output devices
-		for _, l := range c.Outputs {
-			name := l.Link
-			if name == "" {
-				continue
-			}
-			sts := cn.GetDevStats(name)
-			dev = append(dev, schema.Device{
-				Name: name,
-				Mtu:  sts.Mtu,
-				Mac:  sts.Mac,
-				Recv: sts.Recv,
-				Send: sts.Send,
-				Drop: sts.Drop,
+				Network: c.Name,
+				Name:    name,
+				Mtu:     sts.Mtu,
+				Mac:     sts.Mac,
+				Recv:    sts.Recv,
+				Send:    sts.Send,
+				Drop:    sts.Drop,
 			})
 		}
 	}
+	// Output devices
+	for l := range cache.Output.ListAll() {
+		if l == nil {
+			break
+		}
+		name := l.Device
+		sts := cn.GetDevStats(name)
+		dev = append(dev, schema.Device{
+			Network: l.Network,
+			Name:    name,
+			Mtu:     sts.Mtu,
+			Mac:     sts.Mac,
+			Recv:    sts.Recv,
+			Send:    sts.Send,
+			Drop:    sts.Drop,
+		})
+	}
+
+	// Access devices
+	for a := range cache.Access.List() {
+		if a == nil {
+			break
+		}
+		name := a.IfName
+		sts := cn.GetDevStats(name)
+		dev = append(dev, schema.Device{
+			Network: a.Network,
+			Name:    name,
+			Mtu:     sts.Mtu,
+			Mac:     sts.Mac,
+			Recv:    sts.Recv,
+			Send:    sts.Send,
+			Drop:    sts.Drop,
+		})
+	}
 
 	sort.SliceStable(dev, func(i, j int) bool {
-		return dev[i].Name > dev[j].Name
+		return dev[i].Network+dev[i].Name > dev[j].Network+dev[j].Name
 	})
 
 	for k, v := range dev {

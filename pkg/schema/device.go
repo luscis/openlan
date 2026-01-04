@@ -1,6 +1,7 @@
 package schema
 
 type Device struct {
+	Network string `json:"network,omitempty"`
 	Name    string `json:"name"`
 	Address string `json:"address,omitempty"`
 	Mac     string `json:"mac,omitempty"`

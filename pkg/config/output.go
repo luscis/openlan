@@ -30,7 +30,7 @@ func (o *Output) Correct() {
 	case "vxlan":
 		o.Link = fmt.Sprintf("%s%d", "xei", o.Segment)
 	case "tcp", "tls", "wss":
-		o.Link = o.Remote
+		o.Link = fmt.Sprintf("%s:%s", o.Protocol, o.Remote)
 	default:
 		if o.Segment > 0 {
 			o.Link = fmt.Sprintf("%s.%d", o.Remote, o.Segment)

@@ -44,6 +44,10 @@ func (p *output) List(name string) <-chan *models.Output {
 	return c
 }
 
+func (p *output) ListAll() <-chan *models.Output {
+	return p.List("")
+}
+
 var Output = output{
 	outputs: libol.NewSafeStrMap(1024),
 }
