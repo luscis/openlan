@@ -195,7 +195,11 @@ func (p *device) Speed(device schema.Device) (uint64, uint64) {
 		dt := uint64(time.Now().Unix() - older.updateat)
 		ds := device.Send - older.device.Send
 		dr := device.Recv - older.device.Recv
-		return ds / dt, dr / dt
+		if dt > 0 {
+			return ds / dt, dr / dt
+		} else {
+			return ds, dr
+		}
 	}
 	return 0, 0
 }

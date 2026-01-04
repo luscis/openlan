@@ -1083,7 +1083,6 @@ func (w *WorkerImpl) setVPNRoute(routes []string, rt co.PrefixRoute) []string {
 	addr := rt.Prefix
 	if addr == "0.0.0.0/0" {
 		vpn.AddRedirectDef1()
-		routes = append(routes, addr)
 		return routes
 	}
 	if inet, err := libol.ParseNet(addr); err == nil {
