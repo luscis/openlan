@@ -253,6 +253,8 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version = schema.NewVersionSchema()
 	body.Worker = api.NewWorkerSchema(h.cs)
 
+	// display conntrack stats.
+	body.Conntrack = libol.ListConnStats().String()
 	// display accessed Access.
 	for p := range cache.Access.List() {
 		if p == nil {

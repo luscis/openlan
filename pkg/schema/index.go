@@ -3,6 +3,7 @@ package schema
 type Index struct {
 	Version   Version     `json:"version"`
 	Worker    Worker      `json:"worker"`
+	Conntrack string      `json:"conntrack"`
 	Access    []Access    `json:"access"`
 	Neighbors []Neighbor  `json:"neighbors"`
 	OnLines   []OnLine    `json:"online"`

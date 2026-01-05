@@ -16,3 +16,7 @@ func ListRoutes() ([]Prefix, error) {
 func ListNeighbrs() ([]Neighbor, error) {
 	return nil, NewErr("ListNeighbors notSupport")
 }
+
+func ListConnStats() ConnStats {
+	return ConnStats{}
+}

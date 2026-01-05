@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/vishvananda/netlink"
+	nl "github.com/vishvananda/netlink"
 )
 
 func GetLocalByGw(addr string) (net.IP, error) {
 	local := net.IP{}
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	routes, err := nl.RouteList(nil, nl.FAMILY_V4)
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func GetLocalByGw(addr string) (net.IP, error) {
 		Warn("GetLocalByGW: parseIP %s failed", addr)
 		return nil, nil
 	}
-	find := netlink.Route{LinkIndex: -1}
+	find := nl.Route{LinkIndex: -1}
 	for _, rte := range routes {
 		if rte.Dst != nil && !rte.Dst.Contains(dest) {
 			continue
@@ -34,8 +34,8 @@ func GetLocalByGw(addr string) (net.IP, error) {
 		if source == nil {
 			source = find.Src
 		}
-		link, _ := netlink.LinkByIndex(index)
-		address, _ := netlink.AddrList(link, netlink.FAMILY_V4)
+		link, _ := nl.LinkByIndex(index)
+		address, _ := nl.AddrList(link, nl.FAMILY_V4)
 		for _, ifAddr := range address {
 			if ifAddr.Contains(source) {
 				local = ifAddr.IP
@@ -87,7 +87,7 @@ func RouteProtocol(code int) string {
 func ListRoutes() ([]Prefix, error) {
 	var items []Prefix
 
-	values, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	values, err := nl.RouteList(nil, nl.FAMILY_V4)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func ListRoutes() ([]Prefix, error) {
 			Protocol: RouteProtocol(value.Protocol),
 			Priority: value.Priority,
 		}
-		link, err := netlink.LinkByIndex(value.LinkIndex)
+		link, err := nl.LinkByIndex(value.LinkIndex)
 		if err == nil {
 			entry.Link = link.Attrs().Name
 		}
@@ -148,7 +148,7 @@ func StateCode(code int) string {
 func ListNeighbrs() ([]Neighbor, error) {
 	var items []Neighbor
 
-	values, err := netlink.NeighList(0, netlink.FAMILY_V4)
+	values, err := nl.NeighList(0, nl.FAMILY_V4)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +158,31 @@ func ListNeighbrs() ([]Neighbor, error) {
 			HwAddr:  value.HardwareAddr.String(),
 			State:   StateCode(value.State),
 		}
-		link, err := netlink.LinkByIndex(value.LinkIndex)
+		link, err := nl.LinkByIndex(value.LinkIndex)
 		if err == nil {
 			entry.Link = link.Attrs().Name
 		}
 		items = append(items, entry)
 	}
 	return items, nil
+}
+
+func ListConnStats() ConnStats {
+	sts := ConnStats{}
+	values, err := nl.ConntrackTableList(nl.ConntrackTable, nl.FAMILY_V4)
+	if err != nil {
+		return sts
+	}
+	for _, value := range values {
+		sts.Total += 1
+		switch value.Forward.Packets {
+		case 6:
+			sts.TCP += 1
+		case 17:
+			sts.UDP += 1
+		case 1:
+			sts.ICMP += 1
+		}
+	}
+	return sts
 }
