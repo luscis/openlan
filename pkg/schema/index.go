@@ -5,9 +5,7 @@ type Index struct {
 	Worker    Worker      `json:"worker"`
 	Conntrack string      `json:"conntrack"`
 	Access    []Access    `json:"access"`
-	Neighbors []Neighbor  `json:"neighbors"`
-	OnLines   []OnLine    `json:"online"`
-	Network   []Network   `json:"network"`
+	Devices   []Device    `json:"device"`
 	Clients   []VPNClient `json:"clients"`
 	Outputs   []Output    `json:"output"`
 }

@@ -33,7 +33,7 @@
         .container a {
             text-decoration: none;
         }
-        .worker, .point, .link, .neighbor, .online {
+        .worker, .device, .link, .point {
             width: 100%;
             border: 1px solid #acacac;
             border-radius: 4px;
@@ -131,6 +131,39 @@
             </table>
         </div>
     </div>
+    <div class="device">
+        <div class="panel-header">
+            <p>
+                <span>The device on, and total </span><span>{{ len .Devices }}</span>.
+            </p>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>Network</th>
+                    <th>Device</th>
+                    <th>MTU</th>
+                    <th>MAC</th>
+                    <th>Rx|Tx Traffic</th>
+                    <th>Speed</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .Devices }}
+                    <tr>
+                        <td>{{ .Network }}</td>
+                        <td>{{ .Name }}</td>
+                        <td>{{ .Mtu }}</td>
+                        <td>{{ .Mac }}</td>
+                        <td>{{ .Recv }} | {{ .Send }}</td>
+                        <td>{{ prettyBytes .RxSpeed }} | {{ prettyBytes .TxSpeed }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
     <div class="link">
         <div class="panel-header">
             <div>
@@ -177,7 +210,7 @@
     <div class="point">
         <div class="panel-header">
             <p>
-                <span>The point accessed to, and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
+                <span>The client accessed to, and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -217,70 +250,6 @@
                         <td>{{ .User }}@{{ .Network }}</td>
                         <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="neighbor">
-        <div class="panel-header">
-            <div>
-                <span>The neighbor we discovered on, and total </span><span>{{ len .Neighbors }}</span>.
-            </div>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
-                <thead>
-                <tr>
-                    <th>UpTime</th>
-                    <th>Ethernet</th>
-                    <th>IP Address</th>
-                    <th>Network</th>
-                    <th>Connection</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range .Neighbors }}
-                    <tr>
-                        <td>{{ prettyTime .Uptime }}</td>
-                        <td>{{ .HwAddr }}</td>
-                        <td>{{ .IpAddr }}</td>
-                        <td>{{ .Device }}@{{ .Network }}</td>
-                        <td>{{ .Client }}</td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="online">
-        <div class="panel-header">
-            <div>
-                <span>The flow traced from point, and total </span><span>{{ len .OnLines }}</span>.
-            </div>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
-                <thead>
-                <tr>
-                    <th>LastTime</th>
-                    <th>Source</th>
-                    <th>Destination Address</th>
-                    <th>Protocol</th>
-                    <th>Source</th>
-                    <th>Destination Port</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range .OnLines }}
-                    <tr>
-                        <td>{{ prettyTime .HitTime }}</td>
-                        <td>{{ .IpSource }}</td>
-                        <td>{{ .IpDest }}</td>
-                        <td>{{ .IpProto }}</td>
-                        <td>{{ .PortSource }}</td>
-                        <td>{{ .PortDest }}</td>
                     </tr>
                 {{ end }}
                 </tbody>

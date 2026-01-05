@@ -70,8 +70,8 @@ func (h Device) Router(router *mux.Router) {
 	router.HandleFunc("/api/device", h.List).Methods("GET")
 }
 
-func (h Device) List(w http.ResponseWriter, r *http.Request) {
-	dev := make([]schema.Device, 0, 1024)
+func ListDevices() []schema.Device {
+	values := make([]schema.Device, 0, 1024)
 	for u := range cache.Network.List() {
 		if u == nil {
 			break
@@ -86,7 +86,7 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		if br != nil {
 			name := br.L3Name()
 			sts := cn.GetDevStats(name)
-			dev = append(dev, schema.Device{
+			values = append(values, schema.Device{
 				Network: c.Name,
 				Name:    name,
 				Mtu:     sts.Mtu,
@@ -101,7 +101,7 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		if c.OpenVPN != nil {
 			name := c.OpenVPN.Device
 			sts := cn.GetDevStats(name)
-			dev = append(dev, schema.Device{
+			values = append(values, schema.Device{
 				Network: c.Name,
 				Name:    name,
 				Mtu:     sts.Mtu,
@@ -119,7 +119,7 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		}
 		name := l.Device
 		sts := cn.GetDevStats(name)
-		dev = append(dev, schema.Device{
+		values = append(values, schema.Device{
 			Network: l.Network,
 			Name:    name,
 			Mtu:     sts.Mtu,
@@ -137,7 +137,7 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		}
 		name := a.IfName
 		sts := cn.GetDevStats(name)
-		dev = append(dev, schema.Device{
+		values = append(values, schema.Device{
 			Network: a.Network,
 			Name:    name,
 			Mtu:     sts.Mtu,
@@ -148,15 +148,19 @@ func (h Device) List(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	sort.SliceStable(dev, func(i, j int) bool {
-		return dev[i].Network+dev[i].Name > dev[j].Network+dev[j].Name
+	sort.SliceStable(values, func(i, j int) bool {
+		return values[i].ID() > values[j].ID()
 	})
 
-	for k, v := range dev {
-		d := &dev[k]
-		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
+	for k, v := range values {
+		(&values[k]).TxSpeed, (&values[k]).RxSpeed = cache.Device.Speed(v)
 		cache.Device.Add(v)
 	}
+
+	return values
+}
+func (h Device) List(w http.ResponseWriter, r *http.Request) {
+	dev := ListDevices()
 	ResponseJson(w, dev)
 }
 

@@ -255,6 +255,8 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 
 	// display conntrack stats.
 	body.Conntrack = libol.ListConnStats().String()
+	// dispaly all devices.
+	body.Devices = api.ListDevices()
 	// display accessed Access.
 	for p := range cache.Access.List() {
 		if p == nil {
@@ -266,26 +268,6 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 		ii := body.Access[i]
 		jj := body.Access[j]
 		return ii.Network+ii.Remote > jj.Network+jj.Remote
-	})
-	// display neighbor.
-	for n := range cache.Neighbor.List() {
-		if n == nil {
-			break
-		}
-		body.Neighbors = append(body.Neighbors, models.NewNeighborSchema(n))
-	}
-	sort.SliceStable(body.Neighbors, func(i, j int) bool {
-		return body.Neighbors[i].IpAddr > body.Neighbors[j].IpAddr
-	})
-	// display online flow.
-	for l := range cache.Online.List() {
-		if l == nil {
-			break
-		}
-		body.OnLines = append(body.OnLines, models.NewOnLineSchema(l))
-	}
-	sort.SliceStable(body.OnLines, func(i, j int) bool {
-		return body.OnLines[i].HitTime < body.OnLines[j].HitTime
 	})
 	// display OpenVPN Clients.
 	for n := range cache.Network.List() {
@@ -302,9 +284,8 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 			return body.Clients[i].Name < body.Clients[j].Name
 		})
 	}
-
 	// display esp state
-	for s := range cache.Output.List("") {
+	for s := range cache.Output.ListAll() {
 		if s == nil {
 			break
 		}

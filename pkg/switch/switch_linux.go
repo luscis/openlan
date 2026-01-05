@@ -87,10 +87,8 @@ func GetSocketServer(s *co.Switch) libol.SocketServer {
 }
 
 type Apps struct {
-	Auth     *app.Access
-	Request  *app.Request
-	Neighbor *app.Neighbors
-	OnLines  *app.Online
+	Auth    *app.Access
+	Request *app.Request
 }
 
 type Hook func(client libol.SocketClient, frame *libol.FrameMessage) error
@@ -198,12 +196,6 @@ func (v *Switch) preApplication() {
 	// Append request process
 	v.apps.Request = app.NewRequest(v)
 	v.hooks = append(v.hooks, v.apps.Request.OnFrame)
-
-	v.apps.Neighbor = app.NewNeighbors(v)
-	v.hooks = append(v.hooks, v.apps.Neighbor.OnFrame)
-
-	v.apps.OnLines = app.NewOnline(v)
-	v.hooks = append(v.hooks, v.apps.OnLines.OnFrame)
 
 	for i, h := range v.hooks {
 		v.out.Debug("Switch.preApplication: id %d, func %s", i, libol.FunName(h))

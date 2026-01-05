@@ -33,8 +33,6 @@ func (r *Request) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) 
 		out.Cmd("Request.OnFrame: %s %s", action, body)
 	}
 	switch action {
-	case libol.NeighborReq:
-		r.onNeighbor(client, body)
 	case libol.IpAddrReq:
 		r.onIpAddr(client, body)
 	case libol.LeftReq:
@@ -50,20 +48,6 @@ func (r *Request) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) 
 func (r *Request) onDefault(client libol.SocketClient, data []byte) {
 	m := libol.NewControlFrame(libol.PongResp, data)
 	_ = client.WriteMsg(m)
-}
-
-func (r *Request) onNeighbor(client libol.SocketClient, data []byte) {
-	resp := make([]schema.Neighbor, 0, 32)
-	for obj := range cache.Neighbor.List() {
-		if obj == nil {
-			break
-		}
-		resp = append(resp, models.NewNeighborSchema(obj))
-	}
-	if respStr, err := json.Marshal(resp); err == nil {
-		m := libol.NewControlFrame(libol.NeighborResp, respStr)
-		_ = client.WriteMsg(m)
-	}
 }
 
 func findLease(ifAddr string, p *models.Access) *schema.Lease {

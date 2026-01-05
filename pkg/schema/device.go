@@ -1,5 +1,7 @@
 package schema
 
+import "fmt"
+
 type Device struct {
 	Network string `json:"network,omitempty"`
 	Name    string `json:"name"`
@@ -11,6 +13,10 @@ type Device struct {
 	Drop    uint64 `json:"drop,omitempty"`
 	RxSpeed uint64 `json:"rxSpeed,omitempty"`
 	TxSpeed uint64 `json:"txSpeed,omitempty"`
+}
+
+func (c Device) ID() string {
+	return fmt.Sprintf("%s:%s", c.Network, c.Name)
 }
 
 type HwMacInfo struct {
