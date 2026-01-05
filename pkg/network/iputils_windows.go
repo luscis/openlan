@@ -95,6 +95,10 @@ func RouteShow(name string) []string {
 	return nil
 }
 
-func GetDevStats(name string) DeviceStats {
-	return DeviceStats{}
+func GetDevInfo(name string) DeviceInfo {
+	return DeviceInfo{}
+}
+
+func GetDevAddr(name string) string {
+	return ""
 }

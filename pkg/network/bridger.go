@@ -31,7 +31,7 @@ type Bridger interface {
 	Kernel() string // name in kernel.
 	ListMac() <-chan *MacFdb
 	String() string
-	Stats() DeviceStats
+	Stats() DeviceInfo
 	CallIptables(value int) error
 	L3Name() string
 	SetMtu(mtu int) error

@@ -257,6 +257,9 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Conntrack = libol.ListConnStats().String()
 	// dispaly all devices.
 	body.Devices = api.ListDevices()
+	sort.SliceStable(body.Devices, func(i, j int) bool {
+		return body.Devices[i].ID() > body.Devices[j].ID()
+	})
 	// display accessed Access.
 	for p := range cache.Access.List() {
 		if p == nil {

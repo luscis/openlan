@@ -166,8 +166,8 @@ func (b *LinuxBridge) ListMac() <-chan *MacFdb {
 	return data
 }
 
-func (b *LinuxBridge) Stats() DeviceStats {
-	return GetDevStats(b.l3if)
+func (b *LinuxBridge) Stats() DeviceInfo {
+	return GetDevInfo(b.l3if)
 }
 
 func (b *LinuxBridge) CallIptables(value int) error {

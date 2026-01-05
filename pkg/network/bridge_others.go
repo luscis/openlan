@@ -64,8 +64,8 @@ func (b *OtherBridge) String() string {
 	return "NAN"
 }
 
-func (b *OtherBridge) Stats() DeviceStats {
-	return DeviceStats{}
+func (b *OtherBridge) Stats() DeviceInfo {
+	return DeviceInfo{}
 }
 
 func (b *OtherBridge) CallIptables(value int) error {

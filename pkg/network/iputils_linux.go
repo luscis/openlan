@@ -2,6 +2,7 @@ package network
 
 import (
 	"os/exec"
+	"strings"
 
 	nl "github.com/vishvananda/netlink"
 )
@@ -78,16 +79,31 @@ func RouteShow(name string) []string {
 	return nil
 }
 
-func GetDevStats(name string) DeviceStats {
+func GetDevInfo(name string) DeviceInfo {
 	if link, err := nl.LinkByName(name); err == nil {
 		attr := link.Attrs()
-		return DeviceStats{
-			Drop: attr.Statistics.RxDropped,
-			Recv: attr.Statistics.RxBytes,
-			Send: attr.Statistics.TxBytes,
-			Mac:  attr.HardwareAddr.String(),
-			Mtu:  attr.MTU,
+		state := "down"
+		if strings.Contains(attr.Flags.String(), "up") {
+			state = "up"
+		}
+		return DeviceInfo{
+			State: state,
+			Drop:  attr.Statistics.RxDropped,
+			Recv:  attr.Statistics.RxBytes,
+			Send:  attr.Statistics.TxBytes,
+			Mac:   attr.HardwareAddr.String(),
+			Mtu:   attr.MTU,
 		}
 	}
-	return DeviceStats{}
+	return DeviceInfo{}
+}
+
+func GetDevAddr(name string) string {
+	if link, err := nl.LinkByName(name); err == nil {
+		address, _ := nl.AddrList(link, nl.FAMILY_V4)
+		for _, addr := range address {
+			return addr.IPNet.String()
+		}
+	}
+	return ""
 }

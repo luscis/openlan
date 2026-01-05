@@ -12,13 +12,14 @@ const (
 	TAP     = 0x02
 )
 
-type DeviceStats struct {
+type DeviceInfo struct {
 	Send    uint64 `json:"send"`
 	Recv    uint64 `json:"recv"`
 	Drop    uint64 `json:"drop"`
 	Mac     string `json:"mac"`
 	Address uint64 `json:"address"`
 	Mtu     int    `json:"mtu"`
+	State   string `json:"state"`
 }
 
 type Taper interface {
@@ -38,7 +39,7 @@ type Taper interface {
 	Mtu() int
 	String() string
 	Has(v uint) bool
-	Stats() DeviceStats
+	Stats() DeviceInfo
 }
 
 func NewTaper(tenant string, c TapConfig) (Taper, error) {

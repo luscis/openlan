@@ -13,6 +13,7 @@ type Device struct {
 	Drop    uint64 `json:"drop,omitempty"`
 	RxSpeed uint64 `json:"rxSpeed,omitempty"`
 	TxSpeed uint64 `json:"txSpeed,omitempty"`
+	State   string `json:"state"`
 }
 
 func (c Device) ID() string {

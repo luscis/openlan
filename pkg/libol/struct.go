@@ -27,5 +27,5 @@ type ConnStats struct {
 }
 
 func (c ConnStats) String() string {
-	return fmt.Sprintf("total:%d tcp:%d udp:%d icmp:%d", c.Total, c.TCP, c.UDP, c.ICMP)
+	return fmt.Sprintf("total:%d|tcp:%d|udp:%d|icmp:%d", c.Total, c.TCP, c.UDP, c.ICMP)
 }

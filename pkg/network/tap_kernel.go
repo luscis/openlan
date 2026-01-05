@@ -155,6 +155,6 @@ func (t *KernelTap) Mtu() int {
 	return t.ipMtu
 }
 
-func (t *KernelTap) Stats() DeviceStats {
-	return GetDevStats(t.name)
+func (t *KernelTap) Stats() DeviceInfo {
+	return GetDevInfo(t.name)
 }

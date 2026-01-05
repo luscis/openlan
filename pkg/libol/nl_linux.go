@@ -175,7 +175,7 @@ func ListConnStats() ConnStats {
 	}
 	for _, value := range values {
 		sts.Total += 1
-		switch value.Forward.Packets {
+		switch value.Forward.Protocol {
 		case 6:
 			sts.TCP += 1
 		case 17:

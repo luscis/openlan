@@ -103,7 +103,7 @@
                     </tr>
                     <tr>
                         <td>UUID</td>
-                        <td>: {{ .Worker.UUID }} {{ .Worker.Alias }}</td>
+                        <td>: {{ .Worker.UUID }}|{{ .Worker.Alias }}</td>
                     </tr>
                     <tr>
                         <td>UpTime</td>
@@ -115,16 +115,16 @@
                     </tr>
                     <tr>
                         <td>Version</td>
-                        <td>: {{ .Version.Version }} {{ .Version.Date }}</td>
+                        <td>: {{ .Version.Version }}|{{ .Version.Date }}</td>
                     </tr>
                     <tr>
                         <td>Conntrack</td>
                         <td>: {{ .Conntrack }}</td>
                     </tr>
                     <tr>
-                        <td>APIs:</td>
+                        <td>APIs</td>
                         <td>
-                            : <a href="/api/urls">display</a>
+                            : <a href="/api/urls">urls</a>
                         </td>
                     </tr>
                 </tbody>
@@ -143,9 +143,11 @@
                 <tr>
                     <th>Network</th>
                     <th>Device</th>
+                    <th>State</th>
                     <th>MTU</th>
                     <th>MAC</th>
-                    <th>Rx|Tx Traffic</th>
+                    <th>Address</th>
+                    <th>Rx/Tx Traffic</th>
                     <th>Speed</th>
                 </tr>
                 </thead>
@@ -154,10 +156,12 @@
                     <tr>
                         <td>{{ .Network }}</td>
                         <td>{{ .Name }}</td>
+                        <td>{{ .State }}</td>
                         <td>{{ .Mtu }}</td>
-                        <td>{{ .Mac }}</td>
-                        <td>{{ .Recv }} | {{ .Send }}</td>
-                        <td>{{ prettyBytes .RxSpeed }} | {{ prettyBytes .TxSpeed }}</td>
+                        <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
+                        <td>{{ if .Address }}{{ .Address }}{{ else }}-{{ end }}</td>
+                        <td>{{ .Recv }} / {{ .Send }}</td>
+                        <td>{{ prettyBytes .RxSpeed }} / {{ prettyBytes .TxSpeed }}</td>
                     </tr>
                 {{ end }}
                 </tbody>
@@ -181,25 +185,25 @@
                     <th>Segment</th>
                     <th>Protocol</th>
                     <th>Connection</th>
-                    <th>Rx|Tx Traffic</th>
+                    <th>Rx/Tx Traffic</th>
                     <th>State</th>
                 </tr>
                 </thead>
                 <tbody>
                 {{ range .Outputs }}
                         <tr>
-                            <td>output</td>
+                            <td>-</td>
                             <td>{{ prettyTime .AliveTime }}</td>
                             <td>{{ .Network }}</td>
                             <td>{{ .Device }}</td>
                             <td>{{ toSegment .Segment .Secret }}</td>
                             <td>{{ .Protocol }}</td>
                             <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
-                            <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
+                            <td>{{ .RxBytes }} / {{ .TxBytes }}</td>
                             <td>
                                 {{ if .RxBytes }}<span class="success">success</span>
                                 {{ else }}<span class="unknown">{{ .State }}</span>
-                                {{ end}}
+                                {{ end }}
                             </td>
                         </tr>
                 {{ end }}
@@ -223,20 +227,20 @@
                     <th>Alias</th>
                     <th>Connection</th>
                     <th>User</th>
-                    <th>Rx|Tx Traffic</th>
+                    <th>Rx/Tx Traffic</th>
                     <th>State</th>
                 </tr>
                 </thead>
                 <tbody>
                 {{ range .Clients }}
                     <tr>
-                        <td>openvpn</td>
+                        <td>-</td>
                         <td>{{ prettyTime .AliveTime }}</td>
                         <td>{{ .Device }}</td>
                         <td>{{ .Address }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .Name }}</td>
-                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
+                        <td>{{ .RxBytes }} / {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
@@ -248,7 +252,7 @@
                         <td>{{ .Alias }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .User }}@{{ .Network }}</td>
-                        <td>{{ .RxBytes }} | {{ .TxBytes }}</td>
+                        <td>{{ .RxBytes }} / {{ .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}

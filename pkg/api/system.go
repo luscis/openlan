@@ -85,30 +85,34 @@ func ListDevices() []schema.Device {
 		br := cn.Bridges.Get(c.Bridge.Name)
 		if br != nil {
 			name := br.L3Name()
-			sts := cn.GetDevStats(name)
+			sts := cn.GetDevInfo(name)
 			values = append(values, schema.Device{
 				Network: c.Name,
 				Name:    name,
+				Address: cn.GetDevAddr(name),
 				Mtu:     sts.Mtu,
 				Mac:     sts.Mac,
 				Recv:    sts.Recv,
 				Send:    sts.Send,
 				Drop:    sts.Drop,
+				State:   sts.State,
 			})
 		}
 
 		// OpenVPN device
 		if c.OpenVPN != nil {
 			name := c.OpenVPN.Device
-			sts := cn.GetDevStats(name)
+			sts := cn.GetDevInfo(name)
 			values = append(values, schema.Device{
 				Network: c.Name,
 				Name:    name,
+				Address: cn.GetDevAddr(name),
 				Mtu:     sts.Mtu,
 				Mac:     sts.Mac,
 				Recv:    sts.Recv,
 				Send:    sts.Send,
 				Drop:    sts.Drop,
+				State:   sts.State,
 			})
 		}
 	}
@@ -118,7 +122,7 @@ func ListDevices() []schema.Device {
 			break
 		}
 		name := l.Device
-		sts := cn.GetDevStats(name)
+		sts := cn.GetDevInfo(name)
 		values = append(values, schema.Device{
 			Network: l.Network,
 			Name:    name,
@@ -127,6 +131,7 @@ func ListDevices() []schema.Device {
 			Recv:    sts.Recv,
 			Send:    sts.Send,
 			Drop:    sts.Drop,
+			State:   sts.State,
 		})
 	}
 
@@ -136,7 +141,7 @@ func ListDevices() []schema.Device {
 			break
 		}
 		name := a.IfName
-		sts := cn.GetDevStats(name)
+		sts := cn.GetDevInfo(name)
 		values = append(values, schema.Device{
 			Network: a.Network,
 			Name:    name,
@@ -145,15 +150,13 @@ func ListDevices() []schema.Device {
 			Recv:    sts.Recv,
 			Send:    sts.Send,
 			Drop:    sts.Drop,
+			State:   sts.State,
 		})
 	}
 
-	sort.SliceStable(values, func(i, j int) bool {
-		return values[i].ID() > values[j].ID()
-	})
-
 	for k, v := range values {
-		(&values[k]).TxSpeed, (&values[k]).RxSpeed = cache.Device.Speed(v)
+		d := &values[k]
+		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
 		cache.Device.Add(v)
 	}
 
@@ -161,6 +164,9 @@ func ListDevices() []schema.Device {
 }
 func (h Device) List(w http.ResponseWriter, r *http.Request) {
 	dev := ListDevices()
+	sort.SliceStable(dev, func(i, j int) bool {
+		return dev[i].ID() > dev[j].ID()
+	})
 	ResponseJson(w, dev)
 }
 
