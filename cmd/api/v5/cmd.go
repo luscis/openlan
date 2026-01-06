@@ -43,6 +43,6 @@ func Commands(app *api.App) {
 	RateLimit{}.Commands(app)
 	BGP{}.Commands(app)
 	Ceci{}.Commands(app)
-	Prefix{}.Commands(app)
+	Index{}.Commands(app)
 	Router{}.Commands(app)
 }

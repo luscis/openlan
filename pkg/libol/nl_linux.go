@@ -3,6 +3,7 @@ package libol
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	nl "github.com/vishvananda/netlink"
 )
@@ -185,4 +186,31 @@ func ListConnStats() ConnStats {
 		}
 	}
 	return sts
+}
+
+func ListPhyLinks() []Device {
+	var dev []Device
+	values, err := nl.LinkList()
+	if err != nil {
+		return dev
+	}
+	for _, value := range values {
+		if value.Type() == "device" {
+			attr := value.Attrs()
+			state := "down"
+			if strings.Contains(attr.Flags.String(), "up") {
+				state = "up"
+			}
+			dev = append(dev, Device{
+				Name:  attr.Name,
+				Mtu:   attr.MTU,
+				Mac:   attr.HardwareAddr.String(),
+				State: state,
+				Drop:  attr.Statistics.RxDropped,
+				Recv:  attr.Statistics.RxBytes,
+				Send:  attr.Statistics.TxPackets,
+			})
+		}
+	}
+	return dev
 }

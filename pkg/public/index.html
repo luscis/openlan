@@ -106,6 +106,10 @@
                         <td>: {{ .Worker.UUID }}|{{ .Worker.Alias }}</td>
                     </tr>
                     <tr>
+                        <td>Expire at</td>
+                        <td>: {{ .Version.Expire }}</td>
+                    </tr>
+                    <tr>
                         <td>UpTime</td>
                         <td>: {{ prettyTime .Worker.Uptime }}</td>
                     </tr>
@@ -162,6 +166,70 @@
                         <td>{{ if .Address }}{{ .Address }}{{ else }}-{{ end }}</td>
                         <td>{{ .Recv }} / {{ .Send }}</td>
                         <td>{{ prettyBytes .RxSpeed }} / {{ prettyBytes .TxSpeed }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="device">
+        <div class="panel-header">
+            <p>
+                <span>The route on, and total </span><span>{{ len .Routes }}</span>.
+            </p>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>Table</th>
+                    <th>Protocol</th>
+                    <th>Prefix</th>
+                    <th>NextHop</th>
+                    <th>Device</th>
+                    <th>Source</th>
+                    <th>Metric</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .Routes }}
+                    <tr>
+                        <td>{{ .Table }}</td>
+                        <td>{{ .Protocol }}</td>
+                        <td>{{ .Prefix }}</td>
+                        <td>{{ .NextHop }}</td>
+                        <td>{{ .Link }}</td>
+                        <td>{{ .Source }}</td>
+                        <td>{{ .Metric }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="device">
+        <div class="panel-header">
+            <p>
+                <span>The neighbor on, and total </span><span>{{ len .Neighbor }}</span>.
+            </p>
+        </div>
+        <div class="panel-body">
+            <table class="table-display">
+                <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>MAC</th>
+                    <th>Device</th>
+                    <th>State</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .Neighbor }}
+                    <tr>
+                        <td>{{ .Address }}</td>
+                        <td>{{ .HwAddr }}</td>
+                        <td>{{ .Link }}</td>
+                        <td>{{ .State }}</td>
                     </tr>
                 {{ end }}
                 </tbody>

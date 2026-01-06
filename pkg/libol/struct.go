@@ -29,3 +29,13 @@ type ConnStats struct {
 func (c ConnStats) String() string {
 	return fmt.Sprintf("total:%d|tcp:%d|udp:%d|icmp:%d", c.Total, c.TCP, c.UDP, c.ICMP)
 }
+
+type Device struct {
+	Name  string
+	Send  uint64
+	Recv  uint64
+	Drop  uint64
+	Mac   string
+	State string
+	Mtu   int
+}

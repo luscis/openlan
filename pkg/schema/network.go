@@ -1,5 +1,7 @@
 package schema
 
+import "fmt"
+
 type Lease struct {
 	Address string `json:"address"`
 	Alias   string `json:"alias"`
@@ -28,6 +30,10 @@ type KernelRoute struct {
 	Table    int    `json:"table,omitempty"`
 	Source   string `json:"source,omitempty"`
 	Protocol string `json:"protocol,omitempty"`
+}
+
+func (k KernelRoute) ID() string {
+	return fmt.Sprintf("%s-%s", k.Protocol, k.Prefix)
 }
 
 type KernelNeighbor struct {

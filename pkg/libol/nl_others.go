@@ -20,3 +20,7 @@ func ListNeighbrs() ([]Neighbor, error) {
 func ListConnStats() ConnStats {
 	return ConnStats{}
 }
+
+func ListPhyLinks() []Device {
+	return nil
+}

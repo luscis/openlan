@@ -19,9 +19,8 @@ func (l KernelRoute) Router(router *mux.Router) {
 	router.HandleFunc("/api/kernel/route", l.List).Methods("GET")
 }
 
-func (l KernelRoute) List(w http.ResponseWriter, r *http.Request) {
+func ListeRoutes() []schema.KernelRoute {
 	var items []schema.KernelRoute
-
 	values, _ := libol.ListRoutes()
 	for _, val := range values {
 		item := schema.KernelRoute{
@@ -36,6 +35,10 @@ func (l KernelRoute) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, item)
 
 	}
+	return items
+}
+func (l KernelRoute) List(w http.ResponseWriter, r *http.Request) {
+	items := ListeRoutes()
 	ResponseJson(w, items)
 }
 
@@ -46,9 +49,8 @@ func (l KernelNeighbor) Router(router *mux.Router) {
 	router.HandleFunc("/api/kernel/neighbor", l.List).Methods("GET")
 }
 
-func (l KernelNeighbor) List(w http.ResponseWriter, r *http.Request) {
+func ListNeighbrs() []schema.KernelNeighbor {
 	var items []schema.KernelNeighbor
-
 	values, _ := libol.ListNeighbrs()
 	for _, val := range values {
 		item := schema.KernelNeighbor{
@@ -60,6 +62,10 @@ func (l KernelNeighbor) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, item)
 
 	}
+	return items
+}
+func (l KernelNeighbor) List(w http.ResponseWriter, r *http.Request) {
+	items := ListNeighbrs()
 	ResponseJson(w, items)
 }
 
@@ -98,7 +104,6 @@ func ListDevices() []schema.Device {
 				State:   sts.State,
 			})
 		}
-
 		// OpenVPN device
 		if c.OpenVPN != nil {
 			name := c.OpenVPN.Device
@@ -154,6 +159,20 @@ func ListDevices() []schema.Device {
 		})
 	}
 
+	// Physical links
+	for _, d := range libol.ListPhyLinks() {
+		values = append(values, schema.Device{
+			Network: "-",
+			Name:    d.Name,
+			Mtu:     d.Mtu,
+			Mac:     d.Mac,
+			Recv:    d.Recv,
+			Send:    d.Send,
+			Drop:    d.Drop,
+			State:   d.State,
+			Address: cn.GetDevAddr(d.Name),
+		})
+	}
 	for k, v := range values {
 		d := &values[k]
 		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)

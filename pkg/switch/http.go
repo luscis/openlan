@@ -251,6 +251,7 @@ func (h *Http) PubFile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version = schema.NewVersionSchema()
+	body.Version.Expire = h.cs.GetCert().CertExpire
 	body.Worker = api.NewWorkerSchema(h.cs)
 
 	// display conntrack stats.
@@ -258,7 +259,17 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	// dispaly all devices.
 	body.Devices = api.ListDevices()
 	sort.SliceStable(body.Devices, func(i, j int) bool {
-		return body.Devices[i].ID() > body.Devices[j].ID()
+		return body.Devices[i].ID() < body.Devices[j].ID()
+	})
+	// dispaly all routes.
+	body.Routes = api.ListeRoutes()
+	sort.SliceStable(body.Routes, func(i, j int) bool {
+		return body.Routes[i].ID() < body.Routes[j].ID()
+	})
+	// dispaly all neighbors.
+	body.Neighbor = api.ListNeighbrs()
+	sort.SliceStable(body.Neighbor, func(i, j int) bool {
+		return body.Neighbor[i].Address < body.Neighbor[j].Address
 	})
 	// display accessed Access.
 	for p := range cache.Access.List() {

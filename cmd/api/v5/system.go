@@ -9,46 +9,29 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type Prefix struct {
+type Index struct {
 	Cmd
 }
 
-func (r Prefix) Url(prefix string) string {
-	return prefix + "/api/prefix"
+func (r Index) Url(prefix string) string {
+	return prefix + "/api/index"
 }
 
-func (r Prefix) Tmpl() string {
-	return `# total {{ len . }}
-{{ps -18 "destination"}} {{ps -15 "nexthop"}} {{ps -16 "link"}} {{ps -15 "source"}} {{ps -6 "metric" }} {{ "protocol" }}
-{{- range . }}
-{{ps -18 .Prefix}} {{ps -15 .NextHop}} {{ps -16 .Link}} {{ps -15 .Source}} {{pi -6 .Metric}} {{ .Protocol }}
-{{- end }}
-`
-}
-
-func (r Prefix) List(c *cli.Context) error {
+func (r Index) List(c *cli.Context) error {
 	url := r.Url(c.String("url"))
 	clt := r.NewHttp(c.String("token"))
-	var items []schema.PrefixRoute
-	if err := clt.GetJSON(url, &items); err != nil {
+	var value schema.Index
+	if err := clt.GetJSON(url, &value); err != nil {
 		return err
 	}
-	return r.Out(items, c.String("format"), r.Tmpl())
+	return r.Out(value, c.String("format"), r.Tmpl())
 }
 
-func (r Prefix) Commands(app *api.App) {
+func (r Index) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:   "prefix",
-		Usage:  "System prefix",
+		Name:   "index",
+		Usage:  "Display information",
 		Action: r.List,
-		Subcommands: []*cli.Command{
-			{
-				Name:    "list",
-				Aliases: []string{"ls"},
-				Usage:   "List system routes.",
-				Action:  r.List,
-			},
-		},
 	})
 }
 
