@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"io"
 	"net/http"
+	"time"
 )
 
 type HttpClient struct {
@@ -13,6 +14,7 @@ type HttpClient struct {
 	Auth      Auth
 	TlsConfig *tls.Config
 	Client    *http.Client
+	Timeout   time.Duration
 }
 
 func (cl *HttpClient) Do() (*http.Response, error) {
@@ -29,10 +31,14 @@ func (cl *HttpClient) Do() (*http.Response, error) {
 	if cl.Auth.Type == "basic" {
 		req.Header.Set("Authorization", BasicAuth(cl.Auth.Username, cl.Auth.Password))
 	}
+	if cl.Timeout == 0 {
+		cl.Timeout = 5 * time.Second
+	}
 	cl.Client = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: cl.TlsConfig,
 		},
+		Timeout: cl.Timeout,
 	}
 	return cl.Client.Do(req)
 }

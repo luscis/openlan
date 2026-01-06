@@ -227,7 +227,7 @@
                 {{ range .Neighbor }}
                     <tr>
                         <td>{{ .Address }}</td>
-                        <td>{{ .HwAddr }}</td>
+                        <td>{{ if .HwAddr }}{{ .HwAddr }}{{ else }}-{{ end }}</td>
                         <td>{{ .Link }}</td>
                         <td>{{ .State }}</td>
                     </tr>
