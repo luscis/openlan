@@ -3,6 +3,7 @@ package libol
 import (
 	"crypto/tls"
 	"fmt"
+	"time"
 
 	"github.com/go-ldap/ldap"
 )
@@ -15,7 +16,7 @@ type LDAPConfig struct {
 	Attr      string
 	Filter    string
 	EnableTls bool
-	Timeout   int64
+	Timeout   time.Duration
 }
 
 type LDAPService struct {
@@ -39,8 +40,9 @@ func NewLDAPService(cfg LDAPConfig) (*LDAPService, error) {
 		return nil, err
 	}
 	if cfg.Timeout == 0 {
-		cfg.Timeout = 8 * 3600
+		cfg.Timeout = 2 * time.Second
 	}
+	conn.SetTimeout(time.Duration(cfg.Timeout))
 	return &LDAPService{Conn: conn, Cfg: cfg}, nil
 }
 

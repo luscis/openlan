@@ -166,13 +166,6 @@ func (w *user) CheckLdap(obj *models.User) *models.User {
 	return nil
 }
 
-func (w *user) Timeout(user *models.User) bool {
-	if user.Role == "ldap" {
-		return time.Now().Unix()-user.UpdateAt > w.LdapCfg.Timeout
-	}
-	return true
-}
-
 func (w *user) Check(obj *models.User) (*models.User, error) {
 	if w.Cert != "" {
 		pemData, err := os.ReadFile(w.Cert)
