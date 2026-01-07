@@ -71,6 +71,7 @@ push "{{ . }}"
 ifconfig-pool-persist {{ .Protocol }}{{ .Port }}ipp
 tls-auth {{ .TlsAuth }} 0
 management {{ .ServerDir }}/{{ .Protocol }}{{ .Port }}server.sock unix
+status {{ .Protocol }}{{ .Port }}server.client 2
 client-connect "{{ .ServerDir }}/client-up.sh"
 client-disconnect "{{ .ServerDir }}/client-down.sh"
 {{- if .CertNot }}
@@ -192,79 +193,44 @@ func (o *OpenVPN) Directory() string {
 	return o.Cfg.Directory
 }
 
-func (o *OpenVPN) FileCfg(full bool) string {
+func (o *OpenVPN) tofile(name string, full bool) string {
 	if o.Cfg == nil {
 		return ""
 	}
-	name := o.ID() + "server.conf"
+	name = o.ID() + name
 	if !full {
 		return name
 	}
 	return filepath.Join(o.Cfg.Directory, name)
 }
 
-func (o *OpenVPN) FileClient(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "client.ovpn"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
+func (o *OpenVPN) FileCfg(full bool) string {
+	return o.tofile("server.conf", full)
+}
+
+func (o *OpenVPN) FileClientProfile(full bool) string {
+	return o.tofile("client.ovpn", full)
+
 }
 
 func (o *OpenVPN) FileLog(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "server.log"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
+	return o.tofile("server.log", full)
 }
 
 func (o *OpenVPN) FilePid(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "server.pid"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
+	return o.tofile("server.pid", full)
 }
 
 func (o *OpenVPN) FileIpp(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "ipp"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
+	return o.tofile("ipp", full)
 }
 
-func (o *OpenVPN) FileStatus(full bool) string {
-	if o.Cfg == nil {
-		return ""
-	}
-	name := o.ID() + "server.sock"
-	if !full {
-		return name
-	}
-	return filepath.Join(o.Cfg.Directory, name)
+func (o *OpenVPN) FileClient(full bool) string {
+	return o.tofile("server.client", full)
 }
 
-func (o *OpenVPN) Pid(full bool) string {
-	if data, err := os.ReadFile(o.FilePid(true)); err != nil {
-		o.out.Debug("OpenVPN.Stop %s", err)
-		return ""
-	} else {
-		return strings.TrimSpace(string(data))
-	}
+func (o *OpenVPN) FileCtrl(full bool) string {
+	return o.tofile("server.sock", full)
 }
 
 func (o *OpenVPN) ClientDir() string {
@@ -398,8 +364,9 @@ func (o *OpenVPN) writeClientPlat(data *OpenVPNData) error {
 }
 
 func (o *OpenVPN) Clean() {
+	o.out.Info("OpenVPN.Clean")
 	o.cleanClientConf()
-	files := []string{o.FileIpp(true), o.FileClient(true)}
+	files := []string{o.FileIpp(true), o.FileClientProfile(true)}
 	for _, file := range files {
 		if err := libol.FileExist(file); err == nil {
 			if err := os.Remove(file); err != nil {
@@ -414,7 +381,9 @@ func (o *OpenVPN) Initialize() {
 		return
 	}
 
-	o.Clean()
+	if o.FindPid() == 0 {
+		o.Clean()
+	}
 	if o.Cfg.Version == 0 {
 		o.Cfg.Version = GetOpenVPNVersion()
 	}
@@ -428,7 +397,7 @@ func (o *OpenVPN) Initialize() {
 		return
 	}
 	if ctx, err := o.Profile(); err == nil {
-		file := o.FileClient(true)
+		file := o.FileClientProfile(true)
 		if err := os.WriteFile(file, ctx, 0600); err != nil {
 			o.out.Warn("OpenVPN.Initialize %s", err)
 		}
@@ -447,72 +416,69 @@ func (o *OpenVPN) ValidConf() bool {
 	return true
 }
 
+func (o *OpenVPN) FindPid() int {
+	pid := 0
+	if v, err := os.ReadFile(o.FilePid(true)); err == nil {
+		fmt.Sscanf(string(v), "%d", &pid)
+	}
+	return pid
+}
+
 func (o *OpenVPN) Start() {
 	if !o.ValidConf() {
 		return
 	}
-	log, err := libol.CreateFile(o.FileLog(true))
-	if err != nil {
-		o.out.Warn("OpenVPN.Start %s", err)
-		return
+
+	pid := o.FindPid()
+	o.out.Info("OpenVPN.Start: older pid:%d", pid)
+	if pid > 0 {
+		if ok := libol.HasProcess(pid); ok {
+			o.out.Info("OpenVPN.Start: already running")
+			return
+		}
 	}
-	libol.Go(func() {
-		defer log.Close()
-		args := []string{
-			"--cd", o.Directory(),
-			"--config", o.FileCfg(false),
-			"--writepid", o.FilePid(false),
-		}
-		cmd := exec.Command(o.Path(), args...)
-		cmd.Stdout = log
-		cmd.Stderr = log
-		if err := cmd.Run(); err != nil {
-			o.out.Error("OpenVPN.Start %s: %s", o.ID(), err)
-		}
-	})
+
+	args := []string{
+		"--cd", o.Directory(),
+		"--config", o.FileCfg(false),
+		"--writepid", o.FilePid(false),
+		"--log-append", o.FileLog(false),
+		"--daemon",
+	}
+	o.out.Info("%s with %s", o.Path(), args)
+	cmd := exec.Command(o.Path(), args...)
+	if err := cmd.Start(); err != nil {
+		o.out.Error("OpenVPN.Start %s: %s", o.ID(), err)
+	}
+	cmd.Wait()
 }
 
 func (o *OpenVPN) Stop() {
 	if !o.ValidConf() {
 		return
 	}
-	if data, err := os.ReadFile(o.FilePid(true)); err != nil {
-		o.out.Debug("OpenVPN.Stop %s", err)
+	if pid := o.FindPid(); pid > 0 {
+		o.out.Info("OpenVPN.Stop without kill %d.", pid)
 	} else {
-		killPath, err := exec.LookPath("kill")
-		if err != nil {
-			o.out.Warn("kill cmd not found :", err)
-		}
-		pid := strings.TrimSpace(string(data))
-		cmd := exec.Command(killPath, pid)
-		if err := cmd.Run(); err != nil {
-			o.out.Warn("OpenVPN.Stop %s: %s", pid, err)
-		}
+		o.Clean()
 	}
-	o.Clean()
 }
 
-func (o *OpenVPN) checkAlreadyClose(pid string) {
+func (o *OpenVPN) checkWait() {
 	timeout := 10 * time.Second
-
-	if pid != "" {
+	if pid := o.FindPid(); pid > 0 {
 		ticker := time.Tick(200 * time.Millisecond)
 		timer := time.After(timeout)
-		pidInt, err := strconv.Atoi(pid)
-		if err != nil {
-			return
-		}
 		for {
 			select {
 			case <-ticker:
-
-				running := libol.IsProcessRunning(pidInt)
+				running := libol.WaitProcess(pid)
 				if !running {
-					o.out.Debug("OpenVPN.CheckAlreadyClose:vpn is close")
+					o.out.Debug("OpenVPN.checkWait:vpn is close")
 					return
 				}
 			case <-timer:
-				o.out.Warn("OpenVPN.CheckAlreadyClose:vpn close timeout")
+				o.out.Warn("OpenVPN.checkWait:vpn close timeout")
 				return
 			}
 		}
@@ -536,7 +502,7 @@ func (o *OpenVPN) Profile() ([]byte, error) {
 }
 
 func (o *OpenVPN) Exec(cmd string) error {
-	conn, err := net.Dial("unix", o.FileStatus(true))
+	conn, err := net.Dial("unix", o.FileCtrl(true))
 	if err != nil {
 		libol.Warn("OpenVPN.Exec %v", err)
 		return err

@@ -129,7 +129,7 @@ func (c Cmd) Tmpl() string {
 	return ""
 }
 
-func (c Cmd) Out(data interface{}, format string, tmpl string) error {
+func (c Cmd) Out(data any, format string, tmpl string) error {
 	if tmpl == "" {
 		format = "yaml"
 	}

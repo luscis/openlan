@@ -79,13 +79,14 @@ func (l *Link) Start() error {
 			"-alias", l.cfg.Connection + "@" + l.cfg.Network,
 			"-conf", file,
 		}
-		l.out.Debug("Link.Start %s %v", l.Path(), args)
+		l.out.Info("%s with %s", l.Path(), args)
 		cmd := exec.Command(l.Path(), args...)
 		cmd.Stdout = log
 		cmd.Stderr = log
-		if err := cmd.Run(); err != nil {
+		if err := cmd.Start(); err != nil {
 			l.out.Error("Link.Start %s: %s", l.uuid, err)
 		}
+		cmd.Wait()
 	})
 	return nil
 }

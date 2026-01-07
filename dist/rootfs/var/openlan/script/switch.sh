@@ -8,9 +8,7 @@ sysctl -p /etc/sysctl.d/90-openlan.conf
 
 ## START: clean older files.
 /usr/bin/env find /var/openlan/access -type f -delete
-/usr/bin/env find /var/openlan/openvpn -name '*.status' -delete
-/usr/bin/env find /var/openlan/openvpn -name '*client.ovpn' -delete
-/usr/bin/env find /var/openlan/openvpn -name '*client.tmpl' -delete
+/usr/bin/env find /var/openlan/openvpn -name '*.client' -delete
 ## END
 
 ## START: prepare external dir.
@@ -70,4 +68,4 @@ while true; do
 done
 ## END
 
-exec /usr/bin/openlan-switch -conf:dir $cs_dir -log:level 20
+exec /usr/bin/openlan-switch -monitor -conf:dir $cs_dir -log:level 20

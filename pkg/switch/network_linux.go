@@ -747,7 +747,7 @@ func (w *WorkerImpl) DelVPN() {
 		w.leftVPN()
 		w.leftVPNQoS()
 		w.vpn.Stop()
-		w.vpn.checkAlreadyClose(w.vpn.Pid(true))
+		w.vpn.checkWait()
 		if w.cfg.ZTrust == "enable" {
 			w.leftTrust()
 		}
@@ -763,7 +763,7 @@ func (w *WorkerImpl) StartVPN() {
 	}
 
 	w.vpn.Stop()
-	w.vpn.checkAlreadyClose(w.vpn.Pid(true))
+	w.vpn.checkWait()
 	w.vpn.Initialize()
 	w.vpn.Start()
 	if !(w.vrf == nil) {

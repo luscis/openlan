@@ -2,9 +2,7 @@ package cache
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -150,10 +148,10 @@ func (o *vpnClient) Dir(args ...string) string {
 	return filepath.Join(values...)
 }
 
-func (o *vpnClient) statusFile(name string) []string {
-	files, err := filepath.Glob(o.Dir(name, "*server.sock"))
+func (o *vpnClient) clientFile(name string) []string {
+	files, err := filepath.Glob(o.Dir(name, "*server.client"))
 	if err != nil {
-		libol.Warn("vpnClient.statusFile %v", err)
+		libol.Warn("vpnClient.clientFile %v", err)
 	}
 	return files
 }
@@ -167,28 +165,27 @@ func (o *vpnClient) platFile(name string) []string {
 	return files
 }
 
-func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
+func (o *vpnClient) readClients(network string) map[string]*schema.VPNClient {
 	clients := make(map[string]*schema.VPNClient, 32)
-	for _, file := range o.statusFile(network) {
-		conn, err := net.Dial("unix", file)
+	for _, file := range o.clientFile(network) {
+		reader, err := os.Open(file)
 		if err != nil {
-			libol.Debug("vpnClient.readStatus %v", err)
+			libol.Debug("vpnClient.readClients %v", err)
 			return nil
 		}
-		fmt.Fprintf(conn, "status\n")
-		if err := o.scanClient(network, conn, clients); err != nil {
-			libol.Warn("vpnClient.readStatus %v", err)
+		if err := o.scanClient(network, reader, clients); err != nil {
+			libol.Warn("vpnClient.readClients %v", err)
 		}
-		conn.Close()
+		reader.Close()
 	}
 	for _, file := range o.platFile(network) {
 		reader, err := os.Open(file)
 		if err != nil {
-			libol.Debug("vpnClient.readStatus %v", err)
+			libol.Debug("vpnClient.readClients %v", err)
 			return nil
 		}
 		if err := o.scanPlat(reader, clients); err != nil {
-			libol.Warn("vpnClient.readStatus %v", err)
+			libol.Warn("vpnClient.readClients %v", err)
 		}
 		reader.Close()
 	}
@@ -198,7 +195,7 @@ func (o *vpnClient) readStatus(network string) map[string]*schema.VPNClient {
 func (o *vpnClient) List(name string) <-chan *schema.VPNClient {
 	c := make(chan *schema.VPNClient, 128)
 
-	clients := o.readStatus(name)
+	clients := o.readClients(name)
 	go func() {
 		for _, v := range clients {
 			c <- v
@@ -211,7 +208,7 @@ func (o *vpnClient) List(name string) <-chan *schema.VPNClient {
 
 func (o *vpnClient) Get(name, user string) *schema.VPNClient {
 	username := user + "@" + name
-	clients := o.readStatus(name)
+	clients := o.readClients(name)
 	for _, client := range clients {
 		if client.Name == username {
 			return client
@@ -220,7 +217,7 @@ func (o *vpnClient) Get(name, user string) *schema.VPNClient {
 	return nil
 }
 
-func (o *vpnClient) clientFile(name string) string {
+func (o *vpnClient) clientProfile(name string) string {
 	files, _ := filepath.Glob(o.Dir(name, "*client.ovpn"))
 	if len(files) > 0 {
 		return files[0]
@@ -228,7 +225,7 @@ func (o *vpnClient) clientFile(name string) string {
 	return ""
 }
 func (o *vpnClient) GetClientProfile(network, remote string) (string, error) {
-	reader, err := os.Open(o.clientFile(network))
+	reader, err := os.Open(o.clientProfile(network))
 	if err != nil {
 		return "", err
 	}
