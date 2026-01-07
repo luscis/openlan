@@ -62,6 +62,6 @@ func main() {
 		} else {
 			cmd.Wait()
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }

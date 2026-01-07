@@ -235,7 +235,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				Name:   port.Link,
 				Bridge: bridge,
 			},
-			Log:        co.Log{File: "/dev/null"},
 			Connection: port.Remote,
 			Fallback:   port.Fallback,
 			Protocol:   port.Protocol,
@@ -747,7 +746,7 @@ func (w *WorkerImpl) DelVPN() {
 		w.leftVPN()
 		w.leftVPNQoS()
 		w.vpn.Stop()
-		w.vpn.checkWait()
+		w.vpn.CheckWait()
 		if w.cfg.ZTrust == "enable" {
 			w.leftTrust()
 		}
@@ -763,7 +762,7 @@ func (w *WorkerImpl) StartVPN() {
 	}
 
 	w.vpn.Stop()
-	w.vpn.checkWait()
+	w.vpn.CheckWait()
 	w.vpn.Initialize()
 	w.vpn.Start()
 	if !(w.vrf == nil) {

@@ -1,10 +1,10 @@
 package cswitch
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	co "github.com/luscis/openlan/pkg/config"
@@ -34,6 +34,7 @@ func NewLink(cfg *co.Access) *Link {
 
 func (l *Link) Initialize() {
 	file := l.ConfFile()
+	l.cfg.Log = co.Log{File: l.LogFile()}
 	l.cfg.StatusFile = l.StatusFile()
 	l.cfg.PidFile = l.PidFile()
 	_ = libol.MarshalSave(l.cfg, file, true)
@@ -51,44 +52,54 @@ func (l *Link) Path() string {
 	return AccessBin
 }
 
+func (l *Link) ID() string {
+	return l.cfg.ID()
+}
+
 func (l *Link) ConfFile() string {
-	return filepath.Join(AccessDir, l.uuid+".json")
+	return filepath.Join(AccessDir, l.ID()+".json")
 }
 
 func (l *Link) StatusFile() string {
-	return filepath.Join(AccessDir, l.uuid+".status")
+	return filepath.Join(AccessDir, l.ID()+".status")
 }
 
 func (l *Link) PidFile() string {
-	return filepath.Join(AccessDir, l.uuid+".pid")
+	return filepath.Join(AccessDir, l.ID()+".pid")
 }
 
 func (l *Link) LogFile() string {
-	return filepath.Join(AccessDir, l.uuid+".log")
+	return filepath.Join(AccessDir, l.ID()+".log")
 }
 
 func (l *Link) Start() error {
-	file := l.ConfFile()
-	log, err := libol.CreateFile(l.LogFile())
-	if err != nil {
-		l.out.Warn("Link.Start %s", err)
-		return nil
+	pid := l.FindPid()
+	l.out.Info("Link.Start: older pid:%d", pid)
+	if pid > 0 {
+		if ok := libol.HasProcess(pid); ok {
+			l.out.Info("OpenVPN.Start: already running")
+			return nil
+		}
 	}
-	libol.Go(func() {
-		args := []string{
-			"-alias", l.cfg.Connection + "@" + l.cfg.Network,
-			"-conf", file,
-		}
-		l.out.Info("%s with %s", l.Path(), args)
-		cmd := exec.Command(l.Path(), args...)
-		cmd.Stdout = log
-		cmd.Stderr = log
-		if err := cmd.Start(); err != nil {
-			l.out.Error("Link.Start %s: %s", l.uuid, err)
-		}
-		cmd.Wait()
-	})
+
+	file := l.ConfFile()
+	args := []string{
+		"-conf", file,
+	}
+	l.out.Info("%s with %s", l.Path(), args)
+	cmd := exec.Command(l.Path(), args...)
+	if err := cmd.Start(); err != nil {
+		l.out.Error("Link.Start %s: %s", l.uuid, err)
+	}
 	return nil
+}
+
+func (l *Link) FindPid() int {
+	pid := 0
+	if v, err := os.ReadFile(l.PidFile()); err == nil {
+		fmt.Sscanf(string(v), "%d", &pid)
+	}
+	return pid
 }
 
 func (l *Link) Clean() {
@@ -105,17 +116,11 @@ func (l *Link) Clean() {
 }
 
 func (l *Link) Stop() error {
-	if data, err := os.ReadFile(l.PidFile()); err != nil {
-		l.out.Debug("Link.Stop %s", err)
+	if pid := l.FindPid(); pid > 0 {
+		l.out.Info("Link.Stop: without stoping: %d", pid)
 	} else {
-		pid := strings.TrimSpace(string(data))
-		cmd := exec.Command("kill", pid)
-		if err := cmd.Run(); err != nil {
-			l.out.Warn("Link.Stop %s: %s", pid, err)
-			return err
-		}
+		l.Clean()
 	}
-	l.Clean()
 	return nil
 }
 

@@ -370,13 +370,6 @@ func Exec(bin string, args ...string) (string, error) {
 }
 
 func HasProcess(pid int) bool {
-	if _, err := os.FindProcess(pid); err != nil {
-		return false
-	}
-	return true
-}
-
-func WaitProcess(pid int) bool {
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return false

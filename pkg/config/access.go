@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"runtime"
 	"strings"
 
@@ -39,6 +40,10 @@ type Access struct {
 	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
 	Forward     []string  `json:"forward,omitempty" yaml:"forward,omitempty"`
 	Fallback    string    `json:"fallback,omitempty" yaml:"fallback,omitempty"`
+}
+
+func (a *Access) ID() string {
+	return fmt.Sprintf("%s:%s:%s", a.Network, a.Connection, a.Username)
 }
 
 func (i *Interface) Correct() {

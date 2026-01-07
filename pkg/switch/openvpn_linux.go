@@ -254,7 +254,7 @@ func (o *OpenVPN) WriteConf(path string) error {
 	}
 	defer fp.Close()
 	data := NewOpenVPNDataFromConf(o)
-	o.out.Debug("OpenVPN.WriteConf %v", data)
+	o.out.Debug("OpenVPN.WriteConf: %v", data)
 	if data.ClientDir != "" {
 		_ = o.writeClientConf()
 	}
@@ -276,7 +276,7 @@ func (o *OpenVPN) writeClientConf() error {
 	// make client dir and config file
 	ccd := o.ClientDir()
 	if err := os.Mkdir(ccd, 0600); err != nil {
-		o.out.Info("OpenVPN.writeClientConf %s", err)
+		o.out.Info("OpenVPN.writeClientConf: %s", err)
 	}
 	o.cleanClientConf()
 	for _, fic := range o.Cfg.Clients {
@@ -286,7 +286,7 @@ func (o *OpenVPN) writeClientConf() error {
 		ficFile := filepath.Join(ccd, fic.Name)
 		pushIP := fmt.Sprintf("ifconfig-push %s %s", fic.Address, fic.Netmask)
 		if err := os.WriteFile(ficFile, []byte(pushIP), 0600); err != nil {
-			o.out.Warn("OpenVPN.writeClientConf %s", err)
+			o.out.Warn("OpenVPN.writeClientConf: %s", err)
 		}
 	}
 	return nil
@@ -296,11 +296,11 @@ func (o *OpenVPN) cleanClientConf() {
 	ccd := o.ClientDir()
 	files, err := filepath.Glob(path.Join(ccd, "*"))
 	if err != nil {
-		libol.Warn("OpenVPN.cleanClientConf %v", err)
+		libol.Warn("OpenVPN.cleanClientConf: %v", err)
 	}
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
-			o.out.Warn("OpenVPN.cleanClientConf %s", err)
+			o.out.Warn("OpenVPN.cleanClientConf: %s", err)
 		}
 	}
 }
@@ -327,7 +327,7 @@ func (o *OpenVPN) writeClientPlat(data *OpenVPNData) error {
 	// make client dir and config file
 	cid := o.ServerDir()
 	if err := os.Mkdir(cid, 0600); err != nil {
-		o.out.Info("OpenVPN.writeClientPlat %s", err)
+		o.out.Info("OpenVPN.writeClientPlat: %s", err)
 	}
 	clientConnectScriptFile := filepath.Join(cid, "client-up.sh")
 	fp, err := libol.CreateFileEx(clientConnectScriptFile)
@@ -364,13 +364,12 @@ func (o *OpenVPN) writeClientPlat(data *OpenVPNData) error {
 }
 
 func (o *OpenVPN) Clean() {
-	o.out.Info("OpenVPN.Clean")
 	o.cleanClientConf()
 	files := []string{o.FileIpp(true), o.FileClientProfile(true)}
 	for _, file := range files {
 		if err := libol.FileExist(file); err == nil {
 			if err := os.Remove(file); err != nil {
-				o.out.Warn("OpenVPN.Clean %s", err)
+				o.out.Warn("OpenVPN.Clean: %s", err)
 			}
 		}
 	}
@@ -390,19 +389,19 @@ func (o *OpenVPN) Initialize() {
 	o.out.Info("OpenVPN.Initialize version: %d", o.Cfg.Version)
 
 	if err := os.Mkdir(o.Directory(), 0600); err != nil {
-		o.out.Info("OpenVPN.Initialize %s", err)
+		o.out.Info("OpenVPN.Initialize: %s", err)
 	}
 	if err := o.WriteConf(o.FileCfg(true)); err != nil {
-		o.out.Warn("OpenVPN.Initialize %s", err)
+		o.out.Warn("OpenVPN.Initialize: %s", err)
 		return
 	}
 	if ctx, err := o.Profile(); err == nil {
 		file := o.FileClientProfile(true)
 		if err := os.WriteFile(file, ctx, 0600); err != nil {
-			o.out.Warn("OpenVPN.Initialize %s", err)
+			o.out.Warn("OpenVPN.Initialize: %s", err)
 		}
 	} else {
-		o.out.Warn("OpenVPN.Initialize %s", err)
+		o.out.Warn("OpenVPN.Initialize: %s", err)
 	}
 }
 
@@ -448,7 +447,7 @@ func (o *OpenVPN) Start() {
 	o.out.Info("%s with %s", o.Path(), args)
 	cmd := exec.Command(o.Path(), args...)
 	if err := cmd.Start(); err != nil {
-		o.out.Error("OpenVPN.Start %s: %s", o.ID(), err)
+		o.out.Error("OpenVPN.Start: %s: %s", o.ID(), err)
 	}
 	cmd.Wait()
 }
@@ -458,13 +457,13 @@ func (o *OpenVPN) Stop() {
 		return
 	}
 	if pid := o.FindPid(); pid > 0 {
-		o.out.Info("OpenVPN.Stop without kill %d.", pid)
+		o.out.Info("OpenVPN.Stop: without kill %d.", pid)
 	} else {
 		o.Clean()
 	}
 }
 
-func (o *OpenVPN) checkWait() {
+func (o *OpenVPN) CheckWait() {
 	timeout := 10 * time.Second
 	if pid := o.FindPid(); pid > 0 {
 		ticker := time.Tick(200 * time.Millisecond)
@@ -472,13 +471,13 @@ func (o *OpenVPN) checkWait() {
 		for {
 			select {
 			case <-ticker:
-				running := libol.WaitProcess(pid)
+				running := libol.HasProcess(pid)
 				if !running {
-					o.out.Debug("OpenVPN.checkWait:vpn is close")
+					o.out.Debug("OpenVPN.checkWait: vpn is close")
 					return
 				}
 			case <-timer:
-				o.out.Warn("OpenVPN.checkWait:vpn close timeout")
+				o.out.Warn("OpenVPN.checkWait: vpn close timeout")
 				return
 			}
 		}
@@ -504,7 +503,7 @@ func (o *OpenVPN) Profile() ([]byte, error) {
 func (o *OpenVPN) Exec(cmd string) error {
 	conn, err := net.Dial("unix", o.FileCtrl(true))
 	if err != nil {
-		libol.Warn("OpenVPN.Exec %v", err)
+		libol.Warn("OpenVPN.Exec: %v", err)
 		return err
 	}
 	defer conn.Close()
@@ -513,22 +512,22 @@ func (o *OpenVPN) Exec(cmd string) error {
 	r := bufio.NewReader(conn)
 	out, _, err := r.ReadLine()
 	if err != nil {
-		libol.Warn("OpenVPN.Exec %v", err)
+		libol.Warn("OpenVPN.Exec: %v", err)
 		return err
 	}
 
-	libol.Info("OpenVPN.Exec %s", cmd)
+	libol.Info("OpenVPN.Exec: %s", cmd)
 	_, err = fmt.Fprintln(conn, cmd)
 	if err != nil {
-		libol.Warn("OpenVPN.Exec %v", err)
+		libol.Warn("OpenVPN.Exec: %v", err)
 		return err
 	}
 	out, _, err = r.ReadLine()
 	if err != nil {
-		libol.Warn("OpenVPN.Exec %v", err)
+		libol.Warn("OpenVPN.Exec: %v", err)
 		return err
 	}
-	libol.Info("OpenVPN.Exec %s", out)
+	libol.Info("OpenVPN.Exec: %s", out)
 
 	return nil
 }
