@@ -81,16 +81,18 @@ func (l *Link) Start() error {
 			return nil
 		}
 	}
-
-	file := l.ConfFile()
-	args := []string{
-		"-conf", file,
-	}
-	l.out.Info("%s with %s", l.Path(), args)
-	cmd := exec.Command(l.Path(), args...)
-	if err := cmd.Start(); err != nil {
-		l.out.Error("Link.Start %s: %s", l.uuid, err)
-	}
+	libol.Go(func() {
+		file := l.ConfFile()
+		args := []string{
+			"-conf", file,
+		}
+		l.out.Info("%s with %s", l.Path(), args)
+		cmd := exec.Command(l.Path(), args...)
+		if err := cmd.Start(); err != nil {
+			l.out.Error("Link.Start %s: %s", l.uuid, err)
+		}
+		cmd.Wait()
+	})
 	return nil
 }
 
