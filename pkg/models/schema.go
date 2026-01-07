@@ -94,7 +94,7 @@ func NewOutputSchema(o *Output) schema.Output {
 		RxBytes:   o.RxBytes,
 		TxBytes:   o.TxBytes,
 		Secret:    o.Secret,
-		AliveTime: o.UpTime(),
 		State:     o.GetState(),
+		AliveTime: o.UpTime(),
 	}
 }
