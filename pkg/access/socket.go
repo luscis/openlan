@@ -119,7 +119,6 @@ func (t *SocketWorker) Start() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.out.Info("SocketWorker.Start")
-	_ = t.connect()
 	libol.Go(t.Loop)
 }
 
@@ -482,6 +481,10 @@ func (t *SocketWorker) dispatch(ev *WorkerEvent) {
 }
 
 func (t *SocketWorker) Loop() {
+	err := t.connect()
+	if err != nil {
+		t.out.Warn("SocketWorker.Loop: %s", err)
+	}
 	for {
 		select {
 		case e := <-t.eventQueue:

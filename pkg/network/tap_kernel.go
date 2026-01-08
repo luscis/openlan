@@ -21,17 +21,17 @@ func NewKernelTap(tenant string, c TapConfig) (*KernelTap, error) {
 	if c.Mtu == 0 {
 		c.Mtu = 1500
 	}
-	if c.Name == "auto" {
-		c.Name = Taps.GenName()
-	}
 	device, err := WaterNew(c)
 	if err != nil {
 		return nil, err
 	}
+	if c.Name != device.Name() {
+		c.Name = device.Name()
+	}
 	tap := &KernelTap{
 		tenant: tenant,
 		device: device,
-		name:   device.Name(),
+		name:   c.Name,
 		config: c,
 		ipMtu:  c.Mtu,
 	}

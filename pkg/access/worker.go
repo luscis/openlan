@@ -315,6 +315,7 @@ func (w *Worker) Stop() {
 	if w.tapWorker == nil || w.conWorker == nil {
 		return
 	}
+	w.out.Info("Worker.Stop")
 	w.done <- true
 	w.FreeIpAddr()
 	for _, conn := range w.sosWorker {

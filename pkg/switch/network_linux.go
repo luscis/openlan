@@ -224,7 +224,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		cn.LinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
 	case "tcp", "tls", "wss":
-		port.Link = cn.Taps.GenName()
 		name, pass := SplitCombined(port.Secret)
 		algo, secret := SplitCombined(port.Crypt)
 		ac := co.Access{
@@ -232,7 +231,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			Network:     w.cfg.Name,
 			RequestAddr: false,
 			Interface: co.Interface{
-				Name:   port.Link,
 				Bridge: bridge,
 			},
 			Connection: port.Remote,

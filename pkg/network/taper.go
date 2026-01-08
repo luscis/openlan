@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -50,13 +49,6 @@ type tapers struct {
 	lock    sync.RWMutex
 	index   int
 	devices map[string]Taper
-}
-
-func (t *tapers) GenName() string {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.index++
-	return fmt.Sprintf("vir%d", t.index)
 }
 
 func (t *tapers) Add(tap Taper) {

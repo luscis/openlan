@@ -85,6 +85,7 @@ func NewNetworkSchema(n *Network) schema.Network {
 
 func NewOutputSchema(o *Output) schema.Output {
 	return schema.Output{
+		State:     o.GetState(),
 		Network:   o.Network,
 		Protocol:  o.Protocol,
 		Remote:    o.Remote,
@@ -94,7 +95,6 @@ func NewOutputSchema(o *Output) schema.Output {
 		RxBytes:   o.RxBytes,
 		TxBytes:   o.TxBytes,
 		Secret:    o.Secret,
-		State:     o.GetState(),
 		AliveTime: o.UpTime(),
 	}
 }

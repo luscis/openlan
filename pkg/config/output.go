@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Linker interface {
 	Start() error
@@ -26,11 +29,12 @@ func (o *Output) Id() string {
 func (o *Output) Correct() {
 	switch o.Protocol {
 	case "gre":
-		o.Link = fmt.Sprintf("%s%d", "gei", o.Segment)
+		o.Link = fmt.Sprintf("%s%d", "xgi", o.Segment)
 	case "vxlan":
-		o.Link = fmt.Sprintf("%s%d", "xei", o.Segment)
+		o.Link = fmt.Sprintf("%s%d", "xevi", o.Segment)
 	case "tcp", "tls", "wss":
-		o.Link = fmt.Sprintf("%s:%s", o.Protocol, o.Remote)
+		user := strings.SplitN(o.Secret, ":", 2)[0]
+		o.Link = fmt.Sprintf("%s:%s:%s", o.Protocol, o.Remote, user)
 	default:
 		if o.Segment > 0 {
 			o.Link = fmt.Sprintf("%s.%d", o.Remote, o.Segment)

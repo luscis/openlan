@@ -522,7 +522,6 @@ func (v *Switch) NewTap(tenant string) (network.Taper, error) {
 		Type:     network.TAP,
 		VirBuf:   v.cfg.Queue.VirWrt,
 		KernBuf:  v.cfg.Queue.VirSnd,
-		Name:     "auto",
 	})
 	if err != nil {
 		v.out.Error("Switch.NewTap: %s", err)

@@ -18,7 +18,7 @@ func init() {
 func GenName(name string) string {
 	index, ok := genindexs[name]
 	if !ok {
-		index = 99
+		index = 1000
 	}
 	index += 1
 	genindexs[name] = index

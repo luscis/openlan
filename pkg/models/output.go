@@ -35,6 +35,7 @@ func (o *Output) GetState() string {
 		sts := &schema.Access{}
 		_ = libol.UnmarshalLoad(sts, o.StatsFile)
 		o.uptime = sts.AliveTime
+		o.Device = sts.Device
 		return sts.State
 	}
 	return ""

@@ -22,7 +22,7 @@ func (t *RouterTunnel) Correct() {
 	}
 	switch t.Protocol {
 	case "gre":
-		t.Link = GenName("gre")
+		t.Link = GenName("ige")
 	case "ipip":
 		t.Link = GenName("ipi")
 	}

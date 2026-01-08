@@ -1,0 +1,22 @@
+#!/bin/bash
+
+p1=$(pidof openlan-switch | awk '{print $1}')
+if [ $p1 -eq 1 ]; then
+	exit 1
+fi
+
+echo "# reloading pid:$p1 ...."
+ps -u -p $p1 | tail -n 1
+kill $p1
+count=0
+while [ $count -ne 10 ]; do ## wait max 10s.
+	sleep 1
+	count=$(( count + 1 ))
+	p2=$(pidof openlan-switch | awk '{print $1}')
+	if [ $p2 -eq $p1 ] || [ $p2 -eq 1 ]; then
+	  continue
+	fi
+	echo "# now, new pid:$p2 ..."
+	ps -u -p $p2 | tail -n 1
+	break
+done
