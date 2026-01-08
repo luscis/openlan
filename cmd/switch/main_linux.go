@@ -17,12 +17,14 @@ func run() {
 
 	libol.SetLogger(c.Log.File, c.Log.Verbose)
 	libol.ShowVersion()
+	libol.WritePid(c.PidFile)
 
 	cache.Init(&c.Limit)
 	s := cswitch.NewSwitch(c)
 	libol.PreNotify()
 	s.Initialize()
 	s.Start()
+
 	libol.SdNotify()
 	libol.Wait()
 	s.Stop()

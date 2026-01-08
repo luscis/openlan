@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -198,10 +197,7 @@ func (w *Worker) Initialize() {
 	if w.cfg == nil {
 		return
 	}
-	pid := os.Getpid()
-	if fp, err := libol.OpenWrite(w.cfg.PidFile); err == nil {
-		_, _ = fp.WriteString(fmt.Sprintf("%d", pid))
-	}
+	libol.WritePid(w.cfg.PidFile)
 	w.out.Info("Worker.Initialize")
 	client := GetSocketClient(w.cfg, "")
 	w.conWorker = NewSocketWorker(client, w.cfg)

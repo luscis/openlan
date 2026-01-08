@@ -380,3 +380,10 @@ func HasProcess(pid int) bool {
 func CreateFileEx(path string) (*os.File, error) {
 	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
 }
+
+func WritePid(file string) {
+	pid := os.Getpid()
+	if fp, err := OpenTrunk(file); err == nil {
+		fmt.Fprintf(fp, "%d\n", pid)
+	}
+}

@@ -31,7 +31,7 @@ func (o *Output) Correct() {
 	case "gre":
 		o.Link = fmt.Sprintf("%s%d", "xgi", o.Segment)
 	case "vxlan":
-		o.Link = fmt.Sprintf("%s%d", "xevi", o.Segment)
+		o.Link = fmt.Sprintf("%s%d", "xei", o.Segment)
 	case "tcp", "tls", "wss":
 		user := strings.SplitN(o.Secret, ":", 2)[0]
 		o.Link = fmt.Sprintf("%s:%s:%s", o.Protocol, o.Remote, user)

@@ -296,7 +296,9 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 	cache.Output.Add(port.Link, out)
 
 	w.out.Info("WorkerImpl.addOutput %s %s", port.Link, port.Id())
-	w.AddPhysical(bridge, port.Link)
+	if port.Protocol == "vxlan" || port.Protocol == "gre" || port.Protocol == "" {
+		w.AddPhysical(bridge, port.Link)
+	}
 }
 
 func (w *WorkerImpl) toRoute(rt co.PrefixRoute) {
@@ -667,7 +669,9 @@ func (w *WorkerImpl) delOutput(bridge string, port *co.Output) {
 	w.out.Info("WorkerImpl.delOutput %s", port.Link)
 
 	cache.Output.Del(port.Link)
-	w.DelPhysical(bridge, port.Link)
+	if port.Protocol == "vxlan" || port.Protocol == "gre" || port.Protocol == "" {
+		w.DelPhysical(bridge, port.Link)
+	}
 
 	link := port.Linker
 	if link != nil {

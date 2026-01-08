@@ -111,6 +111,7 @@ type Switch struct {
 	AddrPool  string              `json:"pool,omitempty" yaml:"pool,omitempty"`
 	ConfDir   string              `json:"-" yaml:"-"`
 	TokenFile string              `json:"-" yaml:"-"`
+	PidFile   string              `json:"-" yaml:"-"`
 }
 
 func NewSwitch() *Switch {
@@ -192,6 +193,7 @@ func (s *Switch) Correct() {
 	if s.AddrPool == "" {
 		s.AddrPool = "100.255"
 	}
+	s.PidFile = s.Dir("pid", "")
 }
 
 func (s *Switch) Dir(elem0, elem1 string) string {
