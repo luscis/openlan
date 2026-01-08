@@ -158,12 +158,16 @@ var Network = network{
 	Addr:     libol.NewSafeStrMap(1024),
 }
 
+const deviceTimeout = 5
+
 type device struct {
 	devices *libol.SafeStrMap
 }
 
 type devicevalue struct {
 	device   schema.Device
+	rxspeed  uint64
+	txspeed  uint64
 	updateat int64
 }
 
@@ -176,7 +180,7 @@ func (p *device) Add(device schema.Device) {
 		device:   device,
 		updateat: time.Now().Unix(),
 	}
-	_ = p.devices.Mod(device.Name, value)
+	_ = p.devices.Set(device.Name, value)
 }
 
 func (p *device) Get(key string) schema.Device {
@@ -190,18 +194,21 @@ func (p *device) Get(key string) schema.Device {
 
 func (p *device) Speed(device schema.Device) (uint64, uint64) {
 	ret := p.devices.Get(device.Name)
-	if ret != nil {
-		older := ret.(*devicevalue)
-		dt := uint64(time.Now().Unix() - older.updateat)
-		ds := device.Send - older.device.Send
-		dr := device.Recv - older.device.Recv
-		if dt > 0 {
-			return ds / dt, dr / dt
-		} else {
-			return ds, dr
-		}
+	if ret == nil {
+		p.Add(device)
+		return 0, 0
 	}
-	return 0, 0
+
+	older := ret.(*devicevalue)
+	dt := uint64(time.Now().Unix() - older.updateat)
+	if dt > deviceTimeout {
+		older.txspeed = (device.Send - older.device.Send) / dt
+		older.rxspeed = (device.Recv - older.device.Recv) / dt
+		older.updateat = time.Now().Unix()
+		older.device.Recv = device.Recv
+		older.device.Send = device.Send
+	}
+	return older.txspeed, older.rxspeed
 }
 
 func (p *device) Del(key string) {

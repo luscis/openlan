@@ -176,7 +176,6 @@ func ListDevices() []schema.Device {
 	for k, v := range values {
 		d := &values[k]
 		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
-		cache.Device.Add(v)
 	}
 
 	return values

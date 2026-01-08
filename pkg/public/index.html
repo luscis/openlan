@@ -96,6 +96,18 @@
             <table class="table-list">
                 <tbody>
                     <tr>
+                        <td>Refresh at</td>
+                        <td>
+                            : <span id="countdown">3</span>s
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Project</td>
+                        <td>
+                            : <a href="https://github.com/luscis/openlan">openlan</a>
+                        </td>
+                    </tr>
+                    <tr>
                         <td>Project</td>
                         <td>
                             : <a href="https://github.com/luscis/openlan">openlan</a>
@@ -164,8 +176,8 @@
                         <td>{{ .Mtu }}</td>
                         <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
                         <td>{{ if .Address }}{{ .Address }}{{ else }}-{{ end }}</td>
-                        <td>{{ prettyBytes .Recv }} / {{ prettyBytes .Send }}</td>
-                        <td>{{ prettyBytes .RxSpeed }} / {{ prettyBytes .TxSpeed }}</td>
+                        <td>{{ prettyBytes .Recv }}/{{ prettyBytes .Send }}</td>
+                        <td>{{ prettyBytes .RxSpeed }}/{{ prettyBytes .TxSpeed }}</td>
                     </tr>
                 {{ end }}
                 </tbody>
@@ -267,7 +279,7 @@
                             <td>{{ toSegment .Segment .Secret }}</td>
                             <td>{{ .Protocol }}</td>
                             <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
-                            <td>{{ prettyBytes .RxBytes }} / {{ prettyBytes .TxBytes }}</td>
+                            <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
                             <td>
                                 {{ if .RxBytes }}<span class="success">success</span>
                                 {{ else }}<span class="unknown">{{ .State }}</span>
@@ -308,7 +320,7 @@
                         <td>{{ .Address }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .Name }}</td>
-                        <td>{{ prettyBytes .RxBytes }} / {{ prettyBytes .TxBytes }}</td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
@@ -320,7 +332,7 @@
                         <td>{{ .Alias }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .User }}@{{ .Network }}</td>
-                        <td>{{ prettyBytes .RxBytes }} / {{ prettyBytes .TxBytes }}</td>
+                        <td>{{ prettyBytes .RxBytes }}/{{ prettyBytes .TxBytes }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}
@@ -329,5 +341,24 @@
         </div>
     </div>
 </div>
+<script>
+    let remaining = 3;
+    const countdownEl = document.getElementById('countdown');
+
+    countdownEl.textContent = remaining;
+    const timer = setInterval(() => {
+        remaining--;
+        countdownEl.textContent = remaining;
+    
+        if (remaining <= 0) {
+            location.reload();
+        }
+    }, 1000);
+    
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+        }
+    });
+    </script>
 </body>
 </html>
