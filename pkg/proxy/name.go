@@ -13,14 +13,50 @@ import (
 	"github.com/miekg/dns"
 )
 
+const CacheTimeout = 5
+
+type AddrCache struct {
+	Address string
+	Time    int64
+}
+
+func (a *AddrCache) Expire() bool {
+	dt := time.Now().Unix() - a.Time
+	if dt > CacheTimeout {
+		return true
+	}
+	return false
+}
+
+func (a *AddrCache) Update() {
+	a.Time = time.Now().Unix()
+}
+
+type NameCache struct {
+	Name string
+	Time int64
+}
+
+func (a *NameCache) Expire() bool {
+	dt := time.Now().Unix() - a.Time
+	if dt > CacheTimeout {
+		return true
+	}
+	return false
+}
+
+func (a *NameCache) Update() {
+	a.Time = time.Now().Unix()
+}
+
 type NameProxy struct {
 	listen string
 	cfg    *config.NameProxy
 	server *dns.Server
 	out    *libol.SubLogger
 	lock   sync.RWMutex
-	names  map[string]string
-	addrs  map[string]string
+	names  map[string]*AddrCache
+	addrs  map[string]*NameCache
 	access []*access.Access
 }
 
@@ -29,8 +65,8 @@ func NewNameProxy(cfg *config.NameProxy) *NameProxy {
 		listen: cfg.Listen,
 		cfg:    cfg,
 		out:    libol.NewSubLogger(cfg.Listen),
-		names:  make(map[string]string),
-		addrs:  make(map[string]string),
+		names:  make(map[string]*AddrCache),
+		addrs:  make(map[string]*NameCache),
 	}
 	n.Initialize()
 	return n
@@ -61,13 +97,25 @@ func (n *NameProxy) UpdateDNS(name, addr string) bool {
 	defer n.lock.Unlock()
 
 	updated := false
-	if _, ok := n.names[name]; !ok {
-		n.names[name] = addr
+	if o, ok := n.names[name]; !ok {
+		n.names[name] = &AddrCache{
+			Address: addr,
+			Time:    time.Now().Unix(),
+		}
 		updated = true
+	} else if o.Expire() {
+		updated = true
+		o.Update()
 	}
-	if _, ok := n.addrs[addr]; !ok {
-		n.addrs[addr] = name
+	if o, ok := n.addrs[addr]; !ok {
+		n.addrs[addr] = &NameCache{
+			Name: name,
+			Time: time.Now().Unix(),
+		}
 		updated = true
+	} else if o.Expire() {
+		updated = true
+		o.Update()
 	}
 	return updated
 }
