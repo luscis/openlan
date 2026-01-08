@@ -3,9 +3,9 @@ package libol
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	nl "github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 func GetLocalByGw(addr string) (net.IP, error) {
@@ -195,10 +195,11 @@ func ListPhyLinks() []Device {
 		return dev
 	}
 	for _, value := range values {
-		if value.Type() == "device" {
+		t := value.Type()
+		if t == "device" || t == "vlan" || t == "ipip" || t == "gre" {
 			attr := value.Attrs()
 			state := "down"
-			if strings.Contains(attr.Flags.String(), "up") {
+			if attr.Flags&unix.IFF_UP != 0 {
 				state = "up"
 			}
 			dev = append(dev, Device{
