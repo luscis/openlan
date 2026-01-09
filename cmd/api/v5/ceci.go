@@ -38,17 +38,17 @@ func (u Ceci) Save(c *cli.Context) error {
 func (u Ceci) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "ceci",
-		Usage:  "Ceci TCP proxy",
+		Usage:  "Special Ceci proxy network",
 		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:   "ls",
-				Usage:  "List a ceci TCP",
+				Usage:  "List a Ceci proxy",
 				Action: u.List,
 			},
 			{
 				Name:    "save",
-				Usage:   "Save ceci network",
+				Usage:   "Save Ceci network",
 				Aliases: []string{"sa"},
 				Action:  u.Save,
 			},
@@ -95,11 +95,11 @@ func (u CeciTCP) Remove(c *cli.Context) error {
 func (u CeciTCP) Commands(app *api.App) *cli.Command {
 	return &cli.Command{
 		Name:  "ceci",
-		Usage: "Ceci TCP proxy",
+		Usage: "Special Ceci proxy",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
-				Usage: "Add a ceci TCP",
+				Usage: "Add a Ceci Proxy",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "listen", Required: true},
 					&cli.StringFlag{Name: "mode", Required: true},
@@ -109,7 +109,7 @@ func (u CeciTCP) Commands(app *api.App) *cli.Command {
 			},
 			{
 				Name:    "remove",
-				Usage:   "Remove a ceci TCP",
+				Usage:   "Remove a Ceci Proxy",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "listen", Required: true},

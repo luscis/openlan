@@ -67,7 +67,7 @@ func (b BGP) Disable(c *cli.Context) error {
 func (b BGP) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "bgp",
-		Usage:  "External BGP",
+		Usage:  "Special External BGP network",
 		Action: b.List,
 		Subcommands: []*cli.Command{
 			{

@@ -27,22 +27,25 @@ func After(c *cli.Context) error {
 func Commands(app *api.App) {
 	app.After = After
 	app.Before = Before
+	Version{}.Commands(app)
 	User{}.Commands(app)
+	Network{}.Commands(app)
+	Lease{}.Commands(app)
 	ACL{}.Commands(app)
 	Ldap{}.Commands(app)
+	PProf{}.Commands(app)
 	Device{}.Commands(app)
-	Lease{}.Commands(app)
 	Config{}.Commands(app)
 	Server{}.Commands(app)
-	Network{}.Commands(app)
-	PProf{}.Commands(app)
-	IPSec{}.Commands(app)
-	Version{}.Commands(app)
+
 	Log{}.Commands(app)
 	ZTrust{}.Commands(app)
 	RateLimit{}.Commands(app)
+
+	Index{}.Commands(app)
 	BGP{}.Commands(app)
 	Ceci{}.Commands(app)
-	Index{}.Commands(app)
+	IPSec{}.Commands(app)
 	Router{}.Commands(app)
+	Reload{}.Commands(app)
 }

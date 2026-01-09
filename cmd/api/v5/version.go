@@ -83,7 +83,7 @@ func (v Version) Get(c *cli.Context) error {
 func (v Version) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "version",
-		Usage:  "show version information",
+		Usage:  "Show version information",
 		Action: v.List,
 		Subcommands: []*cli.Command{
 			{

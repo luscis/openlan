@@ -2,6 +2,12 @@ package v5
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/libol"
@@ -32,6 +38,82 @@ func (r Index) Commands(app *api.App) {
 		Name:   "index",
 		Usage:  "Display information",
 		Action: r.List,
+	})
+}
+
+type Reload struct {
+	Cmd
+}
+
+const openPidFile = "/etc/openlan/switch/pid"
+const maxWaitSec = 10
+
+func showProcessInfo(pid int) {
+	procDir := fmt.Sprintf("/proc/%d", pid)
+	_, err := os.Stat(procDir)
+	if err != nil {
+		fmt.Printf("Process %d not existed\n", pid)
+		return
+	}
+
+	cmdlinePath := filepath.Join(procDir, "cmdline")
+	data, err := os.ReadFile(cmdlinePath)
+	if err != nil {
+		fmt.Printf("Cann't read %d cmdline: %v\n", pid, err)
+		return
+	}
+
+	cmd := strings.ReplaceAll(string(data), "\x00", " ")
+	cmd = strings.TrimSpace(cmd)
+
+	fmt.Printf("  PID   %d   CMD: %s\n", pid, cmd)
+}
+
+func readPid(file string) (int, error) {
+	if v, err := os.ReadFile(file); err != nil {
+		return 0, err
+	} else {
+		pidStr := strings.TrimSpace(string(v))
+		return strconv.Atoi(pidStr)
+	}
+}
+
+func (r Reload) Do(c *cli.Context) error {
+	oldPid, err := readPid(openPidFile)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("# reloading pid:%d ....\n", oldPid)
+	showProcessInfo(oldPid)
+
+	err = syscall.Kill(oldPid, syscall.SIGTERM)
+	if err != nil {
+		return libol.NewErr("kill %d failed: %v", oldPid, err)
+	}
+
+	fmt.Printf("# max wait %ds...\n", maxWaitSec)
+
+	for range maxWaitSec {
+		time.Sleep(1 * time.Second)
+		newPid, err := readPid(openPidFile)
+		if err != nil {
+			return err
+		}
+		if newPid != oldPid {
+			fmt.Printf("# now, new pid:%d ...\n", newPid)
+			showProcessInfo(newPid)
+			break
+		}
+	}
+	return nil
+}
+
+func (r Reload) Commands(app *api.App) {
+	app.Command(&cli.Command{
+		Name:   "reload",
+		Usage:  "Reload OpenLAN Switch",
+		Action: r.Do,
 	})
 }
 
@@ -74,7 +156,7 @@ func (v Log) Add(c *cli.Context) error {
 func (v Log) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "log",
-		Usage:  "show log information",
+		Usage:  "Show log information",
 		Action: v.List,
 		Subcommands: []*cli.Command{
 			{
@@ -253,8 +335,8 @@ func (u RateLimit) Remove(c *cli.Context) error {
 
 func (u RateLimit) Commands(app *api.App) {
 	app.Command(&cli.Command{
-		Name:  "rate",
-		Usage: "Rate Limit",
+		Name:  "ratelimit",
+		Usage: "Rate limit for device",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

@@ -37,7 +37,7 @@ func (o IPSec) Commands(app *api.App) {
 	tunnel := IPSecTunnel{}
 	app.Command(&cli.Command{
 		Name:  "ipsec",
-		Usage: "IPSec configuration",
+		Usage: "Special IPSec network",
 		Subcommands: []*cli.Command{
 			{
 				Name:    "ls",

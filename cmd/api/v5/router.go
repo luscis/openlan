@@ -40,7 +40,7 @@ func (b Router) Save(c *cli.Context) error {
 func (b Router) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name:   "router",
-		Usage:  "Router",
+		Usage:  "Special Router network",
 		Action: b.List,
 		Subcommands: []*cli.Command{
 			{
