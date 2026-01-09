@@ -40,6 +40,8 @@ type Access struct {
 	PidFile     string    `json:"pid,omitempty" yaml:"pid,omitempty"`
 	Forward     []string  `json:"forward,omitempty" yaml:"forward,omitempty"`
 	Fallback    string    `json:"fallback,omitempty" yaml:"fallback,omitempty"`
+	Run1        string    `json:"run1,omitempty" yaml:"run1,omitempty"`
+	Run0        string    `json:"run0,omitempty" yaml:"run0,omitempty"`
 }
 
 func (a *Access) ID() string {

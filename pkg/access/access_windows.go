@@ -66,6 +66,8 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	}
 	p.out.Info("Access.AddAddr: %s", addr)
 	p.addr = addr
+	p.Run1()
+
 	return nil
 }
 

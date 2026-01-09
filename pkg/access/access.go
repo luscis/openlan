@@ -53,6 +53,7 @@ func (p *MixAccess) Initialize() {
 }
 
 func (p *MixAccess) Start() {
+	p.Run0()
 	p.out.Info("MixAccess.Start %s", runtime.GOOS)
 	if p.config.PProf != "" {
 		f := libol.PProf{Listen: p.config.PProf}
@@ -156,4 +157,28 @@ func (p *MixAccess) Statistics() map[string]int64 {
 		return nil
 	}
 	return client.Statistics()
+}
+
+func (p *MixAccess) Run1() {
+	bin := p.config.Run1
+	if bin == "" {
+		return
+	}
+	if out, err := libol.Exec(bin); err != nil {
+		p.out.Warn("MixAccess.Run1: %s, %s", err, out)
+	} else {
+		p.out.Info("MixAccess.Run1: %s", out)
+	}
+}
+
+func (p *MixAccess) Run0() {
+	bin := p.config.Run0
+	if bin == "" {
+		return
+	}
+	if out, err := libol.Exec(bin); err != nil {
+		p.out.Warn("MixAccess.Run0: %s, %s", err, out)
+	} else {
+		p.out.Info("MixAccess.Run0: %s", out)
+	}
 }

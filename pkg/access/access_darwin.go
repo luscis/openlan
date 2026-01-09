@@ -64,6 +64,7 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	}
 
 	p.AddRoute()
+	p.Run1()
 
 	return nil
 }

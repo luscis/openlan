@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/luscis/openlan/cmd/api"
@@ -87,9 +86,12 @@ func (r Reload) Do(c *cli.Context) error {
 	fmt.Printf("# reloading pid:%d ....\n", oldPid)
 	showProcessInfo(oldPid)
 
-	err = syscall.Kill(oldPid, syscall.SIGTERM)
-	if err != nil {
-		return libol.NewErr("kill %d failed: %v", oldPid, err)
+	if proc, err := os.FindProcess(oldPid); err == nil {
+		if err = proc.Kill(); err != nil {
+			return libol.NewErr("kill %d failed: %v", oldPid, err)
+		}
+	} else {
+		return libol.NewErr("find process %d failed: %v", oldPid, err)
 	}
 
 	fmt.Printf("# max wait %ds...\n", maxWaitSec)

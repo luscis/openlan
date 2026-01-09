@@ -73,10 +73,10 @@ func (p *Access) AddAddr(addr, gateway string) error {
 		return err
 	}
 
-	p.addr = addr
 	p.out.Info("Access.AddAddr: %s", addr)
-
+	p.addr = addr
 	p.AddRoute()
+	p.Run1()
 
 	return nil
 }
