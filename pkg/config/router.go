@@ -32,13 +32,27 @@ func (t *RouterTunnel) Correct() {
 	}
 }
 
+type RouterInterface struct {
+	Device  string `json:"device,omitempty" yaml:"device,omitempty"`
+	VLAN    int    `json:"vlan,omitempty" yaml:"vlan,omitempty"`
+	Address string `json:"address,omitempty" yaml:"address,omitempty"`
+}
+
+func (i *RouterInterface) ID() string {
+	if i.VLAN == 0 {
+		return i.Device
+	}
+	return fmt.Sprintf("%s.%d", i.Device, i.VLAN)
+}
+
 type RouterSpecifies struct {
-	Mss       int             `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
-	Name      string          `json:"-" yaml:"-"`
-	Private   []string        `json:"private,omitempty" yaml:"private,omitempty"`
-	Loopback  string          `json:"loopback,omitempty" yaml:"loopback,omitempty"`
-	Addresses []string        `json:"addresses,omitempty" yaml:"addresses,omitempty"`
-	Tunnels   []*RouterTunnel `json:"tunnels,omitempty" yaml:"tunnels,omitempty"`
+	Mss        int                `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
+	Name       string             `json:"-" yaml:"-"`
+	Private    []string           `json:"private,omitempty" yaml:"private,omitempty"`
+	Loopback   string             `json:"loopback,omitempty" yaml:"loopback,omitempty"`
+	Addresses  []string           `json:"addresses,omitempty" yaml:"addresses,omitempty"`
+	Tunnels    []*RouterTunnel    `json:"tunnels,omitempty" yaml:"tunnels,omitempty"`
+	Interfaces []*RouterInterface `json:"interfaces,omitempty" yaml:"interfaces,omitempty"`
 }
 
 func (n *RouterSpecifies) Correct() {
@@ -96,6 +110,33 @@ func (n *RouterSpecifies) DelPrivate(value string) (string, bool) {
 	older, index := n.FindPrivate(value)
 	if index != -1 {
 		n.Private = append(n.Private[:index], n.Private[index+1:]...)
+		return older, true
+	}
+	return older, false
+}
+
+func (n *RouterSpecifies) FindInterface(value *RouterInterface) (*RouterInterface, int) {
+	for index, obj := range n.Interfaces {
+		if value.ID() == obj.ID() {
+			return obj, index
+		}
+	}
+	return nil, -1
+}
+
+func (n *RouterSpecifies) AddInterface(value *RouterInterface) bool {
+	_, index := n.FindInterface(value)
+	if index == -1 {
+		n.Interfaces = append(n.Interfaces, value)
+		return true
+	}
+	return false
+}
+
+func (n *RouterSpecifies) DelInterface(value *RouterInterface) (*RouterInterface, bool) {
+	older, index := n.FindInterface(value)
+	if index != -1 {
+		n.Interfaces = append(n.Interfaces[:index], n.Interfaces[index+1:]...)
 		return older, true
 	}
 	return older, false

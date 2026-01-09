@@ -210,6 +210,7 @@ func ListPhyLinks() []Device {
 				Drop:  attr.Statistics.RxDropped,
 				Recv:  attr.Statistics.RxBytes,
 				Send:  attr.Statistics.TxPackets,
+				Type:  t,
 			})
 		}
 	}

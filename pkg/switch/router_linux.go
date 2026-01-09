@@ -28,18 +28,6 @@ func NewRouterWorker(c *co.Network) *RouterWorker {
 
 func (w *RouterWorker) Initialize() {
 	w.WorkerImpl.Initialize()
-
-	spec := w.spec
-	if spec.Loopback != "" {
-		if addr, err := nl.ParseAddr(spec.Loopback); err == nil {
-			w.addresses = append(w.addresses, addr)
-		}
-	}
-	for _, _addr := range spec.Addresses {
-		if addr, err := nl.ParseAddr(_addr); err == nil {
-			w.addresses = append(w.addresses, addr)
-		}
-	}
 	w.ipses.Clear()
 }
 
@@ -55,18 +43,20 @@ func (w *RouterWorker) Forward() {
 	w.toMasq_s(w.ipses.Name, "", "To Masq")
 }
 
-func (w *RouterWorker) addAddress() error {
-	link, err := nl.LinkByName("lo")
+func (w *RouterWorker) addAddress(name string, addrs []string) error {
+	link, err := nl.LinkByName(name)
 	if err != nil {
 		w.out.Warn("RouterWorker.addAddress: %s", err)
 		return err
 	}
-	for _, addr := range w.addresses {
-		if err := nl.AddrAdd(link, addr); err != nil {
-			w.out.Warn("RouterWorker.addAddress: %s: %s", addr, err)
-			continue
+	for _, addr := range addrs {
+		if _addr, err := nl.ParseAddr(addr); err == nil {
+			if err := nl.AddrAdd(link, _addr); err != nil {
+				w.out.Warn("RouterWorker.addAddress: %s: %s", addr, err)
+				continue
+			}
+			w.out.Info("RouterWorker.addAddress %s on %s", addr, name)
 		}
-		w.out.Info("RouterWorker.addAddress %s on lo", addr)
 	}
 	return nil
 }
@@ -80,27 +70,42 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 	w.WorkerImpl.Start(v)
 
 	w.Forward()
-	w.addAddress()
+	if w.spec.Loopback != "" {
+		w.addAddress("lo", []string{w.spec.Loopback})
+	}
+	w.addAddress("lo", w.spec.Addresses)
+
+	for _, port := range w.spec.Interfaces {
+		w.addInterface(port)
+	}
 }
 
-func (w *RouterWorker) delAddress() error {
-	link, err := nl.LinkByName("lo")
+func (w *RouterWorker) delAddress(name string, addrs []string) error {
+	link, err := nl.LinkByName(name)
 	if err != nil {
 		w.out.Warn("RouterWorker.delAddress: %s", err)
 		return err
 	}
-	for _, addr := range w.addresses {
-		if err := nl.AddrDel(link, addr); err != nil {
-			w.out.Warn("RouterWorker.delAddress: %s: %s", addr, err)
-			continue
+	for _, addr := range addrs {
+		if _addr, err := nl.ParseAddr(addr); err == nil {
+			if err := nl.AddrDel(link, _addr); err != nil {
+				w.out.Warn("RouterWorker.delAddress: %s: %s", addr, err)
+				continue
+			}
+			w.out.Info("RouterWorker.delAddress %s on %s", addr, name)
 		}
-		w.out.Info("RouterWorker.delAddress %s on lo", addr)
 	}
 	return nil
 }
 
 func (w *RouterWorker) Stop() {
-	w.delAddress()
+	for _, port := range w.spec.Interfaces {
+		w.delInterface(port)
+	}
+	if w.spec.Loopback != "" {
+		w.delAddress("lo", []string{w.spec.Loopback})
+	}
+	w.delAddress("lo", w.spec.Addresses)
 	w.WorkerImpl.Stop()
 
 	for _, tun := range w.spec.Tunnels {
@@ -126,6 +131,10 @@ func (w *RouterWorker) addTunnel(data *co.RouterTunnel) {
 			},
 			Local:  libol.ParseAddr("0.0.0.0"),
 			Remote: libol.ParseAddr(data.Remote),
+		}
+		if li, _ := nl.LinkByName(data.Link); li != nil {
+			w.out.Warn("RouterWorker.addTunnel %s existed", data.Link)
+			nl.LinkDel(li)
 		}
 		if err := nl.LinkAdd(link); err != nil {
 			w.out.Error("RouterWorker.AddTunnel.gre %s %s", data.Id(), err)
@@ -208,6 +217,79 @@ func (w *RouterWorker) AddPrivate(data string) error {
 func (w *RouterWorker) DelPrivate(data string) error {
 	if old, ok := w.spec.DelPrivate(data); ok {
 		w.ipses.Del(old)
+	}
+	return nil
+}
+
+func (w *RouterWorker) addInterface(value *co.RouterInterface) {
+	link, err := nl.LinkByName(value.Device)
+	if link == nil {
+		w.out.Error("RouterWorker.addInterface %s %s", value.Device, err)
+		return
+	}
+	if err := nl.LinkSetUp(link); err != nil {
+		w.out.Warn("RouterWorker.addInterface %s %s", value.Device, err)
+	}
+
+	name := value.ID()
+	if value.VLAN > 0 {
+		vLink := &nl.Vlan{
+			LinkAttrs: nl.LinkAttrs{
+				Name:        value.ID(),
+				ParentIndex: link.Attrs().Index,
+			},
+			VlanId: value.VLAN,
+		}
+		if li, _ := nl.LinkByName(name); li != nil {
+			w.out.Warn("RouterWorker.addInterface %s existed", name)
+			nl.LinkDel(li)
+		}
+		if err := nl.LinkAdd(vLink); err != nil {
+			w.out.Error("RouterWorker.addInterface %s %s", name, err)
+			return
+		}
+		if err := nl.LinkSetUp(vLink); err != nil {
+			w.out.Warn("RouterWorker.addInterface %s %s", name, err)
+		}
+	}
+	w.addAddress(name, []string{value.Address})
+}
+
+func (w *RouterWorker) AddInterface(data schema.RouterInterface) error {
+	obj := &co.RouterInterface{
+		Device:  data.Device,
+		VLAN:    data.VLAN,
+		Address: data.Address,
+	}
+	if ok := w.spec.AddInterface(obj); ok {
+		w.addInterface(obj)
+	}
+	return nil
+}
+
+func (w *RouterWorker) delInterface(value *co.RouterInterface) {
+	name := value.ID()
+	link, err := nl.LinkByName(name)
+	if link == nil {
+		w.out.Error("RouterWorker.delInterface %s %s", value.Device, err)
+		return
+	}
+
+	w.delAddress(name, []string{value.Address})
+	if value.VLAN > 0 {
+		if err := nl.LinkDel(link); err != nil {
+			return
+		}
+	}
+}
+
+func (w *RouterWorker) DelInterface(data schema.RouterInterface) error {
+	obj := &co.RouterInterface{
+		Device: data.Device,
+		VLAN:   data.VLAN,
+	}
+	if old, ok := w.spec.DelInterface(obj); ok {
+		w.delInterface(old)
 	}
 	return nil
 }

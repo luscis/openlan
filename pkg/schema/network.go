@@ -89,3 +89,9 @@ type RouterPrivate struct {
 type IPAddress struct {
 	Address string `json:"address"`
 }
+
+type RouterInterface struct {
+	Device  string `json:"device"`
+	VLAN    int    `json:"vlan"`
+	Address string `json:"address"`
+}

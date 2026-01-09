@@ -30,28 +30,31 @@ func OutYaml(data interface{}) error {
 
 func OutTable(data interface{}, tmpl string) error {
 	funcMap := template.FuncMap{
-		"ps": func(space int, args ...interface{}) string {
+		"ps": func(space int, value string) string {
+			if value == "" {
+				value = "-"
+			}
 			format := "%" + strconv.Itoa(space) + "s"
 			if space < 0 {
 				format = "%-" + strconv.Itoa(space) + "s"
 			}
-			return fmt.Sprintf(format, args...)
+			return fmt.Sprintf(format, value)
 		},
-		"pi": func(space int, args ...interface{}) string {
+		"pi": func(space int, args ...any) string {
 			format := "%" + strconv.Itoa(space) + "d"
 			if space < 0 {
 				format = "%-" + strconv.Itoa(space) + "d"
 			}
 			return fmt.Sprintf(format, args...)
 		},
-		"pu": func(space int, args ...interface{}) string {
+		"pu": func(space int, args ...any) string {
 			format := "%" + strconv.Itoa(space) + "u"
 			if space < 0 {
 				format = "%-" + strconv.Itoa(space) + "u"
 			}
 			return fmt.Sprintf(format, args...)
 		},
-		"pf": func(space int, decimals int, args ...interface{}) string {
+		"pf": func(space int, decimals int, args ...any) string {
 			format := "%" + strconv.Itoa(space) + "." + strconv.Itoa(decimals) + "f"
 			if space < 0 {
 				format = "%-" + strconv.Itoa(space) + "." + strconv.Itoa(decimals) + "f"

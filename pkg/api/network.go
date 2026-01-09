@@ -8,6 +8,7 @@ import (
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
+	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -405,6 +406,79 @@ func (h RouterPrivate) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := caller.DelPrivate(value.Subnet); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+type RouterInterface struct {
+	cs SwitchApi
+}
+
+func (h RouterInterface) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/router/interface", h.List).Methods("GET")
+	router.HandleFunc("/api/network/router/interface", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/router/interface", h.Delete).Methods("DELETE")
+}
+
+func (h RouterInterface) List(w http.ResponseWriter, r *http.Request) {
+	var values []schema.Device
+	for _, d := range libol.ListPhyLinks() {
+		if d.Type == "device" || d.Type == "vlan" {
+			values = append(values, schema.Device{
+				Network: "router",
+				Name:    d.Name,
+				Mtu:     d.Mtu,
+				Mac:     d.Mac,
+				Recv:    d.Recv,
+				Send:    d.Send,
+				Drop:    d.Drop,
+				State:   d.State,
+				Address: cn.GetDevAddr(d.Name),
+			})
+		}
+	}
+	for k, v := range values {
+		d := &values[k]
+		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
+	}
+	ResponseJson(w, values)
+}
+func (h RouterInterface) Post(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterInterface{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.AddInterface(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h RouterInterface) Delete(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RouterInterface{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.DelInterface(value); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

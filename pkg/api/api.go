@@ -173,6 +173,8 @@ type RouterApi interface {
 	DelTunnel(data schema.RouterTunnel) error
 	AddPrivate(data string) error
 	DelPrivate(data string) error
+	AddInterface(data schema.RouterInterface) error
+	DelInterface(data schema.RouterInterface) error
 }
 
 type callApi struct {

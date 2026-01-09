@@ -38,4 +38,5 @@ type Device struct {
 	Mac   string
 	State string
 	Mtu   int
+	Type  string
 }
