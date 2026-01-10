@@ -175,6 +175,8 @@ type RouterApi interface {
 	DelPrivate(data string) error
 	AddInterface(data schema.RouterInterface) error
 	DelInterface(data schema.RouterInterface) error
+	AddRedirect(value schema.RedirectRoute)
+	DelRedirect(value schema.RedirectRoute)
 }
 
 type callApi struct {

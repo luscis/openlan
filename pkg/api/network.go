@@ -485,6 +485,49 @@ func (h RouterInterface) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+type Routeredirect struct {
+	cs SwitchApi
+}
+
+func (h Routeredirect) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/router/redirect", h.Add).Methods("POST")
+	router.HandleFunc("/api/network/router/redirect", h.Delete).Methods("DELETE")
+}
+
+func (h Routeredirect) Add(w http.ResponseWriter, r *http.Request) {
+	call := Call.routerApi
+	if call == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RedirectRoute{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	call.AddRedirect(value)
+	ResponseJson(w, true)
+}
+
+func (h Routeredirect) Delete(w http.ResponseWriter, r *http.Request) {
+	call := Call.routerApi
+	if call == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.RedirectRoute{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	call.DelRedirect(value)
+	ResponseJson(w, true)
+}
+
 type Bgp struct {
 	cs SwitchApi
 }

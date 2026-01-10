@@ -33,7 +33,6 @@ func ListeRoutes() []schema.KernelRoute {
 			Protocol: val.Protocol,
 		}
 		items = append(items, item)
-
 	}
 	return items
 }

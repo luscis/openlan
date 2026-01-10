@@ -60,6 +60,7 @@ func (b Router) Commands(app *api.App) {
 			RouterInterface{}.Commands(),
 			KernelRoute{}.Commands(),
 			KernelNeighbor{}.Commands(),
+			Redirect{}.Commands(),
 		},
 	})
 }
@@ -354,6 +355,71 @@ func (s KernelNeighbor) Commands() *cli.Command {
 				Name:   "ls",
 				Usage:  "List kernel neighbors",
 				Action: s.List,
+			},
+		},
+	}
+}
+
+type Redirect struct {
+	Cmd
+}
+
+func (s Redirect) Url(prefix string) string {
+	return prefix + "/api/network/router/redirect"
+}
+
+func (s Redirect) Add(c *cli.Context) error {
+	url := s.Url(c.String("url"))
+	value := schema.RedirectRoute{
+		Source:  c.String("source"),
+		NextHop: c.String("nexthop"),
+		Table:   c.Int("table"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, &value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Redirect) Remove(c *cli.Context) error {
+	url := s.Url(c.String("url"))
+	value := schema.RedirectRoute{
+		Source:  c.String("source"),
+		NextHop: c.String("nexthop"),
+		Table:   c.Int("table"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, &value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Redirect) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "redirect",
+		Usage: "Redirect route",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add redirect",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "source", Required: true},
+					&cli.StringFlag{Name: "nexthop", Required: true},
+					&cli.IntFlag{Name: "table", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:  "remove",
+				Usage: "Remove redirect",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "source", Required: true},
+					&cli.StringFlag{Name: "nexthop", Required: true},
+					&cli.IntFlag{Name: "table", Required: true},
+				},
+				Action: s.Remove,
 			},
 		},
 	}

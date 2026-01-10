@@ -1,6 +1,8 @@
 package cswitch
 
 import (
+	"net"
+
 	"github.com/luscis/openlan/pkg/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
@@ -78,6 +80,9 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 	for _, port := range w.spec.Interfaces {
 		w.addInterface(port)
 	}
+	for _, re := range w.spec.Redirect {
+		w.addRedirect(re)
+	}
 }
 
 func (w *RouterWorker) delAddress(name string, addrs []string) error {
@@ -99,6 +104,9 @@ func (w *RouterWorker) delAddress(name string, addrs []string) error {
 }
 
 func (w *RouterWorker) Stop() {
+	for _, re := range w.spec.Redirect {
+		w.delRedirect(re)
+	}
 	for _, port := range w.spec.Interfaces {
 		w.delInterface(port)
 	}
@@ -137,7 +145,7 @@ func (w *RouterWorker) addTunnel(data *co.RouterTunnel) {
 			nl.LinkDel(li)
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("RouterWorker.AddTunnel.gre %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.AddTunnel.gre %s %s", data.ID(), err)
 			return
 		}
 	case "ipip":
@@ -149,7 +157,7 @@ func (w *RouterWorker) addTunnel(data *co.RouterTunnel) {
 			Remote: libol.ParseAddr(data.Remote),
 		}
 		if err := nl.LinkAdd(link); err != nil {
-			w.out.Error("RouterWorker.AddTunnel.ip %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.AddTunnel.ip %s %s", data.ID(), err)
 			return
 		}
 	}
@@ -167,18 +175,18 @@ func (w *RouterWorker) addTunnel(data *co.RouterTunnel) {
 
 	}
 	if err := nl.LinkSetUp(link); err != nil {
-		w.out.Warn("RouterWorker.AddTunnel.up: %s: %s", data.Id(), err)
+		w.out.Warn("RouterWorker.AddTunnel.up: %s: %s", data.ID(), err)
 	}
 }
 
 func (w *RouterWorker) delTunnel(data *co.RouterTunnel) {
 	if link, err := nl.LinkByName(data.Link); err == nil {
 		if err := nl.LinkDel(link); err != nil {
-			w.out.Error("RouterWorker.DelTunnel %s %s", data.Id(), err)
+			w.out.Error("RouterWorker.DelTunnel %s %s", data.ID(), err)
 			return
 		}
 	} else {
-		w.out.Warn("RouterWorker.DelTunnel notFound %s:%s", data.Id(), data.Link)
+		w.out.Warn("RouterWorker.DelTunnel notFound %s:%s", data.ID(), data.Link)
 	}
 }
 
@@ -292,4 +300,71 @@ func (w *RouterWorker) DelInterface(data schema.RouterInterface) error {
 		w.delInterface(old)
 	}
 	return nil
+}
+
+func (w *RouterWorker) addRedirect(obj *co.RouterRedirect) {
+	route := nl.Route{
+		Table: obj.Table,
+		Gw:    net.ParseIP(obj.NextHop),
+	}
+	route.Dst, _ = libol.ParseNet("0.0.0.0/0")
+	if route.Gw == nil {
+		w.out.Warn("WorkerImpl.AddRedirect: invalid %s", obj.NextHop)
+		return
+	}
+	promise := libol.NewPromise()
+	promise.Go(func() error {
+		if err := nl.RouteReplace(&route); err != nil {
+			w.out.Warn("WorkerImpl.AddRedirect: %v %s", route, err)
+			return err
+		}
+		w.out.Info("WorkerImpl.AddRedirect: %v success", route.String())
+		cn.RuleDel(obj.Source, obj.Table)
+		if _, err := cn.RuleAdd(obj.Source, obj.Table, obj.Priority); err != nil {
+			w.out.Warn("WorkerImpl.AddRedirect: %s %s", obj.Rule(), err)
+		} else {
+			w.out.Info("WorkerImpl.AddRedirect: %v success", obj.Rule())
+		}
+		return nil
+	})
+}
+
+func (w *RouterWorker) AddRedirect(value schema.RedirectRoute) {
+	obj := &co.RouterRedirect{
+		Source:  value.Source,
+		Table:   value.Table,
+		NextHop: value.NextHop,
+	}
+	obj.Correct()
+	if ok := w.spec.AddRedirect(obj); ok {
+		w.addRedirect(obj)
+	}
+}
+
+func (w *RouterWorker) delRedirect(obj *co.RouterRedirect) {
+	prefix, _ := libol.ParseNet("0.0.0.0/0")
+	route := nl.Route{Dst: prefix, Table: obj.Table}
+	if err := nl.RouteDel(&route); err != nil {
+		w.out.Warn("WorkerImpl.DelRedirect: %v %s", route, err)
+	} else {
+		w.out.Info("WorkerImpl.DelRedirect: %v success", route.String())
+	}
+
+	if _, err := cn.RuleDel(obj.Source, obj.Table); err != nil {
+		w.out.Warn("WorkerImpl.DelRedirect: %s %s", obj.Rule(), err)
+	} else {
+		w.out.Info("WorkerImpl.DelRedirect: %v success", obj.Rule())
+	}
+}
+
+func (w *RouterWorker) DelRedirect(value schema.RedirectRoute) {
+	obj := &co.RouterRedirect{
+		Source:  value.Source,
+		Table:   value.Table,
+		NextHop: value.NextHop,
+	}
+	obj.Correct()
+	if old, ok := w.spec.DelRedirect(obj); ok {
+		w.delRedirect(old)
+	}
 }

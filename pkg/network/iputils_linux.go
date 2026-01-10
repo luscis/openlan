@@ -2,6 +2,7 @@ package network
 
 import (
 	"os/exec"
+	"strconv"
 	"strings"
 
 	nl "github.com/vishvananda/netlink"
@@ -106,4 +107,25 @@ func GetDevAddr(name string) string {
 		}
 	}
 	return ""
+}
+
+func RuleAdd(source string, lookup int, priority int) ([]byte, error) {
+	args := []string{
+		"rule", "add",
+		"from", source,
+		"lookup", strconv.Itoa(lookup),
+	}
+	if priority > 0 {
+		args = append(args, "priority", strconv.Itoa(priority))
+	}
+	return exec.Command("ip", args...).CombinedOutput()
+}
+
+func RuleDel(source string, lookup int) ([]byte, error) {
+	args := []string{
+		"rule", "del",
+		"from", source,
+		"lookup", strconv.Itoa(lookup),
+	}
+	return exec.Command("ip", args...).CombinedOutput()
 }

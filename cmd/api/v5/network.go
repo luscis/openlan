@@ -580,7 +580,7 @@ func (qr QosRule) Save(c *cli.Context) error {
 func (qr QosRule) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "rule",
-		Usage: "Access Control Qos Rule",
+		Usage: "Client speed rule",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

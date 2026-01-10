@@ -78,3 +78,11 @@ func GetDevInfo(name string) DeviceInfo {
 func GetDevAddr(name string) string {
 	return ""
 }
+
+func RuleAdd(source string, lookup int, priority int) ([]byte, error) {
+	return nil, nil
+}
+
+func RuleDel(source string, lookup int) ([]byte, error) {
+	return nil, nil
+}

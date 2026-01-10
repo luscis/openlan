@@ -32,6 +32,20 @@ type KernelRoute struct {
 	Protocol string `json:"protocol,omitempty"`
 }
 
+type RedirectRoute struct {
+	Source  string `json:"source,omitempty"`
+	Table   int    `json:"table,omitempty"`
+	NextHop string `json:"nexthop,omitempty"`
+}
+
+func (r RedirectRoute) Rule() string {
+	return fmt.Sprintf("source:%s lookup:%d", r.Source, r.Table)
+}
+
+func (r RedirectRoute) Route() string {
+	return fmt.Sprintf(" table:%d nexthop:%s", r.Table, r.NextHop)
+}
+
 func (k KernelRoute) ID() string {
 	return fmt.Sprintf("%s-%s", k.Protocol, k.Prefix)
 }

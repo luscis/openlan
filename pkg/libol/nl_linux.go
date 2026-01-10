@@ -96,6 +96,7 @@ func ListRoutes() ([]Prefix, error) {
 		entry := Prefix{
 			Protocol: RouteProtocol(value.Protocol),
 			Priority: value.Priority,
+			Table:    value.Table,
 		}
 		link, err := nl.LinkByIndex(value.LinkIndex)
 		if err == nil {

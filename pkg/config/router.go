@@ -12,7 +12,7 @@ type RouterTunnel struct {
 	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
 }
 
-func (t *RouterTunnel) Id() string {
+func (t *RouterTunnel) ID() string {
 	return fmt.Sprintf("%s-%s", t.Protocol, t.Remote)
 }
 
@@ -30,6 +30,30 @@ func (t *RouterTunnel) Correct() {
 	if t.Address != "" && !strings.Contains(t.Address, "/") {
 		t.Address = t.Address + "/30"
 	}
+}
+
+type RouterRedirect struct {
+	Source   string `json:"source,omitempty" yaml:"source,omitempty"`
+	NextHop  string `json:"nexthop,omitempty" yaml:"nexthop,omitempty"`
+	Table    int    `json:"table,omitempty" yaml:"table,omitempty"` // 1-250
+	Priority int    `json:"priority,omitempty" yaml:"priority,omitempty"`
+}
+
+func (r *RouterRedirect) Correct() {
+	if r.Priority == 0 {
+		r.Priority = r.Table + 100
+	}
+}
+
+func (r *RouterRedirect) ID() string {
+	return fmt.Sprintf("%s", r.Source)
+}
+func (r *RouterRedirect) Rule() string {
+	return fmt.Sprintf("source:%s lookup:%d", r.Source, r.Table)
+}
+
+func (r *RouterRedirect) Route() string {
+	return fmt.Sprintf(" table:%d nexthop:%s", r.Table, r.NextHop)
 }
 
 type RouterInterface struct {
@@ -53,17 +77,21 @@ type RouterSpecifies struct {
 	Addresses  []string           `json:"addresses,omitempty" yaml:"addresses,omitempty"`
 	Tunnels    []*RouterTunnel    `json:"tunnels,omitempty" yaml:"tunnels,omitempty"`
 	Interfaces []*RouterInterface `json:"interfaces,omitempty" yaml:"interfaces,omitempty"`
+	Redirect   []*RouterRedirect  `json:"redirect,omitempty" yaml:"redirect,omitempty"`
 }
 
 func (n *RouterSpecifies) Correct() {
 	for _, t := range n.Tunnels {
 		t.Correct()
 	}
+	for _, t := range n.Redirect {
+		t.Correct()
+	}
 }
 
 func (n *RouterSpecifies) FindTunnel(value *RouterTunnel) (*RouterTunnel, int) {
 	for index, obj := range n.Tunnels {
-		if obj.Id() == value.Id() {
+		if obj.ID() == value.ID() {
 			return obj, index
 		}
 	}
@@ -137,6 +165,33 @@ func (n *RouterSpecifies) DelInterface(value *RouterInterface) (*RouterInterface
 	older, index := n.FindInterface(value)
 	if index != -1 {
 		n.Interfaces = append(n.Interfaces[:index], n.Interfaces[index+1:]...)
+		return older, true
+	}
+	return older, false
+}
+
+func (n *RouterSpecifies) FindRedirect(value *RouterRedirect) (*RouterRedirect, int) {
+	for index, obj := range n.Redirect {
+		if value.ID() == obj.ID() {
+			return obj, index
+		}
+	}
+	return nil, -1
+}
+
+func (n *RouterSpecifies) AddRedirect(value *RouterRedirect) bool {
+	_, index := n.FindRedirect(value)
+	if index == -1 {
+		n.Redirect = append(n.Redirect, value)
+		return true
+	}
+	return false
+}
+
+func (n *RouterSpecifies) DelRedirect(value *RouterRedirect) (*RouterRedirect, bool) {
+	older, index := n.FindRedirect(value)
+	if index != -1 {
+		n.Redirect = append(n.Redirect[:index], n.Redirect[index+1:]...)
 		return older, true
 	}
 	return older, false

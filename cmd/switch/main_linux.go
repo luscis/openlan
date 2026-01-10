@@ -50,7 +50,6 @@ func main() {
 		return
 	}
 
-	libol.Info("%s with %s", exePath, newArgs)
 	for {
 		cmd := exec.Command(exePath, newArgs...)
 		cmd.Stdout = os.Stdout
@@ -58,12 +57,18 @@ func main() {
 		cmd.Stdin = os.Stdin
 		cmd.Env = os.Environ()
 
+		last := time.Now().Unix()
+		libol.Info("%s with %s", exePath, newArgs)
 		if err := cmd.Start(); err != nil {
 			libol.Error("Exec: %s", err)
 			break
 		} else {
 			cmd.Wait()
 		}
-		time.Sleep(2 * time.Second)
+		dt := time.Now().Unix() - last
+		if dt < 5 {
+			libol.Info("Supress booting with 5s")
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
