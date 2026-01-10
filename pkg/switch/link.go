@@ -117,8 +117,24 @@ func (l *Link) Clean() {
 	}
 }
 
+func (l *Link) Kill() {
+	pid := l.FindPid()
+	if pid == 0 {
+		return
+	}
+	l.out.Info("Link.Kill %d", pid)
+	if proc, err := libol.Kill(pid); err == nil {
+		proc.Wait()
+		if err := os.Remove(l.PidFile()); err != nil {
+			l.out.Warn("Link.Kill: %s", err)
+		}
+	} else {
+		l.out.Warn("Link.Kill: %d %s", pid, err)
+	}
+}
+
 func (l *Link) Stop() error {
-	if pid := l.FindPid(); pid > 0 {
+	if pid := l.FindPid(); libol.HasProcess(pid) {
 		l.out.Info("Link.Stop: without stoping: %d", pid)
 	} else {
 		l.Clean()
@@ -170,4 +186,7 @@ func (ll *LinuxLink) Stop() error {
 		return err
 	}
 	return nil
+}
+
+func (ll *LinuxLink) Kill() {
 }

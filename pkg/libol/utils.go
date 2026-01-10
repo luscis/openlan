@@ -388,3 +388,14 @@ func WritePid(file string) {
 		fmt.Fprintf(fp, "%d\n", pid)
 	}
 }
+
+func Kill(pid int) (*os.Process, error) {
+	if proc, err := os.FindProcess(pid); err == nil {
+		if err = proc.Signal(syscall.SIGTERM); err != nil {
+			return proc, err
+		}
+		return proc, nil
+	} else {
+		return nil, err
+	}
+}

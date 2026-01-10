@@ -437,26 +437,43 @@ func (o *OpenVPN) Start() {
 		}
 	}
 
-	args := []string{
-		"--cd", o.Directory(),
-		"--config", o.FileCfg(false),
-		"--writepid", o.FilePid(false),
-		"--log-append", o.FileLog(false),
-		"--daemon",
+	libol.Go(func() {
+		args := []string{
+			"--cd", o.Directory(),
+			"--config", o.FileCfg(false),
+			"--writepid", o.FilePid(false),
+			"--log-append", o.FileLog(false),
+		}
+		o.out.Info("%s with %s", o.Path(), args)
+		cmd := exec.Command(o.Path(), args...)
+		if err := cmd.Start(); err != nil {
+			o.out.Error("OpenVPN.Start: %s: %s", o.ID(), err)
+		}
+		cmd.Wait()
+	})
+}
+
+func (o *OpenVPN) Kill() {
+	pid := o.FindPid()
+	if pid == 0 {
+		return
 	}
-	o.out.Info("%s with %s", o.Path(), args)
-	cmd := exec.Command(o.Path(), args...)
-	if err := cmd.Start(); err != nil {
-		o.out.Error("OpenVPN.Start: %s: %s", o.ID(), err)
+	o.out.Info("OpenVPN.Kill %d", pid)
+	if proc, err := libol.Kill(pid); err == nil {
+		proc.Wait()
+		if err := os.Remove(o.FilePid(true)); err != nil {
+			o.out.Warn("OpenVPN.Kill: %s", err)
+		}
+	} else {
+		o.out.Warn("OpenVPN.Kill: %d %s", pid, err)
 	}
-	cmd.Wait()
 }
 
 func (o *OpenVPN) Stop() {
 	if !o.ValidConf() {
 		return
 	}
-	if pid := o.FindPid(); pid > 0 {
+	if pid := o.FindPid(); libol.HasProcess(pid) {
 		o.out.Info("OpenVPN.Stop: without kill %d.", pid)
 	} else {
 		o.Clean()

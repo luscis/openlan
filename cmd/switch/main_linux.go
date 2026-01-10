@@ -1,17 +1,13 @@
 package main
 
 import (
-	"os"
-	"os/exec"
-	"time"
-
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	cswitch "github.com/luscis/openlan/pkg/switch"
 )
 
-func run() {
+func main() {
 	c := config.NewSwitch()
 	config.Update(c)
 
@@ -28,47 +24,4 @@ func run() {
 	libol.SdNotify()
 	libol.Wait()
 	s.Stop()
-}
-
-const monitor = "-monitor"
-
-func main() {
-	var newArgs []string
-
-	exePath := os.Args[0]
-	isMonitor := false
-
-	for _, v := range os.Args[1:] {
-		if v == monitor {
-			isMonitor = true
-		} else {
-			newArgs = append(newArgs, v)
-		}
-	}
-	if !isMonitor {
-		run()
-		return
-	}
-
-	for {
-		cmd := exec.Command(exePath, newArgs...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		cmd.Env = os.Environ()
-
-		last := time.Now().Unix()
-		libol.Info("%s with %s", exePath, newArgs)
-		if err := cmd.Start(); err != nil {
-			libol.Error("Exec: %s", err)
-			break
-		} else {
-			cmd.Wait()
-		}
-		dt := time.Now().Unix() - last
-		if dt < 5 {
-			libol.Info("Supress booting with 5s")
-			time.Sleep(5 * time.Second)
-		}
-	}
 }

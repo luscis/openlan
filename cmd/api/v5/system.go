@@ -86,12 +86,10 @@ func (r Reload) Do(c *cli.Context) error {
 	fmt.Printf("# reloading pid:%d ....\n", oldPid)
 	showProcessInfo(oldPid)
 
-	if proc, err := os.FindProcess(oldPid); err == nil {
-		if err = proc.Kill(); err != nil {
-			return libol.NewErr("kill %d failed: %v", oldPid, err)
-		}
+	if proc, err := libol.Kill(oldPid); err != nil {
+		return libol.NewErr("kill %d failed: %v", oldPid, err)
 	} else {
-		return libol.NewErr("find process %d failed: %v", oldPid, err)
+		proc.Wait()
 	}
 
 	fmt.Printf("# max wait %ds...\n", maxWaitSec)

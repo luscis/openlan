@@ -665,7 +665,7 @@ func (w *WorkerImpl) DelPhysical(bridge string, output string) {
 	}
 }
 
-func (w *WorkerImpl) delOutput(bridge string, port *co.Output) {
+func (w *WorkerImpl) delOutput(bridge string, port *co.Output, kill bool) {
 	w.out.Info("WorkerImpl.delOutput %s", port.Link)
 
 	cache.Output.Del(port.Link)
@@ -675,6 +675,9 @@ func (w *WorkerImpl) delOutput(bridge string, port *co.Output) {
 
 	link := port.Linker
 	if link != nil {
+		if kill {
+			link.Kill()
+		}
 		if err := link.Stop(); err != nil {
 			w.out.Error("WorkerImpl.LinkStop %s %s", port.Link, err)
 			return
@@ -747,6 +750,7 @@ func (w *WorkerImpl) DelVPN() {
 	if w.vpn != nil {
 		w.leftVPN()
 		w.leftVPNQoS()
+		w.vpn.Kill()
 		w.vpn.Stop()
 		w.vpn.CheckWait()
 		if w.cfg.ZTrust == "enable" {
@@ -763,6 +767,7 @@ func (w *WorkerImpl) StartVPN() {
 		return
 	}
 
+	w.vpn.Kill()
 	w.vpn.Stop()
 	w.vpn.CheckWait()
 	w.vpn.Initialize()
@@ -825,7 +830,7 @@ func (w *WorkerImpl) Stop() {
 
 	if cfg.Bridge != nil {
 		for _, output := range cfg.Outputs {
-			w.delOutput(cfg.Bridge.Name, output)
+			w.delOutput(cfg.Bridge.Name, output, false)
 		}
 	}
 
@@ -1397,7 +1402,7 @@ func (w *WorkerImpl) DelOutput(data schema.Output) {
 		w.out.Info("WorkerImpl.DelOutput: %s not found", data.Device)
 		return
 	}
-	w.delOutput(w.cfg.Bridge.Name, output)
+	w.delOutput(w.cfg.Bridge.Name, output, true)
 }
 
 func (w *WorkerImpl) SaveOutput() {
