@@ -18,6 +18,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
+	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -208,6 +209,12 @@ func (v *Switch) GetPort(listen string) string {
 }
 
 func (v *Switch) openPorts() {
+	v.fire.AddRule(cn.IPRule{
+		Table:   network.TFilter,
+		Chain:   network.OLCForward,
+		CtState: "RELATED,ESTABLISHED",
+		Comment: "Accept Related",
+	})
 	port := v.GetPort(v.cfg.Listen)
 	UdpPorts := []string{"500", "4500", "8472", "4789", port}
 	TcpPorts := []string{port}

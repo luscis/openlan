@@ -40,7 +40,6 @@ func (w *RouterWorker) Forward() {
 	for _, sub := range spec.Private {
 		w.ipses.Add(sub)
 	}
-	w.toRelated("", "Accept related")
 	w.toForward_s("", w.ipses.Name, "", "From route")
 	w.toMasq_s(w.ipses.Name, "", "To Masq")
 }

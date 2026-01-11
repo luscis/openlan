@@ -1040,40 +1040,6 @@ func (w *WorkerImpl) leftMasq_s(srcSet, prefix, comment string) {
 	})
 }
 
-func (w *WorkerImpl) toRelated(output, comment string) {
-	w.out.Debug("WorkerImpl.toRelated %s", output)
-	// Allowed forward between source and prefix.
-	if output != "" {
-		w.fire.Filter.For.AddRuleX(cn.IPRule{
-			Output:  output,
-			CtState: "RELATED,ESTABLISHED",
-			Comment: comment,
-		})
-	}
-	w.fire.Filter.For.AddRuleX(cn.IPRule{
-		Input:   output,
-		CtState: "RELATED,ESTABLISHED",
-		Comment: comment,
-	})
-}
-
-func (w *WorkerImpl) leftRelated(output, comment string) {
-	w.out.Debug("WorkerImpl.leftRelated %s", output)
-	// Allowed forward between source and prefix.
-	if output != "" {
-		w.fire.Filter.For.DelRuleX(cn.IPRule{
-			Output:  output,
-			CtState: "RELATED,ESTABLISHED",
-			Comment: comment,
-		})
-	}
-	w.fire.Filter.For.DelRuleX(cn.IPRule{
-		Input:   output,
-		CtState: "RELATED,ESTABLISHED",
-		Comment: comment,
-	})
-}
-
 func (w *WorkerImpl) GetCfgs() (*co.Network, *co.OpenVPN) {
 	cfg := w.cfg
 	vpn := cfg.OpenVPN
@@ -1180,7 +1146,6 @@ func (w *WorkerImpl) toVPN() {
 
 		w.toZone(devName)
 		// Enable MASQUERADE, and FORWARD it.
-		w.toRelated(devName, "Accept related")
 		w.toACL(devName)
 		w.addIPSet(co.PrefixRoute{Prefix: vpn.Subnet})
 		if w.vrf != nil {
@@ -1203,7 +1168,6 @@ func (w *WorkerImpl) leftVPN() {
 
 		w.leftZone(devName)
 		// disable MASQUERADE, and FORWARD.
-		w.leftRelated(devName, "Accept related")
 		w.leftACL(devName)
 		w.delIPSet(co.PrefixRoute{Prefix: vpn.Subnet})
 		if w.vrf != nil {
@@ -1252,7 +1216,6 @@ func (w *WorkerImpl) toSubnet() {
 			return
 		}
 		// Enable MASQUERADE, and FORWARD it.
-		w.toRelated(input, "Accept related")
 	}
 	for _, rt := range cfg.Routes {
 		w.addIPSet(rt)
