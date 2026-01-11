@@ -5,84 +5,95 @@ set -ex
 cs_dir="/etc/openlan/switch"
 
 function prepare() {
-  sysctl -p /etc/sysctl.d/90-openlan.conf
+    sysctl -p /etc/sysctl.d/90-openlan.conf
 
-  ## START: clean older files.
-  /usr/bin/env find /var/openlan/access -type f -delete
-  /usr/bin/env find /var/openlan/openvpn -type f -mindepth 2 -maxdepth 2 -delete
-  ## END
+    ## START: clean older files.
+    /usr/bin/env find /var/openlan/access -type f -delete
+    /usr/bin/env find /var/openlan/openvpn -type f -mindepth 2 -maxdepth 2 -delete
+    ## END
 
-  ## START: prepare external dir.
-  for dir in network acl findhop output route qos dnat; do
-    [ -e "$cs_dir/$dir" ] || mkdir -p "$cs_dir/$dir"
-  done
-  ## END
+    ## START: prepare external dir.
+    for dir in network acl findhop output route qos dnat; do
+        [ -e "$cs_dir/$dir" ] || mkdir -p "$cs_dir/$dir"
+    done
+    ## END
 
-  [ -e $cs_dir/switch.json ] || cat > $cs_dir/switch.json << EOF
+    [ -e $cs_dir/switch.json ] || cat > $cs_dir/switch.json << EOF
 {
-  "crypt": {
-    "secret": "cb2ff088a34d"
-  }
+    "crypt": {
+        "secret": "cb2ff088a34d"
+    }
 }
 EOF
 
-  ## START: install default network
-  [ -e $cs_dir/network/ipsec.json ] || cat > $cs_dir/network/ipsec.json << EOF
+    ## START: install default network
+    [ -e $cs_dir/network/ipsec.json ] || cat > $cs_dir/network/ipsec.json << EOF
 {
-  "name": "ipsec",
-  "provider": "ipsec",
-  "snat": "disable"
+    "name": "ipsec",
+    "provider": "ipsec",
+    "snat": "disable"
 }
 EOF
 
-  [ -e $cs_dir/network/bgp.json ] || cat > $cs_dir/network/bgp.json << EOF
+    [ -e $cs_dir/network/bgp.json ] || cat > $cs_dir/network/bgp.json << EOF
 {
-  "name": "bgp",
-  "provider": "bgp",
-  "snat": "disable"
+    "name": "bgp",
+    "provider": "bgp",
+    "snat": "disable"
 }
 EOF
 
-  [ -e $cs_dir/network/ceci.json ] || cat > $cs_dir/network/ceci.json << EOF
+    [ -e $cs_dir/network/ceci.json ] || cat > $cs_dir/network/ceci.json << EOF
 {
-  "name": "ceci",
-  "provider": "ceci",
-  "snat": "disable"
+    "name": "ceci",
+    "provider": "ceci",
+    "snat": "disable"
 }
 EOF
 
-  [ -e $cs_dir/network/router.json ] || cat > $cs_dir/network/router.json << EOF
+    [ -e $cs_dir/network/router.json ] || cat > $cs_dir/network/router.json << EOF
 {
-  "name": "router",
-  "provider": "router",
-  "snat": "disable"
+    "name": "router",
+    "provider": "router",
+    "snat": "disable"
 }
 EOF
-  ## END
+    ## END
 }
 
 function wait_ipsec() {
-  ## START: wait ipsec ready
-  while true; do
-    if ipsec status ; then
-      break
-    fi
-    sleep 5
-  done
-  ## END
+    while ! ipsec status; do
+        sleep 5
+    done
 }
 
+child=0
+running="yes"
+last=0
+
+function handler_exit() {
+    kill $child & wait $child
+    running="no"
+}
+
+options="-conf:dir $cs_dir -log:level 20"
+
 function start_switch {
-  exec /usr/bin/openlan-switch -conf:dir $cs_dir -log:level 20 & child=$!
-  trap 'kill ${child:-}; wait ${child:-}' SIGINT SIGTERM
-  wait $child
+    exec /usr/bin/openlan-switch $options & child=$!
+    trap handler_exit SIGINT SIGTERM
+    last=$(date +%s)
+    wait $child
 }
 
 prepare
 wait_ipsec
 start_switch
-
-# Wait reloading.
-while [ true ]; do
-  start_switch
+while [ "$running"x == "yes"x ]; do
+    now=$(date +%s)
+    during=$(( now - last ))
+    if [ $during -lt 5 ]; then
+        echo "Supress booting 5s."
+        sleep 5
+    fi
+    start_switch
 done

@@ -4,7 +4,7 @@ set -e
 
 systemctl disable --now firewalld
 
-systemctl disable --now  NetworkManager
+systemctl disable --now NetworkManager
 systemctl enable --now network
 
 cat > /etc/sysconfig/selinux <<EOF
