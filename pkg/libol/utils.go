@@ -248,7 +248,11 @@ func PrettyBytes(b uint64) string {
 		return fmt.Sprintf("%d.%02dMb", m, d)
 	}
 	g, d := split(m, 1024)
-	return fmt.Sprintf("%d.%02dGb", g, d)
+	if g < 1024 {
+		return fmt.Sprintf("%d.%02dGb", g, d)
+	}
+	t, d := split(g, 1024)
+	return fmt.Sprintf("%d.%02dTb", t, d)
 }
 
 func GetIPAddr(addr string) string {
