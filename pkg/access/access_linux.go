@@ -2,7 +2,6 @@ package access
 
 import (
 	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/vishvananda/netlink"
 )
@@ -10,13 +9,8 @@ import (
 type Access struct {
 	MixAccess
 	// private
-	brName string
-	ipMtu  int
-	addr   string
-	bypass *netlink.Route
-	routes []*models.Route
-	link   netlink.Link
-	uuid   string
+	ipMtu int
+	link  netlink.Link
 }
 
 func NewAccess(config *config.Access) *Access {
@@ -26,7 +20,6 @@ func NewAccess(config *config.Access) *Access {
 	}
 	p := Access{
 		ipMtu:     ipMtu,
-		brName:    config.Interface.Bridge,
 		MixAccess: NewMixAccess(config),
 	}
 	return &p
@@ -63,6 +56,7 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	if addr == "" || p.link == nil {
 		return nil
 	}
+
 	ipAddr, err := netlink.ParseAddr(addr)
 	if err != nil {
 		p.out.Error("Access.AddAddr.ParseCIDR %s: %s", addr, err)
@@ -70,11 +64,11 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	}
 	if err := netlink.AddrAdd(p.link, ipAddr); err != nil {
 		p.out.Warn("Access.AddAddr.SetLinkIp: %s", err)
-		return err
 	}
 
-	p.out.Info("Access.AddAddr: %s", addr)
 	p.addr = addr
+	p.gateway = gateway
+	p.out.Info("Access.AddAddr: %s via %s", addr, gateway)
 	p.AddRoute()
 	p.Run1()
 
@@ -143,12 +137,11 @@ func (p *Access) OnTap(w *TapWorker) error {
 
 func (p *Access) AddRoute() error {
 	to := p.config.Forward
-	route := p.Network()
-	if to == nil || route == nil {
+	if to == nil {
 		return nil
 	}
 
-	via := route.Gateway
+	via := p.gateway
 	if via == "" {
 		return nil
 	}

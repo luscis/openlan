@@ -351,13 +351,13 @@ func (w *Worker) OnIpAddr(s *SocketWorker, n *models.Network) error {
 		return nil
 	}
 
+	w.out.Info("Worker.OnIpAddr: %s", n)
+
 	addr := fmt.Sprintf("%s/%s", n.Address, n.Netmask)
 	if models.NetworkEqual(w.network, n) {
 		w.out.Debug("Worker.OnIpAddr: %s noChanged", addr)
 		return nil
 	}
-
-	w.out.Info("Worker.OnIpAddr: %s %s", addr, n.Routes)
 
 	if w.network == nil {
 		prefix := libol.Netmask2Len(n.Netmask)

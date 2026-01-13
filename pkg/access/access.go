@@ -28,11 +28,14 @@ type Acceser interface {
 }
 
 type MixAccess struct {
-	uuid   string
-	worker *Worker
-	config *config.Access
-	out    *libol.SubLogger
-	http   *http.Http
+	uuid    string
+	worker  *Worker
+	config  *config.Access
+	out     *libol.SubLogger
+	http    *http.Http
+	addr    string
+	gateway string
+	brName  string
 }
 
 func NewMixAccess(config *config.Access) MixAccess {
@@ -40,6 +43,7 @@ func NewMixAccess(config *config.Access) MixAccess {
 		worker: NewWorker(config),
 		config: config,
 		out:    libol.NewSubLogger(config.Id()),
+		brName: config.Interface.Bridge,
 	}
 }
 
@@ -141,10 +145,6 @@ func (p *MixAccess) Record() map[string]int64 {
 
 func (p *MixAccess) Config() *config.Access {
 	return p.config
-}
-
-func (p *MixAccess) Network() *models.Network {
-	return p.worker.network
 }
 
 func (p *MixAccess) Protocol() string {

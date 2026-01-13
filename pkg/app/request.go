@@ -82,7 +82,7 @@ func findLease(ifAddr string, p *models.Access) *schema.Lease {
 
 func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 	out := client.Out()
-	out.Info("Request.onIpAddr: %s", data)
+	out.Info("Request.onIpAddr: req %s", data)
 	recv := models.NewNetwork("", "")
 	if err := json.Unmarshal(data, recv); err != nil {
 		out.Error("Request.onIpAddr: invalid json data.")
@@ -99,13 +99,13 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 		out.Error("Request.onIpAddr: invalid network %s.", recv.Name)
 		return
 	}
-	out.Cmd("Request.onIpAddr: find %s", n)
+	out.Info("Request.onIpAddr: find %s", n)
 	p := cache.Access.Get(client.String())
 	if p == nil {
 		out.Error("Request.onIpAddr: point notFound")
 		return
 	}
-	resp := &models.Network{
+	obj := &models.Network{
 		Name:    n.Name,
 		Address: recv.Address,
 		Netmask: recv.Netmask,
@@ -114,27 +114,27 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 	}
 	lease := findLease(recv.Address, p)
 	if lease != nil {
-		resp.Address = lease.Address
-		resp.Netmask = n.Netmask
-		resp.Routes = n.Routes
+		obj.Address = lease.Address
+		obj.Netmask = n.Netmask
+		obj.Routes = n.Routes
 	} else {
-		resp.Address = "169.254.0.0"
-		resp.Netmask = n.Netmask
-		if resp.Netmask == "" {
-			resp.Netmask = "255.255.0.0"
+		obj.Address = "169.254.0.0"
+		obj.Netmask = n.Netmask
+		if obj.Netmask == "" {
+			obj.Netmask = "255.255.0.0"
 		}
-		resp.Routes = n.Routes
+		obj.Routes = n.Routes
 	}
-	out.Cmd("Request.onIpAddr: resp %s", resp)
-	if respStr, err := json.Marshal(resp); err == nil {
-		m := libol.NewControlFrame(libol.IpAddrResp, respStr)
+
+	if resp, err := json.Marshal(obj); err == nil {
+		out.Info("Request.onIpAddr: resp %s", resp)
+		m := libol.NewControlFrame(libol.IpAddrResp, resp)
 		_ = client.WriteMsg(m)
 	}
-	out.Info("Request.onIpAddr: %s", resp.Address)
 }
 
 func (r *Request) onLeave(client libol.SocketClient, data []byte) {
 	out := client.Out()
-	out.Info("Request.onLeave")
+	out.Info("Request.onLeave %s", data)
 	r.master.OffClient(client)
 }

@@ -9,15 +9,10 @@ import (
 
 type Access struct {
 	MixAccess
-	// private
-	brName  string
-	addr    string
-	gateway string
 }
 
 func NewAccess(config *config.Access) *Access {
 	p := Access{
-		brName:    config.Interface.Bridge,
 		MixAccess: NewMixAccess(config),
 	}
 	return &p
@@ -47,12 +42,13 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	if gateway == "" {
 		gateway = ips[0]
 	}
+
 	out, err := network.AddrAdd(p.IfName(), ips[0], gateway)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 		return err
 	}
-	p.out.Info("Access.AddAddr: %s", addr)
+	p.out.Info("Access.AddAddr: %s via %s", addr, gateway)
 
 	p.addr = addr
 	p.gateway = gateway

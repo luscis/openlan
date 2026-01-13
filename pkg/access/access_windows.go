@@ -12,15 +12,12 @@ import (
 type Access struct {
 	MixAccess
 	// private
-	brName string
-	addr   string
 	routes []*models.Route
 	config *config.Access
 }
 
 func NewAccess(config *config.Access) *Access {
 	p := Access{
-		brName:    config.Interface.Bridge,
 		MixAccess: NewMixAccess(config),
 	}
 	return &p

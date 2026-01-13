@@ -74,9 +74,8 @@ func NewNetwork(name string, ifAddr string) (this *Network) {
 	return
 }
 
-func (u *Network) String() string {
-	return fmt.Sprintf("%s, %s, %s, %s, %s, %s",
-		u.Name, u.Address, u.IpStart, u.IpEnd, u.Netmask, u.Routes)
+func (n *Network) String() string {
+	return fmt.Sprintf("name:%s gateway:%s address:%s netmask:%s routes:%v", n.Name, n.Gateway, n.Address, n.Netmask, n.Routes)
 }
 
 func (u *Network) ParseIP(s string) {
