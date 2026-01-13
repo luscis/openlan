@@ -203,10 +203,13 @@ func (h *Http) Shutdown() {
 
 func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
 	user, pass, ok := r.BasicAuth()
-	libol.Debug("Http.IsAuth token: %s, pass: %s", user, pass)
 	if !ok {
-		return false
+		user = api.GetQueryOne(r, "token")
+		if user == "" {
+			return false
+		}
 	}
+	libol.Debug("Http.IsAuth token: %s, pass: %s", user, pass)
 	if user == h.adminToken {
 		return true
 	}
