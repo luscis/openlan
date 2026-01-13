@@ -68,6 +68,7 @@ func (p *MixAccess) Start() {
 
 func (p *MixAccess) Stop() {
 	defer libol.Catch("MixAccess.Stop")
+	p.Run0()
 	if p.http != nil {
 		p.http.Shutdown()
 	}

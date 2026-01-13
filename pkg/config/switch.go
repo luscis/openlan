@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"path/filepath"
 
 	"github.com/luscis/openlan/pkg/libol"
@@ -44,7 +45,11 @@ func (q *Queue) Correct() {
 	if q.VirWrt == 0 {
 		q.VirWrt = QdVWr
 	}
-	libol.Info("Queue.Correct %v", *q)
+	libol.Info("Queue.Correct %s", q)
+}
+
+func (q *Queue) String() string {
+	return fmt.Sprintf("sock wr:%d,rd:%d tap wr:%d,rd:%d vir sd:%d,wr:%d", q.SockWr, q.SockRd, q.TapWr, q.SockRd, q.VirSnd, q.VirWrt)
 }
 
 type Limit struct {
@@ -87,7 +92,11 @@ func (p *Limit) Correct() {
 	if p.VxLAN == 0 {
 		p.VxLAN = 128
 	}
-	libol.Info("Limit.Correct %v", *p)
+	libol.Info("Limit.Correct %s", p)
+}
+
+func (p *Limit) String() string {
+	return fmt.Sprintf("access:%d user:%d link:%d", p.Access, p.User, p.Link)
 }
 
 type Switch struct {

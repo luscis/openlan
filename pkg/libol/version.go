@@ -7,7 +7,5 @@ var (
 )
 
 func ShowVersion() {
-	Info("Version is %s", Version)
-	Info("Built   on %s", Date)
-	Info("Commit  id %s", Commit)
+	Info("version: %s build at: %s commit id: %s", Version, Date, Commit)
 }
