@@ -6,6 +6,7 @@ installer="$0"
 nodeps="no"
 if [ "$1"x == "nodeps"x ]; then
     nodeps="yes"
+    DOCKER="yes"
 fi
 
 tmp=""
@@ -64,10 +65,6 @@ function install() {
 
 function post() {
     echo "Initializing ..."
-    if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
-        sysctl -p /etc/sysctl.d/90-openlan.conf
-    fi
-
     if [ "$sys"x == "redhat"x ]; then
         ## Prepare openvpn.
         [ -e "/var/openlan/openvpn/dh.pem" ] || {

@@ -32,6 +32,14 @@ func ListeRoutes() []schema.KernelRoute {
 			Prefix:   val.Dst,
 			Protocol: val.Protocol,
 		}
+		for _, obj := range val.MultiPath {
+			item.Multipath = append(item.Multipath,
+				schema.MultiPath{
+					NextHop: obj.Gw,
+					Link:    obj.Link,
+				},
+			)
+		}
 		items = append(items, item)
 	}
 	return items

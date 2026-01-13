@@ -2,14 +2,21 @@ package libol
 
 import "fmt"
 
+type PrefixPath struct {
+	Gw     string
+	Link   string
+	Weight int
+}
+
 type Prefix struct {
-	Link     string
-	Dst      string
-	Src      string
-	Gw       string
-	Protocol string
-	Priority int
-	Table    int
+	Link      string
+	Dst       string
+	Src       string
+	Gw        string
+	Protocol  string
+	Priority  int
+	Table     int
+	MultiPath []PrefixPath
 }
 
 type Neighbor struct {

@@ -33,12 +33,9 @@
         .container a {
             text-decoration: none;
         }
-        .worker, .device, .link, .point {
+        .panel {
             width: 100%;
-            border: 1px solid #acacac;
-            border-radius: 4px;
-            padding: 0 6px;
-            margin: 8px 2px;
+            padding-top: 12px;
         }
         .panel-header {
             margin: 8px 0;
@@ -55,21 +52,17 @@
             width: 100%;
             border-collapse: collapse;
         }
-        .table-display tr:nth-child(even)
-        {
-            background: #f1f1f1;
-        }
-        .table-display tr:nth-child(odd)
-        {
-            background: inherit;
-        }
         .table-display th {
-            font-weight: normal;
-            font-size: small;
+            font-weight: bold;
+            background: #2f2e2e;
+            color: whitesmoke;
         }
         .table-display td, th {
             text-align: center;
-            border: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+        }
+        .table-display td p {
+            margin: 0 0;
         }
         .table-list {
             width: 100%;
@@ -91,14 +84,14 @@
 </head>
 <body>
 <div class="container">
-    <div class="worker">
+    <div class="panel">
         <div class="panel-body">
             <table class="table-list">
                 <tbody>
                     <tr>
                         <td>Refresh at</td>
                         <td>
-                            : <span id="countdown">3</span>s
+                            : <span id="countdown">15</span>s
                         </td>
                     </tr>
                     <tr>
@@ -141,10 +134,10 @@
             </table>
         </div>
     </div>
-    <div class="device">
+    <div class="panel">
         <div class="panel-header">
             <p>
-                <span>The device on, and total </span><span>{{ len .Devices }}</span>.
+                <span>The device on this node and total </span><span>{{ len .Devices }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -178,10 +171,10 @@
             </table>
         </div>
     </div>
-    <div class="device">
+    <div class="panel">
         <div class="panel-header">
             <p>
-                <span>The route on, and total </span><span>{{ len .Routes }}</span>.
+                <span>The route on this node and total </span><span>{{ len .Routes }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -190,7 +183,7 @@
                 <tr>
                     <th>Table</th>
                     <th>Protocol</th>
-                    <th>Prefix</th>
+                    <th>Destination</th>
                     <th>NextHop</th>
                     <th>Device</th>
                     <th>Source</th>
@@ -203,8 +196,13 @@
                         <td>{{ .Table }}</td>
                         <td>{{ .Protocol }}</td>
                         <td>{{ .Prefix }}</td>
+                        {{ if .Multipath }}
+                        <td>{{ range .Multipath }} <p>{{ .NextHop }}</p> {{ end }} </td>
+                        <td>{{ range .Multipath }} <p>{{ .Link }}</p> {{ end }}</td>
+                        {{ else }}
                         <td>{{ .NextHop }}</td>
                         <td>{{ .Link }}</td>
+                        {{ end }}
                         <td>{{ .Source }}</td>
                         <td>{{ .Metric }}</td>
                     </tr>
@@ -213,10 +211,10 @@
             </table>
         </div>
     </div>
-    <div class="device">
+    <div class="panel">
         <div class="panel-header">
             <p>
-                <span>The neighbor on, and total </span><span>{{ len .Neighbor }}</span>.
+                <span>The neighbor on this node and total </span><span>{{ len .Neighbor }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -242,10 +240,10 @@
             </table>
         </div>
     </div>
-    <div class="link">
+    <div class="panel">
         <div class="panel-header">
             <div>
-                <span>The link which connect to other, and total </span><span>{{ len .Outputs }}</span>.
+                <span>The link which connect to other node and total </span><span>{{ len .Outputs }}</span>.
             </div>
         </div>
         <div class="panel-body">
@@ -285,10 +283,10 @@
             </table>
         </div>
     </div>
-    <div class="point">
+    <div class="panel">
         <div class="panel-header">
             <p>
-                <span>The client accessed to, and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
+                <span>The client accessed to this node and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
             </p>
         </div>
         <div class="panel-body">
@@ -336,7 +334,7 @@
     </div>
 </div>
 <script>
-    let remaining = 3;
+    let remaining = 15;
     const countdownEl = document.getElementById('countdown');
 
     countdownEl.textContent = remaining;

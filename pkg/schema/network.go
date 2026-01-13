@@ -23,13 +23,14 @@ type PrefixRoute struct {
 }
 
 type KernelRoute struct {
-	Prefix   string `json:"prefix"`
-	NextHop  string `json:"nexthop,omitempty"`
-	Metric   int    `json:"metric"`
-	Link     string `json:"link,omitempty"`
-	Table    int    `json:"table,omitempty"`
-	Source   string `json:"source,omitempty"`
-	Protocol string `json:"protocol,omitempty"`
+	Prefix    string      `json:"prefix"`
+	NextHop   string      `json:"nexthop,omitempty"`
+	Metric    int         `json:"metric"`
+	Link      string      `json:"link,omitempty"`
+	Table     int         `json:"table,omitempty"`
+	Source    string      `json:"source,omitempty"`
+	Protocol  string      `json:"protocol,omitempty"`
+	Multipath []MultiPath `json:"multipath,omitempty"`
 }
 
 type RedirectRoute struct {
@@ -47,7 +48,7 @@ func (r RedirectRoute) Route() string {
 }
 
 func (k KernelRoute) ID() string {
-	return fmt.Sprintf("%s-%s", k.Protocol, k.Prefix)
+	return fmt.Sprintf("%d-%s-%s", k.Table, k.Protocol, k.Prefix)
 }
 
 type KernelNeighbor struct {
@@ -59,6 +60,7 @@ type KernelNeighbor struct {
 
 type MultiPath struct {
 	NextHop string `json:"nexthop"`
+	Link    string `json:"link"`
 	Weight  int    `json:"weight"`
 }
 

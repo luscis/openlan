@@ -282,7 +282,7 @@ type KernelRoute struct {
 
 func (s KernelRoute) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -18 "prefix"}} {{ps -15 "nexthop"}} {{ps -15 "device"}} {{ps -6 "protocl"}} {{ps -15 "source"}} {{ ps -6 "metric"}}
+{{ps -18 "destination"}} {{ps -15 "nexthop"}} {{ps -15 "device"}} {{ps -6 "protocl"}} {{ps -15 "source"}} {{ ps -6 "metric"}}
 {{- range . }}
 {{ps -18 .Prefix}} {{ps -15 .NextHop}} {{ps -15 .Link}} {{ps -6 .Protocol}} {{ps -15 .Source}} {{pi -6 .Metric}}
 {{- end }}

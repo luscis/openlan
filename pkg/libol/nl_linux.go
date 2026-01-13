@@ -85,39 +85,65 @@ func RouteProtocol(code int) string {
 	}
 }
 
+func kernelRouteToPrefix(value nl.Route) Prefix {
+	item := Prefix{
+		Protocol: RouteProtocol(value.Protocol),
+		Priority: value.Priority,
+		Table:    value.Table,
+	}
+
+	link, err := nl.LinkByIndex(value.LinkIndex)
+	if err == nil {
+		item.Link = link.Attrs().Name
+	}
+	if value.Dst == nil {
+		item.Dst = "0.0.0.0/0"
+	} else {
+		item.Dst = value.Dst.String()
+	}
+	if len(value.Gw) == 0 {
+		item.Gw = "0.0.0.0"
+	} else {
+		item.Gw = value.Gw.String()
+	}
+	if len(value.Src) == 0 {
+		item.Src = "0.0.0.0"
+	} else {
+		item.Src = value.Src.String()
+	}
+
+	for _, obj := range value.MultiPath {
+		path := PrefixPath{}
+		link, err := nl.LinkByIndex(obj.LinkIndex)
+		if err == nil {
+			path.Link = link.Attrs().Name
+		}
+		if len(obj.Gw) == 0 {
+			path.Gw = "0.0.0.0"
+		} else {
+			path.Gw = obj.Gw.String()
+		}
+		item.MultiPath = append(item.MultiPath, path)
+	}
+
+	return item
+}
+
 func ListRoutes() ([]Prefix, error) {
 	var items []Prefix
-
-	values, err := nl.RouteList(nil, nl.FAMILY_V4)
-	if err != nil {
-		return nil, err
-	}
-	for _, value := range values {
-		entry := Prefix{
-			Protocol: RouteProtocol(value.Protocol),
-			Priority: value.Priority,
-			Table:    value.Table,
+	for i := 1; i < 255; i++ {
+		values, err := nl.RouteListFiltered(
+			nl.FAMILY_V4,
+			&nl.Route{Table: i},
+			nl.RT_FILTER_TABLE,
+		)
+		if err != nil {
+			return nil, err
 		}
-		link, err := nl.LinkByIndex(value.LinkIndex)
-		if err == nil {
-			entry.Link = link.Attrs().Name
+		for _, value := range values {
+			obj := kernelRouteToPrefix(value)
+			items = append(items, obj)
 		}
-		if value.Dst == nil {
-			entry.Dst = "0.0.0.0/0"
-		} else {
-			entry.Dst = value.Dst.String()
-		}
-		if len(value.Gw) == 0 {
-			entry.Gw = "0.0.0.0"
-		} else {
-			entry.Gw = value.Gw.String()
-		}
-		if len(value.Src) == 0 {
-			entry.Src = "0.0.0.0"
-		} else {
-			entry.Src = value.Src.String()
-		}
-		items = append(items, entry)
 	}
 	return items, nil
 }
@@ -155,16 +181,16 @@ func ListNeighbrs() ([]Neighbor, error) {
 		return nil, err
 	}
 	for _, value := range values {
-		entry := Neighbor{
+		item := Neighbor{
 			Address: value.IP.String(),
 			HwAddr:  value.HardwareAddr.String(),
 			State:   StateCode(value.State),
 		}
 		link, err := nl.LinkByIndex(value.LinkIndex)
 		if err == nil {
-			entry.Link = link.Attrs().Name
+			item.Link = link.Attrs().Name
 		}
-		items = append(items, entry)
+		items = append(items, item)
 	}
 	return items, nil
 }

@@ -113,14 +113,14 @@ docker-compose: ## create a compose files
 
 ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
 
-linux: linux-access linux-switch linux-ceci linux-proxy ## build linux binary
-	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
+linux: linux-switch linux-access linux-ceci linux-proxy ## build linux binary
 
 linux-access:
 	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access ./cmd/access
 
 linux-switch:
 	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-switch ./cmd/switch
+	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan ./cmd/main.go
 
 linux-ceci:
 	GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openceci ./cmd/ceci
