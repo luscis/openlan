@@ -65,9 +65,6 @@ func (u Network) Add(c *cli.Context) error {
 		}
 		config.Bridge.Address = c.String("address")
 	}
-	if c.String("provider") != "" {
-		config.Provider = c.String("provider")
-	}
 	if c.String("namespace") != "" {
 		config.Namespace = c.String("namespace")
 	}
@@ -126,7 +123,6 @@ func (u Network) Commands(app *api.App) {
 				Usage: "Add a network",
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "file"},
-					&cli.StringFlag{Name: "provider"},
 					&cli.StringFlag{Name: "address"},
 					&cli.StringFlag{Name: "namespace"},
 				},
@@ -448,8 +444,9 @@ func (r PrefixRoute) List(c *cli.Context) error {
 
 func (r PrefixRoute) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "route",
-		Usage: "Prefix route",
+		Name:   "route",
+		Usage:  "Prefix route",
+		Action: r.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",

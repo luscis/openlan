@@ -65,8 +65,8 @@ func (h *Http) Initialize() {
 		h.server = &http.Server{
 			Addr:         h.listen,
 			Handler:      r,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
+			ReadTimeout:  60 * time.Second,
+			WriteTimeout: 90 * time.Second,
 		}
 	}
 	h.LoadToken()

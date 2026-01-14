@@ -32,7 +32,7 @@ func (cl *HttpClient) Do() (*http.Response, error) {
 		req.Header.Set("Authorization", BasicAuth(cl.Auth.Username, cl.Auth.Password))
 	}
 	if cl.Timeout == 0 {
-		cl.Timeout = 15 * time.Second
+		cl.Timeout = 60 * time.Second
 	}
 	cl.Client = &http.Client{
 		Transport: &http.Transport{

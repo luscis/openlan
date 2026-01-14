@@ -83,6 +83,11 @@ func (r Reload) Do(c *cli.Context) error {
 		return err
 	}
 
+	cfg := Config{}
+	if err := cfg.Save(c); err != nil {
+		return err
+	}
+
 	fmt.Printf("# reloading pid:%d ....\n", oldPid)
 	showProcessInfo(oldPid)
 

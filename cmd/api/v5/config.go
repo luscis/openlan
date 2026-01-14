@@ -56,7 +56,7 @@ func (u Config) Save(c *cli.Context) error {
 	clt := u.NewHttp(c.String("token"))
 	data := &schema.Message{}
 	if err := clt.PutJSON(url, nil, data); err == nil {
-		fmt.Println(data.Message)
+		fmt.Println("Save configuraion ... ", data.Message)
 		return nil
 	} else {
 		return err
