@@ -2,6 +2,7 @@ package cache
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -148,26 +149,27 @@ func (o *vpnClient) Dir(args ...string) string {
 	return filepath.Join(values...)
 }
 
-func (o *vpnClient) clientFile(name string) []string {
-	files, err := filepath.Glob(o.Dir(name, "*server.client"))
-	if err != nil {
-		libol.Warn("vpnClient.clientFile %v", err)
+func (o *vpnClient) readID(name string) string {
+	file := o.Dir(name, "active")
+	if value, err := os.ReadFile(file); err == nil {
+		return string(value)
 	}
-	return files
+	return ""
 }
 
-func (o *vpnClient) platFile(name string) []string {
-	files, err := filepath.Glob(o.Dir(name, "*server.plat"))
-	if err != nil {
-		libol.Warn("vpnClient.platFile %v", err)
-		return []string{}
-	}
-	return files
+func (o *vpnClient) clientFile(name string) string {
+	id := o.readID(name)
+	return o.Dir(name, fmt.Sprintf("%sserver.client", id))
+}
+
+func (o *vpnClient) platFile(name string) string {
+	id := o.readID(name)
+	return o.Dir(name, fmt.Sprintf("%sserver.plat", id))
 }
 
 func (o *vpnClient) readClients(network string) map[string]*schema.VPNClient {
 	clients := make(map[string]*schema.VPNClient, 32)
-	for _, file := range o.clientFile(network) {
+	if file := o.clientFile(network); file != "" {
 		reader, err := os.Open(file)
 		if err != nil {
 			libol.Debug("vpnClient.readClients %v", err)
@@ -178,7 +180,7 @@ func (o *vpnClient) readClients(network string) map[string]*schema.VPNClient {
 		}
 		reader.Close()
 	}
-	for _, file := range o.platFile(network) {
+	if file := o.platFile(network); file != "" {
 		reader, err := os.Open(file)
 		if err != nil {
 			libol.Debug("vpnClient.readClients %v", err)
@@ -218,12 +220,10 @@ func (o *vpnClient) Get(name, user string) *schema.VPNClient {
 }
 
 func (o *vpnClient) clientProfile(name string) string {
-	files, _ := filepath.Glob(o.Dir(name, "*client.ovpn"))
-	if len(files) > 0 {
-		return files[0]
-	}
-	return ""
+	id := o.readID(name)
+	return o.Dir(name, fmt.Sprintf("%sclient.ovpn", id))
 }
+
 func (o *vpnClient) GetClientProfile(network, remote string) (string, error) {
 	reader, err := os.Open(o.clientProfile(network))
 	if err != nil {

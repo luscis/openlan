@@ -45,7 +45,7 @@ type Reload struct {
 }
 
 const openPidFile = "/etc/openlan/switch/pid"
-const maxWaitSec = 10
+const maxWaitSec = 30
 
 func showProcessInfo(pid int) {
 	procDir := fmt.Sprintf("/proc/%d", pid)

@@ -210,7 +210,6 @@ func (o *OpenVPN) FileCfg(full bool) string {
 
 func (o *OpenVPN) FileClientProfile(full bool) string {
 	return o.tofile("client.ovpn", full)
-
 }
 
 func (o *OpenVPN) FileLog(full bool) string {
@@ -253,6 +252,7 @@ func (o *OpenVPN) WriteConf(path string) error {
 		return err
 	}
 	defer fp.Close()
+
 	data := NewOpenVPNDataFromConf(o)
 	o.out.Debug("OpenVPN.WriteConf: %v", data)
 	if data.ClientDir != "" {
@@ -269,6 +269,14 @@ func (o *OpenVPN) WriteConf(path string) error {
 			return err
 		}
 	}
+	o.writeActive()
+	return nil
+}
+
+func (o *OpenVPN) writeActive() error {
+	cid := o.ServerDir()
+	file := filepath.Join(cid, "active")
+	os.WriteFile(file, []byte(o.ID()), 0600)
 	return nil
 }
 

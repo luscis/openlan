@@ -267,7 +267,10 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	// dispaly all routes.
 	body.Routes = api.ListeRoutes()
 	sort.SliceStable(body.Routes, func(i, j int) bool {
-		return body.Routes[i].ID() < body.Routes[j].ID()
+		if body.Routes[i].Table == body.Routes[j].Table {
+			return body.Routes[i].ID() < body.Routes[j].ID()
+		}
+		return body.Routes[i].Table < body.Routes[j].Table
 	})
 	// dispaly all neighbors.
 	body.Neighbor = api.ListNeighbrs()
@@ -297,10 +300,10 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 			}
 			body.Clients = append(body.Clients, *c)
 		}
-		sort.SliceStable(body.Clients, func(i, j int) bool {
-			return body.Clients[i].Name < body.Clients[j].Name
-		})
 	}
+	sort.SliceStable(body.Clients, func(i, j int) bool {
+		return body.Clients[i].Address < body.Clients[j].Address
+	})
 	// display esp state
 	for s := range cache.Output.ListAll() {
 		if s == nil {
