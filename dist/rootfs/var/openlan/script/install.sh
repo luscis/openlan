@@ -94,6 +94,7 @@ function finish() {
     rm -rf $tmp
     if [ x"$DOCKER" == x"no" ] || [ x"$DOCKER" == x"" ]; then
         systemctl daemon-reload
+        systemctl disable --now apparmor || true
     fi
     echo "Finished ..."
 }
