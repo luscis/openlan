@@ -22,6 +22,10 @@ type user struct {
 	LdapSvc *libol.LDAPService
 }
 
+func (w *user) Len() int {
+	return w.Users.Len()
+}
+
 func (w *user) Load() {
 	file := w.File
 	reader, err := libol.OpenRead(file)

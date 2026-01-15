@@ -10,6 +10,7 @@ type Index struct {
 	Outputs   []Output         `json:"output"`
 	Routes    []KernelRoute    `json:"routes"`
 	Neighbor  []KernelNeighbor `json:"neighbors"`
+	UserLen   int              `json:"userLen"`
 }
 
 type Ctrl struct {
