@@ -68,6 +68,7 @@ function wait_ipsec() {
 }
 
 child=0
+jobs=0
 running="yes"
 last=0
 
@@ -85,8 +86,50 @@ function start_switch {
     wait $child
 }
 
+function set_cpus() {
+    local lastpids=""
+    local nowpids=""
+    if [ -e /tmp/lastpids ]; then
+        lastpids=$(cat /tmp/lastpids)
+    fi
+
+    local pid=$(pidof openlan-switch)
+    local pids=$(pidof openvpn | xargs -n1 | sort -n | xargs)
+    nowpids="$pid $pids"
+    if [ "$lastpids"x == "$nowpids"x ]; then
+       return
+    fi
+
+    echo "$nowpids" > /tmp/lastpids
+    taskset -pc 0 $pid # set switch affinity to cpu0
+    local offset=1
+
+    local c=0
+    local cpus=$(nproc)
+    local cpus=$(( cpus - offset ))
+    for pid in $pids; do
+        taskset -pc $((c + offset )) $pid
+        c=$(( (c + 1) % cpus ));
+    done
+}
+
+function start_jobs() {
+    local cpus=$(nproc)
+    if [ $cpus -lt 4 ]; then
+        return
+    fi
+
+    set +x
+    rm -vf /tmp/lastpids
+    while [ true ]; do
+        sleep 10
+        set_cpus
+    done
+}
+
 prepare
 wait_ipsec
+start_jobs & jobs=$!
 start_switch
 while [ "$running"x == "yes"x ]; do
     now=$(date +%s)
