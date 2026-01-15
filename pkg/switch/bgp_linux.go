@@ -124,7 +124,7 @@ func (w *BgpWorker) Start(v api.SwitchApi) {
 	w.reload()
 }
 
-func (w *BgpWorker) Stop() {
+func (w *BgpWorker) Stop(kill bool) {
 	w.out.Info("BgpWorker.Stop")
 }
 
@@ -175,7 +175,7 @@ func (w *BgpWorker) Get() *schema.Bgp {
 }
 
 func (w *BgpWorker) Reload(v api.SwitchApi) {
-	w.Stop()
+	w.Stop(true)
 	w.Initialize()
 	w.Start(v)
 }

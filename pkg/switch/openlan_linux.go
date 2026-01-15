@@ -81,9 +81,9 @@ func (w *OpenLANWorker) downBridge() {
 	_ = w.br.Close()
 }
 
-func (w *OpenLANWorker) Stop() {
+func (w *OpenLANWorker) Stop(kill bool) {
 	w.out.Info("OpenLANWorker.Close")
-	w.WorkerImpl.Stop()
+	w.WorkerImpl.Stop(kill)
 	w.startTime = 0
 	w.downBridge()
 }
@@ -96,7 +96,7 @@ func (w *OpenLANWorker) UpTime() int64 {
 }
 
 func (w *OpenLANWorker) Reload(v api.SwitchApi) {
-	w.Stop()
+	w.Stop(true)
 	w.Initialize()
 	w.Start(v)
 }

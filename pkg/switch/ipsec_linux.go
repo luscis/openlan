@@ -264,7 +264,7 @@ func (w *IPSecWorker) status() map[string]string {
 	return status
 }
 
-func (w *IPSecWorker) Stop() {
+func (w *IPSecWorker) Stop(kill bool) {
 	w.out.Info("IPSecWorker.Stop")
 	w.lock.Lock()
 	defer w.lock.Unlock()
@@ -274,7 +274,7 @@ func (w *IPSecWorker) Stop() {
 }
 
 func (w *IPSecWorker) Reload(v api.SwitchApi) {
-	w.Stop()
+	w.Stop(true)
 	w.Initialize()
 	w.Start(v)
 }

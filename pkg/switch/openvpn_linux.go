@@ -461,25 +461,28 @@ func (o *OpenVPN) Start() {
 	})
 }
 
-func (o *OpenVPN) Kill() {
+func (o *OpenVPN) kill() {
 	pid := o.FindPid()
 	if pid == 0 {
 		return
 	}
-	o.out.Info("OpenVPN.Kill %d", pid)
+	o.out.Info("OpenVPN.kill %d", pid)
 	if proc, err := libol.Kill(pid); err == nil {
 		proc.Wait()
 		if err := os.Remove(o.FilePid(true)); err != nil {
-			o.out.Warn("OpenVPN.Kill: %s", err)
+			o.out.Warn("OpenVPN.kill: %s", err)
 		}
 	} else {
-		o.out.Warn("OpenVPN.Kill: %d %s", pid, err)
+		o.out.Warn("OpenVPN.kill: %d %s", pid, err)
 	}
 }
 
-func (o *OpenVPN) Stop() {
+func (o *OpenVPN) Stop(kill bool) {
 	if !o.ValidConf() {
 		return
+	}
+	if kill {
+		o.kill()
 	}
 	if pid := o.FindPid(); libol.HasProcess(pid) {
 		o.out.Info("OpenVPN.Stop: without kill %d.", pid)

@@ -102,7 +102,7 @@ func (w *RouterWorker) delAddress(name string, addrs []string) error {
 	return nil
 }
 
-func (w *RouterWorker) Stop() {
+func (w *RouterWorker) Stop(kill bool) {
 	for _, re := range w.spec.Redirect {
 		w.delRedirect(re)
 	}
@@ -113,7 +113,7 @@ func (w *RouterWorker) Stop() {
 		w.delAddress("lo", []string{w.spec.Loopback})
 	}
 	w.delAddress("lo", w.spec.Addresses)
-	w.WorkerImpl.Stop()
+	w.WorkerImpl.Stop(kill)
 
 	for _, tun := range w.spec.Tunnels {
 		w.delTunnel(tun)
@@ -122,7 +122,7 @@ func (w *RouterWorker) Stop() {
 }
 
 func (w *RouterWorker) Reload(v api.SwitchApi) {
-	w.Stop()
+	w.Stop(true)
 	w.Initialize()
 	w.Start(v)
 }

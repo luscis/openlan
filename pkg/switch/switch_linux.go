@@ -148,10 +148,8 @@ func (v *Switch) AddNetwork(network string) {
 		if name == network {
 			w := NewNetworker(nCfg)
 			v.worker[name] = w
-			if w.Provider() != "vxlan" {
-				w.Initialize()
-				w.Start(v)
-			}
+			w.Initialize()
+			w.Start(v)
 		}
 	}
 }
@@ -159,9 +157,8 @@ func (v *Switch) AddNetwork(network string) {
 func (v *Switch) DelNetwork(network string) {
 	worker := v.worker[network]
 	file := worker.Config().File
-	if worker.Provider() != "vxlan" {
-		worker.Stop()
-	}
+
+	worker.Stop(true)
 	cache.Network.Del(network)
 	delete(v.worker, network)
 	delete(v.cfg.Network, network)
@@ -238,9 +235,6 @@ func (v *Switch) Initialize() {
 	// Load global firewall
 	v.fire.Initialize()
 	for _, w := range v.worker {
-		if w.Provider() == "vxlan" {
-			continue
-		}
 		w.Initialize()
 	}
 	// Load password for guest access
@@ -446,9 +440,6 @@ func (v *Switch) Start() {
 	v.fire.Start()
 	// firstly, start network.
 	for _, w := range v.worker {
-		if w.Provider() == "vxlan" {
-			continue
-		}
 		w.Start(v)
 	}
 	// start server for accessing
@@ -475,10 +466,7 @@ func (v *Switch) Stop() {
 	}
 	// stop network.
 	for _, w := range v.worker {
-		if w.Provider() == "vxlan" {
-			continue
-		}
-		w.Stop()
+		w.Stop(false)
 	}
 	v.out.Info("Switch.Stop left access")
 	// notify leave to access.

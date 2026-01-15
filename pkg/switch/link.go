@@ -117,7 +117,7 @@ func (l *Link) Clean() {
 	}
 }
 
-func (l *Link) Kill() {
+func (l *Link) kill() {
 	pid := l.FindPid()
 	if pid == 0 {
 		return
@@ -133,7 +133,10 @@ func (l *Link) Kill() {
 	}
 }
 
-func (l *Link) Stop() error {
+func (l *Link) Stop(kill bool) error {
+	if kill {
+		l.kill()
+	}
 	if pid := l.FindPid(); libol.HasProcess(pid) {
 		l.out.Info("Link.Stop: without stoping: %d", pid)
 	} else {
@@ -163,7 +166,7 @@ func (ls *Links) Remove(addr string) *Link {
 	ls.lock.Lock()
 	defer ls.lock.Unlock()
 	if p, ok := ls.links[addr]; ok {
-		p.Stop()
+		p.Stop(true)
 		delete(ls.links, addr)
 		return p
 	}
@@ -181,12 +184,15 @@ func (ll *LinuxLink) Start() error {
 	return nil
 }
 
-func (ll *LinuxLink) Stop() error {
+func (ll *LinuxLink) Stop(kill bool) error {
+	if kill {
+		ll.kill()
+	}
 	if err := nl.LinkDel(ll.link); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ll *LinuxLink) Kill() {
+func (ll *LinuxLink) kill() {
 }

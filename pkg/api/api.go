@@ -117,7 +117,7 @@ type SupeApi interface {
 	ID() string
 	Initialize()
 	Start(v SwitchApi)
-	Stop()
+	Stop(kill bool)
 	Reload(v SwitchApi)
 }
 

@@ -45,7 +45,7 @@ type Reload struct {
 }
 
 const openPidFile = "/etc/openlan/switch/pid"
-const maxWaitSec = 30
+const maxWaitSec = 60
 
 func showProcessInfo(pid int) {
 	procDir := fmt.Sprintf("/proc/%d", pid)
@@ -99,6 +99,7 @@ func (r Reload) Do(c *cli.Context) error {
 
 	fmt.Printf("# max wait %ds...\n", maxWaitSec)
 
+	last := time.Now().Unix()
 	for range maxWaitSec {
 		time.Sleep(1 * time.Second)
 		newPid, err := readPid(openPidFile)
@@ -106,7 +107,8 @@ func (r Reload) Do(c *cli.Context) error {
 			return err
 		}
 		if newPid != oldPid {
-			fmt.Printf("# now, new pid:%d ...\n", newPid)
+			now := time.Now().Unix()
+			fmt.Printf("# during %d, new pid:%d ...\n", now-last, newPid)
 			showProcessInfo(newPid)
 			break
 		}

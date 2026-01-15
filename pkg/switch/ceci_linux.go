@@ -79,12 +79,12 @@ func (w *CeciWorker) Start(v api.SwitchApi) {
 	}
 }
 
-func (w *CeciWorker) Stop() {
+func (w *CeciWorker) Stop(kill bool) {
 	w.out.Info("CeciWorker.Stop")
 }
 
 func (w *CeciWorker) Reload(v api.SwitchApi) {
-	w.Stop()
+	w.Stop(true)
 	w.Initialize()
 	w.Start(v)
 }

@@ -191,7 +191,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				PMtuDisc: 1,
 			},
 		}
-		link.Stop()
+		link.Stop(true)
 		if err := link.Start(); err != nil {
 			w.out.Error("WorkerImpl.LinkStart %s %s", port.Id(), err)
 			return
@@ -210,7 +210,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				},
 			},
 		}
-		link.Stop()
+		link.Stop(true)
 		opts := []string{"type", "vxlan",
 			"id", strconv.Itoa(port.Segment),
 			"remote", port.Remote,
@@ -675,10 +675,7 @@ func (w *WorkerImpl) delOutput(bridge string, port *co.Output, kill bool) {
 
 	link := port.Linker
 	if link != nil {
-		if kill {
-			link.Kill()
-		}
-		if err := link.Stop(); err != nil {
+		if err := link.Stop(kill); err != nil {
 			w.out.Error("WorkerImpl.LinkStop %s %s", port.Link, err)
 			return
 		}
@@ -750,8 +747,7 @@ func (w *WorkerImpl) DelVPN() {
 	if w.vpn != nil {
 		w.leftVPN()
 		w.leftVPNQoS()
-		w.vpn.Kill()
-		w.vpn.Stop()
+		w.vpn.Stop(true)
 		w.vpn.CheckWait()
 		if w.cfg.ZTrust == "enable" {
 			w.leftTrust()
@@ -767,8 +763,7 @@ func (w *WorkerImpl) StartVPN() {
 		return
 	}
 
-	w.vpn.Kill()
-	w.vpn.Stop()
+	w.vpn.Stop(true)
 	w.vpn.CheckWait()
 	w.vpn.Initialize()
 	w.vpn.Start()
@@ -804,7 +799,7 @@ func (w *WorkerImpl) ListClients(call func(name, local string)) {
 	vpn.ListClients(call)
 }
 
-func (w *WorkerImpl) Stop() {
+func (w *WorkerImpl) Stop(kill bool) {
 	w.out.Info("WorkerImpl.Stop")
 
 	cfg, _ := w.GetCfgs()
@@ -819,7 +814,7 @@ func (w *WorkerImpl) Stop() {
 	if !(w.vpn == nil) {
 		w.ztrust.Stop()
 		w.qos.Stop()
-		w.vpn.Stop()
+		w.vpn.Stop(kill)
 	}
 	if !(w.dhcp == nil) {
 		w.dhcp.Stop()
@@ -830,7 +825,7 @@ func (w *WorkerImpl) Stop() {
 
 	if cfg.Bridge != nil {
 		for _, output := range cfg.Outputs {
-			w.delOutput(cfg.Bridge.Name, output, false)
+			w.delOutput(cfg.Bridge.Name, output, kill)
 		}
 	}
 

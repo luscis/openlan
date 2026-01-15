@@ -7,8 +7,7 @@ import (
 
 type Linker interface {
 	Start() error
-	Stop() error
-	Kill()
+	Stop(kill bool) error
 }
 
 type Output struct {
