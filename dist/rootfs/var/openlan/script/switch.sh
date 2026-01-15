@@ -94,16 +94,26 @@ function set_cpus() {
     fi
 
     local pid=$(pidof openlan-switch)
+    if [ "$pid"x == ""x ]; then
+        return
+    fi
+
     local pids=$(pidof openvpn | xargs -n1 | sort -n | xargs)
+    if [ "$pids"x == ""x ]; then
+        return
+    fi
+
     nowpids="$pid $pids"
     if [ "$lastpids"x == "$nowpids"x ]; then
        return
     fi
 
+    # Set openlan-switch.
     echo "$nowpids" > /tmp/lastpids
     taskset -pc 0 $pid # set switch affinity to cpu0
     local offset=1
 
+    # Set openvpn daemon.
     local c=0
     local cpus=$(nproc)
     local cpus=$(( cpus - offset ))
@@ -119,8 +129,11 @@ function start_jobs() {
         return
     fi
 
-    set +x
-    rm -vf /tmp/lastpids
+    if [ -e /tmp/lastpids ]; then
+        rm -vf /tmp/lastpids
+    fi
+
+    set +ex
     while [ true ]; do
         sleep 10
         set_cpus
