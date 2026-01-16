@@ -302,20 +302,17 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 
 func (w *WorkerImpl) toRoute(rt co.PrefixRoute) {
 	// install routes
-	ifAddr := w.IfAddr()
-
 	dst, err := libol.ParseNet(rt.Prefix)
 	if err != nil {
 		return
 	}
+
+	ifAddr := w.IfAddr()
 	if ifAddr == rt.NextHop && rt.MultiPath == nil && rt.FindHop == "" {
 		// route's next-hop is local not install again.
 		return
 	}
-	nlr := nl.Route{
-		Dst:   dst,
-		Table: w.table,
-	}
+	nlr := nl.Route{Dst: dst, Table: w.table}
 	for _, hop := range rt.MultiPath {
 		nxhe := &nl.NexthopInfo{
 			Hops: hop.Weight,
@@ -331,16 +328,17 @@ func (w *WorkerImpl) toRoute(rt co.PrefixRoute) {
 		w.findhop.LoadHop(rt.FindHop, &nlr)
 		return
 	}
+
 	w.out.Info("WorkerImpl.toRoute: %s", nlr.String())
 
 	rt_c := rt
 	promise := libol.NewPromise()
 	promise.Go(func() error {
 		if err := nl.RouteReplace(&nlr); err != nil {
-			w.out.Warn("WorkerImpl.toRoute: %v %s", nlr, err)
+			w.out.Warn("WorkerImpl.toRoute: %s %s", nlr.String(), err)
 			return err
 		}
-		w.out.Info("WorkerImpl.toRoute: %v success", rt_c.String())
+		w.out.Info("WorkerImpl.toRoute: %s success", rt_c.String())
 		return nil
 	})
 }
@@ -348,8 +346,6 @@ func (w *WorkerImpl) toRoute(rt co.PrefixRoute) {
 func (w *WorkerImpl) toRoutes() {
 	// install routes
 	cfg := w.cfg
-	w.out.Info("WorkerImpl.toRoute: %v", cfg.Routes)
-
 	for _, rt := range cfg.Routes {
 		w.toRoute(rt)
 	}

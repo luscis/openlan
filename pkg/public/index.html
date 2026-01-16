@@ -92,35 +92,31 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>Project</td>
-                        <td>
-                            : <a href="https://github.com/luscis/openlan">openlan</a>
-                        </td>
+                        <td>UpTime</td>
+                        <td>: {{ prettyTime .Worker.Uptime }}</td>
+                        <td>Protocol</td>
+                        <td>: {{ .Worker.Protocol }}</td>
+                    </tr>
+                    <tr>
+                        <td>Version</td>
+                        <td>: {{ .Version.Version }}|{{ .Version.Date }}</td>
                         <td>UUID</td>
                         <td>: {{ .Worker.UUID }}|{{ .Worker.Alias }}</td>
                     </tr>
                     <tr>
                         <td>Expire at</td>
                         <td>: {{ .Version.Expire }}</td>
-                        <td>UpTime</td>
-                        <td>: {{ prettyTime .Worker.Uptime }}</td>
-                    </tr>
-                    <tr>
-                        <td>Protocol</td>
-                        <td>: {{ .Worker.Protocol }}</td>
-                        <td>Version</td>
-                        <td>: {{ .Version.Version }}|{{ .Version.Date }}</td>
-                    </tr>
-                    <tr>
-                        <td>Conntrack</td>
-                        <td>: {{ .Conntrack }}</td>
                         <td>Users</td>
                         <td>: {{ .UserLen }}</td>
                     </tr>
                     <tr>
-                        <td>APIs</td>
+                        <td>Conntrack</td>
+                        <td>: {{ .Conntrack }}</td>
+                    </tr>
+		    <tr>
+                        <td>Project</td>
                         <td>
-                            : <a href="/api/urls">urls</a>
+                            : <a href="https://github.com/luscis/openlan">openlan</a>
                         </td>
                     </tr>
                 </tbody>

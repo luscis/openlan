@@ -314,15 +314,14 @@ func (w *RouterWorker) addRedirect(obj *co.RouterRedirect) {
 	promise := libol.NewPromise()
 	promise.Go(func() error {
 		if err := nl.RouteReplace(&route); err != nil {
-			w.out.Warn("WorkerImpl.AddRedirect: %v %s", route, err)
+			w.out.Warn("WorkerImpl.AddRedirect: %s %s", route, err)
 			return err
 		}
-		w.out.Info("WorkerImpl.AddRedirect: %v success", route.String())
-		cn.RuleDel(obj.Source, obj.Table)
-		if _, err := cn.RuleAdd(obj.Source, obj.Table, obj.Priority); err != nil {
-			w.out.Warn("WorkerImpl.AddRedirect: %s %s", obj.Rule(), err)
+		w.out.Info("WorkerImpl.AddRedirect: %s success", obj.Route())
+		if out, err := cn.RuleAdd(obj.Source, obj.Table, obj.Priority); err != nil {
+			w.out.Warn("WorkerImpl.AddRedirect: %s %s", obj.Rule(), out)
 		} else {
-			w.out.Info("WorkerImpl.AddRedirect: %v success", obj.Rule())
+			w.out.Info("WorkerImpl.AddRedirect: %s success", obj.Rule())
 		}
 		return nil
 	})

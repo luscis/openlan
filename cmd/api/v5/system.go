@@ -112,6 +112,7 @@ func (r Reload) Do(c *cli.Context) error {
 			showProcessInfo(newPid)
 			break
 		}
+		fmt.Printf("# ...\n")
 	}
 	return nil
 }

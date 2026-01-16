@@ -80,7 +80,7 @@ function handler_exit() {
 options="-conf:dir $cs_dir -log:level 20"
 
 function start_switch {
-    echo "Start openlan-switch $options"
+    echo "exec openlan-switch $options"
     exec /usr/bin/openlan-switch $options & child=$!
     trap handler_exit SIGINT SIGTERM
     last=$(date +%s)

@@ -49,11 +49,11 @@ func (r *RouterRedirect) ID() string {
 	return fmt.Sprintf("%s", r.Source)
 }
 func (r *RouterRedirect) Rule() string {
-	return fmt.Sprintf("source:%s lookup:%d", r.Source, r.Table)
+	return fmt.Sprintf("from %s lookup %d", r.Source, r.Table)
 }
 
 func (r *RouterRedirect) Route() string {
-	return fmt.Sprintf(" table:%d nexthop:%s", r.Table, r.NextHop)
+	return fmt.Sprintf("default via %s table %d", r.NextHop, r.Table)
 }
 
 type RouterInterface struct {
