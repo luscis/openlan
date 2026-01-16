@@ -181,8 +181,13 @@ func ListDevices() []schema.Device {
 		})
 	}
 	for k, v := range values {
-		d := &values[k]
-		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
+		device := &values[k]
+		speed := schema.Speed{
+			Name: v.Name,
+			Send: v.Send,
+			Recv: v.Recv,
+		}
+		device.TxSpeed, device.RxSpeed = cache.Speed.Out(speed)
 	}
 
 	return values

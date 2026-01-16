@@ -2,6 +2,13 @@ package schema
 
 import "fmt"
 
+type Speed struct {
+	Name string `json:"name"`
+	Send uint64 `json:"send,omitempty"`
+	Recv uint64 `json:"recv,omitempty"`
+	Drop uint64 `json:"drop,omitempty"`
+}
+
 type Device struct {
 	Network string `json:"network,omitempty"`
 	Name    string `json:"name"`

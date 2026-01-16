@@ -7,4 +7,5 @@ import (
 func Init(cfg *config.Limit) {
 	Access.Init(cfg.Access)
 	User.Init(cfg.User)
+	Speed.Init(cfg.User + 1024)
 }

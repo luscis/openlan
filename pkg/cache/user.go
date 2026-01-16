@@ -120,8 +120,10 @@ func (w *user) Add(user *models.User) {
 }
 
 func (w *user) Del(key string) {
-	libol.Debug("user.Add %s", key)
+	libol.Debug("user.Del %s", key)
 	w.Users.Del(key)
+	// remove user device cache
+	Speed.Del(key)
 }
 
 func (w *user) Get(key string) *models.User {

@@ -63,9 +63,10 @@ func (h User) Add(w http.ResponseWriter, r *http.Request) {
 
 func (h User) Del(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	libol.Info("DelUser %s", vars["id"])
+	name := vars["id"]
+	libol.Info("DelUser %s", name)
 
-	cache.User.Del(vars["id"])
+	cache.User.Del(name)
 	if err := cache.User.Save(); err != nil {
 		libol.Warn("DelUser %s", err)
 	}

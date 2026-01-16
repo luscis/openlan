@@ -291,17 +291,7 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 		return ii.Network+ii.Remote > jj.Network+jj.Remote
 	})
 	// display OpenVPN Clients.
-	for n := range cache.Network.List() {
-		if n == nil {
-			break
-		}
-		for c := range cache.VPNClient.List(n.Name) {
-			if c == nil {
-				break
-			}
-			body.Clients = append(body.Clients, *c)
-		}
-	}
+	body.Clients = api.ListClients()
 	sort.SliceStable(body.Clients, func(i, j int) bool {
 		return body.Clients[i].Address < body.Clients[j].Address
 	})

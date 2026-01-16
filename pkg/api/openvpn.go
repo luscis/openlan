@@ -19,24 +19,37 @@ func (h VPNClient) Router(router *mux.Router) {
 	router.HandleFunc("/api/vpn/client/{id}", h.Remove).Methods("DELETE")
 }
 
+func ListClients() []schema.VPNClient {
+	var clients []schema.VPNClient
+	for n := range cache.Network.List() {
+		if n == nil {
+			break
+		}
+		for client := range cache.VPNClient.List(n.Name) {
+			if client == nil {
+				break
+			}
+			value := schema.Speed{
+				Name: client.Name,
+				Recv: client.RxBytes,
+				Send: client.TxBytes,
+			}
+			client.TxSpeed, client.RxSpeed = cache.Speed.Out(value)
+			clients = append(clients, *client)
+		}
+	}
+	return clients
+}
+
 func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["id"]
 
-	clients := make(map[string]schema.VPNClient, 1024)
+	var items []schema.VPNClient
 	if name == "" {
-		for n := range cache.Network.List() {
-			if n == nil {
-				break
-			}
-			for client := range cache.VPNClient.List(n.Name) {
-				if client == nil {
-					break
-				}
-				clients[client.Name] = *client
-			}
-		}
+		items = ListClients()
 	} else {
+		clients := make(map[string]schema.VPNClient, 1024)
 		worker := Call.GetWorker(name)
 		if worker == nil {
 			http.Error(w, "Network not found", http.StatusBadRequest)
@@ -49,7 +62,6 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 			}
 			clients[client.Name] = *client
 		}
-
 		worker.ListClients(func(name, address string) {
 			if _, ok := clients[name]; ok {
 				return
@@ -60,13 +72,10 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 				Address: address,
 			}
 		})
+		for _, v := range clients {
+			items = append(items, v)
+		}
 	}
-
-	items := make([]schema.VPNClient, 0, 1024)
-	for _, v := range clients {
-		items = append(items, v)
-	}
-
 	ResponseJson(w, items)
 }
 

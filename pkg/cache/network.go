@@ -158,63 +158,63 @@ var Network = network{
 	Addr:     libol.NewSafeStrMap(1024),
 }
 
-const deviceTimeout = 5
+const speedTimeout = 5
 
-type device struct {
-	devices *libol.SafeStrMap
+type speed struct {
+	speeds *libol.SafeStrMap
 }
 
-type devicevalue struct {
-	device   schema.Device
+type speedvalue struct {
+	speed    schema.Speed
 	rxspeed  uint64
 	txspeed  uint64
 	updateat int64
 }
 
-func (p *device) Init(size int) {
-	p.devices = libol.NewSafeStrMap(size)
+func (p *speed) Init(size int) {
+	p.speeds = libol.NewSafeStrMap(size)
 }
 
-func (p *device) Add(device schema.Device) {
-	value := &devicevalue{
-		device:   device,
+func (p *speed) Add(speed schema.Speed) {
+	value := &speedvalue{
+		speed:    speed,
 		updateat: time.Now().Unix(),
 	}
-	_ = p.devices.Set(device.Name, value)
+	_ = p.speeds.Set(speed.Name, value)
 }
 
-func (p *device) Get(key string) schema.Device {
-	ret := p.devices.Get(key)
+func (p *speed) Get(key string) schema.Speed {
+	ret := p.speeds.Get(key)
 	if ret != nil {
-		value := ret.(*devicevalue)
-		return value.device
+		value := ret.(*speedvalue)
+		return value.speed
 	}
-	return schema.Device{}
+	return schema.Speed{}
 }
 
-func (p *device) Speed(device schema.Device) (uint64, uint64) {
-	ret := p.devices.Get(device.Name)
+func (p *speed) Out(speed schema.Speed) (uint64, uint64) {
+	ret := p.speeds.Get(speed.Name)
 	if ret == nil {
-		p.Add(device)
+		p.Add(speed)
 		return 0, 0
 	}
 
-	older := ret.(*devicevalue)
+	older := ret.(*speedvalue)
 	dt := uint64(time.Now().Unix() - older.updateat)
-	if dt > deviceTimeout {
-		older.txspeed = (device.Send - older.device.Send) / dt
-		older.rxspeed = (device.Recv - older.device.Recv) / dt
+	if dt > speedTimeout {
+		older.txspeed = (speed.Send - older.speed.Send) / dt
+		older.rxspeed = (speed.Recv - older.speed.Recv) / dt
 		older.updateat = time.Now().Unix()
-		older.device.Recv = device.Recv
-		older.device.Send = device.Send
+		older.speed.Recv = speed.Recv
+		older.speed.Send = speed.Send
 	}
 	return older.txspeed, older.rxspeed
 }
 
-func (p *device) Del(key string) {
-	p.devices.Del(key)
+func (p *speed) Del(key string) {
+	p.speeds.Del(key)
 }
 
-var Device = device{
-	devices: libol.NewSafeStrMap(1024),
+var Speed = speed{
+	speeds: libol.NewSafeStrMap(1024),
 }

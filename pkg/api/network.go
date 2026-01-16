@@ -440,8 +440,13 @@ func (h RouterInterface) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	for k, v := range values {
-		d := &values[k]
-		d.TxSpeed, d.RxSpeed = cache.Device.Speed(v)
+		device := &values[k]
+		obj := schema.Speed{
+			Name: v.Name,
+			Recv: v.Recv,
+			Send: v.Send,
+		}
+		device.TxSpeed, device.RxSpeed = cache.Speed.Out(obj)
 	}
 	ResponseJson(w, values)
 }

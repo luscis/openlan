@@ -14,6 +14,8 @@ type VPNClient struct {
 	AliveTime int64  `json:"aliveTime"`
 	Address   string `json:"address"`
 	System    string `json:"system,omitempty"`
+	RxSpeed   uint64 `json:"rxSpeed"`
+	TxSpeed   uint64 `json:"txSpeed"`
 }
 
 type OpenVPN struct {
