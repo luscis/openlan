@@ -8,6 +8,3 @@ func Init(cfg *config.Limit) {
 	Access.Init(cfg.Access)
 	User.Init(cfg.User)
 }
-
-func Reload() {
-}

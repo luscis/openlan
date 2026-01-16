@@ -191,10 +191,10 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				PMtuDisc: 1,
 			},
 		}
-		link.Stop(true)
+		// link.Stop(true)
 		if err := link.Start(); err != nil {
-			w.out.Error("WorkerImpl.LinkStart %s %s", port.Id(), err)
-			return
+			w.out.Warn("WorkerImpl.LinkStart %s %s", port.Id(), err)
+			//return
 		}
 		port.Linker = link
 	case "vxlan":
@@ -210,7 +210,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 				},
 			},
 		}
-		link.Stop(true)
+		//link.Stop(true)
 		opts := []string{"type", "vxlan",
 			"id", strconv.Itoa(port.Segment),
 			"remote", port.Remote,
@@ -218,8 +218,8 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 			"noudpcsum"}
 		_, err := cn.LinkAdd(port.Link, opts...)
 		if err != nil {
-			w.out.Error("WorkerImpl.LinkStart %s %v", port.Id(), opts)
-			return
+			w.out.Warn("WorkerImpl.LinkStart %s %v", port.Id(), opts)
+			// return
 		}
 		cn.LinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
@@ -262,7 +262,6 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		if err := nl.LinkSetUp(link); err != nil {
 			w.out.Warn("WorkerImpl.addOutput %s %s", port.Remote, err)
 		}
-
 		if port.Segment > 0 {
 			subLink := &LinuxLink{
 				link: &nl.Vlan{
@@ -669,10 +668,11 @@ func (w *WorkerImpl) delOutput(bridge string, port *co.Output, kill bool) {
 	w.out.Info("WorkerImpl.delOutput %s", port.Link)
 
 	cache.Output.Del(port.Link)
-	if port.Protocol == "vxlan" || port.Protocol == "gre" || port.Protocol == "" {
-		w.DelPhysical(bridge, port.Link)
+	if kill {
+		if port.Protocol == "vxlan" || port.Protocol == "gre" || port.Protocol == "" {
+			w.DelPhysical(bridge, port.Link)
+		}
 	}
-
 	link := port.Linker
 	if link != nil {
 		if err := link.Stop(kill); err != nil {
@@ -803,13 +803,20 @@ func (w *WorkerImpl) Stop(kill bool) {
 	w.out.Info("WorkerImpl.Stop")
 
 	cfg, _ := w.GetCfgs()
-	w.snat.Cancel()
-	w.dnat.Cancel()
-	w.fire.Stop()
+	if kill {
+		w.snat.Cancel()
+		w.dnat.Cancel()
+	}
+	if kill {
+		w.fire.Stop()
+	}
+
 	w.findhop.Stop()
 	w.acl.Stop()
 
-	w.leftRoutes()
+	if kill {
+		w.leftRoutes()
+	}
 
 	if !(w.vpn == nil) {
 		w.ztrust.Stop()
@@ -822,14 +829,14 @@ func (w *WorkerImpl) Stop(kill bool) {
 	if !(w.vrf == nil) {
 		w.vrf.Down()
 	}
-
 	if cfg.Bridge != nil {
 		for _, output := range cfg.Outputs {
 			w.delOutput(cfg.Bridge.Name, output, kill)
 		}
 	}
-
-	w.ipser.Destroy()
+	if kill {
+		w.ipser.Destroy()
+	}
 }
 
 func (w *WorkerImpl) String() string {
@@ -875,9 +882,6 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 	}
 
 	return nil
-}
-
-func (w *WorkerImpl) Reload(v api.SwitchApi) {
 }
 
 func (w *WorkerImpl) toACL(input string) {

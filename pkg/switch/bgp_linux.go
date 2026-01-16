@@ -174,12 +174,6 @@ func (w *BgpWorker) Get() *schema.Bgp {
 	return data
 }
 
-func (w *BgpWorker) Reload(v api.SwitchApi) {
-	w.Stop(true)
-	w.Initialize()
-	w.Start(v)
-}
-
 func (w *BgpWorker) AddNeighbor(data schema.BgpNeighbor) {
 	obj := &co.BgpNeighbor{
 		Address:  data.Address,

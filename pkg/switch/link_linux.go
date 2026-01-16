@@ -186,13 +186,14 @@ func (ll *LinuxLink) Start() error {
 
 func (ll *LinuxLink) Stop(kill bool) error {
 	if kill {
-		ll.kill()
-	}
-	if err := nl.LinkDel(ll.link); err != nil {
-		return err
+		return ll.kill()
 	}
 	return nil
 }
 
-func (ll *LinuxLink) kill() {
+func (ll *LinuxLink) kill() error {
+	if err := nl.LinkDel(ll.link); err != nil {
+		return err
+	}
+	return nil
 }

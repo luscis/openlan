@@ -83,12 +83,6 @@ func (w *CeciWorker) Stop(kill bool) {
 	w.out.Info("CeciWorker.Stop")
 }
 
-func (w *CeciWorker) Reload(v api.SwitchApi) {
-	w.Stop(true)
-	w.Initialize()
-	w.Start(v)
-}
-
 func (w *CeciWorker) AddTcp(data schema.CeciTcp) {
 	obj := &co.CeciTcp{
 		Mode:   data.Mode,

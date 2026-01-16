@@ -477,7 +477,7 @@ func (v *Switch) Stop() {
 		v.leftClient(p.Client)
 	}
 	v.server.Close()
-	v.fire.Stop()
+	//v.fire.Stop()
 }
 
 func (v *Switch) Alias() string {
@@ -626,16 +626,6 @@ func (v *Switch) leftClient(client libol.SocketClient) {
 	if err := client.WriteMsg(m); err != nil {
 		v.out.Error("Switch.leftClient: %s", err)
 		return
-	}
-}
-
-func (v *Switch) Reload() {
-	co.Reload()
-	cache.Reload()
-
-	v.fire.Start()
-	for _, w := range v.worker {
-		w.Reload(v)
 	}
 }
 

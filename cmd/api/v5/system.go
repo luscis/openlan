@@ -108,7 +108,7 @@ func (r Reload) Do(c *cli.Context) error {
 		}
 		if newPid != oldPid {
 			now := time.Now().Unix()
-			fmt.Printf("# during %d, new pid:%d ...\n", now-last, newPid)
+			fmt.Printf("# during %ds, new pid:%d ...\n", now-last, newPid)
 			showProcessInfo(newPid)
 			break
 		}

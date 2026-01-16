@@ -29,6 +29,10 @@ func (s *IPSecTunnel) Id() string {
 	return fmt.Sprintf("%s-%s", s.Right, s.Transport)
 }
 
+func (s *IPSecTunnel) String() string {
+	return s.Id()
+}
+
 type IPSecSpecifies struct {
 	Name    string         `json:"-" yaml:"-"`
 	Tunnels []*IPSecTunnel `json:"tunnels" yaml:"tunnels"`

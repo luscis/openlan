@@ -188,6 +188,7 @@ func (w *IPSecWorker) addTunnel(tun *co.IPSecTunnel) error {
 		w.restartTunnel(tun)
 	}
 
+	libol.Info("IPSecWorker.addTunnel %s", tun)
 	return nil
 }
 
@@ -224,6 +225,7 @@ func (w *IPSecWorker) removeTunnel(tun *co.IPSecTunnel) error {
 			w.out.Warn("IPSecWorker.RemoveTunnel %s", err)
 		}
 	}
+	libol.Info("IPSecWorker.removeTunnel %s", tun)
 	return nil
 }
 
@@ -268,15 +270,11 @@ func (w *IPSecWorker) Stop(kill bool) {
 	w.out.Info("IPSecWorker.Stop")
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	for _, tun := range w.spec.Tunnels {
-		w.removeTunnel(tun)
+	if kill {
+		for _, tun := range w.spec.Tunnels {
+			w.removeTunnel(tun)
+		}
 	}
-}
-
-func (w *IPSecWorker) Reload(v api.SwitchApi) {
-	w.Stop(true)
-	w.Initialize()
-	w.Start(v)
 }
 
 func (w *IPSecWorker) AddTunnel(data schema.IPSecTunnel) {

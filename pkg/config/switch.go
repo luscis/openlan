@@ -425,12 +425,6 @@ func (s *Switch) SaveNetwork() {
 	}
 }
 
-func (s *Switch) Reload() {
-	for _, obj := range s.Network {
-		obj.Reload()
-	}
-}
-
 func (s *Switch) GetNetwork(name string) *Network {
 	return s.Network[name]
 }

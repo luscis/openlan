@@ -25,7 +25,6 @@ type SwitchApi interface {
 	Alias() string
 	Config() *co.Switch
 	Server() libol.SocketServer
-	Reload()
 	Save()
 	AddNetwork(string)
 	DelNetwork(string)
@@ -118,7 +117,6 @@ type SupeApi interface {
 	Initialize()
 	Start(v SwitchApi)
 	Stop(kill bool)
-	Reload(v SwitchApi)
 }
 
 type NetworkApi interface {

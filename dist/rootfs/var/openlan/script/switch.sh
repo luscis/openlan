@@ -80,6 +80,7 @@ function handler_exit() {
 options="-conf:dir $cs_dir -log:level 20"
 
 function start_switch {
+    echo "Start openlan-switch $options"
     exec /usr/bin/openlan-switch $options & child=$!
     trap handler_exit SIGINT SIGTERM
     last=$(date +%s)
@@ -133,7 +134,6 @@ function start_jobs() {
         rm -vf /tmp/lastpids
     fi
 
-    set +ex
     while [ true ]; do
         sleep 10
         set_cpus
@@ -142,13 +142,15 @@ function start_jobs() {
 
 prepare
 wait_ipsec
+
+set +ex
 start_jobs & jobs=$!
 start_switch
 while [ "$running"x == "yes"x ]; do
     now=$(date +%s)
     during=$(( now - last ))
     if [ $during -lt 5 ]; then
-        echo "Supress booting 5s."
+        echo "Supress booting switch after 5s."
         sleep 5
     fi
     start_switch

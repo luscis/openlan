@@ -103,28 +103,28 @@ func (w *RouterWorker) delAddress(name string, addrs []string) error {
 }
 
 func (w *RouterWorker) Stop(kill bool) {
-	for _, re := range w.spec.Redirect {
-		w.delRedirect(re)
+	if kill {
+		for _, re := range w.spec.Redirect {
+			w.delRedirect(re)
+		}
+		for _, port := range w.spec.Interfaces {
+			w.delInterface(port)
+		}
+		if w.spec.Loopback != "" {
+			w.delAddress("lo", []string{w.spec.Loopback})
+		}
+
+		w.delAddress("lo", w.spec.Addresses)
 	}
-	for _, port := range w.spec.Interfaces {
-		w.delInterface(port)
-	}
-	if w.spec.Loopback != "" {
-		w.delAddress("lo", []string{w.spec.Loopback})
-	}
-	w.delAddress("lo", w.spec.Addresses)
+
 	w.WorkerImpl.Stop(kill)
 
-	for _, tun := range w.spec.Tunnels {
-		w.delTunnel(tun)
+	if kill {
+		for _, tun := range w.spec.Tunnels {
+			w.delTunnel(tun)
+		}
+		w.ipses.Destroy()
 	}
-	w.ipses.Destroy()
-}
-
-func (w *RouterWorker) Reload(v api.SwitchApi) {
-	w.Stop(true)
-	w.Initialize()
-	w.Start(v)
 }
 
 func (w *RouterWorker) addTunnel(data *co.RouterTunnel) {

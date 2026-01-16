@@ -193,6 +193,11 @@ func (ru IPRule) Opr(opr string) ([]byte, error) {
 	case "linux":
 		args := ru.Args()
 		fullArgs := append([]string{"-t", ru.Table, opr, ru.Chain}, args...)
+		if opr == "-A" || opr == "-I" {
+			if iptables.Exists(iptables.Table(ru.Table), ru.Chain, args...) {
+				return nil, nil
+			}
+		}
 		return iptables.Raw(fullArgs...)
 	default:
 		return nil, libol.NewErr("iptables notSupport %s", runtime.GOOS)
