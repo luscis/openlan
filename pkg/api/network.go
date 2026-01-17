@@ -446,7 +446,7 @@ func (h RouterInterface) List(w http.ResponseWriter, r *http.Request) {
 			Recv: v.Recv,
 			Send: v.Send,
 		}
-		device.TxSpeed, device.RxSpeed = cache.Speed.Out(obj)
+		device.RxSpeed, device.TxSpeed = cache.Speed.Out(obj)
 	}
 	ResponseJson(w, values)
 }

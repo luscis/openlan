@@ -10,7 +10,7 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 )
 
-func OutJson(data interface{}) error {
+func OutJson(data any) error {
 	if out, err := libol.Marshal(data, true); err == nil {
 		fmt.Println(string(out))
 	} else {
@@ -19,7 +19,7 @@ func OutJson(data interface{}) error {
 	return nil
 }
 
-func OutYaml(data interface{}) error {
+func OutYaml(data any) error {
 	if out, err := yaml.Marshal(data); err == nil {
 		fmt.Println(string(out))
 	} else {
@@ -28,7 +28,7 @@ func OutYaml(data interface{}) error {
 	return nil
 }
 
-func OutTable(data interface{}, tmpl string) error {
+func OutTable(data any, tmpl string) error {
 	funcMap := template.FuncMap{
 		"ps": func(space int, value string) string {
 			if value == "" {
@@ -89,7 +89,7 @@ func OutTable(data interface{}, tmpl string) error {
 	return nil
 }
 
-func Out(data interface{}, format string, tmpl string) error {
+func Out(data any, format string, tmpl string) error {
 	libol.Debug("Out %s %s", format, tmpl)
 	switch format {
 	case "json":

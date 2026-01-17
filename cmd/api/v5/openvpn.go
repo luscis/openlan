@@ -25,9 +25,9 @@ func (u VPNClient) Url(prefix, name, action string) string {
 
 func (u VPNClient) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -8 "alive"}} {{ps -16 "address"}} {{ ps -13 "device" }} {{ps -15 "name"}} {{ps -22 "remote"}} {{ ps -6 "state"}}
+{{ps -8 "alive"}} {{ps -16 "address"}} {{ ps -13 "device" }} {{ps -15 "name"}} {{ps -22 "remote"}} {{ ps -6 "speed"}}
 {{- range . }}
-{{pt .AliveTime | ps -8}} {{ps -16 .Address}} {{ ps -13 .Device }} {{ps -15 .Name}} {{ps -22 .Remote}} {{ ps -6 .State}}
+{{pt .AliveTime | ps -8}} {{ps -16 .Address}} {{ ps -13 .Device }} {{ps -15 .Name}} {{ps -22 .Remote}} {{pb .RxSpeed}}/{{pb .TxSpeed}}
 {{- end }}
 `
 }

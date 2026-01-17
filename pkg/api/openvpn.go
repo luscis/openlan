@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
@@ -34,7 +35,7 @@ func ListClients() []schema.VPNClient {
 				Recv: client.RxBytes,
 				Send: client.TxBytes,
 			}
-			client.TxSpeed, client.RxSpeed = cache.Speed.Out(value)
+			client.RxSpeed, client.TxSpeed = cache.Speed.Out(value)
 			clients = append(clients, *client)
 		}
 	}
@@ -46,16 +47,13 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	var items []schema.VPNClient
-	if name == "" {
-		items = ListClients()
-	} else {
+	if name != "" {
 		clients := make(map[string]schema.VPNClient, 1024)
 		worker := Call.GetWorker(name)
 		if worker == nil {
 			http.Error(w, "Network not found", http.StatusBadRequest)
 			return
 		}
-
 		for client := range cache.VPNClient.List(name) {
 			if client == nil {
 				break
@@ -63,19 +61,28 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 			clients[client.Name] = *client
 		}
 		worker.ListClients(func(name, address string) {
-			if _, ok := clients[name]; ok {
-				return
-			}
-
-			clients[name] = schema.VPNClient{
-				Name:    name,
-				Address: address,
+			if _, ok := clients[name]; !ok {
+				clients[name] = schema.VPNClient{
+					Name:    name,
+					Address: address,
+				}
 			}
 		})
-		for _, v := range clients {
-			items = append(items, v)
+		for _, client := range clients {
+			value := schema.Speed{
+				Name: client.Name,
+				Recv: client.RxBytes,
+				Send: client.TxBytes,
+			}
+			client.RxSpeed, client.TxSpeed = cache.Speed.Out(value)
+			items = append(items, client)
 		}
+	} else {
+		items = ListClients()
 	}
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].Address < items[j].Address
+	})
 	ResponseJson(w, items)
 }
 

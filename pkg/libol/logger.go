@@ -52,7 +52,7 @@ type logger struct {
 	Errors   *list.List
 }
 
-func (l *logger) Write(level int, format string, v ...interface{}) {
+func (l *logger) Write(level int, format string, v ...any) {
 	str, ok := levels[level]
 	if !ok {
 		str = "NULL"
@@ -65,7 +65,7 @@ func (l *logger) Write(level int, format string, v ...interface{}) {
 	}
 }
 
-func (l *logger) Save(level string, format string, v ...interface{}) {
+func (l *logger) Save(level string, format string, v ...any) {
 	m := fmt.Sprintf(format, v...)
 	now := time.Now()
 	if l.FileLog != nil {
@@ -148,39 +148,39 @@ func Catch(name string) {
 	}
 }
 
-func Print(format string, v ...interface{}) {
+func Print(format string, v ...any) {
 	rLogger.Print(format, v...)
 }
 
-func Log(format string, v ...interface{}) {
+func Log(format string, v ...any) {
 	rLogger.Log(format, v...)
 }
 
-func Stack(format string, v ...interface{}) {
+func Stack(format string, v ...any) {
 	rLogger.Stack(format, v...)
 }
 
-func Debug(format string, v ...interface{}) {
+func Debug(format string, v ...any) {
 	rLogger.Debug(format, v...)
 }
 
-func Cmd(format string, v ...interface{}) {
+func Cmd(format string, v ...any) {
 	rLogger.Cmd(format, v...)
 }
 
-func Info(format string, v ...interface{}) {
+func Info(format string, v ...any) {
 	rLogger.Info(format, v...)
 }
 
-func Warn(format string, v ...interface{}) {
+func Warn(format string, v ...any) {
 	rLogger.Warn(format, v...)
 }
 
-func Error(format string, v ...interface{}) {
+func Error(format string, v ...any) {
 	rLogger.Error(format, v...)
 }
 
-func Fatal(format string, v ...interface{}) {
+func Fatal(format string, v ...any) {
 	rLogger.Fatal(format, v...)
 }
 
@@ -195,51 +195,51 @@ func (s *SubLogger) Fmt(format string) string {
 	return s.Prefix + "|" + format
 }
 
-func (s *SubLogger) Print(format string, v ...interface{}) {
+func (s *SubLogger) Print(format string, v ...any) {
 	s.logger.Write(PRINT, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Printf(format string, v ...interface{}) {
+func (s *SubLogger) Printf(format string, v ...any) {
 	s.logger.Write(PRINT, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Log(format string, v ...interface{}) {
+func (s *SubLogger) Log(format string, v ...any) {
 	s.logger.Write(LOG, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Stack(format string, v ...interface{}) {
+func (s *SubLogger) Stack(format string, v ...any) {
 	s.logger.Write(STACK, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Debug(format string, v ...interface{}) {
+func (s *SubLogger) Debug(format string, v ...any) {
 	s.logger.Write(DEBUG, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Flow(format string, v ...interface{}) {
+func (s *SubLogger) Flow(format string, v ...any) {
 	s.logger.Write(FLOW, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Cmd(format string, v ...interface{}) {
+func (s *SubLogger) Cmd(format string, v ...any) {
 	s.logger.Write(CMD, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Event(format string, v ...interface{}) {
+func (s *SubLogger) Event(format string, v ...any) {
 	s.logger.Write(EVENT, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Info(format string, v ...interface{}) {
+func (s *SubLogger) Info(format string, v ...any) {
 	s.logger.Write(INFO, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Warn(format string, v ...interface{}) {
+func (s *SubLogger) Warn(format string, v ...any) {
 	s.logger.Write(WARN, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Error(format string, v ...interface{}) {
+func (s *SubLogger) Error(format string, v ...any) {
 	s.logger.Write(ERROR, s.Fmt(format), v...)
 }
 
-func (s *SubLogger) Fatal(format string, v ...interface{}) {
+func (s *SubLogger) Fatal(format string, v ...any) {
 	s.logger.Write(FATAL, s.Fmt(format), v...)
 }
 

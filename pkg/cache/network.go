@@ -176,6 +176,9 @@ func (p *speed) Init(size int) {
 }
 
 func (p *speed) Add(speed schema.Speed) {
+	if p.speeds.Full() {
+		p.speeds.Clear()
+	}
 	value := &speedvalue{
 		speed:    speed,
 		updateat: time.Now().Unix(),
@@ -202,13 +205,13 @@ func (p *speed) Out(speed schema.Speed) (uint64, uint64) {
 	older := ret.(*speedvalue)
 	dt := uint64(time.Now().Unix() - older.updateat)
 	if dt > speedTimeout {
-		older.txspeed = (speed.Send - older.speed.Send) / dt
 		older.rxspeed = (speed.Recv - older.speed.Recv) / dt
+		older.txspeed = (speed.Send - older.speed.Send) / dt
 		older.updateat = time.Now().Unix()
 		older.speed.Recv = speed.Recv
 		older.speed.Send = speed.Send
 	}
-	return older.txspeed, older.rxspeed
+	return older.rxspeed, older.txspeed
 }
 
 func (p *speed) Del(key string) {

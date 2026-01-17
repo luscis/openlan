@@ -187,7 +187,7 @@ func ListDevices() []schema.Device {
 			Send: v.Send,
 			Recv: v.Recv,
 		}
-		device.TxSpeed, device.RxSpeed = cache.Speed.Out(speed)
+		device.RxSpeed, device.TxSpeed = cache.Speed.Out(speed)
 	}
 
 	return values

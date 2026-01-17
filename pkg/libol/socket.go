@@ -72,8 +72,8 @@ type SocketClient interface {
 	AliveTime() int64
 	String() string
 	Terminal()
-	Private() interface{}
-	SetPrivate(v interface{})
+	Private() any
+	SetPrivate(v any)
 	Status() SocketStatus
 	SetStatus(v SocketStatus)
 	MaxSize() int
@@ -183,7 +183,7 @@ type SocketClientImpl struct {
 	listener      ClientListener
 	newTime       int64
 	connectedTime int64
-	private       interface{}
+	private       any
 	status        SocketStatus
 	timeout       int64 // sec for read and write timeout
 }
@@ -288,13 +288,13 @@ func (s *SocketClientImpl) AliveTime() int64 {
 	return time.Now().Unix() - s.connectedTime
 }
 
-func (s *SocketClientImpl) Private() interface{} {
+func (s *SocketClientImpl) Private() any {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.private
 }
 
-func (s *SocketClientImpl) SetPrivate(v interface{}) {
+func (s *SocketClientImpl) SetPrivate(v any) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.private = v
@@ -431,7 +431,7 @@ func NewSocketServer(listen string) *SocketServerImpl {
 func (t *SocketServerImpl) ListClient() <-chan SocketClient {
 	list := make(chan SocketClient, 32)
 	Go(func() {
-		t.clients.Iter(func(k string, v interface{}) {
+		t.clients.Iter(func(k string, v any) {
 			if client, ok := v.(SocketClient); ok {
 				list <- client
 			}

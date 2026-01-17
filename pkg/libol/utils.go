@@ -78,7 +78,7 @@ func GenInt32() int {
 	return rand.Int()
 }
 
-func Marshal(v interface{}, pretty bool) ([]byte, error) {
+func Marshal(v any, pretty bool) ([]byte, error) {
 	str, err := json.Marshal(v)
 	if err != nil {
 		Error("Marshal error: %s", err)
@@ -94,7 +94,7 @@ func Marshal(v interface{}, pretty bool) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func MarshalYaml(v interface{}) ([]byte, error) {
+func MarshalYaml(v any) ([]byte, error) {
 	str, err := yaml.Marshal(v)
 	if err != nil {
 		Error("Marshal error: %s", err)
@@ -103,7 +103,7 @@ func MarshalYaml(v interface{}) ([]byte, error) {
 	return str, nil
 }
 
-func MarshalSave(v interface{}, file string, pretty bool) error {
+func MarshalSave(v any, file string, pretty bool) error {
 	f, err := CreateFile(file)
 	if err != nil {
 		Error("MarshalSave: %s", err)
@@ -143,21 +143,21 @@ func LoadFile(file string) ([]byte, error) {
 	return os.ReadFile(file)
 }
 
-func Unmarshal(v interface{}, contents []byte) error {
+func Unmarshal(v any, contents []byte) error {
 	if err := json.Unmarshal(contents, v); err != nil {
 		return NewErr("%s", err)
 	}
 	return nil
 }
 
-func UnmarshalYaml(v interface{}, contents []byte) error {
+func UnmarshalYaml(v any, contents []byte) error {
 	if err := yaml.Unmarshal(contents, v); err != nil {
 		return NewErr("%s", err)
 	}
 	return nil
 }
 
-func UnmarshalLoad(v interface{}, file string) error {
+func UnmarshalLoad(v any, file string) error {
 	if err := FileExist(file); err != nil {
 		return nil
 	}
@@ -173,7 +173,7 @@ func UnmarshalLoad(v interface{}, file string) error {
 	}
 }
 
-func FunName(i interface{}) string {
+func FunName(i any) string {
 	ptr := reflect.ValueOf(i).Pointer()
 	name := runtime.FuncForPC(ptr).Name()
 	return path.Base(name)

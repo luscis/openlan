@@ -3,9 +3,10 @@ package libol
 import (
 	"crypto/tls"
 	"encoding/base64"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/websocket"
 )
 
 type Auth struct {
@@ -31,9 +32,10 @@ type WsClient struct {
 
 func (w *WsClient) Initialize() {
 	u, _ := url.Parse(w.Url)
-	if u.Scheme == "http" {
+	switch u.Scheme {
+	case "http":
 		u.Scheme = "ws"
-	} else if u.Scheme == "https" {
+	case "https":
 		u.Scheme = "wss"
 	}
 	w.Url = u.String()

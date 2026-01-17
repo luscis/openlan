@@ -13,14 +13,14 @@ type gos struct {
 
 var Gos = gos{}
 
-func (t *gos) Add(call interface{}) {
+func (t *gos) Add(call any) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.total++
 	Debug("gos.Add %d %p", t.total, call)
 }
 
-func (t *gos) Del(call interface{}) {
+func (t *gos) Del(call any) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.total--
