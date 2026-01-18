@@ -75,7 +75,7 @@ EOF
 }
 
 function wait_ipsec() {
-    while ! ipsec status; do
+    while ! ipsec status > /dev/null; do
         sleep 5
     done
 }
