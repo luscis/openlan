@@ -15,8 +15,8 @@ type RateLimitApi interface {
 }
 
 type LdapApi interface {
-	AddLdap(value schema.LDAP) error
-	DelLdap()
+	AddLDAP(value schema.LDAP) error
+	DelLDAP()
 }
 
 type SwitchApi interface {
@@ -101,14 +101,11 @@ type FindHopApi interface {
 	SaveHop()
 }
 
-type SNATApi interface {
-	SetSnat(string)
-}
-
-type DNATApi interface {
-	AddDnat(data schema.DNAT) error
-	DelDnat(data schema.DNAT) error
-	ListDnat(call func(obj schema.DNAT))
+type NATApi interface {
+	AddDNAT(data schema.DNAT) error
+	DelDNAT(data schema.DNAT) error
+	ListDNAT(call func(obj schema.DNAT))
+	SetSNAT(string)
 }
 
 type SupeApi interface {
@@ -136,8 +133,7 @@ type NetworkApi interface {
 	FindHoper() FindHopApi
 	EnableZTrust()
 	DisableZTrust()
-	SNATApi
-	DNATApi
+	NATApi
 	AddAddress(string)
 	DelAddress()
 }

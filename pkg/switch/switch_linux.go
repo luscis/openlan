@@ -251,7 +251,7 @@ func (v *Switch) Initialize() {
 			Filter:    ldap.Filter,
 			EnableTls: ldap.Tls,
 		}
-		cache.User.SetLdap(cfg)
+		cache.User.SetLDAP(cfg)
 	}
 
 	// Enable cert verify for access
@@ -669,7 +669,7 @@ func (v *Switch) DelRate(device string) {
 	}
 }
 
-func (v *Switch) AddLdap(value schema.LDAP) error {
+func (v *Switch) AddLDAP(value schema.LDAP) error {
 	v.cfg.Ldap = &co.LDAP{
 		Server:    value.Server,
 		BindDN:    value.BindDN,
@@ -689,11 +689,11 @@ func (v *Switch) AddLdap(value schema.LDAP) error {
 		Filter:    ldap.Filter,
 		EnableTls: ldap.Tls,
 	}
-	cache.User.SetLdap(cfg)
+	cache.User.SetLDAP(cfg)
 	return nil
 }
 
-func (v *Switch) DelLdap() {
+func (v *Switch) DelLDAP() {
 	v.cfg.Ldap = nil
-	cache.User.ClearLdap()
+	cache.User.ClearLDAP()
 }

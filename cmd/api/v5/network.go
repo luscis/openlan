@@ -219,8 +219,11 @@ func (s SNAT) Url(prefix, name string) string {
 func (s SNAT) Enable(c *cli.Context) error {
 	network := c.String("name")
 	url := s.Url(c.String("url"), network)
+	value := schema.SNAT{
+		Scope: c.String("scope"),
+	}
 	clt := s.NewHttp(c.String("token"))
-	if err := clt.PostJSON(url, nil, nil); err != nil {
+	if err := clt.PostJSON(url, &value, nil); err != nil {
 		return err
 	}
 	return nil
@@ -237,17 +240,6 @@ func (s SNAT) Disable(c *cli.Context) error {
 	return nil
 }
 
-func (s SNAT) Set(c *cli.Context) error {
-	network := c.String("name")
-	url := s.Url(c.String("url"), network)
-
-	clt := s.NewHttp(c.String("token"))
-	if err := clt.PutJSON(url, nil, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s SNAT) Commands() *cli.Command {
 	return &cli.Command{
 		Name:  "snat",
@@ -257,18 +249,16 @@ func (s SNAT) Commands() *cli.Command {
 				Name:    "enable",
 				Usage:   "Enable snat",
 				Aliases: []string{"en"},
-				Action:  s.Enable,
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "scope", Value: "local"},
+				},
+				Action: s.Enable,
 			},
 			{
 				Name:    "disable",
 				Usage:   "Disable snat",
 				Aliases: []string{"dis"},
 				Action:  s.Disable,
-			},
-			{
-				Name:   "openvpn",
-				Usage:  "Set openvpn snat",
-				Action: s.Set,
 			},
 		},
 	}

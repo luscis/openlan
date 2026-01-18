@@ -7,6 +7,19 @@ cs_dir="/etc/openlan/switch"
 function prepare() {
     sysctl -p /etc/sysctl.d/90-openlan.conf
 
+    for t in raw mangle filter nat; do
+        chains=$(iptables -t $t -S | grep -e '^-N XTT' -e '^-N ATT' -e '^-N ZTT' -e '-N Qos_' | awk '{print $2}')
+        for c in $chains;do
+            iptables --wait -t $t -F $c
+            # iptables --wait -t $t -X $c
+        done
+    done
+
+    sets=$(ipset list | grep '^Name: xtt'| awk '{print $2}')
+    for s in $sets; do
+        ipset destroy $s
+    done
+
     ## START: clean older files.
     /usr/bin/env find /var/openlan/access -type f -delete
     /usr/bin/env find /var/openlan/openvpn -type f -mindepth 2 -maxdepth 2 -delete

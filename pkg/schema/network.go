@@ -84,6 +84,10 @@ type FindHop struct {
 	Available string `json:"available"`
 }
 
+type SNAT struct {
+	Scope string `json:"scope"`
+}
+
 type DNAT struct {
 	Protocol string `json:"protocol"`
 	Dest     string `json:"destination,omitempty"`

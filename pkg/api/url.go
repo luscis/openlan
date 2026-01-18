@@ -4,7 +4,7 @@ import "github.com/gorilla/mux"
 
 func Add(router *mux.Router, cs SwitchApi) {
 	User{}.Router(router)
-	Ldap{cs: cs}.Router(router)
+	LDAP{cs: cs}.Router(router)
 	KernelRoute{}.Router(router)
 	KernelNeighbor{}.Router(router)
 	Access{}.Router(router)

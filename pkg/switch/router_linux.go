@@ -29,14 +29,15 @@ func NewRouterWorker(c *co.Network) *RouterWorker {
 }
 
 func (w *RouterWorker) Initialize() {
-	w.WorkerImpl.Initialize()
+	w.newFire()
 	w.ipses.Clear()
+	w.addCache()
 }
 
-func (w *RouterWorker) Forward() {
+func (w *RouterWorker) SourceNAT() {
 	spec := w.spec
 	// Enable MASQUERADE, and FORWARD it.
-	w.out.Debug("RouterWorker.Forward %v", w.cfg)
+	w.out.Debug("RouterWorker.SourceNAT %v", w.cfg)
 	for _, sub := range spec.Private {
 		w.ipses.Add(sub)
 	}
@@ -64,13 +65,14 @@ func (w *RouterWorker) addAddress(name string, addrs []string) error {
 
 func (w *RouterWorker) Start(v api.SwitchApi) {
 	w.uuid = v.UUID()
+	w.fire.Start()
+	w.toSNAT()
 
 	for _, tun := range w.spec.Tunnels {
 		w.addTunnel(tun)
 	}
-	w.WorkerImpl.Start(v)
 
-	w.Forward()
+	w.SourceNAT()
 	if w.spec.Loopback != "" {
 		w.addAddress("lo", []string{w.spec.Loopback})
 	}
@@ -113,17 +115,12 @@ func (w *RouterWorker) Stop(kill bool) {
 		if w.spec.Loopback != "" {
 			w.delAddress("lo", []string{w.spec.Loopback})
 		}
-
 		w.delAddress("lo", w.spec.Addresses)
-	}
-
-	w.WorkerImpl.Stop(kill)
-
-	if kill {
 		for _, tun := range w.spec.Tunnels {
 			w.delTunnel(tun)
 		}
 		w.ipses.Destroy()
+		w.fire.Stop()
 	}
 }
 

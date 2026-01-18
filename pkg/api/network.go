@@ -187,7 +187,6 @@ func (h Network) StartVPN(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
-
 	worker.StartVPN()
 	ResponseJson(w, true)
 }
@@ -199,7 +198,6 @@ type SNAT struct {
 func (h SNAT) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/snat", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/{id}/snat", h.Delete).Methods("DELETE")
-	router.HandleFunc("/api/network/{id}/snat", h.Put).Methods("PUT")
 }
 
 func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
@@ -207,7 +205,15 @@ func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.SetSnat("enable")
+		value := schema.SNAT{}
+		if err := GetData(r, &value); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if value.Scope == "" {
+			value.Scope = "local"
+		}
+		obj.SetSNAT(value.Scope)
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
@@ -220,20 +226,7 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	name := vars["id"]
 
 	if obj := Call.GetWorker(name); obj != nil {
-		obj.SetSnat("disable")
-	} else {
-		http.Error(w, name+" not found", http.StatusBadRequest)
-		return
-	}
-	ResponseJson(w, "success")
-}
-
-func (h SNAT) Put(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["id"]
-
-	if obj := Call.GetWorker(name); obj != nil {
-		obj.SetSnat("openvpn")
+		obj.SetSNAT("disable")
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
@@ -262,7 +255,7 @@ func (h DNAT) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var items []schema.DNAT
-	caller.ListDnat(func(data schema.DNAT) {
+	caller.ListDNAT(func(data schema.DNAT) {
 		items = append(items, data)
 	})
 	ResponseJson(w, items)
@@ -284,7 +277,7 @@ func (h DNAT) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := caller.AddDnat(value); err != nil {
+	if err := caller.AddDNAT(value); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -307,7 +300,7 @@ func (h DNAT) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := caller.DelDnat(value); err != nil {
+	if err := caller.DelDNAT(value); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

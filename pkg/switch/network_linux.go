@@ -9,7 +9,6 @@ import (
 
 	"github.com/luscis/openlan/pkg/api"
 	"github.com/luscis/openlan/pkg/cache"
-	"github.com/luscis/openlan/pkg/config"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
@@ -94,6 +93,20 @@ func (w *WorkerImpl) addCache() {
 	cache.Network.Add(&n)
 }
 
+func (w *WorkerImpl) L3Name() string {
+	if w.br != nil {
+		return w.br.L3Name()
+	}
+	return ""
+}
+
+func (w *WorkerImpl) newFire() {
+	cfg := w.cfg
+	w.fire = cn.NewFireWallTable(cfg.Name)
+	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
+	w.dnat = cn.NewFireWallChain("XTT_"+cfg.Name+"_DNAT", cn.TNat, "")
+}
+
 func (w *WorkerImpl) Initialize() {
 	cfg := w.cfg
 
@@ -110,10 +123,7 @@ func (w *WorkerImpl) Initialize() {
 
 	w.setVPN()
 	w.newVPN()
-
-	w.fire = cn.NewFireWallTable(cfg.Name)
-	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
-	w.dnat = cn.NewFireWallChain("XTT_"+cfg.Name+"_DNAT", cn.TNat, "")
+	w.newFire()
 
 	w.ipser.Clear()
 
@@ -124,10 +134,7 @@ func (w *WorkerImpl) Initialize() {
 	w.qos.Initialize()
 
 	if cfg.Dhcp == "enable" && cfg.Bridge != nil {
-		name := cfg.Bridge.Name
-		if w.br != nil {
-			name = w.br.L3Name()
-		}
+		name := w.L3Name()
 		w.dhcp = NewDhcp(&co.Dhcp{
 			Name:      cfg.Name,
 			Subnet:    cfg.Subnet,
@@ -139,7 +146,7 @@ func (w *WorkerImpl) Initialize() {
 	w.toVPN()
 }
 
-func (w *WorkerImpl) toSnat() {
+func (w *WorkerImpl) toSNAT() {
 	w.snat.Prepare()
 	w.fire.Nat.Post.AddRuleX(cn.IPRule{
 		Jump:    w.snat.Chain().Name,
@@ -147,17 +154,22 @@ func (w *WorkerImpl) toSnat() {
 	})
 }
 
-func (w *WorkerImpl) doSnat() {
+func (w *WorkerImpl) doSNAT() {
 	w.snat.Flush()
+
 	cfg, vpn := w.GetCfgs()
 	if cfg.Snat == "disable" {
 		return
 	}
-	if cfg.Snat == "enable" {
-		w.toMasq_i("", w.ipser.Name, "To Masq")
-	}
-	if vpn != nil && (cfg.Snat == "openvpn" || cfg.Snat == "enable") {
+
+	if vpn != nil {
 		w.toMasq_r(vpn.Subnet, w.ipser.Name, "From VPN")
+	}
+	switch cfg.Snat {
+	case "enable":
+		w.toMasq_i("", w.ipser.Name, "To Masq")
+	case "local":
+		w.toMasq_i(w.L3Name(), w.ipser.Name, "To Masq")
 	}
 }
 
@@ -421,18 +433,18 @@ func (w *WorkerImpl) SetMss(mss int) {
 	}
 }
 
-func (w *WorkerImpl) SetSnat(value string) {
+func (w *WorkerImpl) SetSNAT(value string) {
 	cfg, _ := w.GetCfgs()
 	switch value {
-	case "enable", "disable", "openvpn":
+	case "enable", "disable", "openvpn", "local":
 		cfg.Snat = value
-		w.doSnat()
+		w.doSNAT()
 	}
 }
 
-func (w *WorkerImpl) doDnat() {
+func (w *WorkerImpl) doDNAT() {
 	cfg, _ := w.GetCfgs()
-	w.out.Info("WorkerImpl: doDnat")
+	w.out.Info("WorkerImpl: doDNAT")
 
 	w.fire.Nat.Pre.AddRuleX(cn.IPRule{
 		Jump:    w.dnat.Chain().Name,
@@ -447,14 +459,14 @@ func (w *WorkerImpl) doDnat() {
 			Jump:    "DNAT",
 			Comment: "DNAT " + obj.Id(),
 		}); err != nil {
-			w.out.Warn("WorkerImple: doDnat: %s", err)
+			w.out.Warn("WorkerImple: doDNAT: %s", err)
 		}
 	}
 }
 
-func (w *WorkerImpl) AddDnat(data schema.DNAT) error {
+func (w *WorkerImpl) AddDNAT(data schema.DNAT) error {
 	cfg, _ := w.GetCfgs()
-	obj := config.Dnat{
+	obj := co.DNAT{
 		Protocol: data.Protocol,
 		Dest:     data.Dest,
 		Dport:    data.Dport,
@@ -463,7 +475,7 @@ func (w *WorkerImpl) AddDnat(data schema.DNAT) error {
 	}
 	obj.Correct()
 
-	if ok := cfg.AddDnat(&obj); ok {
+	if ok := cfg.AddDNAT(&obj); ok {
 		if err := w.dnat.AddRuleX(cn.IPRule{
 			Proto:   obj.Protocol,
 			Dest:    obj.Dest,
@@ -472,15 +484,15 @@ func (w *WorkerImpl) AddDnat(data schema.DNAT) error {
 			Jump:    "DNAT",
 			Comment: "DNAT " + obj.Id(),
 		}); err != nil {
-			w.out.Warn("WorkerImple: AddDnat: %s", err)
+			w.out.Warn("WorkerImple: AddDNAT: %s", err)
 		}
 	}
 	return nil
 }
 
-func (w *WorkerImpl) DelDnat(data schema.DNAT) error {
+func (w *WorkerImpl) DelDNAT(data schema.DNAT) error {
 	cfg, _ := w.GetCfgs()
-	obj := config.Dnat{
+	obj := co.DNAT{
 		Protocol: data.Protocol,
 		Dest:     data.Dest,
 		Dport:    data.Dport,
@@ -489,7 +501,7 @@ func (w *WorkerImpl) DelDnat(data schema.DNAT) error {
 	}
 	obj.Correct()
 
-	if older, ok := cfg.DelDnat(&obj); ok {
+	if older, ok := cfg.DelDNAT(&obj); ok {
 		if err := w.dnat.DelRuleX(cn.IPRule{
 			Proto:   older.Protocol,
 			Dest:    older.Dest,
@@ -498,15 +510,15 @@ func (w *WorkerImpl) DelDnat(data schema.DNAT) error {
 			Jump:    "DNAT",
 			Comment: "DNAT " + older.Id(),
 		}); err != nil {
-			w.out.Warn("WorkerImple: DelDnat: %s", err)
+			w.out.Warn("WorkerImple: DelDNAT: %s", err)
 		}
 	}
 	return nil
 }
 
-func (w *WorkerImpl) ListDnat(call func(data schema.DNAT)) {
+func (w *WorkerImpl) ListDNAT(call func(data schema.DNAT)) {
 	cfg, _ := w.GetCfgs()
-	cfg.ListDnat(func(value config.Dnat) {
+	cfg.ListDNAT(func(value co.DNAT) {
 		call(schema.DNAT{
 			Protocol: value.Protocol,
 			Dest:     value.Dest,
@@ -632,9 +644,9 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	w.snat.Install()
 	w.dnat.Install()
 
-	w.doDnat()
-	w.toSnat()
-	w.doSnat()
+	w.doDNAT()
+	w.toSNAT()
+	w.doSNAT()
 
 	if cfg.Bridge != nil {
 		// forward to remote
@@ -735,7 +747,7 @@ func (w *WorkerImpl) AddVPN(value schema.OpenVPN) error {
 	if w.cfg.ZTrust == "enable" {
 		w.toTrust()
 	}
-	w.doSnat()
+	w.doSNAT()
 	return nil
 }
 
@@ -750,7 +762,7 @@ func (w *WorkerImpl) DelVPN() {
 		}
 		w.vpn = nil
 		w.cfg.OpenVPN = nil
-		w.doSnat()
+		w.doSNAT()
 	}
 }
 
@@ -956,7 +968,7 @@ func (w *WorkerImpl) leftForward_r(input, source, pfxSet, comment string) {
 func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
 	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, srcSet, prefix)
 	// Allowed forward between source and prefix.
-	w.fire.Filter.For.AddRule(cn.IPRule{
+	w.fire.Filter.For.AddRuleX(cn.IPRule{
 		Input:   input,
 		SrcSet:  srcSet,
 		Dest:    prefix,
@@ -1200,26 +1212,18 @@ func (w *WorkerImpl) delIPSet(rt co.PrefixRoute) {
 
 func (w *WorkerImpl) toSubnet() {
 	cfg, _ := w.GetCfgs()
-	if cfg.Bridge != nil {
-		input := cfg.Bridge.Name
-		if w.br != nil {
-			input = w.br.L3Name()
-			w.toZone(input)
-		}
-		ifAddr := strings.SplitN(cfg.Bridge.Address, "/", 2)[0]
-		if ifAddr == "" {
-			return
-		}
-		// Enable MASQUERADE, and FORWARD it.
+
+	input := w.L3Name()
+	if input != "" {
+		w.toZone(input)
 	}
 	for _, rt := range cfg.Routes {
 		w.addIPSet(rt)
 	}
-
 	if w.vrf != nil {
 		w.toForward_i(w.vrf.Name(), w.ipser.Name, "To route")
 	} else {
-		w.toForward_i("", w.ipser.Name, "To route")
+		w.toForward_i(w.L3Name(), w.ipser.Name, "To route")
 	}
 }
 
@@ -1333,7 +1337,7 @@ func (w *WorkerImpl) Router() api.RouteApi {
 
 func (w *WorkerImpl) IfAddr() string {
 	br := w.cfg.Bridge
-	return strings.SplitN(br.Address, "/", 2)[0]
+	return libol.ParseAddr(br.Address).String()
 }
 
 func (w *WorkerImpl) AddOutput(data schema.Output) {

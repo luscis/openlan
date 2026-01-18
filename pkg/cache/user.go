@@ -144,17 +144,17 @@ func (w *user) List() <-chan *models.User {
 	return c
 }
 
-func (w *user) CheckLdap(obj *models.User) *models.User {
-	ldap := w.GetLdap()
+func (w *user) CheckLDAP(obj *models.User) *models.User {
+	ldap := w.GetLDAP()
 	if ldap == nil {
 		return nil
 	}
 
 	u := w.Get(obj.Id())
-	libol.Debug("CheckLdap %s", u)
+	libol.Debug("CheckLDAP %s", u)
 	if u == nil || u.Role == "ldap" {
 		if ok, err := ldap.Login(obj.Id(), obj.Password); !ok {
-			libol.Warn("CheckLdap %s", err)
+			libol.Warn("CheckLDAP %s", err)
 			return nil
 		}
 		user := &models.User{
@@ -203,13 +203,13 @@ func (w *user) Check(obj *models.User) (*models.User, error) {
 			}
 		}
 	}
-	if u := w.CheckLdap(obj); u != nil {
+	if u := w.CheckLDAP(obj); u != nil {
 		return u, nil
 	}
 	return nil, libol.NewErr("wrong password")
 }
 
-func (w *user) GetLdap() *libol.LDAPService {
+func (w *user) GetLDAP() *libol.LDAPService {
 	w.Lock.Lock()
 	defer w.Lock.Unlock()
 	if w.LdapCfg == nil {
@@ -218,12 +218,12 @@ func (w *user) GetLdap() *libol.LDAPService {
 	return w.LdapSvc
 }
 
-func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
+func (w *user) SetLDAP(cfg *libol.LDAPConfig) error {
 	w.Lock.Lock()
 	defer w.Lock.Unlock()
 
 	w.LdapCfg = cfg
-	libol.Info("user.SetLdap %s", w.LdapCfg.Server)
+	libol.Info("user.SetLDAP %s", w.LdapCfg.Server)
 
 	libol.Go(func() {
 		for {
@@ -238,7 +238,7 @@ func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
 			}
 			if w.LdapSvc == nil || w.LdapSvc.Conn.IsClosing() {
 				if conn, err := libol.NewLDAPService(*cfg); err != nil {
-					libol.Warn("user.SetLdap %s", err)
+					libol.Warn("user.SetLDAP %s", err)
 				} else {
 					w.LdapSvc = conn
 				}
@@ -249,14 +249,14 @@ func (w *user) SetLdap(cfg *libol.LDAPConfig) error {
 	return nil
 }
 
-func (w *user) ClearLdap() {
+func (w *user) ClearLDAP() {
 	w.Lock.Lock()
 	defer w.Lock.Unlock()
 	w.LdapCfg = nil
 }
 
-func (w *user) LdapState() string {
-	ldap := w.GetLdap()
+func (w *user) LDAPState() string {
+	ldap := w.GetLDAP()
 	if ldap == nil {
 		return "unknown"
 	}
