@@ -75,8 +75,8 @@ func GetDevInfo(name string) DeviceInfo {
 	return DeviceInfo{}
 }
 
-func GetDevAddr(name string) string {
-	return ""
+func GetDevAddr(name string) []string {
+	return nil
 }
 
 func RuleAdd(source string, lookup int, priority int) ([]byte, error) {

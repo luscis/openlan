@@ -99,14 +99,15 @@ func GetDevInfo(name string) DeviceInfo {
 	return DeviceInfo{}
 }
 
-func GetDevAddr(name string) string {
+func GetDevAddr(name string) []string {
+	addrs := []string{}
 	if link, err := nl.LinkByName(name); err == nil {
 		address, _ := nl.AddrList(link, nl.FAMILY_V4)
 		for _, addr := range address {
-			return addr.IPNet.String()
+			addrs = append(addrs, addr.IPNet.String())
 		}
 	}
-	return ""
+	return addrs
 }
 
 func RuleAdd(source string, lookup int, priority int) ([]byte, error) {

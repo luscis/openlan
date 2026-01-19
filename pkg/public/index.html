@@ -151,7 +151,7 @@
                         <td>{{ .State }}</td>
                         <td>{{ .Mtu }}</td>
                         <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
-                        <td>{{ if .Address }}{{ .Address }}{{ else }}-{{ end }}</td>
+                        <td>{{ if .Address }}{{ range .Address }}{{ . }}<br/>{{ end }}{{ else }}-{{ end }}</td>
                         <td>{{ prettyBytes .Recv }}/{{ prettyBytes .Send }}</td>
                         <td>{{ prettyBytes .RxSpeed }}/{{ prettyBytes .TxSpeed }}</td>
                     </tr>
@@ -186,8 +186,8 @@
                         <td>{{ .Protocol }}</td>
                         <td>{{ .Prefix }}</td>
                         {{ if .Multipath }}
-                        <td>{{ range .Multipath }} <p>{{ .NextHop }}</p> {{ end }} </td>
-                        <td>{{ range .Multipath }} <p>{{ .Link }}</p> {{ end }}</td>
+                        <td>{{ range .Multipath }}{{ .NextHop }}<br/>{{ end }} </td>
+                        <td>{{ range .Multipath }}{{ .Link }}<br/>{{ end }}</td>
                         {{ else }}
                         <td>{{ .NextHop }}</td>
                         <td>{{ .Link }}</td>

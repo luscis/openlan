@@ -26,30 +26,6 @@ func NewAccessSchema(p *Access) schema.Access {
 	}
 }
 
-func NewNeighborSchema(n *Neighbor) schema.Neighbor {
-	return schema.Neighbor{
-		Uptime:  n.UpTime(),
-		HwAddr:  n.HwAddr.String(),
-		IpAddr:  n.IpAddr.String(),
-		Client:  n.Client,
-		Network: n.Network,
-		Device:  n.Device,
-	}
-}
-
-func NewOnLineSchema(l *Line) schema.OnLine {
-	return schema.OnLine{
-		HitTime:    l.LastTime(),
-		UpTime:     l.UpTime(),
-		EthType:    l.EthType,
-		IpSource:   l.IpSource.String(),
-		IpDest:     l.IpDest.String(),
-		IpProto:    libol.IpProto2Str(l.IpProtocol),
-		PortSource: l.PortSource,
-		PortDest:   l.PortDest,
-	}
-}
-
 func NewUserSchema(u *User) schema.User {
 	return schema.User{
 		Name:     u.Name,
