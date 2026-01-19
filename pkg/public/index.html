@@ -56,10 +56,14 @@
             font-weight: bold;
             background: #2f2e2e;
             color: whitesmoke;
-        }
-        .table-display td, th {
-            text-align: center;
+            padding-left: 3px;
+            text-align: left;
             border-bottom: 1px solid #ccc;
+        }
+        .table-display td {
+            border-bottom: 1px solid #ccc;
+            padding-left: 3px;
+            text-align: left;
         }
         .table-display td p {
             margin: 0 0;
@@ -68,13 +72,10 @@
             width: 100%;
             border-collapse: collapse;
         }
-        .authenticated, .success {
+        .authenticated, .success, .up {
             color: darkgreen;
         }
-        .unauthenticated, .terminal, .closed {
-            color: chocolate;
-        }
-        .initialized, .connected, .connecting {
+        .initialized, .connected, .connecting, .unauthenticated, .terminal, .closed {
             color: black;
         }
     </style>
@@ -148,7 +149,7 @@
                     <tr>
                         <td>{{ .Network }}</td>
                         <td>{{ .Name }}</td>
-                        <td>{{ .State }}</td>
+                        <td><span class="{{ .State }}">{{ .State }}</span></td>
                         <td>{{ .Mtu }}</td>
                         <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
                         <td>{{ if .Address }}{{ range .Address }}{{ . }}<br/>{{ end }}{{ else }}-{{ end }}</td>
