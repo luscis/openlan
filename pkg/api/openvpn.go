@@ -21,7 +21,7 @@ func (h VPNClient) Router(router *mux.Router) {
 }
 
 func ListClients() []schema.VPNClient {
-	var clients []schema.VPNClient
+	clients := make([]schema.VPNClient, 0)
 	for n := range cache.Network.List() {
 		if n == nil {
 			break
@@ -46,7 +46,7 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["id"]
 
-	var items []schema.VPNClient
+	items := make([]schema.VPNClient, 0)
 	if name != "" {
 		clients := make(map[string]schema.VPNClient, 1024)
 		worker := Call.GetWorker(name)
@@ -80,6 +80,7 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 	} else {
 		items = ListClients()
 	}
+
 	sort.SliceStable(items, func(i, j int) bool {
 		return items[i].Address < items[j].Address
 	})
