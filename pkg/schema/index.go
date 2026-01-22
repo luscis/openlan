@@ -11,6 +11,9 @@ type Index struct {
 	Routes    []KernelRoute    `json:"routes"`
 	Neighbor  []KernelNeighbor `json:"neighbors"`
 	UserLen   int              `json:"userLen"`
+	CPUUsage  int              `json:"cpuUsage"`
+	MemUsage  int              `json:"memUsage"`
+	MemUsed   uint64           `json:"memUsed"`
 }
 
 type Ctrl struct {

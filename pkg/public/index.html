@@ -113,8 +113,10 @@
                     <tr>
                         <td>Conntrack</td>
                         <td>: {{ .Conntrack }}</td>
+                        <td>Usage</td>
+                        <td>: cpu {{ .CPUUsage }}%|memory {{ .MemUsage }}% used {{ prettyBytes .MemUsed }}</td>
                     </tr>
-		    <tr>
+                    <tr>
                         <td>Project</td>
                         <td>
                             : <a href="https://github.com/luscis/openlan">openlan</a>
@@ -154,7 +156,7 @@
                         <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
                         <td>{{ if .Address }}{{ range .Address }}{{ . }}<br/>{{ end }}{{ else }}-{{ end }}</td>
                         <td>{{ prettyBytes .Recv }}/{{ prettyBytes .Send }}</td>
-                        <td>{{ prettyBytes .RxSpeed }}/{{ prettyBytes .TxSpeed }}</td>
+                        <td>{{ prettyBits .RxSpeed }}/{{ prettyBits .TxSpeed }}</td>
                     </tr>
                 {{ end }}
                 </tbody>
@@ -300,7 +302,7 @@
                         <td>{{ .Address }}</td>
                         <td>{{ .Remote }}</td>
                         <td>{{ .Name }}</td>
-                        <td>{{ prettyBytes .RxSpeed }}/{{ prettyBytes .TxSpeed }}</td>
+                        <td>{{ prettyBits .RxSpeed }}/{{ prettyBits .TxSpeed }}</td>
                         <td><span class="{{ .State }}">{{ .State }}</span></td>
                     </tr>
                 {{ end }}

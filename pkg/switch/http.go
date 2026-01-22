@@ -21,6 +21,8 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -258,6 +260,13 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Worker = api.NewWorkerSchema(h.cs)
 	body.UserLen = cache.User.Len()
 
+	if total_cpu, err := cpu.Percent(0, false); err == nil {
+		body.CPUUsage = int(total_cpu[0])
+	}
+	if total_mem, err := mem.VirtualMemory(); err == nil {
+		body.MemUsage = int(total_mem.UsedPercent)
+		body.MemUsed = total_mem.Used
+	}
 	// display conntrack stats.
 	body.Conntrack = libol.ListConnStats().String()
 	// dispaly all devices.
@@ -315,6 +324,7 @@ func (h *Http) ParseFiles(w http.ResponseWriter, name string, data interface{}) 
 	tmpl, err := template.New(file).Funcs(template.FuncMap{
 		"prettyTime":  libol.PrettyTime,
 		"prettyBytes": libol.PrettyBytes,
+		"prettyBits":  libol.PrettyBits,
 		"getIpAddr":   libol.GetIPAddr,
 		"toSegment":   libol.ToSegment,
 	}).ParseFiles(name)

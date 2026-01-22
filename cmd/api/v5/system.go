@@ -196,7 +196,7 @@ func (u Device) Tmpl() string {
 	return `# total {{ len . }}
 {{ps -15 "network"}} {{ps -15 "name"}} {{ps -13 "mtu"}} {{ps -18 "mac"}} {{ps -24 "Statistics"}} {{ps -8 "Speed"}}
 {{- range . }}
-{{ps -15 .Network}} {{ps -15 .Name}} {{pi -13 .Mtu}} {{ps -18 .Mac}} {{pi -10 .Recv}}/{{pi -10 .Send}}/{{pi -2 .Drop}} {{pb .RxSpeed}}/{{pb .TxSpeed}}
+{{ps -15 .Network}} {{ps -15 .Name}} {{pi -13 .Mtu}} {{ps -18 .Mac}} {{pi -10 .Recv}}/{{pi -10 .Send}}/{{pi -2 .Drop}} {{pc .RxSpeed}}/{{pc .TxSpeed}}
 {{- end }}
 `
 }

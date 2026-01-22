@@ -78,6 +78,9 @@ func OutTable(data any, tmpl string) error {
 		"pb": func(value uint64) string {
 			return libol.PrettyBytes(value)
 		},
+		"pc": func(value uint64) string {
+			return libol.PrettyBits(value)
+		},
 	}
 	if tmpl, err := template.New("main").Funcs(funcMap).Parse(tmpl); err != nil {
 		return err
