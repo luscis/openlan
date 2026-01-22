@@ -49,6 +49,7 @@ type OpenVPNData struct {
 
 const (
 	vConfTmpl = `# Generate by OpenLAN
+topology subnet
 local {{ .Local }}
 port {{ .Port }}
 proto {{ .Protocol }}
@@ -61,6 +62,10 @@ ca {{ .Ca }}
 cert {{ .Cert }}
 key {{ .Key }}
 dh {{ .DhPem }}
+{{- if .Cipher }}
+data-ciphers {{ .Cipher }}
+data-ciphers-fallback AES-128-GCM
+{{- end }}
 server {{ .Server }}
 {{- range .Routes }}
 push "route {{ . }}"
@@ -137,13 +142,12 @@ func NewOpenVPNDataFromConf(obj *OpenVPN) *OpenVPNData {
 		Script:   cfg.Script,
 		Renego:   cfg.Renego,
 		Push:     cfg.Push,
+		Cipher:   cfg.Cipher,
 	}
 	if cfg.Version > 24 {
 		data.CertNot = false
 	}
-
-	addr, _ := libol.IPNetwork(cfg.Subnet)
-	data.Server = strings.ReplaceAll(addr, "/", " ")
+	data.Server = fmt.Sprintf("%s %s", cfg.GetIPAddr(), cfg.GetNetmask())
 	for _, rt := range cfg.Routes {
 		if addr, err := libol.IPNetwork(rt); err == nil {
 			r := strings.ReplaceAll(addr, "/", " ")
@@ -597,6 +601,10 @@ remote-cert-tls server
 <tls-auth>
 {{ .TlsAuth -}}
 </tls-auth>
+{{- if .Cipher }}
+data-ciphers {{ .Cipher }}
+data-ciphers-fallback AES-128-GCM
+{{- end }}
 key-direction 1
 auth-nocache
 verb 4
@@ -612,6 +620,7 @@ func NewOpenVPNProfileFromConf(obj *OpenVPN) *OpenVPNProfile {
 		Device:   cfg.Device[:3],
 		Protocol: cfg.Protocol,
 		Renego:   cfg.Renego,
+		Cipher:   cfg.Cipher,
 	}
 	if data.Server == "0.0.0.0" {
 		if name, err := os.Hostname(); err == nil {

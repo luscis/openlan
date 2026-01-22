@@ -732,6 +732,7 @@ func (w *WorkerImpl) AddVPN(value schema.OpenVPN) error {
 		Protocol: value.Protocol,
 		Push:     value.Push,
 		Subnet:   value.Subnet,
+		Cipher:   value.Cipher,
 	}
 	cfg.Correct(w.cfg.AddrPool, w.cfg.Name)
 	w.cfg.OpenVPN = cfg

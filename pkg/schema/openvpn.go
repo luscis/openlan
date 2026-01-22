@@ -23,4 +23,5 @@ type OpenVPN struct {
 	Protocol string   `json:"protocol,omitempty"`
 	Subnet   string   `json:"subnet"`
 	Push     []string `json:"push,omitempty"`
+	Cipher   string   `json:"cipher,omitempty"` // AES-256-GCM:AES-128-GCM:SM4-GCM:SM4-CBC
 }

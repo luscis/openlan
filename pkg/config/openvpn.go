@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
@@ -17,6 +16,7 @@ type OpenVPN struct {
 	Listen    string           `json:"listen" yaml:"listen"`
 	Protocol  string           `json:"protocol,omitempty" yaml:"protocol,omitempty"`
 	Subnet    string           `json:"subnet" yaml:"subnet"`
+	IPAddr    *net.IPNet       `json:"-" yaml:"-"`
 	Device    string           `json:"device" yaml:"device"`
 	Version   int              `json:"-" yaml:"-"`
 	DhPem     string           `json:"-" yaml:"-"`
@@ -29,6 +29,7 @@ type OpenVPN struct {
 	Script    string           `json:"-" yaml:"-"`
 	Push      []string         `json:"push,omitempty" yaml:"push,omitempty"`
 	Clients   []*OpenVPNClient `json:"clients,omitempty" yaml:"clients,omitempty"`
+	Cipher    string           `json:"cipher,omitempty" yaml:"cipher,omitempty"` // AES-256-GCM:AES-128-GCM:SM4-GCM:SM4-CBC
 }
 
 type OpenVPNClient struct {
@@ -37,29 +38,10 @@ type OpenVPNClient struct {
 	Netmask string `json:"-" yaml:"-"`
 }
 
-func DecIP4(value string) string {
-	ip := net.ParseIP(value)
-	if ip == nil {
-		return ""
-	}
-	ip = ip.To4()
-	if ip == nil {
-		return ""
-	}
-
-	ip4 := binary.BigEndian.Uint32(ip)
-	ip4--
-
-	newIP := make([]byte, 4)
-	binary.BigEndian.PutUint32(newIP, ip4)
-
-	return net.IP(newIP).String()
-}
-
-func (c *OpenVPNClient) Correct(network string) {
-	c.Netmask = DecIP4(c.Address)
+func (c *OpenVPNClient) Correct(v *OpenVPN) {
+	c.Netmask = v.GetNetmask()
 	if !strings.Contains(c.Name, "@") {
-		c.Name = c.Name + "@" + network
+		c.Name = c.Name + "@" + v.Network
 	}
 }
 
@@ -103,7 +85,6 @@ func (o *OpenVPN) Correct(pool, network string) {
 	if o.TlsAuth == "" {
 		o.TlsAuth = defaultVpn.TlsAuth
 	}
-
 	o.Script = o.AuthBin(defaultVpn)
 	o.Directory = VarDir("openvpn", o.Network)
 	if !strings.Contains(o.Listen, ":") {
@@ -122,8 +103,26 @@ func (o *OpenVPN) Correct(pool, network string) {
 		if c.Name == "" || c.Address == "" {
 			continue
 		}
-		c.Correct(o.Network)
+		c.Correct(o)
 	}
+}
+
+func (o *OpenVPN) GetNetmask() string {
+	if o.IPAddr == nil {
+		if _, n, err := net.ParseCIDR(o.Subnet); err == nil {
+			o.IPAddr = n
+		}
+	}
+	return net.IP(o.IPAddr.Mask).String()
+}
+
+func (o *OpenVPN) GetIPAddr() string {
+	if o.IPAddr == nil {
+		if _, n, err := net.ParseCIDR(o.Subnet); err == nil {
+			o.IPAddr = n
+		}
+	}
+	return net.IP(o.IPAddr.IP).String()
 }
 
 func (o *OpenVPN) AddRedirectDef1() bool {
@@ -170,7 +169,7 @@ func (o *OpenVPN) AddClient(name, address string) bool {
 		Name:    name,
 		Address: address,
 	}
-	value.Correct(o.Network)
+	value.Correct(o)
 
 	_, index := o.FindClient(name)
 	if index == -1 {
@@ -184,7 +183,7 @@ func (o *OpenVPN) DelClient(name string) (*OpenVPNClient, bool) {
 	value := &OpenVPNClient{
 		Name: name,
 	}
-	value.Correct(o.Network)
+	value.Correct(o)
 
 	obj, index := o.FindClient(value.Name)
 	if index != -1 {

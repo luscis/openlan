@@ -83,14 +83,15 @@ func (r Reload) Do(c *cli.Context) error {
 		return err
 	}
 
-	cfg := Config{}
-	if err := cfg.Save(c); err != nil {
-		return err
+	save := c.Bool("save")
+	if save {
+		cfg := Config{}
+		if err := cfg.Save(c); err != nil {
+			return err
+		}
 	}
-
 	fmt.Printf("# reloading pid:%d ....\n", oldPid)
 	showProcessInfo(oldPid)
-
 	if proc, err := libol.Kill(oldPid); err != nil {
 		return libol.NewErr("kill %d failed: %v", oldPid, err)
 	} else {
@@ -122,6 +123,9 @@ func (r Reload) Commands(app *api.App) {
 		Name:   "reload",
 		Usage:  "Reload OpenLAN Switch",
 		Action: r.Do,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{Name: "save", Value: false},
+		},
 	})
 }
 

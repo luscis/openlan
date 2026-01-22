@@ -85,3 +85,11 @@ func GetAlias() string {
 	}
 	return libol.GenString(13)
 }
+
+func ListenAll(listen string) string {
+	values := strings.SplitN(listen, ":", 2)
+	if len(values) == 1 {
+		return fmt.Sprintf("0.0.0.0:%s", values[0])
+	}
+	return listen
+}

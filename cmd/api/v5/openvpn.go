@@ -3,6 +3,7 @@ package v5
 import (
 	"strings"
 
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -146,10 +147,12 @@ func (o OpenVPN) Add(c *cli.Context) error {
 	network := c.String("name")
 	url := o.Url(c.String("url"), network, "")
 
+	listen := c.String("listen")
 	data := schema.OpenVPN{
-		Listen:   c.String("listen"),
+		Listen:   co.ListenAll(listen),
 		Protocol: c.String("protocol"),
 		Subnet:   c.String("subnet"),
+		Cipher:   c.String("cipher"),
 	}
 	dns := strings.Split(c.String("dns"), ",")
 	for _, v := range dns {
@@ -198,6 +201,7 @@ func (o OpenVPN) Commands() *cli.Command {
 					&cli.StringFlag{Name: "listen", Required: true},
 					&cli.StringFlag{Name: "subnet"},
 					&cli.StringFlag{Name: "dns"},
+					&cli.StringFlag{Name: "cipher"},
 				},
 				Action: o.Add,
 			},
