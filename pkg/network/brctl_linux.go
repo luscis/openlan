@@ -2,10 +2,11 @@ package network
 
 import (
 	"fmt"
-	"github.com/luscis/openlan/pkg/libol"
-	"github.com/vishvananda/netlink"
 	"os"
 	"strconv"
+
+	"github.com/luscis/openlan/pkg/libol"
+	"github.com/vishvananda/netlink"
 )
 
 type BrCtl struct {
@@ -73,15 +74,15 @@ func (b *BrCtl) Delay(delay int) error { // by second
 func (b *BrCtl) AddPort(port string) error {
 	link, err := netlink.LinkByName(port)
 	if err != nil {
-		return libol.NewErr("LinkByName " + err.Error())
+		return libol.NewErr("LinkByName %s", err.Error())
 	}
 	if err := netlink.LinkSetUp(link); err != nil {
-		return libol.NewErr("LinkSetUp " + err.Error())
+		return libol.NewErr("LinkSetUp %s", err.Error())
 	}
 	la := netlink.LinkAttrs{TxQLen: -1, Name: b.Name}
 	bridge := &netlink.Bridge{LinkAttrs: la}
 	if err := netlink.LinkSetMaster(link, bridge); err != nil {
-		return libol.NewErr("LinkSetMaster " + err.Error())
+		return libol.NewErr("LinkSetMaster %s", err.Error())
 	}
 	return nil
 }

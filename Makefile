@@ -181,10 +181,10 @@ darwin-ceci:
 darwin-access:
 	GOOS=darwin GOARCH=$(ARCH) go build -mod=vendor -ldflags "$(LDFLAGS)" -o $(BD)/openlan-access.dar ./cmd/access
 
-darwin-gzip: env darwin ## build darwin packages
+darwin-gzip: init darwin ## build darwin packages
 	@rm -rf $(MAC_DIR) && mkdir -p $(MAC_DIR)
 	@cp -rf $(SD)/dist/rootfs/etc/openlan/http/http.yaml.example $(MAC_DIR)/ceci.yaml
-	@cp -rf $(BD)/{openlan-access,openceci.dar,openceci.arm64.dar} $(MAC_DIR)
+	@cp -rf $(BD)/openceci.dar $(MAC_DIR)
 	tar -cf $(MAC_DIR).tar $(MAC_DIR) && mv $(MAC_DIR).tar $(BD)
 	gzip -f $(BD)/$(MAC_DIR).tar && rm -rf $(MAC_DIR)
 
