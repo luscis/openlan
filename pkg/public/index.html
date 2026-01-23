@@ -78,6 +78,9 @@
         .initialized, .connected, .connecting, .unauthenticated, .terminal, .closed {
             color: black;
         }
+        .table-display td span {
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
@@ -114,7 +117,9 @@
                         <td>Conntrack</td>
                         <td>: {{ .Conntrack }}</td>
                         <td>Usage</td>
-                        <td>: cpu {{ .CPUUsage }}%|memory {{ .MemUsage }}% used {{ prettyBytes .MemUsed }}</td>
+                        <td>:
+                            <span>cpu {{ .CPUUsage }}%</span>|<span>memory {{ prettyBytes .MemUsed }}/{{ prettyBytes .MemTotal }}</span>|<span>disk {{ prettyBytes .DiskUsed }}/{{ prettyBytes .DiskTotal }}</span>
+                        </td>
                     </tr>
                     <tr>
                         <td>Project</td>

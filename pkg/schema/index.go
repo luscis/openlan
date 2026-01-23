@@ -12,8 +12,10 @@ type Index struct {
 	Neighbor  []KernelNeighbor `json:"neighbors"`
 	UserLen   int              `json:"userLen"`
 	CPUUsage  int              `json:"cpuUsage"`
-	MemUsage  int              `json:"memUsage"`
+	MemTotal  uint64           `json:"memTotal"`
 	MemUsed   uint64           `json:"memUsed"`
+	DiskTotal uint64           `json:"diskTotal"`
+	DiskUsed  uint64           `json:"diskUsed"`
 }
 
 type Ctrl struct {

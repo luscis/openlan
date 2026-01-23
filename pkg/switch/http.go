@@ -22,6 +22,7 @@ import (
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
@@ -264,9 +265,14 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 		body.CPUUsage = int(total_cpu[0])
 	}
 	if total_mem, err := mem.VirtualMemory(); err == nil {
-		body.MemUsage = int(total_mem.UsedPercent)
+		body.MemTotal = total_mem.Total
 		body.MemUsed = total_mem.Used
 	}
+	if total_disk, err := disk.Usage("/"); err == nil {
+		body.DiskTotal = total_disk.Total
+		body.DiskUsed = total_disk.Used
+	}
+
 	// display conntrack stats.
 	body.Conntrack = libol.ListConnStats().String()
 	// dispaly all devices.
