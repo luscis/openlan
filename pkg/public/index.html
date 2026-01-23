@@ -99,8 +99,8 @@
                     <tr>
                         <td>UpTime</td>
                         <td>: {{ prettyTime .Worker.Uptime }}</td>
-                        <td>Protocol</td>
-                        <td>: {{ .Worker.Protocol }}</td>
+                        <td>Expire at</td>
+                        <td>: {{ .Version.Expire }}</td>
                     </tr>
                     <tr>
                         <td>Version</td>
@@ -109,8 +109,8 @@
                         <td>: {{ .Worker.UUID }}|{{ .Worker.Alias }}</td>
                     </tr>
                     <tr>
-                        <td>Expire at</td>
-                        <td>: {{ .Version.Expire }}</td>
+                        <td>Protocol</td>
+                        <td>: {{ .Worker.Protocol }}</td>
                     </tr>
                     <tr>
                         <td>Conntrack</td>
