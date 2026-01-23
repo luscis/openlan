@@ -78,9 +78,6 @@
         .initialized, .connected, .connecting, .unauthenticated, .terminal, .closed {
             color: black;
         }
-        .table-display td span {
-            border: 1px solid #ccc;
-        }
     </style>
 </head>
 <body>
@@ -93,6 +90,10 @@
                         <td>Refresh at</td>
                         <td>
                             : <span id="countdown">15</span>s
+                        </td>
+                        <td>Project</td>
+                        <td>
+                            : <a href="https://github.com/luscis/openlan">openlan</a>
                         </td>
                     </tr>
                     <tr>
@@ -110,22 +111,22 @@
                     <tr>
                         <td>Expire at</td>
                         <td>: {{ .Version.Expire }}</td>
-                        <td>Users</td>
-                        <td>: {{ .UserLen }}</td>
                     </tr>
                     <tr>
                         <td>Conntrack</td>
                         <td>: {{ .Conntrack }}</td>
-                        <td>Usage</td>
-                        <td>:
-                            <span>cpu {{ .CPUUsage }}%</span>|<span>memory {{ prettyBytes .MemUsed }}/{{ prettyBytes .MemTotal }}</span>|<span>disk {{ prettyBytes .DiskUsed }}/{{ prettyBytes .DiskTotal }}</span>
-                        </td>
+                        <td>Users</td>
+                        <td>: {{ .UserLen }}</td>
                     </tr>
                     <tr>
-                        <td>Project</td>
-                        <td>
-                            : <a href="https://github.com/luscis/openlan">openlan</a>
-                        </td>
+                        <td>CPU</td>
+                        <td>: {{ .CPUUsage }}%</td>
+                        <td>Disk</td>
+                        <td>: {{ prettyBytes .DiskUsed }}/{{ prettyBytes .DiskTotal }}</td>
+                    </tr>
+                    <tr>
+                        <td>Memory</td>
+                        <td>: {{ prettyBytes .MemUsed }}/{{ prettyBytes .MemTotal }}</td>
                     </tr>
                 </tbody>
             </table>
