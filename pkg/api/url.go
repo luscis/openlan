@@ -7,6 +7,7 @@ func Add(router *mux.Router, cs SwitchApi) {
 	LDAP{cs: cs}.Router(router)
 	KernelRoute{}.Router(router)
 	KernelNeighbor{}.Router(router)
+	KernelUsage{}.Router(router)
 	Access{}.Router(router)
 	Lease{}.Router(router)
 	Server{cs: cs}.Router(router)

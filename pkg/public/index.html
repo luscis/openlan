@@ -114,19 +114,19 @@
                     </tr>
                     <tr>
                         <td>Conntrack</td>
-                        <td>: {{ .Conntrack }}</td>
+                        <td>: Total {{ .Conntrack.Total }} TCP {{ .Conntrack.TCP }} UDP {{ .Conntrack.UDP }} ICMP {{ .Conntrack.ICMP }}</td>
                         <td>Users</td>
                         <td>: {{ .UserLen }}</td>
                     </tr>
                     <tr>
                         <td>CPU</td>
-                        <td>: {{ .CPUUsage }}%</td>
+                        <td>: {{ .Usage.CPUUsage }}%</td>
                         <td>Disk</td>
-                        <td>: {{ prettyBytes .DiskUsed }}/{{ prettyBytes .DiskTotal }}</td>
+                        <td>: {{ prettyBytes .Usage.DiskUsed }}/{{ prettyBytes .Usage.DiskTotal }}</td>
                     </tr>
                     <tr>
                         <td>Memory</td>
-                        <td>: {{ prettyBytes .MemUsed }}/{{ prettyBytes .MemTotal }}</td>
+                        <td>: {{ prettyBytes .Usage.MemUsed }}/{{ prettyBytes .Usage.MemTotal }}</td>
                     </tr>
                 </tbody>
             </table>

@@ -10,7 +10,53 @@ import (
 	"github.com/luscis/openlan/pkg/libol"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/mem"
 )
+
+type KernelUsage struct {
+}
+
+func GetConntrack() schema.KernelConntrack {
+	data := libol.ListConnStats()
+	return schema.KernelConntrack{
+		Total: data.Total,
+		TCP:   data.TCP,
+		UDP:   data.UDP,
+		ICMP:  data.ICMP,
+	}
+}
+
+func GetUsage() schema.KernelUsage {
+	usage := schema.KernelUsage{}
+	if total_cpu, err := cpu.Percent(0, false); err == nil {
+		usage.CPUUsage = int(total_cpu[0])
+	}
+	if total_mem, err := mem.VirtualMemory(); err == nil {
+		usage.MemTotal = total_mem.Total
+		usage.MemUsed = total_mem.Used
+	}
+	if total_disk, err := disk.Usage("/"); err == nil {
+		usage.DiskTotal = total_disk.Total
+		usage.DiskUsed = total_disk.Used
+	}
+	return usage
+}
+
+func (l KernelUsage) Router(router *mux.Router) {
+	router.HandleFunc("/api/kernel/usage", l.List).Methods("GET")
+	router.HandleFunc("/api/kernel/usage/conntrack", l.ListCT).Methods("GET")
+}
+func (l KernelUsage) ListCT(w http.ResponseWriter, r *http.Request) {
+	value := GetConntrack()
+	ResponseJson(w, value)
+}
+
+func (l KernelUsage) List(w http.ResponseWriter, r *http.Request) {
+	value := GetUsage()
+	ResponseJson(w, value)
+}
 
 type KernelRoute struct {
 }

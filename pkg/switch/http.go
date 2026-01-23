@@ -21,9 +21,6 @@ import (
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/disk"
-	"github.com/shirou/gopsutil/v4/mem"
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -260,21 +257,10 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version.Expire = h.cs.GetCert().CertExpire
 	body.Worker = api.NewWorkerSchema(h.cs)
 	body.UserLen = cache.User.Len()
-
-	if total_cpu, err := cpu.Percent(0, false); err == nil {
-		body.CPUUsage = int(total_cpu[0])
-	}
-	if total_mem, err := mem.VirtualMemory(); err == nil {
-		body.MemTotal = total_mem.Total
-		body.MemUsed = total_mem.Used
-	}
-	if total_disk, err := disk.Usage("/"); err == nil {
-		body.DiskTotal = total_disk.Total
-		body.DiskUsed = total_disk.Used
-	}
+	body.Usage = api.GetUsage()
 
 	// display conntrack stats.
-	body.Conntrack = libol.ListConnStats().String()
+	body.Conntrack = api.GetConntrack()
 	// dispaly all devices.
 	body.Devices = api.ListDevices()
 	sort.SliceStable(body.Devices, func(i, j int) bool {

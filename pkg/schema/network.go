@@ -115,3 +115,18 @@ type RouterInterface struct {
 	VLAN    int    `json:"vlan"`
 	Address string `json:"address"`
 }
+
+type KernelUsage struct {
+	CPUUsage  int    `json:"cpuUsage"`
+	MemUsed   uint64 `json:"memUsed"`
+	MemTotal  uint64 `json:"memTotal"`
+	DiskUsed  uint64 `json:"diskUsed"`
+	DiskTotal uint64 `json:"diskTotal"`
+}
+
+type KernelConntrack struct {
+	Total int `json:"total"`
+	TCP   int `json:"tcp"`
+	UDP   int `json:"udp"`
+	ICMP  int `json:"icmp"`
+}

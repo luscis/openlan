@@ -175,21 +175,17 @@ type Worker struct {
 	out       *libol.SubLogger
 	done      chan bool
 	ticker    *time.Ticker
-	nameCache map[string]string
-	addrCache map[string]string
 	lock      sync.RWMutex
 }
 
 func NewWorker(cfg *config.Access) *Worker {
 	return &Worker{
-		ifAddr:    cfg.Interface.Address,
-		cfg:       cfg,
-		routes:    make(map[string]PrefixRule),
-		out:       libol.NewSubLogger(cfg.Id()),
-		done:      make(chan bool),
-		ticker:    time.NewTicker(2 * time.Second),
-		nameCache: make(map[string]string),
-		addrCache: make(map[string]string),
+		ifAddr: cfg.Interface.Address,
+		cfg:    cfg,
+		routes: make(map[string]PrefixRule),
+		out:    libol.NewSubLogger(cfg.Id()),
+		done:   make(chan bool),
+		ticker: time.NewTicker(2 * time.Second),
 	}
 }
 
@@ -278,7 +274,6 @@ func (w *Worker) SaveStatus() {
 		UUID:      w.uuid,
 		Alias:     w.cfg.Alias,
 		System:    runtime.GOOS,
-		Names:     w.addrCache,
 	}
 	if w.network != nil {
 		access.Address = w.network.Address

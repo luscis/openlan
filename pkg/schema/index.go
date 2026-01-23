@@ -3,7 +3,7 @@ package schema
 type Index struct {
 	Version   Version          `json:"version"`
 	Worker    Worker           `json:"worker"`
-	Conntrack string           `json:"conntrack"`
+	Conntrack KernelConntrack  `json:"conntrack"`
 	Access    []Access         `json:"access"`
 	Devices   []Device         `json:"device"`
 	Clients   []VPNClient      `json:"clients"`
@@ -11,11 +11,7 @@ type Index struct {
 	Routes    []KernelRoute    `json:"routes"`
 	Neighbor  []KernelNeighbor `json:"neighbors"`
 	UserLen   int              `json:"userLen"`
-	CPUUsage  int              `json:"cpuUsage"`
-	MemTotal  uint64           `json:"memTotal"`
-	MemUsed   uint64           `json:"memUsed"`
-	DiskTotal uint64           `json:"diskTotal"`
-	DiskUsed  uint64           `json:"diskUsed"`
+	Usage     KernelUsage      `json:"usage"`
 }
 
 type Ctrl struct {
