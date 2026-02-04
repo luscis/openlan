@@ -120,7 +120,7 @@
                     </tr>
                     <tr>
                         <td>CPU</td>
-                        <td>: {{ .Usage.CPUUsage }}%</td>
+                        <td>: {{ .Usage.CPUUsage }}% {{ .Usage.CPUTotal }}C</td>
                         <td>Disk</td>
                         <td>: {{ prettyBytes .Usage.DiskUsed }}/{{ prettyBytes .Usage.DiskTotal }}</td>
                     </tr>

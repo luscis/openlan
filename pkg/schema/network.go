@@ -117,6 +117,7 @@ type RouterInterface struct {
 }
 
 type KernelUsage struct {
+	CPUTotal  int    `json:"cpuTotal"`
 	CPUUsage  int    `json:"cpuUsage"`
 	MemUsed   uint64 `json:"memUsed"`
 	MemTotal  uint64 `json:"memTotal"`

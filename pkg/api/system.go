@@ -30,8 +30,11 @@ func GetConntrack() schema.KernelConntrack {
 
 func GetUsage() schema.KernelUsage {
 	usage := schema.KernelUsage{}
-	if total_cpu, err := cpu.Percent(0, false); err == nil {
-		usage.CPUUsage = int(total_cpu[0])
+	if total_cpu, err := cpu.Counts(true); err == nil {
+		usage.CPUTotal = int(total_cpu)
+	}
+	if cpu_per, err := cpu.Percent(0, false); err == nil {
+		usage.CPUUsage = int(cpu_per[0])
 	}
 	if total_mem, err := mem.VirtualMemory(); err == nil {
 		usage.MemTotal = total_mem.Total
