@@ -100,10 +100,11 @@ func (o *vpnClient) scanClient(network string, reader io.Reader,
 				name := columns[0]
 				remote := columns[1]
 				client := &schema.VPNClient{
-					Name:   name,
-					Remote: remote,
-					State:  "success",
-					Device: o.GetDevice(network),
+					Name:    name,
+					Remote:  remote,
+					State:   "success",
+					Device:  o.GetDevice(network),
+					Network: network,
 				}
 				if rxc, err := ParseUint64(columns[2]); err == nil {
 					client.RxBytes = rxc
