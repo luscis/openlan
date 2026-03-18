@@ -71,6 +71,12 @@ func (h ToForwards) FindBackend(host string) *ForwardTo {
 	return nil
 }
 
+func (h ToForwards) List(call func(*ForwardTo)) {
+	for _, via := range h {
+		call(via)
+	}
+}
+
 type FindBackend interface {
 	FindBackend(host string) *ForwardTo
 }
