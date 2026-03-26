@@ -1,184 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ .Worker.Alias }} - OpenLAN</title>
-    <style type="text/css">
-        @media
-        (max-device-width : 1024px) {
-            .container {
-                width: 100%;
-                margin: 0 auto;
-            }
-        }
-        @media
-        (min-device-width : 1280px) {
-            .container {
-                width: 95%;
-            }
-        }
-        @media
-        (min-device-width : 1480px) {
-            .container {
-                width: 80%;
-            }
-        }
-        body {
-            font-family: monospace;
-            background: #fdfcf8;
-        }
-        .container {
-            margin: 0 auto;
-        }
-        .container a {
-            text-decoration: none;
-        }
-        .panel {
-            width: 100%;
-            padding-top: 12px;
-        }
-        .panel-header {
-            margin: 8px 0;
-            width: 100%;
-        }
-        .panel-header p {
-            margin: 0;
-        }
-        .panel-body {
-            margin: 8px 0;
-            width: 100%;
-        }
-        .table-display {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .table-display th {
-            font-weight: bold;
-            background: #2f2e2e;
-            color: whitesmoke;
-            padding-left: 3px;
-            text-align: left;
-            border-bottom: 1px solid #ccc;
-        }
-        .table-display td {
-            border-bottom: 1px solid #ccc;
-            padding-left: 3px;
-            text-align: left;
-        }
-        .table-display td p {
-            margin: 0 0;
-        }
-        .table-list {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .authenticated, .success, .up {
-            color: darkgreen;
-        }
-        .initialized, .connected, .connecting, .unauthenticated, .terminal, .closed {
-            color: black;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenLAN Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --sidebar-bg: #010409;
+  --sidebar-text: #8b949e;
+  --sidebar-active: #58a6ff;
+  --sidebar-hover: #1c2433;
+  --header-bg: #161b22;
+  --card-bg: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --primary: #58a6ff;
+  --primary-dark: #388bfd;
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+  --info: #bc8cff;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5), 0 4px 6px -2px rgba(0,0,0,0.3);
+  --sidebar-w: 220px;
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Login */
+#login-page {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: linear-gradient(135deg, #141b2d 0%, #1e2a42 50%, #0f172a 100%);
+}
+.login-card {
+  background: #161b22; border-radius: 16px; padding: 48px 40px;
+  width: 100%; max-width: 400px; box-shadow: var(--shadow-lg);
+  text-align: center; border: 1px solid var(--border);
+}
+.login-logo { margin-bottom: 24px; }
+.login-logo img { width: 64px; height: 64px; }
+.login-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.login-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+.login-field { text-align: left; margin-bottom: 20px; }
+.login-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.login-field input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 14px; color: var(--text); outline: none; transition: border-color .15s;
+  font-family: monospace; background: #0d1117;
+}
+.login-field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.btn-login {
+  width: 100%; padding: 11px; background: var(--primary); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+.btn-login:hover { background: var(--primary-dark); }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px; }
+.login-hint { font-size: 12px; color: var(--text-muted); margin-top: 20px; line-height: 1.6; }
+.login-hint code { background: #0d1117; padding: 1px 5px; border-radius: 4px; font-family: monospace; color: var(--primary); }
+
+/* Layout */
+#app { display: none; min-height: 100vh; }
+.layout { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w); background: var(--sidebar-bg); color: var(--sidebar-text);
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+  height: 100vh; z-index: 100; flex-shrink: 0;
+}
+.sidebar-header {
+  padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-logo { width: 32px; height: 32px; flex-shrink: 0; }
+.sidebar-brand { font-size: 18px; font-weight: 700; color: #fff; }
+.sidebar-version { font-size: 11px; color: #5c697e; margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-section { padding: 16px 16px 6px; font-size: 10px; font-weight: 700; color: #3d4f6e; text-transform: uppercase; letter-spacing: .08em; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+  font-size: 13.5px; color: var(--sidebar-text); cursor: pointer;
+  transition: background .15s, color .15s; border-radius: 6px; margin: 1px 8px;
+  user-select: none;
+}
+.nav-item:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+.nav-item.active { background: rgba(59,130,246,.15); color: var(--sidebar-active); font-weight: 600; }
+.nav-item svg { flex-shrink: 0; opacity: .75; }
+.nav-item.active svg { opacity: 1; }
+.sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,.06); }
+.btn-logout {
+  width: 100%; padding: 8px; background: rgba(239,68,68,.1); color: #f87171;
+  border: 1px solid rgba(239,68,68,.2); border-radius: var(--radius); font-size: 13px;
+  cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-logout:hover { background: rgba(239,68,68,.2); }
+
+/* Main content */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  background: var(--header-bg); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px; display: flex; align-items: center;
+  justify-content: space-between; position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.topbar-left h2 { font-size: 18px; font-weight: 600; color: var(--text); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.refresh-info { font-size: 13px; color: var(--text-muted); }
+.btn-refresh {
+  padding: 7px 14px; background: var(--primary); color: #fff; border: none;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: background .15s;
+}
+.btn-refresh:hover { background: var(--primary-dark); }
+.btn-refresh.spinning svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.page-content { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* Cards */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card-bg); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 14px;
+}
+.stat-icon {
+  width: 44px; height: 44px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stat-icon.blue { background: rgba(59,130,246,.1); color: var(--primary); }
+.stat-icon.green { background: rgba(34,197,94,.1); color: var(--success); }
+.stat-icon.yellow { background: rgba(245,158,11,.1); color: var(--warning); }
+.stat-icon.purple { background: rgba(139,92,246,.1); color: var(--info); }
+.stat-icon.red { background: rgba(239,68,68,.1); color: var(--danger); }
+.stat-icon.teal { background: rgba(20,184,166,.1); color: #14b8a6; }
+.stat-body { flex: 1; min-width: 0; }
+.stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Sections */
+.section { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; }
+.section-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.section-title { font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.section-count {
+  background: #21262d; color: var(--text-muted); font-size: 11px;
+  font-weight: 600; padding: 2px 7px; border-radius: 10px;
+}
+.section-body { padding: 0; overflow-x: auto; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+thead th {
+  background: #0d1117; padding: 10px 16px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #1c2433; }
+tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
+.td-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; }
+.td-muted { color: var(--text-muted); }
+.empty-row td { text-align: center; color: var(--text-muted); padding: 32px; font-size: 14px; }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge-green { background: rgba(63,185,80,.15); color: #3fb950; }
+.badge-red { background: rgba(248,81,73,.15); color: #f85149; }
+.badge-yellow { background: rgba(210,153,34,.15); color: #d29922; }
+.badge-blue { background: rgba(88,166,255,.15); color: #58a6ff; }
+.badge-gray { background: #21262d; color: var(--text-muted); }
+.badge-purple { background: rgba(188,140,255,.15); color: #bc8cff; }
+
+/* Progress bar */
+.progress-wrap { background: #21262d; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 8px; }
+.progress-bar { height: 100%; border-radius: 4px; transition: width .3s; }
+.progress-bar.blue { background: var(--primary); }
+.progress-bar.green { background: var(--success); }
+.progress-bar.yellow { background: var(--warning); }
+.progress-bar.red { background: var(--danger); }
+
+/* Info grid */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 20px; }
+.info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.info-row:last-child { border-bottom: none; }
+.info-key { font-size: 12.5px; color: var(--text-muted); font-weight: 500; flex-shrink: 0; margin-right: 12px; }
+.info-val { font-size: 13px; color: var(--text); font-weight: 500; text-align: right; word-break: break-all; }
+.info-val.mono { font-family: monospace; font-size: 12px; }
+
+/* Forms */
+.form-panel { padding: 20px; border-bottom: 1px solid var(--border); }
+.form-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.form-group input, .form-group select {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13.5px; color: var(--text); outline: none; min-width: 150px;
+  transition: border-color .15s; background: #0d1117;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.btn { padding: 8px 16px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: background .15s, opacity .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #dc2626; }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-ghost:hover { background: #21262d; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* Action buttons in table */
+.action-btn {
+  padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 500;
+  cursor: pointer; border: none; transition: background .15s;
+}
+.action-delete { background: rgba(239,68,68,.1); color: var(--danger); }
+.action-delete:hover { background: rgba(239,68,68,.2); }
+
+/* Alerts/toasts */
+#toast {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  background: #21262d; color: #fff; padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; box-shadow: var(--shadow-lg); display: none;
+  max-width: 320px; line-height: 1.4;
+}
+#toast.success { background: #166534; }
+#toast.error { background: #991b1b; }
+#toast.show { display: block; animation: slideIn .2s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Utilities */
+.hidden { display: none !important; }
+.loading { display: flex; align-items: center; justify-content: center; padding: 48px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* Conntrack cards */
+.conntrack-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+.ct-card { text-align: center; padding: 14px; background: #0d1117; border-radius: var(--radius); border: 1px solid var(--border); }
+.ct-num { font-size: 24px; font-weight: 700; color: var(--text); }
+.ct-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+
+/* Overview split */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .overview-grid { grid-template-columns: 1fr; } }
+
+/* Node info table in overview */
+.node-table { width: 100%; }
+.node-table td { padding: 8px 16px; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+.node-table td:first-child { color: var(--text-muted); width: 130px; font-weight: 500; font-size: 12.5px; }
+.node-table tr:last-child td { border-bottom: none; }
+
+/* Network detail row */
+.net-detail-row { background: #0d1117; }
+.net-detail-row td { padding: 0 !important; border-bottom: 1px solid var(--border) !important; }
+.net-detail-panel { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 24px; }
+.net-detail-item { display: flex; flex-direction: column; gap: 2px; }
+.net-detail-key { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.net-detail-val { font-size: 13px; color: var(--text); font-family: monospace; word-break: break-all; }
+.net-detail-json { grid-column: 1/-1; background: #010409; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; font-family: monospace; color: #79c0ff; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+.btn-detail { background: rgba(88,166,255,.1); color: var(--primary); border: 1px solid rgba(88,166,255,.2); }
+.btn-detail:hover { background: rgba(88,166,255,.2); }
+.btn-detail.open { background: rgba(88,166,255,.2); }
+</style>
 </head>
 <body>
-<div class="container">
-    <div class="panel">
-        <div class="panel-body">
-            <table class="table-list">
-                <tbody>
-                    <tr>
-                        <td>Refresh at</td>
-                        <td>
-                            : <span id="countdown">15</span>s
-                        </td>
-                        <td>Project</td>
-                        <td>
-                            : <a href="https://github.com/luscis/openlan">openlan</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>UpTime</td>
-                        <td>: {{ prettyTime .Worker.Uptime }}</td>
-                        <td>Expire at</td>
-                        <td>: {{ .Version.Expire }}</td>
-                    </tr>
-                    <tr>
-                        <td>Version</td>
-                        <td>: {{ .Version.Version }}|{{ .Version.Date }}</td>
-                        <td>UUID</td>
-                        <td>: {{ .Worker.UUID }}|{{ .Worker.Alias }}</td>
-                    </tr>
-                    <tr>
-                        <td>Protocol</td>
-                        <td>: {{ .Worker.Protocol }}</td>
-                    </tr>
-                    <tr>
-                        <td>Conntrack</td>
-                        <td>: Total {{ .Conntrack.Total }} TCP {{ .Conntrack.TCP }} UDP {{ .Conntrack.UDP }} ICMP {{ .Conntrack.ICMP }}</td>
-                        <td>Users</td>
-                        <td>: {{ .UserLen }}</td>
-                    </tr>
-                    <tr>
-                        <td>CPU</td>
-                        <td>: {{ .Usage.CPUUsage }}% {{ .Usage.CPUTotal }}C</td>
-                        <td>Disk</td>
-                        <td>: {{ prettyBytes .Usage.DiskUsed }}/{{ prettyBytes .Usage.DiskTotal }}</td>
-                    </tr>
-                    <tr>
-                        <td>Memory</td>
-                        <td>: {{ prettyBytes .Usage.MemUsed }}/{{ prettyBytes .Usage.MemTotal }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+
+<!-- Login Page -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/favicon.ico" alt="OpenLAN" onerror="this.style.display='none'">
     </div>
-    <div class="panel">
-        <div class="panel-header">
-            <p>
-                <span>The device on this node and total </span><span>{{ len .Devices }}</span>.
-            </p>
+    <div class="login-title">OpenLAN</div>
+    <div class="login-sub">Virtual Ethernet Network over WAN</div>
+    <div class="login-field">
+      <label>Server URL</label>
+      <input type="text" id="login-url" placeholder="https://localhost:10000">
+    </div>
+    <div class="login-field">
+      <label>Admin Token</label>
+      <input type="password" id="login-token" placeholder="Enter admin token..." autocomplete="off">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">
+      Token is stored in <code>/etc/openlan/switch/token</code><br>
+      on the server. Use <code>cat /etc/openlan/switch/token</code> to read it.
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard App -->
+<div id="app">
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="/openlan.png" class="sidebar-logo" alt="" onerror="this.style.display='none'">
+        <div>
+          <div class="sidebar-brand">OpenLAN</div>
+          <div class="sidebar-version" id="sw-version">Management Console</div>
         </div>
-        <div class="panel-body">
-            <table class="table-display">
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Monitor</div>
+        <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Overview
+        </div>
+        <div class="nav-item" onclick="showPage('clients')" id="nav-clients">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Clients
+        </div>
+        <div class="nav-item" onclick="showPage('links')" id="nav-links">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Links
+        </div>
+        <div class="nav-item" onclick="showPage('routes')" id="nav-routes">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Routes
+        </div>
+        <div class="nav-section">Manage</div>
+        <div class="nav-item" onclick="showPage('networks')" id="nav-networks">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16.5"/><line x1="12" y1="8" x2="18.5" y2="16.5"/></svg>
+          Networks
+        </div>
+        <div class="nav-item" onclick="showPage('users')" id="nav-users">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="doLogout()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2 id="page-title">Overview</h2>
+        </div>
+        <div class="topbar-right">
+          <span class="refresh-info" id="refresh-countdown"></span>
+          <button class="btn-refresh" id="btn-refresh" onclick="refreshCurrentPage()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <!-- OVERVIEW PAGE -->
+        <div class="page active" id="page-overview">
+          <div class="stats-grid" id="overview-stats"></div>
+          <div class="overview-grid">
+            <div class="section">
+              <div class="section-header">
+                <span class="section-title">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Node Information
+                </span>
+              </div>
+              <div class="section-body">
+                <table class="node-table" id="node-info-table"></table>
+              </div>
+            </div>
+            <div class="section">
+              <div class="section-header">
+                <span class="section-title">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  Connection Tracking
+                </span>
+              </div>
+              <div class="conntrack-grid" id="conntrack-grid"></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Devices
+              </span>
+              <span class="section-count" id="devices-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
                 <thead>
-                <tr>
+                  <tr>
                     <th>Network</th>
                     <th>Device</th>
                     <th>State</th>
                     <th>MTU</th>
                     <th>MAC</th>
-                    <th>Address</th>
-                    <th>Rx/Tx Traffic</th>
-                    <th>Speed</th>
-                </tr>
+                    <th>Addresses</th>
+                    <th>Rx / Tx</th>
+                    <th>Speed (Rx/Tx)</th>
+                  </tr>
                 </thead>
-                <tbody>
-                {{ range .Devices }}
-                    <tr>
-                        <td>{{ .Network }}</td>
-                        <td>{{ .Name }}</td>
-                        <td><span class="{{ .State }}">{{ .State }}</span></td>
-                        <td>{{ .Mtu }}</td>
-                        <td>{{ if .Mac }}{{ .Mac }}{{ else }}-{{ end }}</td>
-                        <td>{{ if .Address }}{{ range .Address }}{{ . }}<br/>{{ end }}{{ else }}-{{ end }}</td>
-                        <td>{{ prettyBytes .Recv }}/{{ prettyBytes .Send }}</td>
-                        <td>{{ prettyBits .RxSpeed }}/{{ prettyBits .TxSpeed }}</td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
+                <tbody id="devices-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <p>
-                <span>The route on this node and total </span><span>{{ len .Routes }}</span>.
-            </p>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
+
+        <!-- CLIENTS PAGE -->
+        <div class="page" id="page-clients">
+          <div class="section" style="margin-bottom:24px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Access Points
+              </span>
+              <span class="section-count" id="access-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
                 <thead>
-                <tr>
+                  <tr>
+                    <th>UUID</th>
+                    <th>Network</th>
+                    <th>User</th>
+                    <th>Alias</th>
+                    <th>Remote</th>
+                    <th>Protocol</th>
+                    <th>Rx / Tx Bytes</th>
+                    <th>State</th>
+                    <th>Alive</th>
+                  </tr>
+                </thead>
+                <tbody id="access-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                VPN Clients
+              </span>
+              <span class="section-count" id="vpn-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Device</th>
+                    <th>Address</th>
+                    <th>Remote</th>
+                    <th>User</th>
+                    <th>Speed (Rx/Tx)</th>
+                    <th>State</th>
+                    <th>Alive</th>
+                  </tr>
+                </thead>
+                <tbody id="vpn-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- LINKS PAGE -->
+        <div class="page" id="page-links">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Inter-Node Links
+              </span>
+              <span class="section-count" id="links-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Network</th>
+                    <th>Device</th>
+                    <th>Remote</th>
+                    <th>Protocol</th>
+                    <th>Rx / Tx Bytes</th>
+                    <th>State</th>
+                    <th>Alive</th>
+                  </tr>
+                </thead>
+                <tbody id="links-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROUTES PAGE -->
+        <div class="page" id="page-routes">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Kernel Routing Table
+              </span>
+              <span class="section-count" id="routes-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr>
                     <th>Table</th>
                     <th>Protocol</th>
                     <th>Destination</th>
@@ -186,167 +528,786 @@
                     <th>Device</th>
                     <th>Source</th>
                     <th>Metric</th>
-                </tr>
+                  </tr>
                 </thead>
-                <tbody>
-                {{ range .Routes }}
-                    <tr>
-                        <td>{{ .Table }}</td>
-                        <td>{{ .Protocol }}</td>
-                        <td>{{ .Prefix }}</td>
-                        {{ if .Multipath }}
-                        <td>{{ range .Multipath }}{{ .NextHop }}<br/>{{ end }} </td>
-                        <td>{{ range .Multipath }}{{ .Link }}<br/>{{ end }}</td>
-                        {{ else }}
-                        <td>{{ .NextHop }}</td>
-                        <td>{{ .Link }}</td>
-                        {{ end }}
-                        <td>{{ .Source }}</td>
-                        <td>{{ .Metric }}</td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <p>
-                <span>The neighbor on this node and total </span><span>{{ len .Neighbor }}</span>.
-            </p>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
-                <thead>
-                <tr>
-                    <th>Address</th>
-                    <th>MAC</th>
-                    <th>Device</th>
-                    <th>State</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range .Neighbor }}
-                    <tr>
-                        <td>{{ .Address }}</td>
-                        <td>{{ if .HwAddr }}{{ .HwAddr }}{{ else }}-{{ end }}</td>
-                        <td>{{ .Link }}</td>
-                        <td>{{ .State }}</td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <div>
-                <span>The link which connect to other node and total </span><span>{{ len .Outputs }}</span>.
+                <tbody id="routes-tbody"></tbody>
+              </table>
             </div>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
+          </div>
+          <div class="section" style="margin-top:24px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                ARP Neighbors
+              </span>
+              <span class="section-count" id="neighbors-count">0</span>
+            </div>
+            <div class="section-body">
+              <table>
                 <thead>
-                <tr>
-                    <th>UUID</th>
-                    <th>Alive</th>
-                    <th>Network</th>
-                    <th>Device</th>
-                    <th>Segment</th>
-                    <th>Protocol</th>
-                    <th>Connection</th>
-                    <th>State</th>
-                </tr>
+                  <tr><th>IP Address</th><th>MAC</th><th>Device</th><th>State</th></tr>
                 </thead>
-                <tbody>
-                {{ range .Outputs }}
-                        <tr>
-                            <td>-</td>
-                            <td>{{ prettyTime .AliveTime }}</td>
-                            <td>{{ .Network }}</td>
-                            <td>{{ .Device }}</td>
-                            <td>{{ toSegment .Segment .Secret }}</td>
-                            <td>{{ .Protocol }}</td>
-                            <td><a href="https://{{ .Remote }}:10000">{{ .Remote }}</a></td>
-                            <td>
-                                {{ if .RxBytes }}<span class="success">success</span>
-                                {{ else }}<span class="unknown">{{ .State }}</span>
-                                {{ end }}
-                            </td>
-                        </tr>
-                {{ end }}
-                </tbody>
-            </table>
+                <tbody id="neighbors-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <p>
-                <span>The client accessed to this node and total </span><span>{{ len .Clients }}+{{ len .Access }}</span>.
-            </p>
-        </div>
-        <div class="panel-body">
-            <table class="table-display">
-                <thead>
-                <tr>
-                    <th>UUID</th>
-                    <th>Alive</th>
-                    <th>Device</th>
-                    <th>Alias</th>
-                    <th>Connection</th>
-                    <th>User</th>
-                    <th>Speed</th>
-                    <th>State</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range .Clients }}
-                    <tr>
-                        <td>-</td>
-                        <td>{{ prettyTime .AliveTime }}</td>
-                        <td>{{ .Device }}</td>
-                        <td>{{ .Address }}</td>
-                        <td>{{ .Remote }}</td>
-                        <td>{{ .Name }}</td>
-                        <td>{{ prettyBits .RxSpeed }}/{{ prettyBits .TxSpeed }}</td>
-                        <td><span class="{{ .State }}">{{ .State }}</span></td>
-                    </tr>
-                {{ end }}
-                {{ range .Access }}
-                    <tr>
-                        <td>{{ .UUID }}</td>
-                        <td>{{ prettyTime .AliveTime }}</td>
-                        <td>{{ .Device }}</td>
-                        <td>{{ .Alias }}</td>
-                        <td>{{ .Remote }}</td>
-                        <td>{{ .User }}@{{ .Network }}</td>
-                        <td>-</td>
-                        <td><span class="{{ .State }}">{{ .State }}</span></td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-<script>
-    let remaining = 15;
-    const countdownEl = document.getElementById('countdown');
 
-    countdownEl.textContent = remaining;
-    const timer = setInterval(() => {
-        remaining--;
-        countdownEl.textContent = remaining;
-    
-        if (remaining == 0) {
-            location.reload();
-        }
-    }, 1000);
-    
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-        }
-    });
-    </script>
+        <!-- NETWORKS PAGE -->
+        <div class="page" id="page-networks">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16.5"/><line x1="12" y1="8" x2="18.5" y2="16.5"/></svg>
+                Virtual Networks
+              </span>
+              <span class="section-count" id="networks-count">0</span>
+            </div>
+            <div class="form-panel">
+              <div class="form-title">Add Network</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Name</label>
+                  <input type="text" id="net-name" placeholder="e.g. production">
+                </div>
+                <div class="form-group">
+                  <label>Bridge Address (optional)</label>
+                  <input type="text" id="net-address" placeholder="e.g. 10.1.0.1/24">
+                </div>
+                <div class="form-group">
+                  <label>Namespace (optional)</label>
+                  <input type="text" id="net-namespace" placeholder="default">
+                </div>
+                <button class="btn btn-primary" onclick="addNetwork()" style="align-self:flex-end;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add
+                </button>
+              </div>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr><th>Name</th><th>Config</th><th style="width:160px;">Actions</th></tr>
+                </thead>
+                <tbody id="networks-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS PAGE -->
+        <div class="page" id="page-users">
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Authenticated Users
+              </span>
+              <span class="section-count" id="users-count">0</span>
+            </div>
+            <div class="form-panel">
+              <div class="form-title">Add / Update User</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Username@Network</label>
+                  <input type="text" id="user-name" placeholder="alice@mynet">
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input type="text" id="user-password" placeholder="auto-generated if empty">
+                </div>
+                <div class="form-group">
+                  <label>Role</label>
+                  <select id="user-role">
+                    <option value="guest">guest</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Lease Until</label>
+                  <input type="date" id="user-lease">
+                </div>
+                <button class="btn btn-primary" onclick="addUser()" style="align-self:flex-end;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add
+                </button>
+              </div>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr><th>Username</th><th>Network</th><th>Role</th><th>Password</th><th>Lease Until</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-content -->
+    </main>
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+// =====================
+// State
+// =====================
+const MONITOR_PAGES = new Set(['overview', 'clients', 'links', 'routes']);
+const REFRESH_INTERVAL = 30;
+
+const State = {
+  token: '',
+  baseUrl: '',
+  currentPage: 'overview',
+  refreshTimer: null,
+  indexData: null
+};
+
+// =====================
+// Utilities
+// =====================
+function fmt_bytes(b) {
+  if (!b || b === 0) return '0 B';
+  const units = ['B','KB','MB','GB','TB'];
+  const i = Math.floor(Math.log(b) / Math.log(1024));
+  return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+}
+
+function fmt_bits(bps) {
+  if (!bps || bps === 0) return '0 bps';
+  const units = ['bps','Kbps','Mbps','Gbps'];
+  const i = Math.floor(Math.log(bps) / Math.log(1000));
+  return (bps / Math.pow(1000, i)).toFixed(1) + ' ' + units[i];
+}
+
+function fmt_duration(secs) {
+  if (!secs || secs <= 0) return '-';
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (d > 0) return d + 'd ' + h + 'h';
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + 'm ' + s + 's';
+  return s + 's';
+}
+
+function state_badge(s) {
+  if (!s) s = 'unknown';
+  const sl = s.toLowerCase();
+  if (sl === 'authenticated' || sl === 'up' || sl === 'success') return '<span class="badge badge-green">' + s + '</span>';
+  if (sl === 'unauthenticated' || sl === 'down' || sl === 'failed' || sl === 'closed') return '<span class="badge badge-red">' + s + '</span>';
+  if (sl === 'connecting' || sl === 'initialized') return '<span class="badge badge-yellow">' + s + '</span>';
+  if (sl === 'connected' || sl === 'terminal') return '<span class="badge badge-blue">' + s + '</span>';
+  return '<span class="badge badge-gray">' + s + '</span>';
+}
+
+function role_badge(r) {
+  if (r === 'admin') return '<span class="badge badge-purple">admin</span>';
+  return '<span class="badge badge-blue">guest</span>';
+}
+
+function show_toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (type || '');
+  setTimeout(() => { t.className = ''; }, 3500);
+}
+
+function gen_password() {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#';
+  let p = '';
+  for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
+  return p;
+}
+
+// =====================
+// API
+// =====================
+async function api_get(path) {
+  const url = State.baseUrl + path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(State.token);
+  const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
+  return resp.json();
+}
+
+async function api_post(path, data) {
+  const url = State.baseUrl + path + '?token=' + encodeURIComponent(State.token);
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!resp.ok) {
+    let msg = 'HTTP ' + resp.status;
+    try { const j = await resp.json(); msg = j.message || msg; } catch(e) {}
+    throw new Error(msg);
+  }
+  return resp;
+}
+
+async function api_delete(path, data) {
+  const url = State.baseUrl + path + '?token=' + encodeURIComponent(State.token);
+  const opts = { method: 'DELETE', headers: { 'Accept': 'application/json' } };
+  if (data) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(data); }
+  const resp = await fetch(url, opts);
+  if (!resp.ok) {
+    let msg = 'HTTP ' + resp.status;
+    try { const j = await resp.json(); msg = j.message || msg; } catch(e) {}
+    throw new Error(msg);
+  }
+  return resp;
+}
+
+// =====================
+// Auth
+// =====================
+async function doLogin() {
+  const tokenEl = document.getElementById('login-token');
+  const urlEl = document.getElementById('login-url');
+  const errEl = document.getElementById('login-error');
+  const token = tokenEl.value.trim();
+  const baseUrl = (urlEl.value.trim() || 'https://localhost:10000').replace(/\/$/, '');
+
+  if (!token) { errEl.textContent = 'Token is required.'; return; }
+
+  errEl.textContent = '';
+  try {
+    State.token = token;
+    State.baseUrl = baseUrl;
+    await api_get('/api/index');
+    sessionStorage.setItem('openlan_token', token);
+    sessionStorage.setItem('openlan_url', baseUrl);
+    show_dashboard();
+    load_overview();
+  } catch(e) {
+    errEl.textContent = 'Authentication failed: ' + e.message;
+    State.token = '';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('openlan_token');
+  sessionStorage.removeItem('openlan_url');
+  State.token = '';
+  State.baseUrl = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('login-token').value = '';
+}
+
+function show_dashboard() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  start_refresh_timer();
+}
+
+function start_refresh_timer() {
+  stop_refresh_timer();
+  let countdown = REFRESH_INTERVAL;
+  const el = document.getElementById('refresh-countdown');
+  State.refreshTimer = setInterval(() => {
+    countdown--;
+    if (el) el.textContent = 'Auto-refresh in ' + countdown + 's';
+    if (countdown <= 0) {
+      countdown = REFRESH_INTERVAL;
+      refreshCurrentPage();
+    }
+  }, 1000);
+}
+
+function stop_refresh_timer() {
+  if (State.refreshTimer) { clearInterval(State.refreshTimer); State.refreshTimer = null; }
+  const el = document.getElementById('refresh-countdown');
+  if (el) el.textContent = '';
+}
+
+// =====================
+// Navigation
+// =====================
+const PAGE_TITLES = {
+  overview: 'Overview',
+  clients: 'Clients',
+  links: 'Links',
+  routes: 'Routes',
+  networks: 'Networks',
+  users: 'Users'
+};
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  const nav = document.getElementById('nav-' + name);
+  if (page) page.classList.add('active');
+  if (nav) nav.classList.add('active');
+  State.currentPage = name;
+  document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
+  if (MONITOR_PAGES.has(name)) {
+    start_refresh_timer();
+  } else {
+    stop_refresh_timer();
+  }
+  refreshCurrentPage();
+}
+
+function refreshCurrentPage() {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('spinning');
+  const done = () => btn.classList.remove('spinning');
+  const p = State.currentPage;
+  if (p === 'overview') load_overview().then(done).catch(done);
+  else if (p === 'clients') load_clients().then(done).catch(done);
+  else if (p === 'links') load_links().then(done).catch(done);
+  else if (p === 'routes') load_routes().then(done).catch(done);
+  else if (p === 'networks') load_networks().then(done).catch(done);
+  else if (p === 'users') load_users().then(done).catch(done);
+  else done();
+}
+
+
+// =====================
+// Overview
+// =====================
+async function load_overview() {
+  try {
+    const d = await api_get('/api/index');
+    State.indexData = d;
+    render_overview(d);
+  } catch(e) {
+    show_toast('Failed to load overview: ' + e.message, 'error');
+  }
+}
+
+function pct(used, total) {
+  if (!total || total === 0) return 0;
+  return Math.min(100, Math.round(used / total * 100));
+}
+
+function pct_class(p) {
+  if (p > 85) return 'red';
+  if (p > 60) return 'yellow';
+  return 'green';
+}
+
+function render_overview(d) {
+  // Version info for sidebar
+  if (d.version && d.version.version) {
+    document.getElementById('sw-version').textContent = d.version.version;
+  }
+
+  // Stats grid
+  const u = d.usage || {};
+  const cpuPct = u.cpuUsage || 0;
+  const memPct = pct(u.memUsed, u.memTotal);
+  const diskPct = pct(u.diskUsed, u.diskTotal);
+  const connTotal = (d.conntrack || {}).total || 0;
+  const clientCount = ((d.access || []).length) + ((d.clients || []).length);
+  const linkCount = (d.output || []).length;
+
+  document.getElementById('overview-stats').innerHTML =
+    stat_card('CPU Usage', cpuPct + '%', (u.cpuTotal || 0) + ' cores', 'blue',
+      '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+      '<div class="progress-wrap"><div class="progress-bar ' + pct_class(cpuPct) + '" style="width:' + cpuPct + '%"></div></div>') +
+    stat_card('Memory', fmt_bytes(u.memUsed), 'of ' + fmt_bytes(u.memTotal), 'purple',
+      '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+      '<div class="progress-wrap"><div class="progress-bar ' + pct_class(memPct) + '" style="width:' + memPct + '%"></div></div>') +
+    stat_card('Disk', fmt_bytes(u.diskUsed), 'of ' + fmt_bytes(u.diskTotal), 'yellow',
+      '<path d="M22 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+      '<div class="progress-wrap"><div class="progress-bar ' + pct_class(diskPct) + '" style="width:' + diskPct + '%"></div></div>') +
+    stat_card('Connections', connTotal, 'TCP ' + ((d.conntrack||{}).tcp||0) + ' / UDP ' + ((d.conntrack||{}).udp||0), 'green',
+      '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',
+      '') +
+    stat_card('Clients', clientCount, ((d.access||[]).length) + ' AP + ' + ((d.clients||[]).length) + ' VPN', 'teal',
+      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+      '') +
+    stat_card('Links', linkCount, 'inter-node', 'red',
+      '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+      '');
+
+  // Node info
+  const w = d.worker || {};
+  const v = d.version || {};
+  document.getElementById('node-info-table').innerHTML =
+    node_row('Alias', w.alias || '-') +
+    node_row('UUID', '<span class="td-mono">' + (w.uuid || '-') + '</span>') +
+    node_row('Uptime', fmt_duration(w.uptime)) +
+    node_row('Protocol', w.protocol || '-') +
+    node_row('Version', (v.version || '-') + ' (' + (v.date || '') + ')') +
+    node_row('Expires', v.expire || '-') +
+    node_row('Users', (d.userLen || 0) + ' registered');
+
+  // Conntrack
+  const ct = d.conntrack || {};
+  document.getElementById('conntrack-grid').innerHTML =
+    ct_card(ct.total || 0, 'Total') +
+    ct_card(ct.tcp || 0, 'TCP') +
+    ct_card(ct.udp || 0, 'UDP') +
+    ct_card(ct.icmp || 0, 'ICMP');
+
+  // Devices
+  const devs = d.device || [];
+  document.getElementById('devices-count').textContent = devs.length;
+  const devBody = document.getElementById('devices-tbody');
+  if (devs.length === 0) {
+    devBody.innerHTML = '<tr class="empty-row"><td colspan="8">No devices found</td></tr>';
+  } else {
+    devBody.innerHTML = devs.map(dev => {
+      const addrs = (dev.address || []).join('<br>') || '-';
+      return '<tr>' +
+        '<td>' + (dev.network || '-') + '</td>' +
+        '<td class="td-mono">' + (dev.name || '-') + '</td>' +
+        '<td>' + state_badge(dev.state) + '</td>' +
+        '<td>' + (dev.mtu || '-') + '</td>' +
+        '<td class="td-mono td-muted">' + (dev.mac || '-') + '</td>' +
+        '<td class="td-mono" style="font-size:12px;">' + addrs + '</td>' +
+        '<td>' + fmt_bytes(dev.rxBytes||dev.recv||0) + ' / ' + fmt_bytes(dev.txBytes||dev.send||0) + '</td>' +
+        '<td>' + fmt_bits(dev.rxSpeed||0) + ' / ' + fmt_bits(dev.txSpeed||0) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+}
+
+function stat_card(label, value, sub, color, svg_path, extra) {
+  return '<div class="stat-card">' +
+    '<div class="stat-icon ' + color + '">' +
+      '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + svg_path + '</svg>' +
+    '</div>' +
+    '<div class="stat-body">' +
+      '<div class="stat-label">' + label + '</div>' +
+      '<div class="stat-value">' + value + '</div>' +
+      '<div class="stat-sub">' + sub + '</div>' +
+      extra +
+    '</div>' +
+  '</div>';
+}
+
+function node_row(k, v) {
+  return '<tr><td>' + k + '</td><td>' + v + '</td></tr>';
+}
+
+function ct_card(num, label) {
+  return '<div class="ct-card"><div class="ct-num">' + num + '</div><div class="ct-label">' + label + '</div></div>';
+}
+
+// =====================
+// Clients
+// =====================
+async function load_clients() {
+  if (!State.indexData) await load_overview();
+  const d = State.indexData || {};
+  const access = d.access || [];
+  const clients = d.clients || [];
+
+  document.getElementById('access-count').textContent = access.length;
+  const ab = document.getElementById('access-tbody');
+  if (access.length === 0) {
+    ab.innerHTML = '<tr class="empty-row"><td colspan="9">No access points connected</td></tr>';
+  } else {
+    ab.innerHTML = access.map(a => '<tr>' +
+      '<td class="td-mono td-muted" style="font-size:11px;">' + (a.uuid || '-') + '</td>' +
+      '<td>' + (a.network || '-') + '</td>' +
+      '<td>' + (a.user || '-') + '</td>' +
+      '<td>' + (a.alias || '-') + '</td>' +
+      '<td class="td-mono">' + (a.remote || '-') + '</td>' +
+      '<td><span class="badge badge-blue">' + (a.protocol || '-') + '</span></td>' +
+      '<td>' + fmt_bytes(a.rxBytes||0) + ' / ' + fmt_bytes(a.txBytes||0) + '</td>' +
+      '<td>' + state_badge(a.state) + '</td>' +
+      '<td>' + fmt_duration(a.aliveTime) + '</td>' +
+      '</tr>').join('');
+  }
+
+  document.getElementById('vpn-count').textContent = clients.length;
+  const vb = document.getElementById('vpn-tbody');
+  if (clients.length === 0) {
+    vb.innerHTML = '<tr class="empty-row"><td colspan="7">No VPN clients connected</td></tr>';
+  } else {
+    vb.innerHTML = clients.map(c => '<tr>' +
+      '<td class="td-mono">' + (c.device || '-') + '</td>' +
+      '<td class="td-mono">' + (c.address || '-') + '</td>' +
+      '<td class="td-mono">' + (c.remote || '-') + '</td>' +
+      '<td>' + (c.name || '-') + '</td>' +
+      '<td>' + fmt_bits(c.rxSpeed||0) + ' / ' + fmt_bits(c.txSpeed||0) + '</td>' +
+      '<td>' + state_badge(c.state) + '</td>' +
+      '<td>' + fmt_duration(c.aliveTime) + '</td>' +
+      '</tr>').join('');
+  }
+}
+
+// =====================
+// Links
+// =====================
+async function load_links() {
+  if (!State.indexData) await load_overview();
+  const outputs = (State.indexData || {}).output || [];
+  document.getElementById('links-count').textContent = outputs.length;
+  const lb = document.getElementById('links-tbody');
+  if (outputs.length === 0) {
+    lb.innerHTML = '<tr class="empty-row"><td colspan="7">No links configured</td></tr>';
+  } else {
+    lb.innerHTML = outputs.map(o => {
+      const state = (o.rxBytes && o.rxBytes > 0) ? 'success' : (o.state || 'unknown');
+      return '<tr>' +
+        '<td>' + (o.network || '-') + '</td>' +
+        '<td class="td-mono">' + (o.device || '-') + '</td>' +
+        '<td><a href="https://' + (o.remote||'') + ':10000" target="_blank" class="td-mono" style="color:var(--primary);text-decoration:none;">' + (o.remote || '-') + '</a></td>' +
+        '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
+        '<td>' + fmt_bytes(o.rxBytes||0) + ' / ' + fmt_bytes(o.txBytes||0) + '</td>' +
+        '<td>' + state_badge(state) + '</td>' +
+        '<td>' + fmt_duration(o.aliveTime) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+}
+
+// =====================
+// Routes
+// =====================
+async function load_routes() {
+  if (!State.indexData) await load_overview();
+  const d = State.indexData || {};
+  const routes = d.routes || [];
+  const neighbors = d.neighbors || [];
+
+  document.getElementById('routes-count').textContent = routes.length;
+  const rb = document.getElementById('routes-tbody');
+  if (routes.length === 0) {
+    rb.innerHTML = '<tr class="empty-row"><td colspan="7">No routes found</td></tr>';
+  } else {
+    rb.innerHTML = routes.map(r => {
+      let nexthop = r.nexthop || '-';
+      let link = r.link || '-';
+      if (r.multipath && r.multipath.length > 0) {
+        nexthop = r.multipath.map(m => m.nexthop).join('<br>');
+        link = r.multipath.map(m => m.link).join('<br>');
+      }
+      return '<tr>' +
+        '<td>' + (r.table || '-') + '</td>' +
+        '<td><span class="badge badge-gray">' + (r.protocol || '-') + '</span></td>' +
+        '<td class="td-mono">' + (r.prefix || '-') + '</td>' +
+        '<td class="td-mono">' + nexthop + '</td>' +
+        '<td class="td-mono">' + link + '</td>' +
+        '<td class="td-mono">' + (r.source || '-') + '</td>' +
+        '<td>' + (r.metric || 0) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  document.getElementById('neighbors-count').textContent = neighbors.length;
+  const nb = document.getElementById('neighbors-tbody');
+  if (neighbors.length === 0) {
+    nb.innerHTML = '<tr class="empty-row"><td colspan="4">No ARP entries found</td></tr>';
+  } else {
+    nb.innerHTML = neighbors.map(n => '<tr>' +
+      '<td class="td-mono">' + (n.address || '-') + '</td>' +
+      '<td class="td-mono td-muted">' + (n.hwaddr || '-') + '</td>' +
+      '<td class="td-mono">' + (n.link || '-') + '</td>' +
+      '<td>' + state_badge(n.state) + '</td>' +
+      '</tr>').join('');
+  }
+}
+
+// =====================
+// Networks
+// =====================
+let _networksData = [];
+
+async function load_networks() {
+  try {
+    const nets = await api_get('/api/network');
+    _networksData = Array.isArray(nets) ? nets : (nets ? [nets] : []);
+    document.getElementById('networks-count').textContent = _networksData.length;
+    const nb = document.getElementById('networks-tbody');
+    if (_networksData.length === 0) {
+      nb.innerHTML = '<tr class="empty-row"><td colspan="3">No networks configured</td></tr>';
+    } else {
+      nb.innerHTML = _networksData.map((n, i) => {
+        const cfg = n.config || {};
+        const parts = [];
+        if (cfg.bridge && cfg.bridge.address) parts.push(cfg.bridge.address);
+        if (cfg.namespace) parts.push('ns:' + cfg.namespace);
+        const cfgStr = parts.join(' | ') || '-';
+        return '<tr>' +
+          '<td style="font-weight:600;">' + (n.name || '-') + '</td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;">' + cfgStr + '</td>' +
+          '<td style="display:flex;gap:6px;">' +
+            '<button class="action-btn btn-detail" id="net-btn-' + i + '" onclick="toggleNetDetail(' + i + ')">Details</button>' +
+            '<button class="action-btn action-delete" onclick="removeNetwork(\'' + esc(n.name) + '\')">Remove</button>' +
+          '</td>' +
+          '</tr>' +
+          '<tr class="net-detail-row" id="net-detail-' + i + '" style="display:none;">' +
+            '<td colspan="3"><div class="net-detail-panel" id="net-detail-panel-' + i + '"></div></td>' +
+          '</tr>';
+      }).join('');
+    }
+  } catch(e) {
+    show_toast('Failed to load networks: ' + e.message, 'error');
+  }
+}
+
+function toggleNetDetail(i) {
+  const row = document.getElementById('net-detail-' + i);
+  const btn = document.getElementById('net-btn-' + i);
+  const panel = document.getElementById('net-detail-panel-' + i);
+  if (row.style.display === 'none') {
+    const n = _networksData[i] || {};
+    const cfg = n.config || {};
+    const bridge = cfg.bridge || {};
+    const items = [
+      ['Name', n.name],
+      ['Bridge Address', bridge.address],
+      ['Bridge Name', bridge.name],
+      ['Namespace', cfg.namespace],
+      ['MTU', bridge.mtu || cfg.mtu],
+      ['Provider', cfg.provider],
+    ].filter(([, v]) => v != null && v !== '');
+    const detailRows = items.map(([k, v]) =>
+      '<div class="net-detail-item"><span class="net-detail-key">' + k + '</span><span class="net-detail-val">' + v + '</span></div>'
+    ).join('');
+    const json = '<div class="net-detail-json">' + JSON.stringify(n, null, 2) + '</div>';
+    panel.innerHTML = detailRows + json;
+    row.style.display = '';
+    btn.textContent = 'Hide';
+    btn.classList.add('open');
+  } else {
+    row.style.display = 'none';
+    btn.textContent = 'Details';
+    btn.classList.remove('open');
+  }
+}
+
+async function addNetwork() {
+  const name = document.getElementById('net-name').value.trim();
+  const addr = document.getElementById('net-address').value.trim();
+  const ns = document.getElementById('net-namespace').value.trim();
+  if (!name) { show_toast('Network name is required', 'error'); return; }
+  try {
+    const body = { name, config: { name, bridge: addr ? { address: addr } : undefined, namespace: ns || undefined } };
+    await api_post('/api/network', body);
+    show_toast('Network "' + name + '" added', 'success');
+    document.getElementById('net-name').value = '';
+    document.getElementById('net-address').value = '';
+    document.getElementById('net-namespace').value = '';
+    await load_networks();
+  } catch(e) {
+    show_toast('Failed to add network: ' + e.message, 'error');
+  }
+}
+
+async function removeNetwork(name) {
+  if (!confirm('Remove network "' + name + '"? This cannot be undone.')) return;
+  try {
+    await api_delete('/api/network/' + encodeURIComponent(name));
+    show_toast('Network "' + name + '" removed', 'success');
+    await load_networks();
+  } catch(e) {
+    show_toast('Failed to remove network: ' + e.message, 'error');
+  }
+}
+
+// =====================
+// Users
+// =====================
+async function load_users() {
+  try {
+    const users = await api_get('/api/user');
+    const arr = Array.isArray(users) ? users : [];
+    document.getElementById('users-count').textContent = arr.length;
+    const ub = document.getElementById('users-tbody');
+    if (arr.length === 0) {
+      ub.innerHTML = '<tr class="empty-row"><td colspan="6">No users found</td></tr>';
+    } else {
+      ub.innerHTML = arr.map(u => '<tr>' +
+        '<td style="font-weight:600;">' + (u.name || '-') + '</td>' +
+        '<td>' + (u.network || '-') + '</td>' +
+        '<td>' + role_badge(u.role) + '</td>' +
+        '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? u.password.substring(0,4) + '••••••••' : '-') + '</td>' +
+        '<td class="td-muted">' + (u.leaseTime || '-') + '</td>' +
+        '<td><button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button></td>' +
+        '</tr>').join('');
+    }
+  } catch(e) {
+    show_toast('Failed to load users: ' + e.message, 'error');
+  }
+}
+
+async function addUser() {
+  const name = document.getElementById('user-name').value.trim();
+  const pass = document.getElementById('user-password').value.trim() || gen_password();
+  const role = document.getElementById('user-role').value;
+  const leaseDate = document.getElementById('user-lease').value;
+
+  if (!name || !name.includes('@')) { show_toast('Username must be in format user@network', 'error'); return; }
+
+  const parts = name.split('@');
+  const username = parts[0];
+  const network = parts[1];
+
+  const body = {
+    name: username,
+    network: network,
+    password: pass,
+    role: role,
+    leaseTime: leaseDate ? leaseDate + ' 00:00:00' : undefined
+  };
+
+  try {
+    await api_post('/api/user/' + encodeURIComponent(name), body);
+    show_toast('User "' + name + '" added/updated', 'success');
+    document.getElementById('user-name').value = '';
+    document.getElementById('user-password').value = '';
+    await load_users();
+  } catch(e) {
+    show_toast('Failed to add user: ' + e.message, 'error');
+  }
+}
+
+async function removeUser(fullName) {
+  if (!confirm('Remove user "' + fullName + '"?')) return;
+  try {
+    await api_delete('/api/user/' + encodeURIComponent(fullName));
+    show_toast('User "' + fullName + '" removed', 'success');
+    await load_users();
+  } catch(e) {
+    show_toast('Failed to remove user: ' + e.message, 'error');
+  }
+}
+
+// =====================
+// Escape for HTML attrs
+// =====================
+function esc(s) {
+  return (s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// =====================
+// Init
+// =====================
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  const urlFromQuery = params.get('url') || params.get('server');
+  const tokenFromQuery = params.get('token');
+  const urlFromOrigin = window.location.origin;
+  const url = urlFromQuery || sessionStorage.getItem('openlan_url') || urlFromOrigin;
+  const token = sessionStorage.getItem('openlan_token');
+  document.getElementById('login-url').value = url;
+  if (tokenFromQuery) document.getElementById('login-token').value = tokenFromQuery;
+
+  if (token) {
+    State.token = token;
+    State.baseUrl = url;
+    show_dashboard();
+    load_overview();
+  }
+
+  // Allow Enter key on login form
+  document.getElementById('login-token').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+})();
+</script>
 </body>
 </html>
