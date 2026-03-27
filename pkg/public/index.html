@@ -33,36 +33,6 @@
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* Login */
-#login-page {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; background: linear-gradient(135deg, #141b2d 0%, #1e2a42 50%, #0f172a 100%);
-}
-.login-card {
-  background: #161b22; border-radius: 16px; padding: 48px 40px;
-  width: 100%; max-width: 400px; box-shadow: var(--shadow-lg);
-  text-align: center; border: 1px solid var(--border);
-}
-.login-logo { margin-bottom: 24px; }
-.login-logo img { width: 64px; height: 64px; }
-.login-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.login-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
-.login-field { text-align: left; margin-bottom: 20px; }
-.login-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-.login-field input {
-  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: 14px; color: var(--text); outline: none; transition: border-color .15s;
-  font-family: monospace; background: #0d1117;
-}
-.login-field input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-.btn-login {
-  width: 100%; padding: 11px; background: var(--primary); color: #fff;
-  border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
-  cursor: pointer; transition: background .15s;
-}
-.btn-login:hover { background: var(--primary-dark); }
-.login-error { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px; }
-.login-hint { font-size: 12px; color: var(--text-muted); margin-top: 20px; line-height: 1.6; }
-.login-hint code { background: #0d1117; padding: 1px 5px; border-radius: 4px; font-family: monospace; color: var(--primary); }
 
 /* Layout */
 #app { display: none; min-height: 100vh; }
@@ -95,29 +65,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .nav-item.active svg { opacity: 1; }
 .nav-sub { padding-left: 28px; font-size: 12.5px; opacity: .85; }
 .nav-sub.active { opacity: 1; }
-.sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,.06); }
-.btn-logout {
-  width: 100%; padding: 8px; background: rgba(239,68,68,.1); color: #f87171;
-  border: 1px solid rgba(239,68,68,.2); border-radius: var(--radius); font-size: 13px;
-  cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.btn-logout:hover { background: rgba(239,68,68,.2); }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.06); display: flex; flex-direction: column; gap: 8px; }
 
 /* Main content */
 .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-.topbar {
-  background: var(--header-bg); border-bottom: 1px solid var(--border);
-  padding: 0 24px; height: 56px; display: flex; align-items: center;
-  justify-content: space-between; position: sticky; top: 0; z-index: 50;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
-}
-.topbar-left h2 { font-size: 18px; font-weight: 600; color: var(--text); }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
-.refresh-info { font-size: 13px; color: var(--text-muted); }
+.refresh-info { font-size: 12px; color: var(--text-muted); }
 .btn-refresh {
-  padding: 7px 14px; background: var(--primary); color: #fff; border: none;
-  border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer;
-  display: flex; align-items: center; gap: 6px; transition: background .15s;
+  padding: 6px 12px; background: rgba(88,166,255,.12); color: var(--primary); border: 1px solid rgba(88,166,255,.2);
+  border-radius: var(--radius); font-size: 12.5px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; transition: background .15s;
 }
 .btn-refresh:hover { background: var(--primary-dark); }
 .btn-refresh.spinning svg { animation: spin .8s linear infinite; }
@@ -158,6 +114,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   font-weight: 600; padding: 2px 7px; border-radius: 10px;
 }
 .section-body { padding: 0; overflow-x: auto; }
+.section-footer { padding: 8px 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); text-align: right; }
 
 /* Tables */
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -233,6 +190,8 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 }
 .action-delete { background: rgba(239,68,68,.1); color: var(--danger); }
 .action-delete:hover { background: rgba(239,68,68,.2); }
+.action-dark { background: #21262d; color: var(--text-secondary); border: 1px solid var(--border); }
+.action-dark:hover { background: #30363d; color: var(--text); }
 
 /* Alerts/toasts */
 #toast {
@@ -377,7 +336,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
       <div class="form-group"><label>Namespace <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;" type="text" id="net-namespace" placeholder="default"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network')">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="addNetwork()">Add</button>
+        <button class="btn btn-dark btn-sm" onclick="addNetwork()">Add</button>
       </div>
     </div>
   </div>
@@ -396,38 +355,116 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
       <div class="form-group"><label>Address</label><input class="modal-input" style="width:100%;" type="text" id="vpn-client-address" placeholder="e.g. 10.0.0.2"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('vpnclient')">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="addVpnClient()">Add</button>
+        <button class="btn btn-dark btn-sm" onclick="addVpnClient()">Add</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Add User Dialog -->
+<!-- Add/Edit User Dialog -->
 <div class="modal-overlay hidden" id="dlg-user">
   <div class="modal" style="max-width:440px;">
     <div class="modal-header">
-      <span class="modal-title">Add / Update User</span>
-      <button class="modal-close" onclick="closeAddDialog('user')">&#x2715;</button>
+      <span class="modal-title" id="user-dialog-title">Add User</span>
+      <button class="modal-close" onclick="userCancelEdit()">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-      <div class="form-group"><label>Username@Network</label><input class="modal-input" style="width:100%;" type="text" id="user-name" placeholder="alice@mynet"></div>
-      <div class="form-group"><label>Password <span style="color:var(--text-muted);font-weight:400;">(auto-generated if empty)</span></label><input class="modal-input" style="width:100%;" type="text" id="user-password" placeholder=""></div>
+      <div class="form-group"><label>Username@Network</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="user-name" placeholder="alice@mynet"></div>
+      <div class="form-group"><label>Password <span style="color:var(--text-muted);font-weight:400;" id="user-pass-hint">(auto-generated if empty)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="user-password" placeholder=""></div>
       <div class="form-group"><label>Role</label>
-        <select class="modal-input" style="width:100%;" id="user-role">
+        <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="user-role">
           <option value="guest">guest</option>
           <option value="admin">admin</option>
         </select>
       </div>
-      <div class="form-group"><label>Lease Until</label><input class="modal-input" style="width:100%;" type="date" id="user-lease"></div>
+      <div class="form-group"><label>Lease Until</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="date" id="user-lease"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
-        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('user')">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="addUser()">Add</button>
+        <button class="btn btn-ghost btn-sm" onclick="userCancelEdit()">Cancel</button>
+        <button class="btn btn-dark btn-sm" id="user-dialog-submit" onclick="addUser()">Add</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Add Router Private Subnet Dialog -->
+<div class="modal-overlay hidden" id="dlg-bgp-neighbor">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Add BGP Neighbor</span>
+      <button class="modal-close" onclick="closeAddDialog('bgp-neighbor')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group"><label>Address</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="bgp-nei-address" placeholder="e.g. 10.0.0.2"></div>
+      <div class="form-group"><label>Remote AS</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="bgp-nei-remoteas" placeholder="e.g. 65002"></div>
+      <div class="form-group"><label>Password <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="password" id="bgp-nei-password" placeholder=""></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('bgp-neighbor')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="bgpAddNeighbor()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="dlg-ipsec-tunnel">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="ipsec-tunnel-title">Add IPSec Tunnel</span>
+      <button class="modal-close" onclick="ipsecCancelEdit()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="ipsec-edit-orig">
+      <!-- Local / Remote two-column layout -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Local -->
+        <div style="display:flex;flex-direction:column;gap:10px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em;">Local</div>
+          <div class="form-group" style="margin:0;"><label>Address</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="ipsec-local" value="%defaultroute" placeholder="e.g. 1.2.3.4"></div>
+          <div class="form-group" style="margin:0;"><label>ID</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="ipsec-localid" placeholder=""></div>
+          <div class="form-group" style="margin:0;"><label>Port</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="ipsec-localport" value="4500"></div>
+        </div>
+        <!-- Remote -->
+        <div style="display:flex;flex-direction:column;gap:10px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em;">Remote</div>
+          <div class="form-group" style="margin:0;"><label>Address</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="ipsec-remote" placeholder="e.g. 5.6.7.8"></div>
+          <div class="form-group" style="margin:0;"><label>ID</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="ipsec-remoteid" placeholder=""></div>
+          <div class="form-group" style="margin:0;"><label>Port</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="ipsec-remoteport" value="4500"></div>
+        </div>
+      </div>
+      <!-- Protocol + Secret -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;"><label>Protocol</label>
+          <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="ipsec-protocol">
+            <option value="gre">gre</option>
+            <option value="vxlan">vxlan</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;"><label>Secret</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="password" id="ipsec-secret" placeholder="Pre-shared key"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="ipsecCancelEdit()">Cancel</button>
+        <button class="btn btn-dark btn-sm" id="ipsec-tunnel-submit" onclick="ipsecAddTunnel()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="dlg-bgp-prefix">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title" id="dlg-bgp-prefix-title">Add Prefix</span>
+      <button class="modal-close" onclick="closeAddDialog('bgp-prefix')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group"><label>Neighbor</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text-muted);" type="text" id="bgp-prefix-neighbor" readonly></div>
+      <div class="form-group"><label>Prefix (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="bgp-prefix-value" placeholder="e.g. 10.0.0.0/8"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('bgp-prefix')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="bgpAddPrefix()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="dlg-router-private">
   <div class="modal" style="max-width:400px;">
     <div class="modal-header">
@@ -438,7 +475,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
       <div class="form-group"><label>Subnet (CIDR)</label><input class="modal-input" style="width:100%;" type="text" id="router-private-subnet" placeholder="e.g. 192.168.1.0/24"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('router-private')">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="routerAddPrivate()">Add</button>
+        <button class="btn btn-dark btn-sm" onclick="routerAddPrivate()">Add</button>
       </div>
     </div>
   </div>
@@ -468,7 +505,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
         <div class="modal-form-row">
           <input class="modal-input" id="modal-route-prefix" type="text" placeholder="Prefix e.g. 10.0.0.0/24" style="min-width:180px;">
           <input class="modal-input" id="modal-route-nexthop" type="text" placeholder="NextHop e.g. 192.168.1.1" style="min-width:160px;">
-          <button class="btn btn-primary btn-sm" onclick="modalAddRoute()">Add Route</button>
+          <button class="btn btn-dark btn-sm" onclick="modalAddRoute()">Add Route</button>
         </div>
         <div id="modal-routes-list"></div>
       </div>
@@ -481,7 +518,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
           </select>
           <input class="modal-input" id="modal-out-remote" type="text" placeholder="Remote e.g. 1.2.3.4:4500" style="min-width:180px;">
           <input class="modal-input" id="modal-out-secret" type="text" placeholder="Secret (optional)" style="min-width:140px;">
-          <button class="btn btn-primary btn-sm" onclick="modalAddOutput()">Add Output</button>
+          <button class="btn btn-dark btn-sm" onclick="modalAddOutput()">Add Output</button>
         </div>
         <div id="modal-outputs-list"></div>
       </div>
@@ -501,25 +538,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 </div>
 
 <!-- Login Page -->
-<div id="login-page">
-  <div class="login-card">
-    <div class="login-logo">
-      <img src="/favicon.ico" alt="OpenLAN" onerror="this.style.display='none'">
-    </div>
-    <div class="login-title">OpenLAN</div>
-    <div class="login-sub">Virtual Ethernet Network over WAN</div>
-    <div class="login-field">
-      <label>Admin Token</label>
-      <input type="password" id="login-token" placeholder="Enter admin token..." autocomplete="off">
-    </div>
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-hint">
-      Token is stored in <code>/etc/openlan/switch/token</code><br>
-      on the server. Use <code>cat /etc/openlan/switch/token</code> to read it.
-    </div>
-  </div>
-</div>
 
 <!-- Dashboard App -->
 <div id="app">
@@ -541,15 +559,15 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
         </div>
         <div class="nav-item" onclick="showPage('clients')" id="nav-clients">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Clients
+          Access Client
         </div>
         <div class="nav-item" onclick="showPage('links')" id="nav-links">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          Links
+          Internal Link
         </div>
         <div class="nav-item" onclick="showPage('routes')" id="nav-routes">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Routes
+          Kernel Route
         </div>
         <div class="nav-section">Manage</div>
         <div class="nav-item" onclick="showPage('networks')" id="nav-networks">
@@ -570,33 +588,31 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
         </div>
         <div class="nav-item" onclick="showPage('users')" id="nav-users">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Users
+          Authenticated User
+        </div>
+        <div class="nav-section">System</div>
+        <div class="nav-item" onclick="showPage('about')" id="nav-about">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          About
         </div>
       </nav>
       <div class="sidebar-footer">
-        <button class="btn-logout" onclick="doLogout()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Sign Out
-        </button>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span class="refresh-info" id="refresh-countdown" style="font-size:12px;"></span>
+          <button class="btn-refresh" id="btn-refresh" onclick="refreshCurrentPage()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+        </div>
       </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main">
-      <div class="topbar">
-        <div class="topbar-left">
-          <h2 id="page-title">Overview</h2>
+      <div class="page-content" style="position:relative;">
+        <div id="page-loading" style="display:none;position:absolute;inset:0;background:rgba(13,17,23,.45);z-index:100;align-items:center;justify-content:center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" style="animation:spin .7s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
         </div>
-        <div class="topbar-right">
-          <span class="refresh-info" id="refresh-countdown"></span>
-          <button class="btn-refresh" id="btn-refresh" onclick="refreshCurrentPage()">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      <div class="page-content">
         <!-- OVERVIEW PAGE -->
         <div class="page active" id="page-overview">
           <div class="stats-grid" id="overview-stats"></div>
@@ -628,7 +644,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 Devices
               </span>
-              <span class="section-count" id="devices-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -646,6 +661,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="devices-tbody"></tbody>
               </table>
+              <div class="section-footer" id="devices-count">0</div>
             </div>
           </div>
         </div>
@@ -658,7 +674,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Access Points
               </span>
-              <span class="section-count" id="access-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -677,6 +692,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="access-tbody"></tbody>
               </table>
+              <div class="section-footer" id="access-count">0</div>
             </div>
           </div>
           <div class="section">
@@ -685,7 +701,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 OpenVPN Clients
               </span>
-              <span class="section-count" id="vpn-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -702,6 +717,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="vpn-tbody"></tbody>
               </table>
+              <div class="section-footer" id="vpn-count">0</div>
             </div>
           </div>
         </div>
@@ -712,9 +728,8 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                Inter-Node Links
+                Inter-Node Link
               </span>
-              <span class="section-count" id="links-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -731,6 +746,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="links-tbody"></tbody>
               </table>
+              <div class="section-footer" id="links-count">0</div>
             </div>
           </div>
         </div>
@@ -743,7 +759,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Kernel Routing Table
               </span>
-              <span class="section-count" id="routes-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -760,6 +775,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="routes-tbody"></tbody>
               </table>
+              <div class="section-footer" id="routes-count">0</div>
             </div>
           </div>
           <div class="section" style="margin-top:24px;">
@@ -768,7 +784,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 ARP Neighbors
               </span>
-              <span class="section-count" id="neighbors-count">0</span>
             </div>
             <div class="section-body">
               <table>
@@ -777,6 +792,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="neighbors-tbody"></tbody>
               </table>
+              <div class="section-footer" id="neighbors-count">0</div>
             </div>
           </div>
         </div>
@@ -787,10 +803,9 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16.5"/><line x1="12" y1="8" x2="18.5" y2="16.5"/></svg>
-                Virtual Networks
+                Virtual Network
               </span>
-              <span class="section-count" id="networks-count">0</span>
-              <button class="btn btn-primary btn-sm" onclick="openAddDialog('network')">
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('network')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Network
               </button>
@@ -802,6 +817,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="networks-tbody"></tbody>
               </table>
+              <div class="section-footer" id="networks-count">0</div>
             </div>
           </div>
 
@@ -811,8 +827,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 OpenVPN Clients
               </span>
-              <span class="section-count" id="vpn-clients-count">0</span>
-              <button class="btn btn-primary btn-sm" onclick="openAddDialog('vpnclient')">
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('vpnclient')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Client
               </button>
@@ -824,6 +839,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="vpn-clients-tbody"></tbody>
               </table>
+              <div class="section-footer" id="vpn-clients-count">0</div>
             </div>
           </div>
 
@@ -844,9 +860,34 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
               </button>
             </div>
             <div class="section-body">
-              <div id="bgp-global" style="padding:14px 20px;display:flex;gap:24px;border-bottom:1px solid var(--border);flex-wrap:wrap;"></div>
+              <div style="padding:14px 20px;display:flex;gap:16px;align-items:flex-end;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                <div class="form-group" style="margin:0;">
+                  <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">Local AS</label>
+                  <input class="modal-input" id="bgp-input-localas" type="text" inputmode="numeric" placeholder="e.g. 65001" style="width:120px;padding:5px 10px;font-size:13px;background:#21262d;border-color:var(--border);color:var(--text);">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px;">Router ID</label>
+                  <input class="modal-input" id="bgp-input-routerid" type="text" placeholder="e.g. 10.0.0.1" style="width:150px;padding:5px 10px;font-size:13px;background:#21262d;border-color:var(--border);color:var(--text);">
+                </div>
+                <button class="btn btn-dark btn-sm" onclick="bgpSaveGlobal()" style="margin-bottom:1px;">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" style="margin-top:16px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                Neighbors
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('bgp-neighbor')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
+            <div class="section-body">
               <table>
-                <thead><tr><th>Neighbor</th><th>Remote AS</th><th>State</th><th>Advertis</th><th>Receives</th></tr></thead>
+                <thead><tr><th>Neighbor</th><th>Remote AS</th><th>State</th><th>Advertis</th><th>Receives</th><th></th></tr></thead>
                 <tbody id="bgp-neighbors-tbody"></tbody>
               </table>
             </div>
@@ -880,16 +921,13 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
                 Private Subnets
               </span>
-              <button class="btn btn-primary btn-sm" onclick="openAddDialog('router-private')">
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('router-private')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add
               </button>
             </div>
-            <div class="section-body">
-              <table>
-                <thead><tr><th>Subnet</th><th></th></tr></thead>
-                <tbody id="router-private-tbody"></tbody>
-              </table>
+            <div class="section-body" style="padding:16px 20px;">
+              <div id="router-private-tags" style="display:flex;flex-wrap:wrap;gap:8px;min-height:32px;align-items:center;"></div>
             </div>
           </div>
         </div>
@@ -902,17 +940,30 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 IPSec Network
               </span>
-              <span class="section-count" id="ipsec-count">0</span>
               <button class="btn btn-dark btn-sm" onclick="saveNetwork('ipsec')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Save
               </button>
             </div>
+          </div>
+
+          <div class="section" style="margin-top:16px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                Tunnels
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('ipsec-tunnel')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Local</th><th>Remote</th><th>Protocol</th><th>State</th><th></th></tr></thead>
+                <thead><tr><th>Local</th><th>Local ID</th><th>Remote</th><th>Remote ID</th><th>Protocol</th><th>Secret</th><th>State</th><th></th></tr></thead>
                 <tbody id="ipsec-tbody"></tbody>
               </table>
+              <div class="section-footer" id="ipsec-count">0</div>
             </div>
           </div>
         </div>
@@ -923,10 +974,9 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Authenticated Users
+                Authenticated User
               </span>
-              <span class="section-count" id="users-count">0</span>
-              <button class="btn btn-primary btn-sm" onclick="openAddDialog('user')">
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('user')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add User
               </button>
@@ -938,6 +988,66 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 </thead>
                 <tbody id="users-tbody"></tbody>
               </table>
+              <div class="section-footer" id="users-count">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABOUT PAGE -->
+        <div class="page" id="page-about">
+          <div class="section" style="max-width:600px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                About OpenLAN
+              </span>
+            </div>
+            <div class="section-body" style="padding:24px;">
+              <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;">
+                <img src="/openlan.png" alt="OpenLAN" style="width:56px;height:56px;border-radius:12px;" onerror="this.style.display='none'">
+                <div>
+                  <div style="font-size:20px;font-weight:700;color:var(--text);">OpenLAN</div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Open Source Network Overlay Platform</div>
+                </div>
+              </div>
+              <table style="width:100%;border-collapse:collapse;">
+                <tbody id="about-info-tbody"></tbody>
+              </table>
+              <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em;margin-bottom:12px;">Contributors</div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">Daniel Ding</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">danieldin186@gmail.com</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">fanzhengweiwudi</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">fanzhengweiwudi@github</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">Teddy_Zhu</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">teddyzhu15@gmail.com</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">sicheng</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">albert216@126.com</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">buliangjun</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">buliangjunpp@github</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
+                    <span style="font-size:13px;color:var(--text);font-weight:500;">lishuai</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">872505094@qq.com</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="https://github.com/luscis/openlan" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#21262d;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:13px;text-decoration:none;">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                  GitHub
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1076,39 +1186,7 @@ async function api_delete(path, data) {
 // =====================
 // Auth
 // =====================
-async function doLogin() {
-  const tokenEl = document.getElementById('login-token');
-  const errEl = document.getElementById('login-error');
-  const token = tokenEl.value.trim();
-  const baseUrl = window.location.origin;
-
-  if (!token) { errEl.textContent = 'Token is required.'; return; }
-
-  errEl.textContent = '';
-  try {
-    State.token = token;
-    State.baseUrl = baseUrl;
-    await api_get('/api/index');
-    sessionStorage.setItem('openlan_token', token);
-    show_dashboard();
-    load_overview();
-  } catch(e) {
-    errEl.textContent = 'Authentication failed: ' + e.message;
-    State.token = '';
-  }
-}
-
-function doLogout() {
-  sessionStorage.removeItem('openlan_token');
-  State.token = '';
-  State.baseUrl = '';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-page').style.display = 'flex';
-  document.getElementById('login-token').value = '';
-}
-
 function show_dashboard() {
-  document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   start_refresh_timer();
 }
@@ -1145,7 +1223,8 @@ const PAGE_TITLES = {
   bgp: 'BGP Network',
   router: 'Router Network',
   ipsec: 'IPSec Network',
-  users: 'Users'
+  users: 'Users',
+  about: 'About'
 };
 
 function showPage(name) {
@@ -1156,7 +1235,6 @@ function showPage(name) {
   if (page) page.classList.add('active');
   if (nav) nav.classList.add('active');
   State.currentPage = name;
-  document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
   if (MONITOR_PAGES.has(name)) {
     start_refresh_timer();
   } else {
@@ -1171,8 +1249,10 @@ function gotoPanel(panel) {
 
 function refreshCurrentPage() {
   const btn = document.getElementById('btn-refresh');
+  const overlay = document.getElementById('page-loading');
   btn.classList.add('spinning');
-  const done = () => btn.classList.remove('spinning');
+  overlay.style.display = 'flex';
+  const done = () => { btn.classList.remove('spinning'); overlay.style.display = 'none'; };
   const p = State.currentPage;
   if (p === 'overview') load_overview().then(done).catch(done);
   else if (p === 'clients') load_clients().then(done).catch(done);
@@ -1183,6 +1263,7 @@ function refreshCurrentPage() {
   else if (p === 'router') load_router().then(done).catch(done);
   else if (p === 'ipsec') load_ipsec().then(done).catch(done);
   else if (p === 'users') load_users().then(done).catch(done);
+  else if (p === 'about') load_about().then(done).catch(done);
   else done();
 }
 
@@ -1495,32 +1576,120 @@ async function load_bgp() {
   try {
     const bgp = await api_get('/api/network/bgp/global');
     const g = document.getElementById('bgp-global');
-    if (bgp && bgp.localas) {
-      document.getElementById('bgp-status').textContent = 'AS ' + bgp.localas;
-      document.getElementById('bgp-status').className = 'badge badge-blue';
-      g.innerHTML = [['Local AS', bgp.localas], ['Router ID', bgp.routerid]].map(([k, v]) =>
-        '<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);">' + k + '</div>' +
-        '<div style="font-size:13px;font-family:monospace;color:var(--text);">' + (v || '-') + '</div></div>'
-      ).join('');
+    if (bgp) {
+      document.getElementById('bgp-input-localas').value = bgp.localas || '';
+      document.getElementById('bgp-input-routerid').value = bgp.routerid || '';
       const tb = document.getElementById('bgp-neighbors-tbody');
       const neighbors = bgp.neighbors || [];
       tb.innerHTML = neighbors.length === 0
-        ? '<tr class="empty-row"><td colspan="5">No neighbors</td></tr>'
+        ? '<tr class="empty-row"><td colspan="6">No neighbors</td></tr>'
         : neighbors.map(nb => {
             const bc = nb.state === 'established' ? 'badge-green' : 'badge-gray';
+            const addr = esc(nb.address || '');
+            const adv = bgpPrefixTags(nb.advertis, addr, 'advertis') +
+              '<button onclick="bgpOpenAddPrefix(\'advertis\',\'' + addr + '\')" title="Add" style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-muted);font-size:16px;line-height:1;">+</button>';
+            const rcv = bgpPrefixTags(nb.receives, addr, 'receives') +
+              '<button onclick="bgpOpenAddPrefix(\'receives\',\'' + addr + '\')" title="Add" style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-muted);font-size:16px;line-height:1;">+</button>';
             return '<tr>' +
-              '<td class="td-mono">' + (nb.address || '-') + '</td>' +
+              '<td class="td-mono">' + addr + '</td>' +
               '<td class="td-muted">' + (nb.remoteas || '-') + '</td>' +
-              '<td><span class="badge ' + bc + '">' + (nb.state || '-') + '</span></td>' +
-              '<td class="td-muted td-mono" style="font-size:12px;">' + (nb.advertis || []).join(', ') + '</td>' +
-              '<td class="td-muted td-mono" style="font-size:12px;">' + (nb.receives || []).join(', ') + '</td>' +
+              '<td><span class="badge ' + bc + '">' + esc(nb.state || '-') + '</span></td>' +
+              '<td style="min-width:140px;">' + adv + '</td>' +
+              '<td style="min-width:140px;">' + rcv + '</td>' +
+              '<td><button class="action-btn btn-danger" onclick="bgpDelNeighbor(\'' + addr + '\',' + (nb.remoteas||0) + ')">Remove</button></td>' +
               '</tr>';
           }).join('');
-    } else {
-      g.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">Not configured</span>';
     }
   } catch(e) {
-    document.getElementById('bgp-global').innerHTML = '<span style="color:var(--text-muted);font-size:13px;">-</span>';
+    // inputs remain empty on error
+  }
+}
+
+function bgpPrefixTags(list, neighbor, type) {
+  if (!list || list.length === 0) return '';
+  return list.map(p =>
+    '<div style="display:flex;align-items:center;gap:4px;font-family:monospace;font-size:12px;color:var(--text);padding:2px 0;">' +
+    esc(p) +
+    '<button onclick="bgpDelPrefix(\'' + type + '\',\'' + esc(neighbor) + '\',\'' + esc(p) + '\')" title="Remove" style="background:none;border:none;cursor:pointer;padding:0 0 0 3px;color:var(--text-muted);font-size:13px;line-height:1;">&#x2715;</button>' +
+    '</div>'
+  ).join('');
+}
+
+let _bgpPrefixType = '';
+function bgpOpenAddPrefix(type, neighbor) {
+  _bgpPrefixType = type;
+  document.getElementById('dlg-bgp-prefix-title').textContent = 'Add ' + (type === 'advertis' ? 'Advertised' : 'Received') + ' Prefix';
+  document.getElementById('bgp-prefix-neighbor').value = neighbor;
+  document.getElementById('bgp-prefix-value').value = '';
+  openAddDialog('bgp-prefix');
+  setTimeout(() => document.getElementById('bgp-prefix-value').focus(), 50);
+}
+
+async function bgpAddPrefix() {
+  const neighbor = document.getElementById('bgp-prefix-neighbor').value.trim();
+  const prefix = document.getElementById('bgp-prefix-value').value.trim();
+  if (!prefix) { show_toast('Prefix is required', 'error'); return; }
+  try {
+    await api_post('/api/network/bgp/' + _bgpPrefixType, { prefix, neighbor });
+    closeAddDialog('bgp-prefix');
+    await load_bgp();
+    show_toast('Prefix added', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function bgpDelPrefix(type, neighbor, prefix) {
+  try {
+    await api_delete('/api/network/bgp/' + type, { prefix, neighbor });
+    await load_bgp();
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function bgpAddNeighbor() {
+  const address = document.getElementById('bgp-nei-address').value.trim();
+  const remoteas = parseInt(document.getElementById('bgp-nei-remoteas').value.trim(), 10);
+  const password = document.getElementById('bgp-nei-password').value;
+  if (!address) { show_toast('Address is required', 'error'); return; }
+  if (!remoteas) { show_toast('Remote AS is required', 'error'); return; }
+  try {
+    const body = { address, remoteas };
+    if (password) body.password = password;
+    await api_post('/api/network/bgp/neighbor', body);
+    document.getElementById('bgp-nei-address').value = '';
+    document.getElementById('bgp-nei-remoteas').value = '';
+    document.getElementById('bgp-nei-password').value = '';
+    closeAddDialog('bgp-neighbor');
+    await load_bgp();
+    show_toast('Neighbor added', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function bgpDelNeighbor(address, remoteas) {
+  const ok = await showConfirm('Remove neighbor ' + address + '?', 'Remove Neighbor');
+  if (!ok) return;
+  try {
+    await api_delete('/api/network/bgp/neighbor', { address, remoteas });
+    await load_bgp();
+    show_toast('Neighbor removed', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function bgpSaveGlobal() {
+  const localas = parseInt(document.getElementById('bgp-input-localas').value.trim(), 10);
+  const routerid = document.getElementById('bgp-input-routerid').value.trim();
+  if (!localas) { show_toast('Local AS is required', 'error'); return; }
+  try {
+    await api_post('/api/network/bgp/global', { localas, routerid });
+    show_toast('BGP global updated', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
   }
 }
 
@@ -1535,7 +1704,7 @@ async function load_router() {
           '<tr>' +
           '<td class="td-mono" style="font-weight:600;">' + (f.name || f.device || '-') + '</td>' +
           '<td class="td-muted">' + (f.network || '-') + '</td>' +
-          '<td class="td-mono">' + (f.address || '-') + '</td>' +
+          '<td class="td-mono">' + (Array.isArray(f.address) && f.address.length ? f.address.map(a => '<div>' + esc(a) + '</div>').join('') : (f.address || '-')) + '</td>' +
           '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + (f.state || '-') + '</span></td>' +
           '</tr>'
         ).join('');
@@ -1546,20 +1715,22 @@ async function load_router() {
 }
 
 async function load_router_private() {
-  const tb = document.getElementById('router-private-tbody');
+  const container = document.getElementById('router-private-tags');
   try {
     const data = await api_get('/api/network/router');
     const privates = (data && data.config && data.config.specifies && Array.isArray(data.config.specifies.private)) ? data.config.specifies.private : [];
-    tb.innerHTML = privates.length === 0
-      ? '<tr class="empty-row"><td colspan="2">No private subnets</td></tr>'
-      : privates.map(s =>
-          '<tr>' +
-          '<td class="td-mono">' + esc(s) + '</td>' +
-          '<td><button class="action-btn btn-danger" onclick="routerDelPrivate(\'' + esc(s) + '\')">Remove</button></td>' +
-          '</tr>'
-        ).join('');
+    if (privates.length === 0) {
+      container.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">No private subnets</span>';
+    } else {
+      container.innerHTML = privates.map(s =>
+        '<span style="display:inline-flex;align-items:center;gap:6px;background:#21262d;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:monospace;font-size:13px;color:var(--text);">' +
+        esc(s) +
+        '<button onclick="routerDelPrivate(\'' + esc(s) + '\')" title="Remove" style="background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-muted);font-size:14px;">&#x2715;</button>' +
+        '</span>'
+      ).join('');
+    }
   } catch(e) {
-    tb.innerHTML = '<tr class="empty-row"><td colspan="2">-</td></tr>';
+    container.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">-</span>';
   }
 }
 
@@ -1590,25 +1761,113 @@ async function routerDelPrivate(subnet) {
   }
 }
 
+let _ipsecTunnels = [];
+
+function ipsecResetForm() {
+  document.getElementById('ipsec-tunnel-title').textContent = 'Add IPSec Tunnel';
+  document.getElementById('ipsec-tunnel-submit').textContent = 'Add';
+  document.getElementById('ipsec-edit-orig').value = '';
+  document.getElementById('ipsec-local').value = '%defaultroute';
+  document.getElementById('ipsec-localid').value = '';
+  document.getElementById('ipsec-localport').value = '4500';
+  document.getElementById('ipsec-remote').value = '';
+  document.getElementById('ipsec-remoteid').value = '';
+  document.getElementById('ipsec-remoteport').value = '4500';
+  document.getElementById('ipsec-secret').value = '';
+}
+
+function ipsecCancelEdit() {
+  ipsecResetForm();
+  closeAddDialog('ipsec-tunnel');
+}
+
+function ipsecOpenEdit(i) {
+  const t = _ipsecTunnels[i];
+  if (!t) return;
+  document.getElementById('ipsec-tunnel-title').textContent = 'Edit IPSec Tunnel';
+  document.getElementById('ipsec-tunnel-submit').textContent = 'Save';
+  document.getElementById('ipsec-edit-orig').value = JSON.stringify(t);
+  document.getElementById('ipsec-local').value = t.local || '';
+  document.getElementById('ipsec-localid').value = t.localid || '';
+  document.getElementById('ipsec-localport').value = t.localport || 4500;
+  document.getElementById('ipsec-remote').value = t.remote || '';
+  document.getElementById('ipsec-remoteid').value = t.remoteid || '';
+  document.getElementById('ipsec-remoteport').value = t.remoteport || 4500;
+  document.getElementById('ipsec-protocol').value = t.protocol || 'esp';
+  document.getElementById('ipsec-secret').value = t.secret || '';
+  openAddDialog('ipsec-tunnel');
+}
+
+async function ipsecAddTunnel() {
+  const local = document.getElementById('ipsec-local').value.trim();
+  const remote = document.getElementById('ipsec-remote').value.trim();
+  const protocol = document.getElementById('ipsec-protocol').value;
+  const secret = document.getElementById('ipsec-secret').value;
+  const localid = document.getElementById('ipsec-localid').value.trim();
+  const localport = parseInt(document.getElementById('ipsec-localport').value) || 4500;
+  const remoteid = document.getElementById('ipsec-remoteid').value.trim();
+  const remoteport = parseInt(document.getElementById('ipsec-remoteport').value) || 4500;
+  const origRaw = document.getElementById('ipsec-edit-orig').value;
+  const isEdit = !!origRaw;
+  if (!local) { show_toast('Local is required', 'error'); return; }
+  if (!localid) { show_toast('Local ID is required', 'error'); return; }
+  if (!remote) { show_toast('Remote is required', 'error'); return; }
+  if (!remoteid) { show_toast('Remote ID is required', 'error'); return; }
+  if (!isEdit && !secret) { show_toast('Secret is required', 'error'); return; }
+  try {
+    if (isEdit) {
+      const orig = JSON.parse(origRaw);
+      await api_delete('/api/network/ipsec/tunnel', { local: orig.local, remote: orig.remote, protocol: orig.protocol });
+    }
+    const body = { local, localid, localport, remote, remoteid, remoteport, protocol, secret: secret || '' };
+    await api_post('/api/network/ipsec/tunnel', body);
+    ipsecResetForm();
+    closeAddDialog('ipsec-tunnel');
+    await load_ipsec();
+    show_toast(isEdit ? 'Tunnel updated' : 'Tunnel added', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function ipsecDelTunnel(local, remote, protocol) {
+  const ok = await showConfirm('Remove tunnel ' + local + ' ↔ ' + remote + '?', 'Remove Tunnel');
+  if (!ok) return;
+  try {
+    await api_delete('/api/network/ipsec/tunnel', { local, remote, protocol });
+    await load_ipsec();
+    show_toast('Tunnel removed', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
 async function load_ipsec() {
   try {
     const tunnels = await api_get('/api/network/ipsec/tunnel');
-    const arr = Array.isArray(tunnels) ? tunnels : [];
-    document.getElementById('ipsec-count').textContent = arr.length;
+    _ipsecTunnels = Array.isArray(tunnels) ? tunnels : [];
+    document.getElementById('ipsec-count').textContent = _ipsecTunnels.length;
     const tb = document.getElementById('ipsec-tbody');
-    tb.innerHTML = arr.length === 0
-      ? '<tr class="empty-row"><td colspan="5">No tunnels</td></tr>'
-      : arr.map(t =>
+    tb.innerHTML = _ipsecTunnels.length === 0
+      ? '<tr class="empty-row"><td colspan="8">No tunnels</td></tr>'
+      : _ipsecTunnels.map((t, i) =>
           '<tr>' +
-          '<td class="td-mono">' + (t.local || '-') + '</td>' +
-          '<td class="td-mono">' + (t.remote || '-') + '</td>' +
-          '<td><span class="badge badge-blue">' + (t.protocol || '-') + '</span></td>' +
-          '<td><span class="badge ' + (t.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + (t.state || '-') + '</span></td>' +
-          '<td><button class="action-btn btn-detail" onclick="restartIpsecTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Restart</button></td>' +
+          '<td class="td-mono">' + esc(t.local || '-') + '</td>' +
+          '<td class="td-muted">' + esc(t.localid || '-') + '</td>' +
+          '<td class="td-mono">' + esc(t.remote || '-') + '</td>' +
+          '<td class="td-muted">' + esc(t.remoteid || '-') + '</td>' +
+          '<td><span class="badge badge-blue">' + esc(t.protocol || '-') + '</span></td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;">' + esc(t.secret || '-') + '</td>' +
+          '<td><span class="badge ' + (t.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(t.state || '-') + '</span></td>' +
+          '<td style="white-space:nowrap;">' +
+            '<button class="action-btn btn-detail" onclick="restartIpsecTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Restart</button> ' +
+            '<button class="action-btn action-dark" onclick="ipsecOpenEdit(' + i + ')">Edit</button> ' +
+            '<button class="action-btn btn-danger" onclick="ipsecDelTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Remove</button>' +
+          '</td>' +
           '</tr>'
         ).join('');
   } catch(e) {
-    document.getElementById('ipsec-tbody').innerHTML = '<tr class="empty-row"><td colspan="5">-</td></tr>';
+    document.getElementById('ipsec-tbody').innerHTML = '<tr class="empty-row"><td colspan="8">-</td></tr>';
   }
 }
 
@@ -1981,29 +2240,96 @@ async function removeNetwork(name) {
 }
 
 // =====================
+// About
+function about_row(k, v) {
+  return '<tr style="border-bottom:1px solid var(--border);">' +
+    '<td style="padding:10px 0;font-size:13px;color:var(--text-muted);width:130px;font-weight:500;">' + k + '</td>' +
+    '<td style="padding:10px 0;font-size:13px;color:var(--text);">' + v + '</td>' +
+    '</tr>';
+}
+
+async function load_about() {
+  try {
+    const [v, idx] = await Promise.all([
+      api_get('/api/version'),
+      api_get('/api/index').catch(() => ({}))
+    ]);
+    const w = (idx && idx.worker) || {};
+    const rows = [
+      about_row('Version', v.version ? '<span class="td-mono">' + esc(v.version) + '</span>' : '-'),
+      about_row('Build Date', esc(v.date || '-')),
+      about_row('Commit', v.commit ? '<span class="td-mono" style="font-size:12px;">' + esc(v.commit) + '</span>' : '-'),
+      about_row('License Expires', esc(v.expire || '-')),
+      about_row('Node Alias', esc(w.alias || '-')),
+      about_row('UUID', w.uuid ? '<span class="td-mono" style="font-size:12px;">' + esc(w.uuid) + '</span>' : '-'),
+      about_row('Protocol', esc(w.protocol || '-')),
+      about_row('Uptime', fmt_duration(w.uptime)),
+    ].join('');
+    document.getElementById('about-info-tbody').innerHTML = rows;
+  } catch(e) {
+    document.getElementById('about-info-tbody').innerHTML =
+      '<tr><td colspan="2" style="padding:16px;color:var(--text-muted);">Failed to load info</td></tr>';
+  }
+}
+
 // Users
 // =====================
+let _usersData = [];
+
 async function load_users() {
   try {
     const users = await api_get('/api/user');
-    const arr = Array.isArray(users) ? users : [];
-    document.getElementById('users-count').textContent = arr.length;
+    _usersData = Array.isArray(users) ? users : [];
+    document.getElementById('users-count').textContent = _usersData.length;
     const ub = document.getElementById('users-tbody');
-    if (arr.length === 0) {
+    if (_usersData.length === 0) {
       ub.innerHTML = '<tr class="empty-row"><td colspan="6">No users found</td></tr>';
     } else {
-      ub.innerHTML = arr.map(u => '<tr>' +
-        '<td style="font-weight:600;">' + (u.name || '-') + '</td>' +
-        '<td>' + (u.network || '-') + '</td>' +
+      ub.innerHTML = _usersData.map((u, i) => '<tr>' +
+        '<td style="font-weight:600;">' + esc(u.name || '-') + '</td>' +
+        '<td>' + esc(u.network || '-') + '</td>' +
         '<td>' + role_badge(u.role) + '</td>' +
-        '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? u.password.substring(0,4) + '••••••••' : '-') + '</td>' +
-        '<td class="td-muted">' + (u.leaseTime || '-') + '</td>' +
-        '<td><button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button></td>' +
+        '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
+        '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button class="action-btn action-dark" onclick="openEditUser(' + i + ')">Edit</button> ' +
+          '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
+        '</td>' +
         '</tr>').join('');
     }
   } catch(e) {
     show_toast('Failed to load users: ' + e.message, 'error');
   }
+}
+
+function userResetForm() {
+  document.getElementById('user-dialog-title').textContent = 'Add User';
+  document.getElementById('user-dialog-submit').textContent = 'Add';
+  document.getElementById('user-pass-hint').textContent = '(auto-generated if empty)';
+  document.getElementById('user-name').readOnly = false;
+  document.getElementById('user-name').value = '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-role').value = 'guest';
+  document.getElementById('user-lease').value = '';
+}
+
+function userCancelEdit() {
+  userResetForm();
+  closeAddDialog('user');
+}
+
+function openEditUser(i) {
+  const u = _usersData[i];
+  if (!u) return;
+  document.getElementById('user-dialog-title').textContent = 'Edit User';
+  document.getElementById('user-dialog-submit').textContent = 'Save';
+  document.getElementById('user-pass-hint').textContent = '(leave blank to keep current)';
+  document.getElementById('user-name').value = (u.name || '') + '@' + (u.network || '');
+  document.getElementById('user-name').readOnly = true;
+  document.getElementById('user-password').value = u.password || '';
+  document.getElementById('user-role').value = u.role || 'guest';
+  document.getElementById('user-lease').value = u.leaseTime ? u.leaseTime.substring(0, 10) : '';
+  openAddDialog('user');
 }
 
 async function addUser() {
@@ -2023,15 +2349,14 @@ async function addUser() {
     network: network,
     password: pass,
     role: role,
-    leaseTime: leaseDate ? leaseDate + ' 00:00:00' : undefined
+    leaseTime: leaseDate ? leaseDate + 'T00' : undefined
   };
 
   try {
     await api_post('/api/user/' + encodeURIComponent(name), body);
+    userResetForm();
     closeAddDialog('user');
-    show_toast('User "' + name + '" added/updated', 'success');
-    document.getElementById('user-name').value = '';
-    document.getElementById('user-password').value = '';
+    show_toast('User "' + name + '" saved', 'success');
     await load_users();
   } catch(e) {
     show_toast('Failed to add user: ' + e.message, 'error');
@@ -2081,30 +2406,11 @@ function esc(s) {
 // =====================
 (function init() {
   const params = new URLSearchParams(window.location.search);
-  const urlFromQuery = params.get('url') || params.get('server');
   const tokenFromQuery = params.get('token');
-  const urlFromOrigin = window.location.origin;
-
-  // If token is provided in URL, clear stale sessionStorage to avoid using
-  // a cached URL/token from a different server
-  if (tokenFromQuery) {
-    sessionStorage.removeItem('openlan_token');
-    }
-
-  const token = sessionStorage.getItem('openlan_token');
-  if (tokenFromQuery) document.getElementById('login-token').value = tokenFromQuery;
-
-  if (token) {
-    State.token = token;
-    State.baseUrl = urlFromOrigin;
-    show_dashboard();
-    load_overview();
-  }
-
-  // Allow Enter key on login form
-  document.getElementById('login-token').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-  });
+  State.token = tokenFromQuery || '';
+  State.baseUrl = window.location.origin;
+  show_dashboard();
+  load_overview();
 })();
 </script>
 </body>
