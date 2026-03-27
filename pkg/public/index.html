@@ -405,6 +405,24 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="dlg-router-iface">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Interface</span>
+      <button class="modal-close" onclick="routerIfaceCancel()">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group"><label>Device</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-iface-device" placeholder="e.g. eth0"></div>
+      <div class="form-group"><label>VLAN <span style="color:var(--text-muted);font-weight:400;">(0 = none)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="router-iface-vlan" value="0"></div>
+      <div class="form-group"><label>Address (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-iface-address" placeholder="e.g. 192.168.1.1/24"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="routerIfaceCancel()">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="routerIfaceSubmit()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="dlg-ipsec-tunnel">
   <div class="modal" style="max-width:520px;">
     <div class="modal-header">
@@ -907,9 +925,22 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
                 Save
               </button>
             </div>
+          </div>
+
+          <div class="section" style="margin-top:16px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+                Interfaces
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="routerIfaceAdd()">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Interface</th><th>Network</th><th>Address</th><th>State</th></tr></thead>
+                <thead><tr><th>Interface</th><th>VLAN</th><th>Network</th><th>Address</th><th>State</th><th></th></tr></thead>
                 <tbody id="router-iface-tbody"></tbody>
               </table>
             </div>
@@ -1151,7 +1182,7 @@ async function api_post(path, data) {
   });
   if (!resp.ok) {
     let msg = 'HTTP ' + resp.status;
-    try { const j = await resp.json(); msg = j.message || msg; } catch(e) {}
+    try { const t = await resp.text(); msg = t.trim() || msg; } catch(e) {}
     throw new Error(msg);
   }
   return resp;
@@ -1164,7 +1195,7 @@ async function api_put(path, data) {
   const resp = await fetch(url, opts);
   if (!resp.ok) {
     let msg = 'HTTP ' + resp.status;
-    try { const j = await resp.json(); msg = j.message || msg; } catch(e) {}
+    try { const t = await resp.text(); msg = t.trim() || msg; } catch(e) {}
     throw new Error(msg);
   }
   return resp;
@@ -1177,7 +1208,7 @@ async function api_delete(path, data) {
   const resp = await fetch(url, opts);
   if (!resp.ok) {
     let msg = 'HTTP ' + resp.status;
-    try { const j = await resp.json(); msg = j.message || msg; } catch(e) {}
+    try { const t = await resp.text(); msg = t.trim() || msg; } catch(e) {}
     throw new Error(msg);
   }
   return resp;
@@ -1693,25 +1724,103 @@ async function bgpSaveGlobal() {
   }
 }
 
+let _routerIfaces = [];
+
 async function load_router() {
   try {
-    const ifaces = await api_get('/api/network/router/interface');
-    const arr = Array.isArray(ifaces) ? ifaces : [];
+    const [ifaces, routerCfg] = await Promise.all([
+      api_get('/api/network/router/interface'),
+      api_get('/api/network/router').catch(() => ({}))
+    ]);
+    _routerIfaces = Array.isArray(ifaces) ? ifaces : [];
+    const cfgIfaces = (routerCfg && routerCfg.config && routerCfg.config.specifies && Array.isArray(routerCfg.config.specifies.interfaces))
+      ? routerCfg.config.specifies.interfaces : [];
+    // build map of system ifaces by name
+    const sysMap = {};
+    _routerIfaces.forEach(f => { sysMap[f.name || f.device || ''] = f; });
+    // merge: configured ifaces first (all shown + deletable), then system-only ifaces
+    const cfgNames = new Set();
+    const merged = [];
+    cfgIfaces.forEach(c => {
+      const vlan = c.vlan || c.VLAN || 0;
+      const id = vlan ? (c.device + '.' + vlan) : c.device;
+      cfgNames.add(id);
+      const sys = sysMap[id] || {};
+      merged.push({ name: id, _device: c.device, address: sys.address || (c.address ? [c.address] : []), state: sys.state || '-', network: sys.network || '-', vlan, _canDel: true });
+    });
+    _routerIfaces.forEach(f => {
+      const name = f.name || f.device || '';
+      if (!cfgNames.has(name)) merged.push({ ...f, name, _device: name, _canDel: false });
+    });
+    _routerIfaces = merged;
     const tb = document.getElementById('router-iface-tbody');
-    tb.innerHTML = arr.length === 0
-      ? '<tr class="empty-row"><td colspan="4">No interfaces</td></tr>'
-      : arr.map(f =>
+    tb.innerHTML = _routerIfaces.length === 0
+      ? '<tr class="empty-row"><td colspan="6">No interfaces</td></tr>'
+      : _routerIfaces.map((f, i) =>
           '<tr>' +
-          '<td class="td-mono" style="font-weight:600;">' + (f.name || f.device || '-') + '</td>' +
-          '<td class="td-muted">' + (f.network || '-') + '</td>' +
-          '<td class="td-mono">' + (Array.isArray(f.address) && f.address.length ? f.address.map(a => '<div>' + esc(a) + '</div>').join('') : (f.address || '-')) + '</td>' +
-          '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + (f.state || '-') + '</span></td>' +
+          '<td class="td-mono" style="font-weight:600;">' + esc(f._device || f.name || '-') + '</td>' +
+          '<td class="td-muted">' + (f.vlan ? f.vlan : '-') + '</td>' +
+          '<td class="td-muted">' + esc(f.network || '-') + '</td>' +
+          '<td>' + routerAddrTags(f) + '</td>' +
+          '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(f.state || '-') + '</span></td>' +
+          '<td>' + (f._canDel ? '<button class="action-btn btn-danger" onclick="routerIfaceDel(' + i + ')">Remove</button>' : '') + '</td>' +
           '</tr>'
         ).join('');
   } catch(e) {
-    document.getElementById('router-iface-tbody').innerHTML = '<tr class="empty-row"><td colspan="4">-</td></tr>';
+    document.getElementById('router-iface-tbody').innerHTML = '<tr class="empty-row"><td colspan="6">-</td></tr>';
   }
   await load_router_private();
+}
+
+function routerIfaceAdd() {
+  document.getElementById('router-iface-device').value = '';
+  document.getElementById('router-iface-vlan').value = '0';
+  document.getElementById('router-iface-address').value = '';
+  openAddDialog('router-iface');
+}
+
+function routerIfaceCancel() {
+  closeAddDialog('router-iface');
+}
+
+async function routerIfaceSubmit() {
+  const device = document.getElementById('router-iface-device').value.trim();
+  const vlan = parseInt(document.getElementById('router-iface-vlan').value) || 0;
+  const address = document.getElementById('router-iface-address').value.trim();
+  if (!device) { show_toast('Device is required', 'error'); return; }
+  if (!address) { show_toast('Address is required', 'error'); return; }
+  try {
+    await api_post('/api/network/router/interface', { device, vlan, address });
+    closeAddDialog('router-iface');
+    await load_router();
+    show_toast('Interface added', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+function routerAddrTags(f) {
+  const addrs = Array.isArray(f.address) ? f.address : (f.address ? [f.address] : []);
+  return addrs.map(a =>
+    '<div style="font-family:monospace;font-size:12px;color:var(--text);padding:2px 0;">' + esc(a) + '</div>'
+  ).join('');
+}
+
+async function routerIfaceDel(i) {
+  const f = _routerIfaces[i];
+  if (!f) return;
+  const device = f._device || f.name || f.device;
+  const vlan = f.vlan || 0;
+  const label = vlan ? (device + '.' + vlan) : device;
+  const ok = await showConfirm('Remove interface ' + label + '?', 'Remove Interface');
+  if (!ok) return;
+  try {
+    await api_delete('/api/network/router/interface', { device, vlan });
+    await load_router();
+    show_toast('Interface removed', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
 }
 
 async function load_router_private() {
