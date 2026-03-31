@@ -1,11 +1,11 @@
-# Multiple Area Example
+# 🌐 Multiple Area Example
 
-## Topology
+## 🗺️ Topology
 
-```
+```text
               192.168.1.20/24                                 192.168.1.21/24
                      |                                                 |
-               Access1 -- Hotal Wifi --> Switch(NJ) <--- Other Wifi --- Access2
+               Access1 -- Hotel Wifi --> Switch(NJ) <--- Other Wifi --- Access2
                                             |
                                             |
                                          Internet
@@ -17,87 +17,85 @@
                    +------------------------+---------------------------+
                    ^                        ^                           ^
                    |                        |                           |
-              Office Wifi               Home Wifi                  Hotal Wifi     
+              Office Wifi               Home Wifi                  Hotel Wifi
                    |                        |                           |
                 Access3                 Access4                       Access5
             192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
 ```
 
-## Configure Central Switch for Nanjing
+## ⚙️ Configure Central Switch for Nanjing
 
 Global configure:
 
-```
+```bash
 [root@switch-nj ~]# cd /etc/openlan/switch
 [root@switch-nj ~]# cat > switch.yaml <<EOF
-crypt: 
+crypt:
   secret: f367aa429ed2
-
 EOF
 ```
 
 Network configure:
 
-```
+```bash
 [root@switch-nj ~]# cd network
 [root@switch-nj ~]# cat > private.yaml <<EOF
 name: private
-bridge: 
+bridge:
   name: br-em2
   address: 192.168.1.66/24
-subnet: 
+subnet:
   endAt: 192.168.1.99
   startAt: 192.168.1.80
-openvpn: 
+openvpn:
   listen: 0.0.0.0:1166
   subnet: 172.32.66.0/24
-
 EOF
 [root@switch-nj ~]# openlan cfg co
-[root@switch-sh ~]# systemctl restart openlan-switch
+[root@switch-nj ~]# systemctl restart openlan-switch
 ```
 
 Add two access users on private network:
 
-```
+```bash
 [root@switch-nj ~]# openlan us add --name admin@private --role admin
 [root@switch-nj ~]# openlan us add --name access1@private
 [root@switch-nj ~]# openlan us add --name access2@private
 ```
 
-## Configure Central Switch for ShangHai
+## ⚙️ Configure Central Switch for ShangHai
 
 Global configure:
 
-```
+```bash
 [root@switch-sh ~]# cd /etc/openlan/switch
 [root@switch-sh ~]# cat > switch.yaml <<EOF
-crypt: 
+crypt:
   secret: 7519e54d12c5
 EOF
 ```
 
 Network configure:
 
-```
+```bash
 [root@switch-sh ~]# cd network
 [root@switch-sh ~]# cat > private.yaml <<EOF
 name: private
-bridge: 
+bridge:
   name: br-em2
   address: 192.168.1.88/24
-subnet: 
+subnet:
   endAt: 192.168.1.150
   startAt: 192.168.1.100
-openvpn: 
+openvpn:
   listen: 0.0.0.0:1188
   subnet: 172.32.88.0/24
 links:
 - connection: address-of-switch-nj
   password: get-it-from-switch-nj
   username: admin
-  crypt:  
-    secret: f367aa429ed2 
+  crypt:
+    secret: f367aa429ed2
 EOF
 [root@switch-sh ~]# openlan cfg co
 [root@switch-sh ~]# systemctl restart openlan-switch
@@ -105,10 +103,9 @@ EOF
 
 Add three access users on private network:
 
-```
+```bash
 [root@switch-sh ~]# openlan user add --name admin@private --role admin
 [root@switch-sh ~]# openlan user add --name access3@private
 [root@switch-sh ~]# openlan user add --name access4@private
 [root@switch-sh ~]# openlan user add --name access5@private
 ```
-

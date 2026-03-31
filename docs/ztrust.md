@@ -1,24 +1,24 @@
-# Zero Trust 
+# 🔒 Zero Trust Example
 
-## Enable ztrust on a network
-```
-$ openlan ztrust --network example enable
-$ openlan network --name example sa
-$
-$ systemctl restart openlan-switch
-$
+## ✅ Enable ztrust on a network
+
+```bash
+openlan ztrust --network example enable
+openlan network --name example sa
+systemctl restart openlan-switch
 ```
 
-## Access network via OpenVPN
+## 🔑 Access network via OpenVPN
 
 * Open your OpenVPN Connect application;
 * Click `Import Profile` button and Select `via URL`;
 * Input value: `https://<your-central-switch-address>:10000`, Click `Next`;
-* Input your name: `daniel@exmaple` and password: `18a102852f28`;
+* Input your name: `daniel@example` and password: `18a102852f28`;
 * Click `Connect` button to access network: `example`.
 
-## Add yourself to ztrust
-```
+## 👤 Add yourself to ztrust
+
+```bash
 $ export TOKEN="daniel@example:<password>"
 $ export URL="https://<your-central-switch-address>:10000"
 $ openlan ztrust guest add
@@ -29,8 +29,9 @@ daniel@example          169.254.15.6
 $
 ```
 
-## Knock a host service
-```
+## 🚪 Knock a host service
+
+```bash
 $ openlan ztrust knock add --protocol icmp --socket 192.168.20.10
 $ openlan ztrust knock add --protocol tcp --socket 192.168.20.10:22
 $ openlan ztrust knock ls
@@ -41,8 +42,9 @@ daniel@example          icmp     192.168.20.10:           46   2024-01-02 12:41:
 $
 ```
 
-## Connect to a host service
-```
+## 🔗 Connect to a host service
+
+```bash
 $ ping 192.168.20.10 -c 3
 PING 192.168.20.10 (192.168.20.10): 56 data bytes
 64 bytes from 192.168.20.10: icmp_seq=0 ttl=63 time=5.969 ms

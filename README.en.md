@@ -8,30 +8,30 @@ English | [简体中文](./README.cn.md)
 [![Releases](https://img.shields.io/github/release/luscis/openlan/all.svg?style=flat-square)](https://github.com/luscis/openlan/releases)
 [![GPL 3.0 License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 
-## What is OpenLAN?
+## 🌐 What is OpenLAN?
 
-OpenLAN enables LAN packet transmission over WAN, allowing you to establish virtual Ethernet networks across multiple user spaces.
+OpenLAN is a solution for transmitting LAN packets over WAN, enabling you to create multiple virtual Ethernet networks in user space.
 
-## Why Choose OpenLAN?
+## 🤔 Why Choose OpenLAN?
 
-OpenLAN is designed for flexible VPN scenarios. Whether you need to access enterprise networks remotely, or leverage public cloud instances for network proxying and penetration, OpenLAN simplifies deployment and management.
+If you need a flexible VPN solution — such as accessing enterprise internal networks, or proxying and tunneling traffic through public cloud instances — OpenLAN makes deployment simpler and more efficient.
 
-## Key Features
+## ✨ Key Features
 
-- **Network Segmentation**: Create multiple isolated network spaces for different services with logical network isolation.
-- **Central Switch Interconnection**: Multiple Central Switches communicate at the Ethernet layer using the OpenLAN protocol. Add SNAT routes at Layer 2 for seamless access to enterprise internal networks.
-- **OpenVPN Integration**: Connect user networks via OpenVPN, with support for multiple platforms including Android, macOS, and Windows.
-- **IPSec Tunnel Support**: Establish IPSec tunnels between Central Switches, with support for VxLAN tenant networks on top.
-- **Simple Authentication**: Username/password-based access authentication with optional pre-shared key encryption for data packets.
-- **Multi-Protocol Support**: OpenLAN operates over TCP, TLS, UDP, KCP, WS, and WSS. TCP delivers high performance, while TLS/WSS provides enhanced encryption security.
-- **Proxy Capabilities**: Built-in HTTP/HTTPS/SOCKS5 proxy support with flexible domain-based routing rules for traffic forwarding.
+- 🔒 **Network Segmentation**: Divide the network into multiple isolated spaces, providing logical network isolation for different services.
+- 🔗 **Central Switch Interconnection**: Multiple Central Switches communicate at the link layer via the OpenLAN protocol, with SNAT route support for seamless access to enterprise internal networks.
+- 🖥️ **OpenVPN Integration**: Connect user networks via OpenVPN, with support for Android, macOS, Windows, and other platforms.
+- 🛡️ **IPSec & VxLAN Support**: Establish IPSec tunnels between Central Switches, with VxLAN tenant network segmentation on top.
+- 🔑 **Simple Authentication**: Username/password-based access authentication with optional pre-shared key encryption for data packets.
+- 📡 **Multi-Protocol Support**: OpenLAN runs over TCP, TLS, UDP, KCP, WS, and WSS — TCP for high performance, TLS/WSS for stronger encryption security.
+- 🔄 **Flexible Proxy Forwarding**: Built-in HTTP, HTTPS, and SOCKS5 forward proxy support with domain-based routing rules for flexible traffic forwarding.
 
-## Use Cases
+## 🗺️ Use Cases
 
-### Branch-to-Center Access
+### 🏢 Branch-to-Center Access
 
-```
-                              Central Switch - 10.16.1.10/24
+```text
+                       Central Switch (Enterprise Center) - 10.16.1.10/24
                                       ^
                                       |
                                    Wifi(DNAT)
@@ -46,9 +46,9 @@ OpenLAN is designed for flexible VPN scenarios. Whether you need to access enter
       10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
 ```
 
-### Multi-Region Interconnection
+### 🌍 Multi-Region Interconnection
 
-```
+```text
      192.168.1.20/24                                                  192.168.1.21/24
             |                                                                |
         OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
@@ -69,10 +69,10 @@ OpenLAN is designed for flexible VPN scenarios. Whether you need to access enter
         192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
 ```
 
-## Documentation
+## 📚 Documentation
 
-- [Software Installation](docs/install.md)
-- [Branch Access](docs/central.md)
-- [Multi-Region Interconnection](docs/multiarea.md)
-- [Zero Trust Network](docs/ztrust.md)
-- [Docker Compose](docs/docker.md)
+- 📦 [Software Installation](docs/install.md)
+- 🏢 [Branch Access](docs/central.md)
+- 🌍 [Multi-Region Interconnection](docs/multiarea.md)
+- 🔐 [Zero Trust Network](docs/ztrust.md)
+- 🐳 [Docker Compose](docs/docker.md)
