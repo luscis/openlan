@@ -211,7 +211,7 @@ func (h SNAT) Post(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if value.Scope == "" {
-			value.Scope = "local"
+			value.Scope = "enable"
 		}
 		obj.SetSNAT(value.Scope)
 	} else {

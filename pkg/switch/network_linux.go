@@ -162,6 +162,7 @@ func (w *WorkerImpl) doSNAT() {
 		return
 	}
 
+	w.out.Info("WorkerImpl.doSNAT %s", cfg.Snat)
 	if vpn != nil {
 		w.toMasq_r(vpn.Subnet, w.ipser.Name, "From VPN")
 	}
@@ -1158,8 +1159,6 @@ func (w *WorkerImpl) toVPN() {
 		w.addIPSet(co.PrefixRoute{Prefix: vpn.Subnet})
 		if w.vrf != nil {
 			w.toForward_r(w.vrf.Name(), vpn.Subnet, w.ipser.Name, "From VPN")
-		} else {
-			w.toForward_r(devName, vpn.Subnet, w.ipser.Name, "From VPN")
 		}
 	}
 }
@@ -1224,7 +1223,7 @@ func (w *WorkerImpl) toSubnet() {
 	if w.vrf != nil {
 		w.toForward_i(w.vrf.Name(), w.ipser.Name, "To route")
 	} else {
-		w.toForward_i(w.L3Name(), w.ipser.Name, "To route")
+		w.toForward_i("", w.ipser.Name, "To route")
 	}
 }
 
