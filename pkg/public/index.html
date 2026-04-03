@@ -423,6 +423,33 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="dlg-router-redirect">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Redirect</span>
+      <button class="modal-close" onclick="closeAddDialog('router-redirect')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group">
+        <label>Source</label>
+        <input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-redirect-source" list="router-redirect-source-list" placeholder="e.g. 10.0.0.0/24">
+        <datalist id="router-redirect-source-list"></datalist>
+      </div>
+      <div class="form-group"><label>NextHop</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-redirect-nexthop" placeholder="e.g. 192.168.1.1"></div>
+      <div class="form-group">
+        <label>Table</label>
+        <input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="router-redirect-table" list="router-redirect-table-list" placeholder="e.g. 100">
+        <datalist id="router-redirect-table-list"></datalist>
+        <div id="router-redirect-table-hint" style="margin-top:6px;font-size:12px;color:var(--text-muted);"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('router-redirect')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="routerAddRedirect()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="dlg-ipsec-tunnel">
   <div class="modal" style="max-width:520px;">
     <div class="modal-header">
@@ -516,27 +543,26 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
       <!-- Config Tab -->
       <div class="modal-tab-pane active" id="net-tab-config">
         <div class="detail-grid" id="modal-base-info"></div>
+        <div id="modal-snat-section"></div>
         <div id="modal-ovpn-section"></div>
       </div>
       <!-- Routes Tab -->
       <div class="modal-tab-pane" id="net-tab-routes">
-        <div class="modal-form-row">
-          <input class="modal-input" id="modal-route-prefix" type="text" placeholder="Prefix e.g. 10.0.0.0/24" style="min-width:180px;">
-          <input class="modal-input" id="modal-route-nexthop" type="text" placeholder="NextHop e.g. 192.168.1.1" style="min-width:160px;">
-          <button class="btn btn-dark btn-sm" onclick="modalAddRoute()">Add Route</button>
+        <div class="modal-form-row" style="justify-content:flex-end;">
+          <button class="btn btn-dark btn-sm" onclick="openAddDialog('network-route')">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Route
+          </button>
         </div>
         <div id="modal-routes-list"></div>
       </div>
       <!-- Outputs Tab -->
       <div class="modal-tab-pane" id="net-tab-outputs">
-        <div class="modal-form-row">
-          <select class="modal-input" id="modal-out-proto">
-            <option value="esp">esp</option><option value="tcp">tcp</option>
-            <option value="udp">udp</option><option value="vxlan">vxlan</option>
-          </select>
-          <input class="modal-input" id="modal-out-remote" type="text" placeholder="Remote e.g. 1.2.3.4:4500" style="min-width:180px;">
-          <input class="modal-input" id="modal-out-secret" type="text" placeholder="Secret (optional)" style="min-width:140px;">
-          <button class="btn btn-dark btn-sm" onclick="modalAddOutput()">Add Output</button>
+        <div class="modal-form-row" style="justify-content:flex-end;">
+          <button class="btn btn-dark btn-sm" onclick="openAddDialog('network-output')">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Output
+          </button>
         </div>
         <div id="modal-outputs-list"></div>
       </div>
@@ -551,6 +577,73 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Save
       </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="dlg-network-route">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Route</span>
+      <button class="modal-close" onclick="closeAddDialog('network-route')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label>Prefix</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-route-prefix" type="text" placeholder="e.g. 10.0.0.0/24"></div>
+      <div class="form-group"><label>NextHop <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-route-nexthop" type="text" placeholder="e.g. 192.168.1.1"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-route')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="modalAddRoute()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="dlg-network-output">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Output</span>
+      <button class="modal-close" onclick="closeAddDialog('network-output')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label>Protocol</label>
+        <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-proto" onchange="onNetworkOutputProtocolChange()">
+          <option value="tcp">tcp</option>
+          <option value="gre">gre</option>
+          <option value="vxlan">vxlan</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Remote</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-remote" type="text" placeholder="e.g. 1.2.3.4:4500"></div>
+      <div class="form-group" id="network-out-segment-group"><label>Segment</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-segment" type="text" inputmode="numeric" placeholder="e.g. 100"></div>
+      <div class="form-group" id="network-out-secret-group"><label>Secret</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-secret" type="text" placeholder="e.g. user:password"></div>
+      <div class="form-group" id="network-out-crypt-group"><label>Crypt</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-crypt" type="text" placeholder="e.g. aes-256:my-secret-key"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-output')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="modalAddOutput()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="dlg-network-openvpn">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="modal-title">Enable OpenVPN</span>
+      <button class="modal-close" onclick="closeAddDialog('network-openvpn')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-listen" type="text" placeholder="e.g. 0.0.0.0:1194"></div>
+      <div class="form-group"><label>Protocol</label>
+        <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-protocol">
+          <option value="tcp">tcp</option>
+          <option value="udp">udp</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Subnet <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-subnet" type="text" placeholder="e.g. 10.8.0.0/24"></div>
+      <div class="form-group"><label>Cipher <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-cipher" type="text" placeholder="e.g. AES-256-GCM"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-openvpn')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="enableNetworkOpenVPN()">Enable</button>
+      </div>
     </div>
   </div>
 </div>
@@ -831,7 +924,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
             <div class="section-body">
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Config</th><th style="width:160px;">Actions</th></tr>
+                  <tr><th>Name</th><th>Subnet</th><th>SNAT</th><th>OpenVPN</th><th style="width:160px;">Actions</th></tr>
                 </thead>
                 <tbody id="networks-tbody"></tbody>
               </table>
@@ -959,6 +1052,25 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
             </div>
             <div class="section-body" style="padding:16px 20px;">
               <div id="router-private-tags" style="display:flex;flex-wrap:wrap;gap:8px;min-height:32px;align-items:center;"></div>
+            </div>
+          </div>
+
+          <div class="section" style="margin-top:16px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/></svg>
+                Redirect
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('router-redirect')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead><tr><th>Source</th><th>NextHop</th><th>Table</th><th></th></tr></thead>
+                <tbody id="router-redirect-tbody"></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1549,28 +1661,31 @@ async function load_networks() {
   try {
     const nets = await api_get('/api/network');
     _networksData = Array.isArray(nets) ? nets : (nets ? [nets] : []);
-    const SPECIAL_NETS = new Set(['bgp', 'router', 'ipsec']);
+    const SPECIAL_NETS = new Set(['bgp', 'router', 'ipsec', 'ceci']);
     const regularNets = _networksData.filter(n => !SPECIAL_NETS.has(n.name));
     document.getElementById('networks-count').textContent = regularNets.length;
     const nb = document.getElementById('networks-tbody');
     if (regularNets.length === 0) {
-      nb.innerHTML = '<tr class="empty-row"><td colspan="3">No networks configured</td></tr>';
+      nb.innerHTML = '<tr class="empty-row"><td colspan="5">No networks configured</td></tr>';
     } else {
       nb.innerHTML = regularNets.map((n, i) => {
         // remap index to _networksData
         i = _networksData.indexOf(n);
         const cfg = n.config || {};
-        const parts = [];
-        if (cfg.bridge && cfg.bridge.address) parts.push(cfg.bridge.address);
-        if (cfg.namespace) parts.push('ns:' + cfg.namespace);
-        const cfgStr = parts.join(' | ') || '-';
+        const subnet = (cfg.bridge && cfg.bridge.address) || '-';
+        const snat = cfg.snat || 'disable';
+        const ovpn = cfg.openvpn
+          ? ((cfg.openvpn.protocol || '-') + ' | ' + (cfg.openvpn.listen || '-'))
+          : '-';
         return '<tr>' +
           '<td style="font-weight:600;">' + (n.name || '-') + '</td>' +
-          '<td class="td-muted td-mono" style="font-size:12px;">' + cfgStr + '</td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;">' + subnet + '</td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;">' + snat + '</td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;">' + ovpn + '</td>' +
           '<td style="display:flex;gap:6px;">' +
             '<button class="action-btn btn-detail" onclick="openNetModal(' + i + ')">Details</button>' +
             '<button class="action-btn btn-save" onclick="saveNetwork(\'' + esc(n.name) + '\')">Save</button>' +
-            (['bgp','router','ipsec'].includes(n.name) ? '' : '<button class="action-btn action-delete" onclick="removeNetwork(\'' + esc(n.name) + '\')">Remove</button>') +
+            (SPECIAL_NETS.has(n.name) ? '' : '<button class="action-btn action-delete" onclick="removeNetwork(\'' + esc(n.name) + '\')">Remove</button>') +
           '</td>' +
           '</tr>';
       }).join('');
@@ -1725,6 +1840,7 @@ async function bgpSaveGlobal() {
 }
 
 let _routerIfaces = [];
+let _routerRedirects = [];
 
 async function load_router() {
   try {
@@ -1770,6 +1886,7 @@ async function load_router() {
     document.getElementById('router-iface-tbody').innerHTML = '<tr class="empty-row"><td colspan="6">-</td></tr>';
   }
   await load_router_private();
+  await load_router_redirect();
 }
 
 function routerIfaceAdd() {
@@ -1865,6 +1982,72 @@ async function routerDelPrivate(subnet) {
     await api_delete('/api/network/router/private', { subnet });
     await load_router_private();
     show_toast('Private subnet removed', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function load_router_redirect() {
+  const tbody = document.getElementById('router-redirect-tbody');
+  try {
+    const data = await api_get('/api/network/router');
+    const redirects = (data && data.config && data.config.specifies && Array.isArray(data.config.specifies.redirect))
+      ? data.config.specifies.redirect : [];
+    _routerRedirects = redirects;
+    if (redirects.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No redirect rules</td></tr>';
+    } else {
+      tbody.innerHTML = redirects.map((r, i) =>
+        '<tr>' +
+          '<td class="td-mono">' + esc(r.source || '-') + '</td>' +
+          '<td class="td-mono">' + esc(r.nexthop || '-') + '</td>' +
+          '<td class="td-muted">' + (r.table || '-') + '</td>' +
+          '<td><button class="action-btn btn-danger" onclick="routerDelRedirect(' + i + ')">Remove</button></td>' +
+        '</tr>'
+      ).join('');
+    }
+  } catch(e) {
+    _routerRedirects = [];
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">-</td></tr>';
+  }
+}
+
+async function routerAddRedirect() {
+  const source = document.getElementById('router-redirect-source').value.trim();
+  const nexthop = document.getElementById('router-redirect-nexthop').value.trim();
+  const table = parseInt(document.getElementById('router-redirect-table').value.trim(), 10);
+  if (!source) { show_toast('Source is required', 'error'); return; }
+  if (!nexthop) { show_toast('NextHop is required', 'error'); return; }
+  if (!table) { show_toast('Table is required', 'error'); return; }
+  if (_routerRedirects.some(r => (r.table || 0) === table)) {
+    show_toast('Table ' + table + ' is already in use', 'error');
+    return;
+  }
+  try {
+    await api_post('/api/network/router/redirect', { source, nexthop, table });
+    document.getElementById('router-redirect-source').value = '';
+    document.getElementById('router-redirect-nexthop').value = '';
+    document.getElementById('router-redirect-table').value = '';
+    closeAddDialog('router-redirect');
+    await load_router_redirect();
+    show_toast('Redirect added', 'success');
+  } catch(e) {
+    show_toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function routerDelRedirect(i) {
+  try {
+    const data = await api_get('/api/network/router');
+    const redirects = (data && data.config && data.config.specifies && Array.isArray(data.config.specifies.redirect))
+      ? data.config.specifies.redirect : [];
+    const r = redirects[i];
+    if (!r) return;
+    const ok = await showConfirm('Remove redirect for ' + (r.source || '-') + '?', 'Remove Redirect');
+    if (!ok) return;
+    await api_delete('/api/network/router/redirect', { source: r.source, nexthop: r.nexthop, table: r.table });
+    await load_router_redirect();
+    show_toast('Redirect removed', 'success');
   } catch(e) {
     show_toast('Failed: ' + e.message, 'error');
   }
@@ -2122,6 +2305,31 @@ function openNetModal(i) {
     '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + v + '</span></div>'
   ).join('');
 
+  const snatValue = cfg.snat || 'disable';
+  const snatOptions = [
+    ['disable', 'Disable'],
+    ['enable', 'Enable'],
+    ['local', 'Local'],
+    ['openvpn', 'OpenVPN']
+  ];
+  document.getElementById('modal-snat-section').innerHTML =
+    '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div>' +
+          '<div class="detail-section-title" style="margin:0 0 6px;padding:0;border:none;">SNAT</div>' +
+          '<div style="font-size:13px;color:var(--text-muted);">Configure subnet source NAT behavior for this network.</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<select class="modal-input" id="network-snat-scope" style="min-width:140px;background:#21262d;border-color:var(--border);color:var(--text);">' +
+            snatOptions.map(([value, label]) =>
+              '<option value="' + value + '"' + (snatValue === value ? ' selected' : '') + '>' + label + '</option>'
+            ).join('') +
+          '</select>' +
+          '<button class="btn btn-dark btn-sm" onclick="saveNetworkSNAT()">Apply</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
   let ovpnHtml = '';
   if (ovpn) {
     const profileUrl = State.baseUrl + '/api/network/' + encodeURIComponent(n.name) + '/ovpn?token=' + encodeURIComponent(State.token);
@@ -2131,12 +2339,22 @@ function openNetModal(i) {
     ].filter(([, v]) => v != null && v !== '');
     ovpnHtml = '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;">' +
+      '<button class="btn btn-sm btn-ghost" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
       '<a href="' + profileUrl + '" target="_blank" download="' + n.name + '.ovpn" class="btn btn-sm btn-ghost" style="text-decoration:none;">Download .ovpn</a>' +
+      '</div>' +
       '</div>' +
       '<div class="detail-grid" style="margin-top:10px;">' +
       ovpnItems.map(([k, v]) =>
         '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + v + '</span></div>'
       ).join('') + '</div>';
+  } else {
+    ovpnHtml = '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
+      '<button class="btn btn-sm btn-dark" onclick="openEnableNetworkOpenVPN()" type="button">Enable OpenVPN</button>' +
+      '</div>' +
+      '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">OpenVPN is disabled for this virtual network.</div>';
   }
   document.getElementById('modal-ovpn-section').innerHTML = ovpnHtml
     ? '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' + ovpnHtml + '</div>'
@@ -2152,6 +2370,88 @@ function openNetModal(i) {
   // Load dynamic tabs
   modalLoadRoutes(n.name);
   modalLoadOutputs(n.name);
+}
+
+function openEnableNetworkOpenVPN() {
+  const n = _networksData[_modalNetIndex] || {};
+  const cfg = n.config || {};
+  const ovpn = cfg.openvpn || {};
+  document.getElementById('network-ovpn-listen').value = ovpn.listen || '0.0.0.0:1194';
+  document.getElementById('network-ovpn-protocol').value = ovpn.protocol || 'tcp';
+  document.getElementById('network-ovpn-subnet').value = ovpn.subnet || '';
+  document.getElementById('network-ovpn-cipher').value = ovpn.cipher || '';
+  openAddDialog('network-openvpn');
+  setTimeout(() => document.getElementById('network-ovpn-listen').focus(), 50);
+}
+
+async function enableNetworkOpenVPN() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  const listen = document.getElementById('network-ovpn-listen').value.trim();
+  const protocol = document.getElementById('network-ovpn-protocol').value;
+  const subnet = document.getElementById('network-ovpn-subnet').value.trim();
+  const cipher = document.getElementById('network-ovpn-cipher').value.trim();
+  if (!listen) { show_toast('Listen is required', 'error'); return; }
+  try {
+    const body = { listen, protocol };
+    if (subnet) body.subnet = subnet;
+    if (cipher) body.cipher = cipher;
+    await api_post('/api/network/' + encodeURIComponent(n.name) + '/openvpn', body);
+    closeAddDialog('network-openvpn');
+    show_toast('OpenVPN enabled', 'success');
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    load_vpn_clients();
+  } catch(e) {
+    show_toast('Failed to enable OpenVPN: ' + e.message, 'error');
+  }
+}
+
+async function disableNetworkOpenVPN() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  if (!await showConfirm('Disable OpenVPN for network "' + n.name + '"?', 'Disable OpenVPN')) return;
+  try {
+    await api_delete('/api/network/' + encodeURIComponent(n.name) + '/openvpn');
+    show_toast('OpenVPN disabled', 'success');
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    load_vpn_clients();
+  } catch(e) {
+    show_toast('Failed to disable OpenVPN: ' + e.message, 'error');
+  }
+}
+
+async function restartNetworkOpenVPN() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  try {
+    await api_post('/api/network/' + encodeURIComponent(n.name) + '/openvpn/restart', {});
+    show_toast('OpenVPN restarting', 'success');
+  } catch(e) {
+    show_toast('Failed to restart OpenVPN: ' + e.message, 'error');
+  }
+}
+
+async function saveNetworkSNAT() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  const scope = document.getElementById('network-snat-scope').value;
+  try {
+    if (scope === 'disable') {
+      await api_delete('/api/network/' + encodeURIComponent(n.name) + '/snat');
+    } else {
+      await api_post('/api/network/' + encodeURIComponent(n.name) + '/snat', { scope });
+    }
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    show_toast('SNAT updated', 'success');
+  } catch(e) {
+    show_toast('Failed to update SNAT: ' + e.message, 'error');
+  }
 }
 
 function closeNetModal() {
@@ -2230,13 +2530,14 @@ async function modalLoadRoutes(netName) {
 async function modalAddRoute() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
-  const prefix = document.getElementById('modal-route-prefix').value.trim();
-  const nexthop = document.getElementById('modal-route-nexthop').value.trim();
+  const prefix = document.getElementById('network-route-prefix').value.trim();
+  const nexthop = document.getElementById('network-route-nexthop').value.trim();
   if (!prefix) { show_toast('Prefix is required', 'error'); return; }
   try {
     await api_post('/api/network/' + encodeURIComponent(n.name) + '/route', { prefix, nexthop });
-    document.getElementById('modal-route-prefix').value = '';
-    document.getElementById('modal-route-nexthop').value = '';
+    document.getElementById('network-route-prefix').value = '';
+    document.getElementById('network-route-nexthop').value = '';
+    closeAddDialog('network-route');
     show_toast('Route added', 'success');
     modalLoadRoutes(n.name);
   } catch(e) {
@@ -2267,13 +2568,20 @@ async function modalLoadOutputs(netName) {
       el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No outputs configured</p>';
     } else {
       el.innerHTML = '<table style="width:100%;">' +
-        '<thead><tr><th>Protocol</th><th>Remote</th><th>Device</th><th>State</th><th>RX/TX</th><th></th></tr></thead><tbody>' +
+        '<thead><tr><th>Protocol</th><th>Remote</th><th>Segment / Secret / Crypt</th><th>Device</th><th>State</th><th>RX/TX</th><th></th></tr></thead><tbody>' +
         arr.map(o => {
           const state = o.state || '-';
           const bc = state === 'up' ? 'badge-green' : state === 'down' ? 'badge-red' : 'badge-gray';
+          const detail = o.protocol === 'tcp'
+            ? '<div class="td-mono" style="font-size:12px;line-height:1.5;">' +
+                '<div>secret: ' + esc(o.secret || '-') + '</div>' +
+                '<div>crypt: ' + esc(o.crypt || '-') + '</div>' +
+              '</div>'
+            : '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">segment: ' + (o.segment || '-') + '</div>';
           return '<tr>' +
             '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
             '<td class="td-mono">' + (o.remote || '-') + '</td>' +
+            '<td>' + detail + '</td>' +
             '<td class="td-mono td-muted">' + (o.device || '-') + '</td>' +
             '<td><span class="badge ' + bc + '">' + state + '</span></td>' +
             '<td class="td-muted" style="font-size:12px;">' + fmt_bytes(o.rxBytes) + ' / ' + fmt_bytes(o.txBytes) + '</td>' +
@@ -2289,16 +2597,30 @@ async function modalLoadOutputs(netName) {
 async function modalAddOutput() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
-  const protocol = document.getElementById('modal-out-proto').value;
-  const remote = document.getElementById('modal-out-remote').value.trim();
-  const secret = document.getElementById('modal-out-secret').value.trim();
+  const protocol = document.getElementById('network-out-proto').value;
+  const remote = document.getElementById('network-out-remote').value.trim();
+  const segment = parseInt(document.getElementById('network-out-segment').value.trim(), 10) || 0;
+  const secret = document.getElementById('network-out-secret').value.trim();
+  const crypt = document.getElementById('network-out-crypt').value.trim();
   if (!remote) { show_toast('Remote is required', 'error'); return; }
+  if (protocol === 'tcp') {
+    if (!secret) { show_toast('Secret is required for tcp output', 'error'); return; }
+    if (!crypt) { show_toast('Crypt is required for tcp output', 'error'); return; }
+  }
+  if (protocol === 'gre' || protocol === 'vxlan') {
+    if (!segment) { show_toast('Segment is required for ' + protocol + ' output', 'error'); return; }
+  }
   try {
     const body = { protocol, remote };
+    if (segment) body.segment = segment;
     if (secret) body.secret = secret;
+    if (crypt) body.crypt = crypt;
     await api_post('/api/network/' + encodeURIComponent(n.name) + '/output', body);
-    document.getElementById('modal-out-remote').value = '';
-    document.getElementById('modal-out-secret').value = '';
+    document.getElementById('network-out-remote').value = '';
+    document.getElementById('network-out-segment').value = '';
+    document.getElementById('network-out-secret').value = '';
+    document.getElementById('network-out-crypt').value = '';
+    closeAddDialog('network-output');
     show_toast('Output added', 'success');
     modalLoadOutputs(n.name);
   } catch(e) {
@@ -2488,10 +2810,88 @@ async function removeUser(fullName) {
 // =====================
 function openAddDialog(type) {
   document.getElementById('dlg-' + type).classList.remove('hidden');
-  if (type === 'vpnclient') onVpnNetworkChange();
+  if (type === 'vpnclient') {
+    onVpnNetworkChange();
+  } else if (type === 'router-redirect') {
+    const sourceInput = document.getElementById('router-redirect-source');
+    const sourceList = document.getElementById('router-redirect-source-list');
+    const ovpnSubnets = _networksData
+      .map(n => n && n.config && n.config.openvpn ? n.config.openvpn.subnet : '')
+      .filter((subnet, index, arr) => subnet && arr.indexOf(subnet) === index);
+    if (sourceList) {
+      sourceList.innerHTML = ovpnSubnets.map(subnet => '<option value="' + esc(subnet) + '"></option>').join('');
+    }
+    const usedTables = _routerRedirects
+      .map(r => r && r.table ? String(r.table) : '')
+      .filter((table, index, arr) => table && arr.indexOf(table) === index)
+      .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    const tableList = document.getElementById('router-redirect-table-list');
+    const tableHint = document.getElementById('router-redirect-table-hint');
+    if (tableList) {
+      const freeTables = [];
+      for (let t = 100; t <= 250 && freeTables.length < 12; t++) {
+        if (!usedTables.includes(String(t))) freeTables.push(String(t));
+      }
+      tableList.innerHTML = freeTables.map(table => '<option value="' + table + '"></option>').join('');
+    }
+    document.getElementById('router-redirect-source').value = '';
+    document.getElementById('router-redirect-nexthop').value = '';
+    document.getElementById('router-redirect-table').value = '';
+    if (sourceInput && ovpnSubnets.length > 0) {
+      sourceInput.value = ovpnSubnets[0];
+      sourceInput.placeholder = 'Select OpenVPN subnet or enter custom CIDR';
+    } else if (sourceInput) {
+      sourceInput.placeholder = 'e.g. 10.0.0.0/24';
+    }
+    if (tableHint) {
+      tableHint.textContent = usedTables.length > 0
+        ? 'Used table IDs: ' + usedTables.join(', ')
+        : 'No table IDs are currently in use.';
+    }
+    setTimeout(() => document.getElementById('router-redirect-source').focus(), 50);
+  } else if (type === 'network-route') {
+    document.getElementById('network-route-prefix').value = '';
+    document.getElementById('network-route-nexthop').value = '';
+    setTimeout(() => document.getElementById('network-route-prefix').focus(), 50);
+  } else if (type === 'network-output') {
+    document.getElementById('network-out-proto').value = 'tcp';
+    document.getElementById('network-out-remote').value = '';
+    document.getElementById('network-out-segment').value = '';
+    document.getElementById('network-out-secret').value = '';
+    document.getElementById('network-out-crypt').value = '';
+    onNetworkOutputProtocolChange();
+    setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
+  }
 }
 function closeAddDialog(type) {
   document.getElementById('dlg-' + type).classList.add('hidden');
+}
+
+function onNetworkOutputProtocolChange() {
+  const protocol = document.getElementById('network-out-proto').value;
+  const remoteInput = document.getElementById('network-out-remote');
+  const segmentGroup = document.getElementById('network-out-segment-group');
+  const secretGroup = document.getElementById('network-out-secret-group');
+  const cryptGroup = document.getElementById('network-out-crypt-group');
+  const secretLabel = secretGroup ? secretGroup.querySelector('label') : null;
+  if (protocol === 'tcp') {
+    if (remoteInput) remoteInput.placeholder = 'e.g. 1.2.3.4:4500';
+    if (segmentGroup) segmentGroup.style.display = 'none';
+    const segmentInput = document.getElementById('network-out-segment');
+    if (segmentInput) segmentInput.value = '';
+    if (secretLabel) secretLabel.innerHTML = 'Secret';
+    if (cryptGroup) cryptGroup.style.display = '';
+    if (secretGroup) secretGroup.style.display = '';
+  } else if (protocol === 'gre' || protocol === 'vxlan') {
+    if (remoteInput) remoteInput.placeholder = 'e.g. 1.2.3.4';
+    if (segmentGroup) segmentGroup.style.display = '';
+    if (secretGroup) secretGroup.style.display = 'none';
+    if (cryptGroup) cryptGroup.style.display = 'none';
+    const secretInput = document.getElementById('network-out-secret');
+    const cryptInput = document.getElementById('network-out-crypt');
+    if (secretInput) secretInput.value = '';
+    if (cryptInput) cryptInput.value = '';
+  }
 }
 
 let _confirmResolve = null;
