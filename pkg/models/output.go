@@ -14,6 +14,7 @@ type Output struct {
 	Segment   int
 	Device    string
 	Secret    string
+	Crypt     string
 	RxBytes   uint64
 	TxBytes   uint64
 	ErrPkt    uint64

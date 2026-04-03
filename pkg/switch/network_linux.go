@@ -304,6 +304,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 	out.Segment = port.Segment
 	out.Device = port.Link
 	out.Secret = port.Secret
+	out.Crypt = port.Crypt
 	out.Fallback = port.Fallback
 	cache.Output.Add(port.Link, out)
 

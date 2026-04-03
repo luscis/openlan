@@ -302,6 +302,67 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 .modal-form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .modal-input { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: #0d1117; color: var(--text); font-size: 13px; }
 .modal-input:focus { outline: none; border-color: var(--primary); }
+.about-shell { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.about-hero {
+  display: grid; grid-template-columns: 72px 1fr auto; gap: 18px; align-items: center;
+  padding: 22px; border: 1px solid var(--border); border-radius: 16px;
+  background: linear-gradient(135deg, rgba(88,166,255,.12), rgba(13,17,23,.9));
+}
+.about-logo {
+  width: 72px; height: 72px; border-radius: 18px; background: rgba(255,255,255,.04);
+  display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.08);
+}
+.about-kicker { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #8b949e; }
+.about-heading { font-size: 26px; font-weight: 800; color: var(--text); margin-top: 4px; }
+.about-copy { font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; max-width: 560px; }
+.about-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.about-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.about-stat {
+  padding: 16px 18px; border-radius: 12px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.about-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+.about-stat-value { margin-top: 10px; font-size: 16px; font-weight: 700; color: var(--text); }
+.about-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .9fr); gap: 18px; }
+.about-panel { border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.02); overflow: hidden; }
+.about-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.about-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.about-panel-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.about-table { width: 100%; border-collapse: collapse; }
+.about-table td { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.about-table tr:last-child td { border-bottom: none; }
+.about-table-key { width: 150px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.about-table-val { font-size: 13px; color: var(--text); }
+.about-contribs { padding: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.about-contrib {
+  padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: #21262d;
+}
+.about-contrib-name { font-size: 13px; color: var(--text); font-weight: 600; }
+.about-contrib-id { margin-top: 4px; font-size: 12px; color: var(--text-muted); font-family: monospace; word-break: break-all; }
+@media (max-width: 900px) {
+  .about-hero { grid-template-columns: 72px 1fr; }
+  .about-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .about-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .about-shell { padding: 18px; }
+  .about-hero { grid-template-columns: 1fr; }
+  .about-logo { width: 64px; height: 64px; }
+}
+select.modal-input,
+select {
+  background-color: #0d1117;
+  color: var(--text);
+  color-scheme: dark;
+}
+select.modal-input option,
+select option {
+  background: #0d1117;
+  color: var(--text);
+}
 </style>
 </head>
 <body>
@@ -1138,58 +1199,77 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 
         <!-- ABOUT PAGE -->
         <div class="page" id="page-about">
-          <div class="section" style="max-width:600px;">
+          <div class="section">
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 About OpenLAN
               </span>
             </div>
-            <div class="section-body" style="padding:24px;">
-              <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;">
-                <img src="/openlan.png" alt="OpenLAN" style="width:56px;height:56px;border-radius:12px;" onerror="this.style.display='none'">
+            <div class="section-body about-shell">
+              <div class="about-hero">
+                <div class="about-logo">
+                  <img src="/openlan.png" alt="OpenLAN" style="width:56px;height:56px;border-radius:14px;" onerror="this.style.display='none'">
+                </div>
                 <div>
-                  <div style="font-size:20px;font-weight:700;color:var(--text);">OpenLAN</div>
-                  <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Open Source Network Overlay Platform</div>
+                  <div class="about-kicker">Open Source Network Overlay Platform</div>
+                  <div class="about-heading">OpenLAN</div>
+                  <div class="about-copy">A compact control surface for overlay networking, routing, VPN access, and policy management across your node.</div>
+                </div>
+                <div class="about-actions">
+                  <a href="https://github.com/luscis/openlan" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="text-decoration:none;">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                    GitHub
+                  </a>
                 </div>
               </div>
-              <table style="width:100%;border-collapse:collapse;">
-                <tbody id="about-info-tbody"></tbody>
-              </table>
-              <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);">
-                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em;margin-bottom:12px;">Contributors</div>
-                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">Daniel Ding</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">danieldin186@gmail.com</span>
+              <div class="about-stats" id="about-stats"></div>
+              <div class="about-grid">
+                <div class="about-panel">
+                  <div class="about-panel-head">
+                    <div>
+                      <div class="about-panel-title">Build & Node</div>
+                      <div class="about-panel-sub">Version, runtime identity, and node-level context.</div>
+                    </div>
                   </div>
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">fanzhengweiwudi</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">fanzhengweiwudi@github</span>
+                  <table class="about-table">
+                    <tbody id="about-info-tbody"></tbody>
+                  </table>
+                </div>
+                <div class="about-panel">
+                  <div class="about-panel-head">
+                    <div>
+                      <div class="about-panel-title">Contributors</div>
+                      <div class="about-panel-sub">Core people behind the project.</div>
+                    </div>
                   </div>
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">Teddy_Zhu</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">teddyzhu15@gmail.com</span>
-                  </div>
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">sicheng</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">albert216@126.com</span>
-                  </div>
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">buliangjun</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">buliangjunpp@github</span>
-                  </div>
-                  <div style="display:grid;grid-template-columns:160px 1fr;gap:4px 16px;align-items:center;padding:8px 12px;background:#21262d;border:1px solid var(--border);border-radius:6px;">
-                    <span style="font-size:13px;color:var(--text);font-weight:500;">lishuai</span>
-                    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">872505094@qq.com</span>
+                  <div class="about-contribs">
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">Daniel Ding</div>
+                      <div class="about-contrib-id">danieldin186@gmail.com</div>
+                    </div>
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">fanzhengweiwudi</div>
+                      <div class="about-contrib-id">fanzhengweiwudi@github</div>
+                    </div>
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">Teddy_Zhu</div>
+                      <div class="about-contrib-id">teddyzhu15@gmail.com</div>
+                    </div>
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">sicheng</div>
+                      <div class="about-contrib-id">albert216@126.com</div>
+                    </div>
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">buliangjun</div>
+                      <div class="about-contrib-id">buliangjunpp@github</div>
+                    </div>
+                    <div class="about-contrib">
+                      <div class="about-contrib-name">lishuai</div>
+                      <div class="about-contrib-id">872505094@qq.com</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                <a href="https://github.com/luscis/openlan" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#21262d;border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:13px;text-decoration:none;">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
-                  GitHub
-                </a>
               </div>
             </div>
           </div>
@@ -2673,10 +2753,17 @@ async function removeNetwork(name) {
 // =====================
 // About
 function about_row(k, v) {
-  return '<tr style="border-bottom:1px solid var(--border);">' +
-    '<td style="padding:10px 0;font-size:13px;color:var(--text-muted);width:130px;font-weight:500;">' + k + '</td>' +
-    '<td style="padding:10px 0;font-size:13px;color:var(--text);">' + v + '</td>' +
+  return '<tr>' +
+    '<td class="about-table-key">' + k + '</td>' +
+    '<td class="about-table-val">' + v + '</td>' +
     '</tr>';
+}
+
+function about_stat(label, value) {
+  return '<div class="about-stat">' +
+    '<div class="about-stat-label">' + label + '</div>' +
+    '<div class="about-stat-value">' + value + '</div>' +
+  '</div>';
 }
 
 async function load_about() {
@@ -2686,6 +2773,12 @@ async function load_about() {
       api_get('/api/index').catch(() => ({}))
     ]);
     const w = (idx && idx.worker) || {};
+    document.getElementById('about-stats').innerHTML = [
+      about_stat('Version', v.version ? '<span class="td-mono">' + esc(v.version) + '</span>' : '-'),
+      about_stat('Node Alias', esc(w.alias || '-')),
+      about_stat('Protocol', esc(w.protocol || '-')),
+      about_stat('Uptime', fmt_duration(w.uptime))
+    ].join('');
     const rows = [
       about_row('Version', v.version ? '<span class="td-mono">' + esc(v.version) + '</span>' : '-'),
       about_row('Build Date', esc(v.date || '-')),
@@ -2698,6 +2791,7 @@ async function load_about() {
     ].join('');
     document.getElementById('about-info-tbody').innerHTML = rows;
   } catch(e) {
+    document.getElementById('about-stats').innerHTML = '';
     document.getElementById('about-info-tbody').innerHTML =
       '<tr><td colspan="2" style="padding:16px;color:var(--text-muted);">Failed to load info</td></tr>';
   }
