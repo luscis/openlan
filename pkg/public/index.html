@@ -192,7 +192,6 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 .action-delete:hover { background: rgba(239,68,68,.2); }
 .action-dark { background: #21262d; color: var(--text-secondary); border: 1px solid var(--border); }
 .action-dark:hover { background: #30363d; color: var(--text); }
-
 /* Alerts/toasts */
 #toast {
   position: fixed; top: 20px; right: 20px; z-index: 9999;
@@ -256,6 +255,7 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .modal-overlay.hidden { display: none; }
+.modal-overlay.modal-front { z-index: 1100; }
 .modal {
   background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
   width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;
@@ -299,6 +299,14 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
   color: var(--primary); margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid var(--border);
 }
 .detail-json { background: #010409; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-size: 12px; font-family: monospace; color: #79c0ff; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+.file-preview-body {
+  background: #010409; border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; font-size: 12.5px; font-family: monospace; color: var(--text);
+  white-space: pre-wrap; word-break: break-word; line-height: 1.6;
+  min-height: 220px; max-height: 60vh; overflow: auto;
+}
+.file-preview-loading { color: var(--text-muted); }
+.file-preview-error { color: var(--danger); }
 .modal-form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .modal-input { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: #0d1117; color: var(--text); font-size: 13px; }
 .modal-input:focus { outline: none; border-color: var(--primary); }
@@ -443,6 +451,22 @@ select option {
         <button class="btn btn-ghost btn-sm" onclick="userCancelEdit()">Cancel</button>
         <button class="btn btn-dark btn-sm" id="user-dialog-submit" onclick="addUser()">Add</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay modal-front hidden" id="dlg-file-preview">
+  <div class="modal" style="max-width:900px;">
+    <div class="modal-header">
+      <span class="modal-title" id="file-preview-title">File Preview</span>
+      <button class="modal-close" onclick="closeFilePreview()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <pre class="file-preview-body" id="file-preview-body"><span class="file-preview-loading">Loading...</span></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-dark btn-sm" id="file-preview-download" onclick="downloadCurrentPreview()">Download</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeFilePreview()">Close</button>
     </div>
   </div>
 </div>
@@ -1346,6 +1370,44 @@ function show_toast(msg, type) {
   t.textContent = msg;
   t.className = 'show ' + (type || '');
   setTimeout(() => { t.className = ''; }, 3500);
+}
+
+let _filePreviewDownload = null;
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function openTextPreview(url, filename, downloadAction) {
+  const title = document.getElementById('file-preview-title');
+  const body = document.getElementById('file-preview-body');
+  const downloadBtn = document.getElementById('file-preview-download');
+  title.textContent = filename;
+  body.innerHTML = '<span class="file-preview-loading">Loading...</span>';
+  _filePreviewDownload = typeof downloadAction === 'function' ? downloadAction : null;
+  downloadBtn.disabled = !_filePreviewDownload;
+  document.getElementById('dlg-file-preview').classList.remove('hidden');
+  const resp = await fetch(url, { method: 'GET' });
+  if (!resp.ok) {
+    body.innerHTML = '<span class="file-preview-error">Failed to load file: HTTP ' + escapeHtml(resp.status) + ': ' + escapeHtml(resp.statusText) + '</span>';
+    throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
+  }
+  const text = await resp.text();
+  body.textContent = text;
+}
+
+function closeFilePreview() {
+  document.getElementById('dlg-file-preview').classList.add('hidden');
+  _filePreviewDownload = null;
+}
+
+function downloadCurrentPreview() {
+  if (typeof _filePreviewDownload === 'function') _filePreviewDownload();
 }
 
 function gen_password() {
@@ -2412,7 +2474,6 @@ function openNetModal(i) {
 
   let ovpnHtml = '';
   if (ovpn) {
-    const profileUrl = State.baseUrl + '/api/network/' + encodeURIComponent(n.name) + '/ovpn?token=' + encodeURIComponent(State.token);
     const ovpnItems = [
       ['Listen', ovpn.listen], ['Protocol', ovpn.protocol], ['Subnet', ovpn.subnet],
       ['Cipher', ovpn.cipher], ['Push Routes', ovpn.push ? ovpn.push.join(', ') : null],
@@ -2422,7 +2483,7 @@ function openNetModal(i) {
       '<div style="display:flex;gap:8px;align-items:center;">' +
       '<button class="btn btn-sm btn-ghost" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
       '<button class="btn btn-sm btn-danger" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
-      '<a href="' + profileUrl + '" target="_blank" download="' + n.name + '.ovpn" class="btn btn-sm btn-ghost" style="text-decoration:none;">Download .ovpn</a>' +
+      '<button class="btn btn-sm btn-ghost" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')" type="button">View .ovpn</button>' +
       '</div>' +
       '</div>' +
       '<div class="detail-grid" style="margin-top:10px;">' +
@@ -2551,6 +2612,7 @@ function switchNetTab(name) {
 // Close modal on overlay click
 document.addEventListener('click', function(e) {
   if (e.target.id === 'net-modal') closeNetModal();
+  if (e.target.id === 'dlg-file-preview') closeFilePreview();
 });
 
 async function saveNetwork(name) {
@@ -2817,7 +2879,7 @@ async function load_users() {
         '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
         '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
         '<td style="white-space:nowrap;">' +
-          '<button class="action-btn action-dark" onclick="downloadUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Download .yaml</button> ' +
+          '<button class="action-btn action-dark" onclick="viewUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">View .yaml</button> ' +
           '<button class="action-btn action-dark" onclick="openEditUser(' + i + ')">Edit</button> ' +
           '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
         '</td>' +
@@ -2837,6 +2899,31 @@ function downloadUserAccess(fullName) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function viewUserAccess(fullName) {
+  if (!fullName) return;
+  const filename = fullName.split('@')[0] + '.yaml';
+  const url = State.baseUrl + '/api/user/' + encodeURIComponent(fullName) + '/access?token=' + encodeURIComponent(State.token);
+  openTextPreview(url, filename, function() { downloadUserAccess(fullName); }).catch(e => show_toast('Failed to view access file: ' + e.message, 'error'));
+}
+
+function downloadOpenVPNProfile(networkName) {
+  if (!networkName) return;
+  const url = State.baseUrl + '/api/network/' + encodeURIComponent(networkName) + '/ovpn?token=' + encodeURIComponent(State.token);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = networkName + '.ovpn';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function viewOpenVPNProfile(networkName) {
+  if (!networkName) return;
+  const filename = networkName + '.ovpn';
+  const url = State.baseUrl + '/api/network/' + encodeURIComponent(networkName) + '/ovpn?token=' + encodeURIComponent(State.token);
+  openTextPreview(url, filename, function() { downloadOpenVPNProfile(networkName); }).catch(e => show_toast('Failed to view OpenVPN profile: ' + e.message, 'error'));
 }
 
 function userResetForm() {
