@@ -8,11 +8,13 @@ import (
 
 func main() {
 	c := config.NewAccess()
-	p := access.NewAccess(c)
+	if c == nil {
+		return
+	}
 
+	p := access.NewAccess(c)
 	p.Initialize()
 	libol.Go(p.Start)
-
 	libol.Wait()
 	p.Stop()
 }

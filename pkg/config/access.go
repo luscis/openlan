@@ -60,14 +60,16 @@ func (i *Interface) Correct() {
 func NewAccess() *Access {
 	p := &Access{RequestAddr: true}
 	p.Parse()
-	p.Initialize()
+	if err := p.Initialize(); err != nil {
+		return nil
+	}
 	return p
 }
 
 func (ap *Access) Parse() {
 	flag.StringVar(&ap.Alias, "alias", "", "Alias for this Access")
 	flag.StringVar(&ap.Log.File, "log:file", "", "File log saved to")
-	flag.StringVar(&ap.Conf, "conf", "", "The configuration file")
+	flag.StringVar(&ap.Conf, "conf", ".access.yaml", "The configuration file")
 	flag.Parse()
 }
 
@@ -128,8 +130,8 @@ func (ap *Access) Correct() {
 }
 
 func (ap *Access) Load() error {
-	if err := libol.FileExist(ap.Conf); err == nil {
-		return libol.UnmarshalLoad(ap, ap.Conf)
+	if err := libol.FileExist(ap.Conf); err != nil {
+		return err
 	}
-	return nil
+	return libol.UnmarshalLoad(ap, ap.Conf)
 }

@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
@@ -56,4 +58,12 @@ func GetQueryOne(req *http.Request, name string) string {
 		return values[0]
 	}
 	return ""
+}
+
+func WriteAttachment(w http.ResponseWriter, file string) {
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file))
+}
+
+func GetServer(r *http.Request) string {
+	return strings.SplitN(r.Host, ":", 2)[0]
 }

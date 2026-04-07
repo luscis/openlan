@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
@@ -140,10 +139,13 @@ func (h Network) Save(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Network) Profile(w http.ResponseWriter, r *http.Request) {
-	server := strings.SplitN(r.Host, ":", 2)[0]
+	server := GetServer(r)
 	vars := mux.Vars(r)
-	data, err := cache.VPNClient.GetClientProfile(vars["id"], server)
+
+	name := vars["id"]
+	data, err := cache.VPNClient.GetClientProfile(name, server)
 	if err == nil {
+		WriteAttachment(w, name+".ovpn")
 		_, _ = w.Write([]byte(data))
 	} else {
 		http.Error(w, err.Error(), http.StatusNotFound)

@@ -1,17 +1,20 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
+	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
 type User struct {
+	cs SwitchApi
 }
 
 func (h User) Router(router *mux.Router) {
@@ -21,6 +24,7 @@ func (h User) Router(router *mux.Router) {
 	router.HandleFunc("/api/user/{id}", h.Add).Methods("POST")
 	router.HandleFunc("/api/user/{id}", h.Del).Methods("DELETE")
 	router.HandleFunc("/api/user/{id}/check", h.Check).Methods("POST")
+	router.HandleFunc("/api/user/{id}/access", h.Access).Methods("GET")
 }
 
 func (h User) List(w http.ResponseWriter, r *http.Request) {
@@ -97,4 +101,37 @@ func (h User) Check(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+}
+
+func (h User) Access(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	user := cache.User.Get(id)
+	if user == nil {
+		http.Error(w, id, http.StatusNotFound)
+		return
+	}
+
+	yaml := struct {
+		Protocol   string    `yaml:"protocol"`
+		Connection string    `yaml:"connection"`
+		Crypt      *co.Crypt `yaml:"crypt,omitempty"`
+		Username   string    `yaml:"username"`
+		Password   string    `yaml:"password"`
+	}{}
+
+	if cfg := h.cs.Config(); cfg != nil {
+		yaml.Crypt = cfg.Crypt
+		yaml.Protocol = cfg.Protocol
+	}
+	connection := fmt.Sprintf("%s:10002", GetServer(r))
+	username := user.Id()
+	password := user.Password
+
+	yaml.Connection = connection
+	yaml.Username = username
+	yaml.Password = password
+
+	WriteAttachment(w, user.Name+".yaml")
+	ResponseYaml(w, yaml)
 }

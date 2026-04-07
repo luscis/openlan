@@ -216,7 +216,8 @@ func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
 
 	elements := strings.SplitN(r.URL.Path, "/", 8)
 	if len(elements) > 4 {
-		if elements[2] == "network" {
+		switch elements[2] {
+		case "network":
 			network := elements[3]
 			if !strings.HasSuffix(user, "@"+network) {
 				return false
@@ -225,6 +226,15 @@ func (h *Http) IsAuth(w http.ResponseWriter, r *http.Request) bool {
 			if api.UserCheck(user, pass) == nil {
 				// user can URL: /1/2/3/<ovpn|guest>.
 				if zone == "ovpn" || zone == "guest" {
+					return true
+				}
+			}
+		case "user":
+			user := elements[3]
+			zone := elements[4]
+			if api.UserCheck(user, pass) == nil {
+				// user can URL: /1/2/3/<access>.
+				if zone == "access" {
 					return true
 				}
 			}

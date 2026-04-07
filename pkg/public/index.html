@@ -717,7 +717,7 @@ select option {
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <img src="/openlan.png" class="sidebar-logo" alt="" onerror="this.style.display='none'">
+        <img src="/favicon.ico" class="sidebar-logo" alt="" onerror="this.style.display='none'">
         <div>
           <div class="sidebar-brand">OpenLAN</div>
           <div class="sidebar-version" id="sw-version">Management Console</div>
@@ -1209,7 +1209,7 @@ select option {
             <div class="section-body about-shell">
               <div class="about-hero">
                 <div class="about-logo">
-                  <img src="/openlan.png" alt="OpenLAN" style="width:56px;height:56px;border-radius:14px;" onerror="this.style.display='none'">
+                  <img src="/favicon.ico" alt="OpenLAN" style="width:56px;height:56px;border-radius:14px;" onerror="this.style.display='none'">
                 </div>
                 <div>
                   <div class="about-kicker">Open Source Network Overlay Platform</div>
@@ -2817,6 +2817,7 @@ async function load_users() {
         '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
         '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
         '<td style="white-space:nowrap;">' +
+          '<button class="action-btn action-dark" onclick="downloadUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Download .yaml</button> ' +
           '<button class="action-btn action-dark" onclick="openEditUser(' + i + ')">Edit</button> ' +
           '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
         '</td>' +
@@ -2825,6 +2826,17 @@ async function load_users() {
   } catch(e) {
     show_toast('Failed to load users: ' + e.message, 'error');
   }
+}
+
+function downloadUserAccess(fullName) {
+  if (!fullName) return;
+  const url = State.baseUrl + '/api/user/' + encodeURIComponent(fullName) + '/access?token=' + encodeURIComponent(State.token);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function userResetForm() {
