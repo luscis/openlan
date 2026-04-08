@@ -18,7 +18,7 @@ func Add(router *mux.Router, cs SwitchApi) {
 	Version{cs: cs}.Router(router)
 	Log{}.Router(router)
 	RateLimit{cs: cs}.Router(router)
-	Ceci{}.Router(router)
+	Ceci{cs: cs}.Router(router)
 	Bgp{}.Router(router)
 	IPSec{}.Router(router)
 

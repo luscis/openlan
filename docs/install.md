@@ -64,7 +64,7 @@ OpenLAN软件包含下面部分：
    - prefix: 192.168.10.0/24
    openvpn:
      protocol: tcp
-     listen: 0.0.0.0:1194
+     listen: :1194
    ```
 
 6. 重启Central Switch服务；

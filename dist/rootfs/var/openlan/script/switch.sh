@@ -15,6 +15,9 @@ function prepare() {
         done
     done
 
+    # new directory.
+    mkdir -p /var/openlan/{cert,openvpn,access,dhcp,ceci}
+
     sets=$(ipset list | grep '^Name: xtt'| awk '{print $2}')
     for s in $sets; do
         ipset destroy $s

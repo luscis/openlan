@@ -144,7 +144,7 @@ linux-bin: update linux-tar ## build linux install binary
 install: init linux ## install packages
 	@mkdir -p $(LIN_DIR)
 	@cp -rf $(SD)/dist/rootfs/{etc,var,usr} $(LIN_DIR)
-	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,access,dhcp}
+	@mkdir -p $(LIN_DIR)/var/openlan/{cert,openvpn,access,dhcp,ceci}
 	@cp -rf $(SD)/dist/cert/openlan/cert $(LIN_DIR)/var/openlan
 	@cp -rf $(SD)/dist/cert/openlan/ca/ca.crt $(LIN_DIR)/var/openlan/cert
 	@cp -rf $(SD)/pkg/public $(LIN_DIR)/var/openlan

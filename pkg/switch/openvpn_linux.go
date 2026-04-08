@@ -176,6 +176,9 @@ func NewOpenVPN(cfg *co.OpenVPN) *OpenVPN {
 		Port:     "4494",
 	}
 	obj.Local = strings.SplitN(cfg.Listen, ":", 2)[0]
+	if obj.Local == "" {
+		obj.Local = "0.0.0.0"
+	}
 	if strings.Contains(cfg.Listen, ":") {
 		obj.Port = strings.SplitN(cfg.Listen, ":", 2)[1]
 	}

@@ -611,6 +611,23 @@ select option {
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="dlg-ceci-tcp">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="modal-title">Add Ceci TCP</span>
+      <button class="modal-close" onclick="closeAddDialog('ceci-tcp')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;" type="text" id="ceci-tcp-listen" placeholder="e.g. 0.0.0.0:10002"></div>
+      <div class="form-group"><label>Target <span style="color:var(--text-muted);font-weight:400;">(one per line)</span></label><textarea class="modal-input" style="width:100%;min-height:120px;resize:vertical;" id="ceci-tcp-target" placeholder="e.g. 10.0.0.2:10002"></textarea></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('ceci-tcp')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="ceciAddTcp()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Network Detail Modal -->
 <div class="modal-overlay hidden" id="net-modal">
   <div class="modal">
@@ -782,6 +799,10 @@ select option {
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           IPSec Network
         </div>
+        <div class="nav-item nav-sub" onclick="gotoPanel('ceci')" id="nav-ceci" style="display:none;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
+          Ceci Network
+        </div>
         <div class="nav-item" onclick="showPage('users')" id="nav-users">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Authenticated User
@@ -879,6 +900,7 @@ select option {
                     <th>Network</th>
                     <th>User</th>
                     <th>Alias</th>
+                    <th>Device</th>
                     <th>Remote</th>
                     <th>Protocol</th>
                     <th>Rx / Tx Bytes</th>
@@ -1196,6 +1218,41 @@ select option {
           </div>
         </div>
 
+        <div class="page" id="page-ceci">
+          <div class="section" id="panel-ceci">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
+                Ceci Network
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="saveNetwork('ceci')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save
+              </button>
+            </div>
+          </div>
+
+          <div class="section" style="margin-top:16px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
+                TCP Entries
+              </span>
+              <button class="btn btn-dark btn-sm" onclick="openAddDialog('ceci-tcp')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add
+              </button>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead><tr><th>Mode</th><th>Listen</th><th>Target</th><th></th></tr></thead>
+                <tbody id="ceci-tcp-tbody"></tbody>
+              </table>
+              <div class="section-footer" id="ceci-tcp-count">0</div>
+            </div>
+          </div>
+        </div>
+
         <!-- USERS PAGE -->
         <div class="page" id="page-users">
           <div class="section">
@@ -1508,6 +1565,7 @@ const PAGE_TITLES = {
   bgp: 'BGP Network',
   router: 'Router Network',
   ipsec: 'IPSec Network',
+  ceci: 'Ceci Network',
   users: 'Users',
   about: 'About'
 };
@@ -1547,6 +1605,7 @@ function refreshCurrentPage() {
   else if (p === 'bgp') load_bgp().then(done).catch(done);
   else if (p === 'router') load_router().then(done).catch(done);
   else if (p === 'ipsec') load_ipsec().then(done).catch(done);
+  else if (p === 'ceci') load_ceci().then(done).catch(done);
   else if (p === 'users') load_users().then(done).catch(done);
   else if (p === 'about') load_about().then(done).catch(done);
   else done();
@@ -1689,13 +1748,14 @@ async function load_clients() {
   document.getElementById('access-count').textContent = access.length;
   const ab = document.getElementById('access-tbody');
   if (access.length === 0) {
-    ab.innerHTML = '<tr class="empty-row"><td colspan="9">No access points connected</td></tr>';
+    ab.innerHTML = '<tr class="empty-row"><td colspan="10">No access points connected</td></tr>';
   } else {
     ab.innerHTML = access.map(a => '<tr>' +
       '<td class="td-mono td-muted" style="font-size:11px;">' + (a.uuid || '-') + '</td>' +
       '<td>' + (a.network || '-') + '</td>' +
       '<td>' + (a.user || '-') + '</td>' +
       '<td>' + (a.alias || '-') + '</td>' +
+      '<td class="td-mono">' + (a.device || '-') + '</td>' +
       '<td class="td-mono">' + (a.remote || '-') + '</td>' +
       '<td><span class="badge badge-blue">' + (a.protocol || '-') + '</span></td>' +
       '<td>' + fmt_bytes(a.rxBytes||0) + ' / ' + fmt_bytes(a.txBytes||0) + '</td>' +
@@ -1843,10 +1903,12 @@ async function load_special_nav() {
   const hasBgp = _networksData.some(n => n.name === 'bgp');
   const hasRouter = _networksData.some(n => n.name === 'router');
   const hasIpsec = _networksData.some(n => n.name === 'ipsec');
+  const hasCeci = _networksData.some(n => n.name === 'ceci');
 
   document.getElementById('nav-bgp').style.display = hasBgp ? '' : 'none';
   document.getElementById('nav-router').style.display = hasRouter ? '' : 'none';
   document.getElementById('nav-ipsec').style.display = hasIpsec ? '' : 'none';
+  document.getElementById('nav-ceci').style.display = hasCeci ? '' : 'none';
 
 }
 
@@ -2302,6 +2364,76 @@ async function load_ipsec() {
         ).join('');
   } catch(e) {
     document.getElementById('ipsec-tbody').innerHTML = '<tr class="empty-row"><td colspan="8">-</td></tr>';
+  }
+}
+
+let _ceciTcpEntries = [];
+
+async function load_ceci() {
+  const tbody = document.getElementById('ceci-tcp-tbody');
+  try {
+    const entries = await api_get('/api/network/ceci/tcp');
+    _ceciTcpEntries = Array.isArray(entries) ? entries : [];
+    document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
+    if (_ceciTcpEntries.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No Ceci TCP entries</td></tr>';
+      return;
+    }
+    tbody.innerHTML = _ceciTcpEntries.map((item, i) =>
+      '<tr>' +
+        '<td><span class="badge badge-blue">' + esc(item.mode || 'tcp') + '</span></td>' +
+        '<td class="td-mono">' + esc(item.listen || '-') + '</td>' +
+        '<td>' + ceciTargetHtml(item.target) + '</td>' +
+        '<td><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
+      '</tr>'
+    ).join('');
+  } catch(e) {
+    _ceciTcpEntries = [];
+    document.getElementById('ceci-tcp-count').textContent = '0';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Failed to load Ceci entries</td></tr>';
+    show_toast('Failed to load ceci network: ' + e.message, 'error');
+  }
+}
+
+function ceciTargetHtml(targets) {
+  const list = Array.isArray(targets) ? targets.filter(Boolean) : [];
+  if (list.length === 0) return '<span class="td-muted">-</span>';
+  return list.map(target =>
+    '<div class="td-mono" style="font-size:12px;line-height:1.6;">' + esc(target) + '</div>'
+  ).join('');
+}
+
+function ceciParseTargets(raw) {
+  return raw.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+}
+
+async function ceciAddTcp() {
+  const listen = document.getElementById('ceci-tcp-listen').value.trim();
+  const target = ceciParseTargets(document.getElementById('ceci-tcp-target').value);
+  if (!listen) { show_toast('Listen is required', 'error'); return; }
+  try {
+    await api_post('/api/network/ceci/tcp', { mode: 'tcp', listen, target });
+    document.getElementById('ceci-tcp-listen').value = '';
+    document.getElementById('ceci-tcp-target').value = '';
+    closeAddDialog('ceci-tcp');
+    await load_ceci();
+    show_toast('Ceci TCP entry added', 'success');
+  } catch(e) {
+    show_toast('Failed to add ceci tcp entry: ' + e.message, 'error');
+  }
+}
+
+async function ceciDelTcp(index) {
+  const item = _ceciTcpEntries[index];
+  if (!item) return;
+  const ok = await showConfirm('Remove ceci tcp entry ' + (item.listen || '-') + '?', 'Remove Ceci TCP');
+  if (!ok) return;
+  try {
+    await api_delete('/api/network/ceci/tcp', { mode: item.mode || 'tcp', listen: item.listen, target: item.target || [] });
+    await load_ceci();
+    show_toast('Ceci TCP entry removed', 'success');
+  } catch(e) {
+    show_toast('Failed to remove ceci tcp entry: ' + e.message, 'error');
   }
 }
 
@@ -3054,6 +3186,10 @@ function openAddDialog(type) {
     document.getElementById('network-out-crypt').value = '';
     onNetworkOutputProtocolChange();
     setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
+  } else if (type === 'ceci-tcp') {
+    document.getElementById('ceci-tcp-listen').value = '';
+    document.getElementById('ceci-tcp-target').value = '';
+    setTimeout(() => document.getElementById('ceci-tcp-listen').focus(), 50);
   }
 }
 function closeAddDialog(type) {

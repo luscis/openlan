@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
+	cf "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
 	cn "github.com/luscis/openlan/pkg/network"
@@ -672,8 +673,29 @@ func (h Ceci) Router(router *mux.Router) {
 }
 
 func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
-	libol.Debug("Ceci.Get %s")
-	ResponseJson(w, nil)
+	items := make([]schema.CeciTcp, 0, 16)
+	if h.cs == nil || h.cs.Config() == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	network := h.cs.Config().GetNetwork("ceci")
+	if network == nil {
+		ResponseJson(w, items)
+		return
+	}
+	if spec, ok := network.Specifies.(*cf.CeciSpecifies); ok && spec != nil {
+		for _, value := range spec.Tcp {
+			if value == nil {
+				continue
+			}
+			items = append(items, schema.CeciTcp{
+				Mode:   value.Mode,
+				Listen: value.Listen,
+				Target: value.Target,
+			})
+		}
+	}
+	ResponseJson(w, items)
 }
 
 func (h Ceci) Post(w http.ResponseWriter, r *http.Request) {
