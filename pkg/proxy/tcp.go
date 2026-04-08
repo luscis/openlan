@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"errors"
 	"io"
 	"net"
 	"time"
@@ -81,7 +82,11 @@ func (t *TcpProxy) Start() {
 		for {
 			conn, err := listen.Accept()
 			if err != nil {
-				t.out.Error("TcpServer.Accept: %s", err)
+				if errors.Is(err, net.ErrClosed) {
+					t.out.Debug("TcpServer.Accept: closed")
+				} else {
+					t.out.Error("TcpServer.Accept: %s", err)
+				}
 				break
 			}
 			// connect target and pipe it.

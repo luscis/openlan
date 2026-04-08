@@ -94,6 +94,10 @@ func (h *Http) Prome(r *mux.Router) {
 func (h *Http) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		libol.Info("Http.Middleware %s %s", r.Method, r.URL.Path)
+		if r.URL.Path == "/favicon.ico" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if h.IsAuth(w, r) {
 			latst := time.Now().Unix()
 			next.ServeHTTP(w, r)

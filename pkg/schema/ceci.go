@@ -9,4 +9,5 @@ type CeciTcp struct {
 	Mode   string   `json:"mode"`
 	Listen string   `json:"listen"`
 	Target []string `json:"target,omitempty"`
+	Status string   `json:"status,omitempty"`
 }

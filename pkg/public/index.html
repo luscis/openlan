@@ -1031,7 +1031,7 @@ select option {
             <div class="section-body">
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Subnet</th><th>SNAT</th><th>OpenVPN</th><th style="width:160px;">Actions</th></tr>
+                  <tr><th>Name</th><th>Subnet</th><th>SNAT</th><th>OpenVPN</th><th>Status</th><th style="width:160px;">Actions</th></tr>
                 </thead>
                 <tbody id="networks-tbody"></tbody>
               </table>
@@ -1245,7 +1245,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Mode</th><th>Listen</th><th>Target</th><th></th></tr></thead>
+                <thead><tr><th>Mode</th><th>Listen</th><th>Target</th><th>Status</th><th style="width:160px;"></th></tr></thead>
                 <tbody id="ceci-tcp-tbody"></tbody>
               </table>
               <div class="section-footer" id="ceci-tcp-count">0</div>
@@ -1388,8 +1388,9 @@ function fmt_bytes(b) {
   return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
 }
 
-function fmt_bits(bps) {
-  if (!bps || bps === 0) return '0 bps';
+function fmt_bits(bytesPerSecond) {
+  if (!bytesPerSecond || bytesPerSecond === 0) return '0 bps';
+  const bps = bytesPerSecond * 8;
   const units = ['bps','Kbps','Mbps','Gbps'];
   const i = Math.floor(Math.log(bps) / Math.log(1000));
   return (bps / Math.pow(1000, i)).toFixed(1) + ' ' + units[i];
@@ -1859,6 +1860,14 @@ async function load_routes() {
 // =====================
 let _networksData = [];
 
+function statusBadge(status, disabledText = 'Disabled') {
+  const value = (status || '').toLowerCase();
+  if (value === 'running') return '<span class="badge badge-green">Running</span>';
+  if (value === 'stopped') return '<span class="badge badge-red">Stopped</span>';
+  if (value === 'disabled') return '<span class="badge badge-gray">' + esc(disabledText) + '</span>';
+  return '<span class="badge badge-yellow">' + esc(status || '-') + '</span>';
+}
+
 async function load_networks() {
   try {
     const nets = await api_get('/api/network');
@@ -1868,7 +1877,7 @@ async function load_networks() {
     document.getElementById('networks-count').textContent = regularNets.length;
     const nb = document.getElementById('networks-tbody');
     if (regularNets.length === 0) {
-      nb.innerHTML = '<tr class="empty-row"><td colspan="5">No networks configured</td></tr>';
+      nb.innerHTML = '<tr class="empty-row"><td colspan="6">No networks configured</td></tr>';
     } else {
       nb.innerHTML = regularNets.map((n, i) => {
         // remap index to _networksData
@@ -1884,6 +1893,7 @@ async function load_networks() {
           '<td class="td-muted td-mono" style="font-size:12px;">' + subnet + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + snat + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + ovpn + '</td>' +
+          '<td>' + statusBadge(n.openvpnStatus, 'Disabled') + '</td>' +
           '<td style="display:flex;gap:6px;">' +
             '<button class="action-btn btn-detail" onclick="openNetModal(' + i + ')">Details</button>' +
             '<button class="action-btn btn-save" onclick="saveNetwork(\'' + esc(n.name) + '\')">Save</button>' +
@@ -2376,7 +2386,7 @@ async function load_ceci() {
     _ceciTcpEntries = Array.isArray(entries) ? entries : [];
     document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
     if (_ceciTcpEntries.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No Ceci TCP entries</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No Ceci TCP entries</td></tr>';
       return;
     }
     tbody.innerHTML = _ceciTcpEntries.map((item, i) =>
@@ -2384,13 +2394,14 @@ async function load_ceci() {
         '<td><span class="badge badge-blue">' + esc(item.mode || 'tcp') + '</span></td>' +
         '<td class="td-mono">' + esc(item.listen || '-') + '</td>' +
         '<td>' + ceciTargetHtml(item.target) + '</td>' +
-        '<td><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
+        '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
+        '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
     _ceciTcpEntries = [];
     document.getElementById('ceci-tcp-count').textContent = '0';
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Failed to load Ceci entries</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Failed to load Ceci entries</td></tr>';
     show_toast('Failed to load ceci network: ' + e.message, 'error');
   }
 }
@@ -2615,6 +2626,7 @@ function openNetModal(i) {
       '<div style="display:flex;gap:8px;align-items:center;">' +
       '<button class="btn btn-sm btn-ghost" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
       '<button class="btn btn-sm btn-danger" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
+      '<button class="btn btn-sm btn-ghost" onclick="viewOpenVPNLog(\'' + esc(n.name) + '\')" type="button">View Log</button>' +
       '<button class="btn btn-sm btn-ghost" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')" type="button">View .ovpn</button>' +
       '</div>' +
       '</div>' +
@@ -3056,6 +3068,20 @@ function viewOpenVPNProfile(networkName) {
   const filename = networkName + '.ovpn';
   const url = State.baseUrl + '/api/network/' + encodeURIComponent(networkName) + '/ovpn?token=' + encodeURIComponent(State.token);
   openTextPreview(url, filename, function() { downloadOpenVPNProfile(networkName); }).catch(e => show_toast('Failed to view OpenVPN profile: ' + e.message, 'error'));
+}
+
+function viewOpenVPNLog(networkName) {
+  if (!networkName) return;
+  const filename = networkName + '-openvpn.log';
+  const url = State.baseUrl + '/api/network/' + encodeURIComponent(networkName) + '/openvpn/log?token=' + encodeURIComponent(State.token);
+  openTextPreview(url, filename).catch(e => show_toast('Failed to view OpenVPN log: ' + e.message, 'error'));
+}
+
+function viewCeciTcpLog(listen) {
+  if (!listen) return;
+  const filename = 'ceci-' + listen.replace(/[^\w.-]+/g, '_') + '.log';
+  const url = State.baseUrl + '/api/network/ceci/tcp/log?listen=' + encodeURIComponent(listen) + '&token=' + encodeURIComponent(State.token);
+  openTextPreview(url, filename).catch(e => show_toast('Failed to view Ceci log: ' + e.message, 'error'));
 }
 
 function userResetForm() {

@@ -44,6 +44,11 @@ type Access struct {
 	Run0        string    `json:"run0,omitempty" yaml:"run0,omitempty"`
 }
 
+type ForwardRule struct {
+	Prefix string
+	To     string
+}
+
 func (a *Access) ID() string {
 	return fmt.Sprintf("%s:%s:%s", a.Network, a.Connection, a.Username)
 }
@@ -134,4 +139,31 @@ func (ap *Access) Load() error {
 		return err
 	}
 	return libol.UnmarshalLoad(ap, ap.Conf)
+}
+
+func ParseForwardRule(value string) ForwardRule {
+	rule := ForwardRule{}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return rule
+	}
+
+	parts := strings.SplitN(value, " to ", 2)
+	rule.Prefix = strings.TrimSpace(parts[0])
+	if len(parts) == 2 {
+		rule.To = strings.TrimSpace(parts[1])
+	}
+	return rule
+}
+
+func (ap *Access) ForwardRules() []ForwardRule {
+	rules := make([]ForwardRule, 0, len(ap.Forward))
+	for _, item := range ap.Forward {
+		rule := ParseForwardRule(item)
+		if rule.Prefix == "" {
+			continue
+		}
+		rules = append(rules, rule)
+	}
+	return rules
 }

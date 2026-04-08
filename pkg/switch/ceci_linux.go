@@ -50,18 +50,20 @@ func (w *CeciWorker) killPid(name string) {
 
 func (w *CeciWorker) reloadTcp(obj *co.CeciTcp) {
 	name := CeciDir + obj.Id()
-	out, err := libol.CreateFile(name + ".log")
-	if err != nil {
-		w.out.Warn("CeciWorker.reloadTcp: %s", err)
-		return
-	}
 
 	w.killPid(name + ".pid")
 	if err := libol.MarshalSave(obj, name+".yaml", true); err != nil {
 		w.out.Warn("CeciWorker.reloadTcp: %s", err)
 		return
 	}
+
 	libol.Go(func() {
+		out, err := libol.CreateFile(name + ".log")
+		if err != nil {
+			w.out.Warn("CeciWorker.reloadTcp: %s", err)
+			return
+		}
+		defer out.Close()
 		w.out.Info("CeciWorker.reloadTcp: %s", obj.Id())
 		cmd := exec.Command(CeciBin, "-mode", obj.Mode, "-conf", name+".yaml", "-write-pid", name+".pid")
 		cmd.Stdout = out

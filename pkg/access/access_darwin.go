@@ -26,9 +26,9 @@ func (p *Access) Initialize() {
 	p.MixAccess.Initialize()
 }
 
-func (p *Access) routeAdd(prefix string) ([]byte, error) {
+func (p *Access) routeAdd(prefix, nexthop string) ([]byte, error) {
 	network.RouteDel("", prefix, "")
-	out, err := network.RouteAdd("", prefix, p.gateway)
+	out, err := network.RouteAdd("", prefix, nexthop)
 	return out, err
 }
 
@@ -54,7 +54,7 @@ func (p *Access) AddAddr(addr, gateway string) error {
 	p.gateway = gateway
 
 	// add directly route.
-	out, err = p.routeAdd(addr)
+	out, err = p.routeAdd(addr, p.gateway)
 	if err != nil {
 		p.out.Warn("Access.AddAddr: %s, %s", err, out)
 	}
@@ -87,18 +87,26 @@ func (p *Access) DelAddr(addr string) error {
 }
 
 func (p *Access) AddRoute() error {
-	to := p.config.Forward
-	if to == nil {
+	rules := p.config.ForwardRules()
+	if len(rules) == 0 {
 		return nil
 	}
 
-	for _, prefix := range to {
-		out, err := p.routeAdd(prefix)
-		if err != nil {
-			p.out.Warn("Access.AddRoute: %s: %s", prefix, out)
+	for _, rule := range rules {
+		via := rule.To
+		if via == "" {
+			via = p.gateway
+		}
+		if via == "" {
+			p.out.Warn("Access.AddRoute: %s missing gateway", rule.Prefix)
 			continue
 		}
-		p.out.Info("Access.AddRoute: %s via %s", prefix, p.IfName())
+		out, err := p.routeAdd(rule.Prefix, via)
+		if err != nil {
+			p.out.Warn("Access.AddRoute: %s: %s", rule.Prefix, out)
+			continue
+		}
+		p.out.Info("Access.AddRoute: %s via %s", rule.Prefix, via)
 	}
 	return nil
 }

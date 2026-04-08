@@ -72,8 +72,9 @@ type Subnet struct {
 }
 
 type Network struct {
-	Name   string      `json:"name"`
-	Config interface{} `json:"config"`
+	Name          string      `json:"name"`
+	Config        interface{} `json:"config"`
+	OpenVPNStatus string      `json:"openvpnStatus,omitempty"`
 }
 
 type FindHop struct {

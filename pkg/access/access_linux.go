@@ -136,23 +136,26 @@ func (p *Access) OnTap(w *TapWorker) error {
 }
 
 func (p *Access) AddRoute() error {
-	to := p.config.Forward
-	if to == nil {
+	rules := p.config.ForwardRules()
+	if len(rules) == 0 {
 		return nil
 	}
 
-	via := p.gateway
-	if via == "" {
-		return nil
-	}
-
-	for _, prefix := range to {
-		out, err := network.RouteAdd(p.IfName(), prefix, via)
-		if err != nil {
-			p.out.Warn("Access.AddRoute: %s: %s", prefix, out)
+	for _, rule := range rules {
+		via := rule.To
+		if via == "" {
+			via = p.gateway
+		}
+		if via == "" {
+			p.out.Warn("Access.AddRoute: %s missing gateway", rule.Prefix)
 			continue
 		}
-		p.out.Info("Access.AddRoute: %s via %s", prefix, via)
+		out, err := network.RouteAdd(p.IfName(), rule.Prefix, via)
+		if err != nil {
+			p.out.Warn("Access.AddRoute: %s: %s", rule.Prefix, out)
+			continue
+		}
+		p.out.Info("Access.AddRoute: %s via %s", rule.Prefix, via)
 	}
 	return nil
 }

@@ -1,7 +1,11 @@
 package api
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
@@ -27,6 +31,7 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/address", h.DelAddr).Methods("DELETE")
 	router.HandleFunc("/get/network/{id}/ovpn", h.Profile).Methods("GET")
 	router.HandleFunc("/api/network/{id}/ovpn", h.Profile).Methods("GET")
+	router.HandleFunc("/api/network/{id}/openvpn/log", h.OpenVPNLog).Methods("GET")
 	router.HandleFunc("/api/network/{id}/openvpn", h.AddVPN).Methods("POST")
 	router.HandleFunc("/api/network/{id}/openvpn", h.DelVPN).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.StartVPN).Methods("POST")
@@ -38,7 +43,11 @@ func (h Network) List(w http.ResponseWriter, r *http.Request) {
 		if u == nil {
 			break
 		}
-		nets = append(nets, models.NewNetworkSchema(u))
+		item := models.NewNetworkSchema(u)
+		if cfg, ok := u.Config.(*cf.Network); ok {
+			item.OpenVPNStatus = openVPNStatus(cfg)
+		}
+		nets = append(nets, item)
 	}
 	ResponseJson(w, nets)
 }
@@ -47,10 +56,74 @@ func (h Network) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	net := cache.Network.Get(vars["id"])
 	if net != nil {
-		ResponseJson(w, models.NewNetworkSchema(net))
+		item := models.NewNetworkSchema(net)
+		if cfg, ok := net.Config.(*cf.Network); ok {
+			item.OpenVPNStatus = openVPNStatus(cfg)
+		}
+		ResponseJson(w, item)
 	} else {
 		http.Error(w, vars["id"], http.StatusNotFound)
 	}
+}
+
+func processStatusByPidFile(file string) string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return "stopped"
+	}
+	pid := 0
+	if _, err := fmt.Sscanf(string(data), "%d", &pid); err != nil || pid <= 0 {
+		return "stopped"
+	}
+	if libol.HasProcess(pid) {
+		return "running"
+	}
+	return "stopped"
+}
+
+func openVPNStatus(cfg *cf.Network) string {
+	if cfg == nil || cfg.OpenVPN == nil {
+		return "disabled"
+	}
+	vpn := cfg.OpenVPN
+	if vpn.Directory == "" || vpn.Protocol == "" {
+		vpn.Correct(cfg.AddrPool, cfg.Name)
+	}
+	_, port := libol.GetHostPort(vpn.Listen)
+	return processStatusByPidFile(filepath.Join(vpn.Directory, vpn.Protocol+port+"server.pid"))
+}
+
+func readTailFile(file string, maxBytes int64) ([]byte, error) {
+	fp, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer fp.Close()
+
+	info, err := fp.Stat()
+	if err != nil {
+		return nil, err
+	}
+	offset := int64(0)
+	if size := info.Size(); size > maxBytes {
+		offset = size - maxBytes
+	}
+	if _, err := fp.Seek(offset, io.SeekStart); err != nil {
+		return nil, err
+	}
+	data, err := io.ReadAll(fp)
+	if err != nil {
+		return nil, err
+	}
+	if offset > 0 {
+		data = append([]byte("... showing last log chunk ...\n"), data...)
+	}
+	return data, nil
+}
+
+func writePlainText(w http.ResponseWriter, data []byte) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write(data)
 }
 
 func (h Network) Post(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +224,38 @@ func (h Network) Profile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
+}
+
+func (h Network) OpenVPNLog(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	net := cache.Network.Get(vars["id"])
+	if net == nil {
+		http.Error(w, vars["id"], http.StatusNotFound)
+		return
+	}
+	cfg, ok := net.Config.(*cf.Network)
+	if !ok || cfg == nil || cfg.OpenVPN == nil {
+		http.Error(w, "openvpn disabled", http.StatusBadRequest)
+		return
+	}
+	vpn := cfg.OpenVPN
+	if vpn.Directory == "" || vpn.Protocol == "" {
+		vpn.Correct(cfg.AddrPool, cfg.Name)
+	}
+	_, port := libol.GetHostPort(vpn.Listen)
+	logFile := filepath.Join(vpn.Directory, vpn.Protocol+port+"server.log")
+	data, err := readTailFile(logFile, 256*1024)
+	if err != nil {
+		if os.IsNotExist(err) {
+			status := openVPNStatus(cfg)
+			msg := fmt.Sprintf("OpenVPN log is not available yet.\nstatus: %s\nexpected file: %s\n", status, logFile)
+			writePlainText(w, []byte(msg))
+			return
+		}
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writePlainText(w, data)
 }
 
 func (h Network) AddVPN(w http.ResponseWriter, r *http.Request) {
@@ -668,6 +773,7 @@ type Ceci struct {
 
 func (h Ceci) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/ceci/tcp", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/ceci/tcp/log", h.Log).Methods("GET")
 	router.HandleFunc("/api/network/ceci/tcp", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/ceci/tcp", h.Remove).Methods("DELETE")
 }
@@ -692,6 +798,7 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 				Mode:   value.Mode,
 				Listen: value.Listen,
 				Target: value.Target,
+				Status: processStatusByPidFile(filepath.Join("/var/openlan/ceci", value.Id()+".pid")),
 			})
 		}
 	}
@@ -724,6 +831,20 @@ func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
 	}
 	Call.ceciApi.DelTcp(data)
 	ResponseMsg(w, 0, "")
+}
+
+func (h Ceci) Log(w http.ResponseWriter, r *http.Request) {
+	listen := GetQueryOne(r, "listen")
+	if listen == "" {
+		http.Error(w, "listen is required", http.StatusBadRequest)
+		return
+	}
+	data, err := readTailFile(filepath.Join("/var/openlan/ceci", listen+".log"), 256*1024)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writePlainText(w, data)
 }
 
 type IPSec struct {
