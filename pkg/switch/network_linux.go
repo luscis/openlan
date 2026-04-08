@@ -391,15 +391,6 @@ func (w *WorkerImpl) doMss() {
 	}
 
 	mss := cfg.Bridge.Mss
-	w.fire.Mangle.Post.AddRuleX(cn.IPRule{
-		Order:   "-I",
-		Output:  cfg.Bridge.Name,
-		Proto:   "tcp",
-		Match:   "tcp",
-		TcpFlag: []string{"SYN,RST", "SYN"},
-		Jump:    cn.CTcpMss,
-		SetMss:  mss,
-	})
 	if w.br != nil {
 		w.fire.Mangle.Post.AddRuleX(cn.IPRule{
 			Order:   "-I",
@@ -410,17 +401,16 @@ func (w *WorkerImpl) doMss() {
 			Jump:    cn.CTcpMss,
 			SetMss:  mss,
 		})
+		w.fire.Mangle.In.AddRuleX(cn.IPRule{
+			Order:   "-I",
+			Input:   w.br.L3Name(),
+			Proto:   "tcp",
+			Match:   "tcp",
+			TcpFlag: []string{"SYN,RST", "SYN"},
+			Jump:    cn.CTcpMss,
+			SetMss:  mss,
+		})
 	}
-	// connect from local
-	w.fire.Mangle.In.AddRuleX(cn.IPRule{
-		Order:   "-I",
-		Input:   cfg.Bridge.Name,
-		Proto:   "tcp",
-		Match:   "tcp",
-		TcpFlag: []string{"SYN,RST", "SYN"},
-		Jump:    cn.CTcpMss,
-		SetMss:  mss,
-	})
 }
 
 func (w *WorkerImpl) SetMss(mss int) {
