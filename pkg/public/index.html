@@ -618,7 +618,7 @@ select option {
       <button class="modal-close" onclick="closeAddDialog('ceci-tcp')">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;" type="text" id="ceci-tcp-listen" placeholder="e.g. 0.0.0.0:10002"></div>
+      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;" type="text" id="ceci-tcp-listen" placeholder="e.g.:2222"></div>
       <div class="form-group"><label>Target <span style="color:var(--text-muted);font-weight:400;">(one per line)</span></label><textarea class="modal-input" style="width:100%;min-height:120px;resize:vertical;" id="ceci-tcp-target" placeholder="e.g. 10.0.0.2:10002"></textarea></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('ceci-tcp')">Cancel</button>
@@ -733,7 +733,7 @@ select option {
       <button class="modal-close" onclick="closeAddDialog('network-openvpn')">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-listen" type="text" placeholder="e.g. 0.0.0.0:1194"></div>
+      <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-listen" type="text" placeholder="e.g. :1194"></div>
       <div class="form-group"><label>Protocol</label>
         <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-protocol">
           <option value="tcp">tcp</option>
@@ -2661,7 +2661,7 @@ function openEnableNetworkOpenVPN() {
   const n = _networksData[_modalNetIndex] || {};
   const cfg = n.config || {};
   const ovpn = cfg.openvpn || {};
-  document.getElementById('network-ovpn-listen').value = ovpn.listen || '0.0.0.0:1194';
+  document.getElementById('network-ovpn-listen').value = ovpn.listen || ':1194';
   document.getElementById('network-ovpn-protocol').value = ovpn.protocol || 'tcp';
   document.getElementById('network-ovpn-subnet').value = ovpn.subnet || '';
   document.getElementById('network-ovpn-cipher').value = ovpn.cipher || '';
