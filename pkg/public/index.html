@@ -639,7 +639,7 @@ select option {
       <div class="modal-tab active" onclick="switchNetTab('config')">Config</div>
       <div class="modal-tab" onclick="switchNetTab('routes')">Routes</div>
       <div class="modal-tab" onclick="switchNetTab('outputs')">Outputs</div>
-      <div class="modal-tab" onclick="switchNetTab('json')">JSON</div>
+      <div class="modal-tab" onclick="switchNetTab('json')">YAML</div>
     </div>
     <div class="modal-body">
       <!-- Config Tab -->
@@ -670,7 +670,14 @@ select option {
       </div>
       <!-- JSON Tab -->
       <div class="modal-tab-pane" id="net-tab-json">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+          <div style="display:inline-flex;gap:6px;padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);">
+            <button class="btn btn-sm btn-dark" id="net-data-tab-json" type="button" onclick="switchNetDataFormat('json')">JSON</button>
+            <button class="btn btn-sm btn-ghost" id="net-data-tab-yaml" type="button" onclick="switchNetDataFormat('yaml')">YAML</button>
+          </div>
+        </div>
         <pre class="detail-json" id="modal-json"></pre>
+        <pre class="detail-json" id="modal-yaml" style="display:none;">Loading...</pre>
       </div>
     </div>
     <div class="modal-footer">
@@ -1483,6 +1490,13 @@ async function api_get(path) {
   const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
   if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
   return resp.json();
+}
+
+async function api_get_text(path) {
+  const url = State.baseUrl + path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(State.token);
+  const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'text/plain' } });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
+  return resp.text();
 }
 
 async function api_post(path, data) {
@@ -2584,7 +2598,7 @@ function openNetModal(i) {
   // Config tab
   const items = [
     ['Name', n.name], ['Bridge Address', bridge.address], ['Bridge Name', bridge.name],
-    ['Namespace', cfg.namespace], ['MTU', bridge.mtu || cfg.mtu], ['Provider', cfg.provider],
+    ['Namespace', cfg.namespace], ['MTU', bridge.mtu || cfg.mtu], ['MSS', bridge.tcpMss], ['Provider', cfg.provider],
   ].filter(([, v]) => v != null && v !== '');
   document.getElementById('modal-base-info').innerHTML = items.map(([k, v]) =>
     '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + v + '</span></div>'
@@ -2611,6 +2625,19 @@ function openNetModal(i) {
             ).join('') +
           '</select>' +
           '<button class="btn btn-dark btn-sm" onclick="saveNetworkSNAT()">Apply</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('modal-snat-section').innerHTML +=
+    '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div>' +
+          '<div class="detail-section-title" style="margin:0 0 6px;padding:0;border:none;">TCP MSS</div>' +
+          '<div style="font-size:13px;color:var(--text-muted);">Clamp TCP MSS for bridge traffic on this network.</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<input class="modal-input" id="network-mss-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Disabled" value="' + esc(bridgeMssValue(bridge)) + '" style="width:120px;background:#21262d;border-color:var(--border);color:var(--text);">' +
+          '<button class="btn btn-dark btn-sm" onclick="saveNetworkMSS()">Apply</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -2645,8 +2672,9 @@ function openNetModal(i) {
     ? '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' + ovpnHtml + '</div>'
     : '';
 
-  // JSON tab
   document.getElementById('modal-json').textContent = JSON.stringify(n, null, 2);
+  document.getElementById('modal-yaml').textContent = 'Loading...';
+  switchNetDataFormat('yaml');
 
   // Open modal on config tab
   switchNetTab('config');
@@ -2655,6 +2683,7 @@ function openNetModal(i) {
   // Load dynamic tabs
   modalLoadRoutes(n.name);
   modalLoadOutputs(n.name);
+  modalLoadYaml(n.name);
 }
 
 function openEnableNetworkOpenVPN() {
@@ -2667,6 +2696,35 @@ function openEnableNetworkOpenVPN() {
   document.getElementById('network-ovpn-cipher').value = ovpn.cipher || '';
   openAddDialog('network-openvpn');
   setTimeout(() => document.getElementById('network-ovpn-listen').focus(), 50);
+}
+
+function bridgeMssValue(bridge) {
+  if (!bridge || bridge.tcpMss == null || bridge.tcpMss === '') return '';
+  return String(bridge.tcpMss);
+}
+
+async function saveNetworkMSS() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  const raw = document.getElementById('network-mss-value').value.trim();
+  try {
+    if (!raw) {
+      await api_delete('/api/network/' + encodeURIComponent(n.name) + '/mss');
+    } else {
+      const mss = parseInt(raw, 10);
+      if (!Number.isFinite(mss) || mss < 0) {
+        show_toast('MSS must be a non-negative integer', 'error');
+        return;
+      }
+      await api_post('/api/network/' + encodeURIComponent(n.name) + '/mss', { mss });
+    }
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    show_toast('Network MSS updated', 'success');
+  } catch(e) {
+    show_toast('Failed to update network MSS: ' + e.message, 'error');
+  }
 }
 
 async function enableNetworkOpenVPN() {
@@ -2753,6 +2811,20 @@ function switchNetTab(name) {
   document.getElementById('net-tab-' + name).classList.add('active');
 }
 
+function switchNetDataFormat(name) {
+  const jsonBtn = document.getElementById('net-data-tab-json');
+  const yamlBtn = document.getElementById('net-data-tab-yaml');
+  const jsonPre = document.getElementById('modal-json');
+  const yamlPre = document.getElementById('modal-yaml');
+  if (!jsonBtn || !yamlBtn || !jsonPre || !yamlPre) return;
+
+  const showJson = name !== 'yaml';
+  jsonBtn.className = showJson ? 'btn btn-sm btn-dark' : 'btn btn-sm btn-ghost';
+  yamlBtn.className = showJson ? 'btn btn-sm btn-ghost' : 'btn btn-sm btn-dark';
+  jsonPre.style.display = showJson ? '' : 'none';
+  yamlPre.style.display = showJson ? 'none' : '';
+}
+
 // Close modal on overlay click
 document.addEventListener('click', function(e) {
   if (e.target.id === 'net-modal') closeNetModal();
@@ -2784,6 +2856,17 @@ async function modalSave() {
     show_toast('Network "' + n.name + '" saved', 'success');
   } catch(e) {
     show_toast('Failed to save: ' + e.message, 'error');
+  }
+}
+
+async function modalLoadYaml(netName) {
+  const el = document.getElementById('modal-yaml');
+  if (!el) return;
+  el.textContent = 'Loading...';
+  try {
+    el.textContent = await api_get_text('/api/network/' + encodeURIComponent(netName) + '?format=yaml');
+  } catch(e) {
+    el.textContent = 'Failed to load YAML: ' + e.message;
   }
 }
 

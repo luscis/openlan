@@ -391,25 +391,51 @@ func (w *WorkerImpl) doMss() {
 	}
 
 	mss := cfg.Bridge.Mss
-	if w.br != nil {
-		w.fire.Mangle.Post.AddRuleX(cn.IPRule{
+	for _, rule := range w.mssRules(mss) {
+		w.firewallChainForMssRule(rule).AddRuleX(rule)
+	}
+}
+
+func (w *WorkerImpl) mssRules(mss int) []cn.IPRule {
+	if w.br == nil || mss <= 0 {
+		return nil
+	}
+
+	name := w.br.L3Name()
+	return []cn.IPRule{
+		{
 			Order:   "-I",
-			Output:  w.br.L3Name(),
+			Output:  name,
 			Proto:   "tcp",
 			Match:   "tcp",
 			TcpFlag: []string{"SYN,RST", "SYN"},
 			Jump:    cn.CTcpMss,
 			SetMss:  mss,
-		})
-		w.fire.Mangle.In.AddRuleX(cn.IPRule{
+		},
+		{
 			Order:   "-I",
-			Input:   w.br.L3Name(),
+			Input:   name,
 			Proto:   "tcp",
 			Match:   "tcp",
 			TcpFlag: []string{"SYN,RST", "SYN"},
 			Jump:    cn.CTcpMss,
 			SetMss:  mss,
-		})
+		},
+	}
+}
+
+func (w *WorkerImpl) firewallChainForMssRule(rule cn.IPRule) *cn.FireWallChain {
+	if rule.Output != "" {
+		return w.fire.Mangle.Post
+	}
+	return w.fire.Mangle.In
+}
+
+func (w *WorkerImpl) clearMss(mss int) {
+	for _, rule := range w.mssRules(mss) {
+		if err := w.firewallChainForMssRule(rule).DelRuleX(rule); err != nil {
+			w.out.Warn("WorkerImpl.clearMss: %s", err)
+		}
 	}
 }
 
@@ -420,6 +446,7 @@ func (w *WorkerImpl) SetMss(mss int) {
 	}
 
 	if cfg.Bridge.Mss != mss {
+		w.clearMss(cfg.Bridge.Mss)
 		cfg.Bridge.Mss = mss
 		w.doMss()
 	}
@@ -804,6 +831,9 @@ func (w *WorkerImpl) Stop(kill bool) {
 	w.out.Info("WorkerImpl.Stop")
 
 	cfg, _ := w.GetCfgs()
+	if cfg.Bridge != nil {
+		w.clearMss(cfg.Bridge.Mss)
+	}
 	if kill {
 		w.snat.Cancel()
 		w.dnat.Cancel()

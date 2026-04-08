@@ -56,6 +56,10 @@ func (h Network) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	net := cache.Network.Get(vars["id"])
 	if net != nil {
+		if GetQueryOne(r, "format") == "yaml" {
+			ResponseYaml(w, net.Config)
+			return
+		}
 		item := models.NewNetworkSchema(net)
 		if cfg, ok := net.Config.(*cf.Network); ok {
 			item.OpenVPNStatus = openVPNStatus(cfg)
@@ -335,6 +339,52 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if obj := Call.GetWorker(name); obj != nil {
 		obj.SetSNAT("disable")
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+type MSS struct {
+	cs SwitchApi
+}
+
+func (h MSS) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/mss", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/mss", h.Delete).Methods("DELETE")
+}
+
+func (h MSS) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		value := schema.MSS{}
+		if err := GetData(r, &value); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if value.Value < 0 {
+			http.Error(w, "mss must be non-negative", http.StatusBadRequest)
+			return
+		}
+		obj.SetMss(value.Value)
+		h.cs.SaveNetwork(name)
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h MSS) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		obj.SetMss(0)
+		h.cs.SaveNetwork(name)
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return

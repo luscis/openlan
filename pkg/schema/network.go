@@ -89,6 +89,10 @@ type SNAT struct {
 	Scope string `json:"scope"`
 }
 
+type MSS struct {
+	Value int `json:"mss"`
+}
+
 type DNAT struct {
 	Protocol string `json:"protocol"`
 	Dest     string `json:"destination,omitempty"`
