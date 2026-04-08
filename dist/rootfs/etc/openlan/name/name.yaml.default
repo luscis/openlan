@@ -5,8 +5,8 @@ access:
   username: <username>@<network>
   password: <password>
   forward:
-  - 8.8.8.8
-  - 8.8.4.4
+  - 8.8.8.8/32 to 192.168.11.2
+  - 8.8.4.4/32
 nameto: 114.114.114.114
 backends:
 - server: 192.168.11.2
