@@ -121,6 +121,7 @@ type RouterPrivate struct {
 }
 
 type IPAddress struct {
+	Device  string `json:"device,omitempty"`
 	Address string `json:"address"`
 }
 

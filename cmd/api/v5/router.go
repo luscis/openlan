@@ -56,6 +56,7 @@ func (b Router) Commands(app *api.App) {
 				Action:  b.Save,
 			},
 			RouterTunnel{}.Commands(),
+			RouterAddress{}.Commands(),
 			RouterPrivate{}.Commands(),
 			RouterInterface{}.Commands(),
 			KernelRoute{}.Commands(),
@@ -122,6 +123,67 @@ func (s RouterTunnel) Commands() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "remote", Required: true},
 					&cli.StringFlag{Name: "protocol", Value: "gre"},
+				},
+				Action: s.Remove,
+			},
+		},
+	}
+}
+
+type RouterAddress struct {
+	Cmd
+}
+
+func (s RouterAddress) Url(prefix string) string {
+	return prefix + "/api/network/router/address"
+}
+
+func (s RouterAddress) Add(c *cli.Context) error {
+	data := &schema.IPAddress{
+		Device:  c.String("device"),
+		Address: c.String("address"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s RouterAddress) Remove(c *cli.Context) error {
+	data := &schema.IPAddress{
+		Device:  c.String("device"),
+		Address: c.String("address"),
+	}
+	url := s.Url(c.String("url"))
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, data, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s RouterAddress) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "address",
+		Usage: "Router address",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "Add router address",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "device", Required: true},
+					&cli.StringFlag{Name: "address", Required: true},
+				},
+				Action: s.Add,
+			},
+			{
+				Name:    "remove",
+				Aliases: []string{"rm"},
+				Usage:   "Remove router address",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "address", Required: true},
 				},
 				Action: s.Remove,
 			},

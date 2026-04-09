@@ -622,6 +622,55 @@ func (h RouterTunnel) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+type RouterAddress struct {
+	cs SwitchApi
+}
+
+func (h RouterAddress) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/router/address", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/router/address", h.Delete).Methods("DELETE")
+}
+
+func (h RouterAddress) Post(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.IPAddress{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.AddRouterAddress(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h RouterAddress) Delete(w http.ResponseWriter, r *http.Request) {
+	caller := Call.routerApi
+	if caller == nil {
+		http.Error(w, "Router not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.IPAddress{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.DelRouterAddress(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
 type RouterPrivate struct {
 	cs SwitchApi
 }

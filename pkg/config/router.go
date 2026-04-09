@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -69,18 +70,71 @@ func (i *RouterInterface) ID() string {
 	return fmt.Sprintf("%s.%d", i.Device, i.VLAN)
 }
 
+type RouterAddress struct {
+	Device  string `json:"device,omitempty" yaml:"device,omitempty"`
+	Address string `json:"address,omitempty" yaml:"address,omitempty"`
+}
+
+func (a *RouterAddress) ID() string {
+	return a.Address
+}
+
+func (a *RouterAddress) Correct() {
+	if a.Device == "" {
+		a.Device = "lo"
+	}
+}
+
+func (a *RouterAddress) UnmarshalJSON(data []byte) error {
+	var address string
+	if err := json.Unmarshal(data, &address); err == nil {
+		a.Address = address
+		a.Correct()
+		return nil
+	}
+
+	type alias RouterAddress
+	if err := json.Unmarshal(data, (*alias)(a)); err != nil {
+		return err
+	}
+	a.Correct()
+	return nil
+}
+
+func (a *RouterAddress) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var address string
+	if err := unmarshal(&address); err == nil {
+		a.Address = address
+		a.Correct()
+		return nil
+	}
+
+	type alias RouterAddress
+	if err := unmarshal((*alias)(a)); err != nil {
+		return err
+	}
+	a.Correct()
+	return nil
+}
+
 type RouterSpecifies struct {
 	Mss        int                `json:"tcpMss,omitempty" yaml:"tcpMss,omitempty"`
 	Name       string             `json:"-" yaml:"-"`
 	Private    []string           `json:"private,omitempty" yaml:"private,omitempty"`
 	Loopback   string             `json:"loopback,omitempty" yaml:"loopback,omitempty"`
-	Addresses  []string           `json:"addresses,omitempty" yaml:"addresses,omitempty"`
+	Addresses  []*RouterAddress   `json:"addresses,omitempty" yaml:"addresses,omitempty"`
 	Tunnels    []*RouterTunnel    `json:"tunnels,omitempty" yaml:"tunnels,omitempty"`
 	Interfaces []*RouterInterface `json:"interfaces,omitempty" yaml:"interfaces,omitempty"`
 	Redirect   []*RouterRedirect  `json:"redirect,omitempty" yaml:"redirect,omitempty"`
 }
 
 func (n *RouterSpecifies) Correct() {
+	for _, t := range n.Addresses {
+		if t == nil {
+			continue
+		}
+		t.Correct()
+	}
 	for _, t := range n.Tunnels {
 		t.Correct()
 	}
@@ -138,6 +192,41 @@ func (n *RouterSpecifies) DelPrivate(value string) (string, bool) {
 	older, index := n.FindPrivate(value)
 	if index != -1 {
 		n.Private = append(n.Private[:index], n.Private[index+1:]...)
+		return older, true
+	}
+	return older, false
+}
+
+func (n *RouterSpecifies) FindAddress(value *RouterAddress) (*RouterAddress, int) {
+	if value == nil {
+		return nil, -1
+	}
+	value.Correct()
+	for index, obj := range n.Addresses {
+		if obj == nil {
+			continue
+		}
+		obj.Correct()
+		if obj.ID() == value.ID() {
+			return obj, index
+		}
+	}
+	return nil, -1
+}
+
+func (n *RouterSpecifies) AddAddress(value *RouterAddress) bool {
+	_, index := n.FindAddress(value)
+	if index == -1 {
+		n.Addresses = append(n.Addresses, value)
+		return true
+	}
+	return false
+}
+
+func (n *RouterSpecifies) DelAddress(value *RouterAddress) (*RouterAddress, bool) {
+	older, index := n.FindAddress(value)
+	if index != -1 {
+		n.Addresses = append(n.Addresses[:index], n.Addresses[index+1:]...)
 		return older, true
 	}
 	return older, false

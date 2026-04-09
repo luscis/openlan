@@ -73,16 +73,23 @@ func (w *RouterWorker) Start(v api.SwitchApi) {
 	}
 
 	w.SourceNAT()
-	if w.spec.Loopback != "" {
-		w.addAddress("lo", []string{w.spec.Loopback})
-	}
-	w.addAddress("lo", w.spec.Addresses)
 
 	for _, port := range w.spec.Interfaces {
 		w.addInterface(port)
 	}
 	for _, re := range w.spec.Redirect {
 		w.addRedirect(re)
+	}
+
+	if w.spec.Loopback != "" {
+		w.addAddress("lo", []string{w.spec.Loopback})
+	}
+	for _, addr := range w.spec.Addresses {
+		if addr == nil {
+			continue
+		}
+		addr.Correct()
+		w.addAddress(addr.Device, []string{addr.Address})
 	}
 }
 
@@ -115,7 +122,13 @@ func (w *RouterWorker) Stop(kill bool) {
 		if w.spec.Loopback != "" {
 			w.delAddress("lo", []string{w.spec.Loopback})
 		}
-		w.delAddress("lo", w.spec.Addresses)
+		for _, addr := range w.spec.Addresses {
+			if addr == nil {
+				continue
+			}
+			addr.Correct()
+			w.delAddress(addr.Device, []string{addr.Address})
+		}
 		for _, tun := range w.spec.Tunnels {
 			w.delTunnel(tun)
 		}
@@ -221,6 +234,30 @@ func (w *RouterWorker) AddPrivate(data string) error {
 func (w *RouterWorker) DelPrivate(data string) error {
 	if old, ok := w.spec.DelPrivate(data); ok {
 		w.ipses.Del(old)
+	}
+	return nil
+}
+
+func (w *RouterWorker) AddRouterAddress(data schema.IPAddress) error {
+	obj := &co.RouterAddress{
+		Device:  data.Device,
+		Address: data.Address,
+	}
+	obj.Correct()
+	if ok := w.spec.AddAddress(obj); ok {
+		w.addAddress(obj.Device, []string{obj.Address})
+	}
+	return nil
+}
+
+func (w *RouterWorker) DelRouterAddress(data schema.IPAddress) error {
+	obj := &co.RouterAddress{
+		Device:  data.Device,
+		Address: data.Address,
+	}
+	obj.Correct()
+	if old, ok := w.spec.DelAddress(obj); ok {
+		w.delAddress(old.Device, []string{old.Address})
 	}
 	return nil
 }
