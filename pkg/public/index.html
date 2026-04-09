@@ -514,7 +514,7 @@ select option {
       <button class="modal-close" onclick="routerIfaceCancel()">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
-      <div class="form-group"><label>Device</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-iface-device" placeholder="e.g. eth0"></div>
+      <div class="form-group"><label>Device</label><select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="router-iface-device"></select></div>
       <div class="form-group"><label>VLAN <span style="color:var(--text-muted);font-weight:400;">(0 = none)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" inputmode="numeric" id="router-iface-vlan" value="0"></div>
       <div class="form-group"><label>Address (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-iface-address" placeholder="e.g. 192.168.1.1/24"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
@@ -2089,6 +2089,7 @@ async function bgpSaveGlobal() {
 }
 
 let _routerIfaces = [];
+let _routerSystemIfaces = [];
 let _routerRedirects = [];
 let _routerAddresses = [];
 let _routerAddressDevice = '';
@@ -2099,7 +2100,8 @@ async function load_router() {
       api_get('/api/network/router/interface'),
       api_get('/api/network/router').catch(() => ({}))
     ]);
-    _routerIfaces = Array.isArray(ifaces) ? ifaces : [];
+    _routerSystemIfaces = Array.isArray(ifaces) ? ifaces : [];
+    _routerIfaces = _routerSystemIfaces;
     const cfgIfaces = (routerCfg && routerCfg.config && routerCfg.config.specifies && Array.isArray(routerCfg.config.specifies.interfaces))
       ? routerCfg.config.specifies.interfaces : [];
     const cfgAddresses = (routerCfg && routerCfg.config && routerCfg.config.specifies && Array.isArray(routerCfg.config.specifies.addresses))
@@ -2118,19 +2120,29 @@ async function load_router() {
     const cfgNames = new Set();
     const merged = [];
     cfgIfaces.forEach(c => {
-      const vlan = c.vlan || c.VLAN || 0;
-      const id = vlan ? (c.device + '.' + vlan) : c.device;
+      const rawVlan = c.vlan || c.VLAN || 0;
+      const display = parseRouterIfaceDevice(c.device, rawVlan);
+      const vlan = display.vlan;
+      const id = vlan ? (display.device + '.' + vlan) : display.device;
       cfgNames.add(id);
       const sys = sysMap[id] || {};
-      merged.push({ name: id, _device: c.device, address: routerDeviceAddresses(id, sys.address, c.address, cfgAddressMap), state: sys.state || '-', network: sys.network || '-', vlan, _canDel: true });
+      merged.push({ name: id, _displayDevice: display.device, _device: c.device, _deleteVlan: rawVlan, address: routerDeviceAddresses(id, sys.address, c.address, cfgAddressMap), state: sys.state || '-', network: sys.network || '-', vlan, _canDel: true });
     });
     _routerIfaces.forEach(f => {
       const name = f.name || f.device || '';
-      if (!cfgNames.has(name)) merged.push({ ...f, name, _device: name, address: routerDeviceAddresses(name, f.address, '', cfgAddressMap), _canDel: false });
+      if (!cfgNames.has(name)) {
+        const display = parseRouterIfaceDevice(name, f.vlan || f.VLAN || 0);
+        const vlan = display.vlan;
+        const id = vlan ? (display.device + '.' + vlan) : display.device;
+        merged.push({ ...f, name: id, _displayDevice: display.device, _device: name, address: routerDeviceAddresses(id, f.address, '', cfgAddressMap), vlan, _canDel: false });
+      }
     });
     Object.keys(cfgAddressMap).forEach(device => {
       if (!cfgNames.has(device) && !sysMap[device]) {
-        merged.push({ name: device, _device: device, address: routerDeviceAddresses(device, '', '', cfgAddressMap), state: '-', vlan: 0, _canDel: false });
+        const display = parseRouterIfaceDevice(device, 0);
+        const vlan = display.vlan;
+        const id = vlan ? (display.device + '.' + vlan) : display.device;
+        merged.push({ name: id, _displayDevice: display.device, _device: device, address: routerDeviceAddresses(device, '', '', cfgAddressMap), state: '-', vlan, _canDel: false });
       }
     });
     _routerIfaces = merged;
@@ -2139,12 +2151,11 @@ async function load_router() {
       ? '<tr class="empty-row"><td colspan="5">No interfaces</td></tr>'
       : _routerIfaces.map((f, i) =>
           '<tr>' +
-          '<td class="td-mono" style="font-weight:600;">' + esc(f._device || f.name || '-') + '</td>' +
+          '<td class="td-mono" style="font-weight:600;">' + esc(f._displayDevice || f.name || f._device || '-') + '</td>' +
           '<td class="td-muted">' + (f.vlan ? f.vlan : '-') + '</td>' +
-          '<td>' + routerAddrTags(f) + '</td>' +
+          '<td>' + routerAddrTags(f, i) + '</td>' +
           '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(f.state || '-') + '</span></td>' +
           '<td style="display:flex;gap:4px;flex-wrap:wrap;">' +
-          '<button class="action-btn action-dark" onclick="routerAddressAdd(' + i + ')">Add Address</button>' +
           (f._canDel ? '<button class="action-btn btn-danger" onclick="routerIfaceDel(' + i + ')">Remove</button>' : '') +
           '</td>' +
           '</tr>'
@@ -2157,7 +2168,7 @@ async function load_router() {
 }
 
 function routerIfaceAdd() {
-  document.getElementById('router-iface-device').value = '';
+  loadRouterIfaceDeviceOptions();
   document.getElementById('router-iface-vlan').value = '0';
   document.getElementById('router-iface-address').value = '';
   openAddDialog('router-iface');
@@ -2176,9 +2187,31 @@ function routerAddressAdd(i) {
   openAddDialog('router-address');
 }
 
+function loadRouterIfaceDeviceOptions() {
+  const select = document.getElementById('router-iface-device');
+  const devices = _routerSystemIfaces.filter(d => (d.type || '').toLowerCase() !== 'vlan' && !parseRouterIfaceDevice(d.name || d.device || '', 0).vlan);
+  select.innerHTML = devices.length === 0
+    ? '<option value="">No devices</option>'
+    : devices.map(d => '<option value="' + esc(d.name || d.device || '') + '">' + esc(d.name || d.device || '') + '</option>').join('');
+}
+
+function parseRouterIfaceDevice(device, vlan) {
+  const parsed = { device: (device || '').trim(), vlan: parseInt(vlan, 10) || 0 };
+  if (parsed.vlan) return parsed;
+  const match = parsed.device.match(/^(.+)\.(\d+)$/);
+  if (!match) return parsed;
+  const parsedVlan = parseInt(match[2], 10);
+  if (!parsedVlan) return parsed;
+  parsed.device = match[1];
+  parsed.vlan = parsedVlan;
+  return parsed;
+}
+
 async function routerIfaceSubmit() {
-  const device = document.getElementById('router-iface-device').value.trim();
-  const vlan = parseInt(document.getElementById('router-iface-vlan').value) || 0;
+  const deviceEl = document.getElementById('router-iface-device');
+  const vlanEl = document.getElementById('router-iface-vlan');
+  const device = deviceEl.value.trim();
+  const vlan = parseInt(vlanEl.value, 10) || 0;
   const address = document.getElementById('router-iface-address').value.trim();
   if (!device) { show_toast('Device is required', 'error'); return; }
   if (!address) { show_toast('Address is required', 'error'); return; }
@@ -2192,24 +2225,27 @@ async function routerIfaceSubmit() {
   }
 }
 
-function routerAddrTags(f) {
+function routerAddrTags(f, index) {
   const addrs = Array.isArray(f.address) ? f.address : (f.address ? [f.address] : []);
-  if (addrs.length === 0) return '<span style="color:var(--text-muted);font-size:13px;">-</span>';
-  return addrs.map(a => {
+  const values = addrs.length === 0 ? '<span style="color:var(--text-muted);font-size:13px;">-</span>' : addrs.map(a => {
     const item = (typeof a === 'string') ? { address: a } : a;
     const remove = Number.isInteger(item._routerIndex)
-      ? '<button class="action-btn btn-danger" onclick="routerDelAddress(' + item._routerIndex + ')" title="Remove" style="padding:2px 6px;font-size:11px;">Remove</button>'
+      ? '<button onclick="routerDelAddress(' + item._routerIndex + ')" title="Remove" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;color:var(--text-muted);font-size:13px;line-height:1;">&#x2715;</button>'
       : '';
     return '<div style="display:flex;align-items:center;gap:6px;font-family:monospace;font-size:12px;color:var(--text);padding:2px 0;">' + esc(item.address) + remove + '</div>';
   }).join('');
+  return '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">' +
+    values +
+    '<button onclick="routerAddressAdd(' + index + ')" title="Add Address" style="background:#21262d;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-secondary);font-size:13px;line-height:1;padding:2px 7px;">+</button>' +
+    '</div>';
 }
 
 async function routerIfaceDel(i) {
   const f = _routerIfaces[i];
   if (!f) return;
   const device = f._device || f.name || f.device;
-  const vlan = f.vlan || 0;
-  const label = vlan ? (device + '.' + vlan) : device;
+  const vlan = Number.isInteger(f._deleteVlan) ? f._deleteVlan : (f.vlan || 0);
+  const label = f.name || (vlan ? (device + '.' + vlan) : device);
   const ok = await showConfirm('Remove interface ' + label + '?', 'Remove Interface');
   if (!ok) return;
   try {

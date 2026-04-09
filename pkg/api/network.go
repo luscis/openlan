@@ -743,6 +743,7 @@ func (h RouterInterface) List(w http.ResponseWriter, r *http.Request) {
 				Send:    d.Send,
 				Drop:    d.Drop,
 				State:   d.State,
+				Type:    d.Type,
 				Address: cn.GetDevAddr(d.Name),
 			})
 		}
