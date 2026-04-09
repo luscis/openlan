@@ -1680,8 +1680,10 @@ function render_overview(d) {
   const memPct = pct(u.memUsed, u.memTotal);
   const diskPct = pct(u.diskUsed, u.diskTotal);
   const connTotal = (d.conntrack || {}).total || 0;
-  const clientCount = ((d.access || []).length) + ((d.clients || []).length);
-  const linkCount = (d.output || []).length;
+  const accessCount = d.accessLen || (d.access || []).length;
+  const vpnCount = d.clientLen || (d.clients || []).length;
+  const clientCount = accessCount + vpnCount;
+  const linkCount = d.linkLen || (d.output || []).length;
 
   document.getElementById('overview-stats').innerHTML =
     stat_card('CPU Usage', cpuPct + '%', (u.cpuTotal || 0) + ' cores', 'blue',
@@ -1696,7 +1698,7 @@ function render_overview(d) {
     stat_card('Connections', connTotal, 'TCP ' + ((d.conntrack||{}).tcp||0) + ' / UDP ' + ((d.conntrack||{}).udp||0), 'green',
       '<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>',
       '') +
-    stat_card('Clients', clientCount, ((d.access||[]).length) + ' AP + ' + ((d.clients||[]).length) + ' VPN', 'teal',
+    stat_card('Clients', clientCount, accessCount + ' AP + ' + vpnCount + ' VPN', 'teal',
       '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
       '') +
     stat_card('Links', linkCount, 'inter-node', 'red',
@@ -1772,10 +1774,18 @@ function ct_card(num, label) {
 // Clients
 // =====================
 async function load_clients() {
-  if (!State.indexData) await load_overview();
-  const d = State.indexData || {};
-  const access = d.access || [];
-  const clients = d.clients || [];
+  let access = [];
+  let clients = [];
+  try {
+    const [accessData, clientData] = await Promise.all([
+      api_get('/api/point'),
+      api_get('/api/vpn/client')
+    ]);
+    access = Array.isArray(accessData) ? accessData : [];
+    clients = Array.isArray(clientData) ? clientData : [];
+  } catch(e) {
+    show_toast('Failed to load clients: ' + e.message, 'error');
+  }
 
   document.getElementById('access-count').textContent = access.length;
   const ab = document.getElementById('access-tbody');
@@ -1817,8 +1827,13 @@ async function load_clients() {
 // Links
 // =====================
 async function load_links() {
-  if (!State.indexData) await load_overview();
-  const outputs = (State.indexData || {}).output || [];
+  let outputs = [];
+  try {
+    const outputData = await api_get('/api/output');
+    outputs = Array.isArray(outputData) ? outputData : [];
+  } catch(e) {
+    show_toast('Failed to load links: ' + e.message, 'error');
+  }
   document.getElementById('links-count').textContent = outputs.length;
   const lb = document.getElementById('links-tbody');
   if (outputs.length === 0) {
@@ -1843,10 +1858,18 @@ async function load_links() {
 // Routes
 // =====================
 async function load_routes() {
-  if (!State.indexData) await load_overview();
-  const d = State.indexData || {};
-  const routes = d.routes || [];
-  const neighbors = d.neighbors || [];
+  let routes = [];
+  let neighbors = [];
+  try {
+    const [routeData, neighborData] = await Promise.all([
+      api_get('/api/kernel/route'),
+      api_get('/api/kernel/neighbor')
+    ]);
+    routes = Array.isArray(routeData) ? routeData : [];
+    neighbors = Array.isArray(neighborData) ? neighborData : [];
+  } catch(e) {
+    show_toast('Failed to load kernel routes: ' + e.message, 'error');
+  }
 
   document.getElementById('routes-count').textContent = routes.length;
   const rb = document.getElementById('routes-tbody');

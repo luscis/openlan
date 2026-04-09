@@ -29,6 +29,10 @@ func (p *output) Del(key string) {
 	p.outputs.Del(key)
 }
 
+func (p *output) Len() int {
+	return p.outputs.Len()
+}
+
 func (p *output) List(name string) <-chan *models.Output {
 	c := make(chan *models.Output, 128)
 	go func() {

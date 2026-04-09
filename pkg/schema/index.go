@@ -4,13 +4,16 @@ type Index struct {
 	Version   Version          `json:"version"`
 	Worker    Worker           `json:"worker"`
 	Conntrack KernelConntrack  `json:"conntrack"`
-	Access    []Access         `json:"access"`
+	Access    []Access         `json:"access,omitempty"`
 	Devices   []Device         `json:"device"`
-	Clients   []VPNClient      `json:"clients"`
-	Outputs   []Output         `json:"output"`
-	Routes    []KernelRoute    `json:"routes"`
-	Neighbor  []KernelNeighbor `json:"neighbors"`
+	Clients   []VPNClient      `json:"clients,omitempty"`
+	Outputs   []Output         `json:"output,omitempty"`
+	Routes    []KernelRoute    `json:"routes,omitempty"`
+	Neighbor  []KernelNeighbor `json:"neighbors,omitempty"`
 	UserLen   int              `json:"userLen"`
+	AccessLen int              `json:"accessLen"`
+	ClientLen int              `json:"clientLen"`
+	LinkLen   int              `json:"linkLen"`
 	Usage     KernelUsage      `json:"usage"`
 }
 

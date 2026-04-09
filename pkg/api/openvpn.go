@@ -42,6 +42,22 @@ func ListClients() []schema.VPNClient {
 	return clients
 }
 
+func CountClients() int {
+	total := 0
+	for n := range cache.Network.List() {
+		if n == nil {
+			break
+		}
+		for client := range cache.VPNClient.List(n.Name) {
+			if client == nil {
+				break
+			}
+			total++
+		}
+	}
+	return total
+}
+
 func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["id"]

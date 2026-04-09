@@ -61,6 +61,10 @@ func (p *access) Del(addr string) {
 	}
 }
 
+func (p *access) Len() int {
+	return p.Clients.Len()
+}
+
 func (p *access) List() <-chan *models.Access {
 	c := make(chan *models.Access, 128)
 

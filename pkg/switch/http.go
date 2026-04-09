@@ -18,7 +18,6 @@ import (
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
-	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -271,6 +270,9 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Version.Expire = h.cs.GetCert().CertExpire
 	body.Worker = api.NewWorkerSchema(h.cs)
 	body.UserLen = cache.User.Len()
+	body.AccessLen = cache.Access.Len()
+	body.ClientLen = api.CountClients()
+	body.LinkLen = cache.Output.Len()
 	body.Usage = api.GetUsage()
 
 	// display conntrack stats.
@@ -279,48 +281,6 @@ func (h *Http) getIndex(body *schema.Index) *schema.Index {
 	body.Devices = api.ListDevices()
 	sort.SliceStable(body.Devices, func(i, j int) bool {
 		return body.Devices[i].ID() < body.Devices[j].ID()
-	})
-	// dispaly all routes.
-	body.Routes = api.ListeRoutes()
-	sort.SliceStable(body.Routes, func(i, j int) bool {
-		if body.Routes[i].Table == body.Routes[j].Table {
-			return body.Routes[i].ID() < body.Routes[j].ID()
-		}
-		return body.Routes[i].Table < body.Routes[j].Table
-	})
-	// dispaly all neighbors.
-	body.Neighbor = api.ListNeighbrs()
-	sort.SliceStable(body.Neighbor, func(i, j int) bool {
-		return body.Neighbor[i].Address < body.Neighbor[j].Address
-	})
-	// display accessed Access.
-	for p := range cache.Access.List() {
-		if p == nil {
-			break
-		}
-		body.Access = append(body.Access, models.NewAccessSchema(p))
-	}
-	sort.SliceStable(body.Access, func(i, j int) bool {
-		ii := body.Access[i]
-		jj := body.Access[j]
-		return ii.Network+ii.Remote > jj.Network+jj.Remote
-	})
-	// display OpenVPN Clients.
-	body.Clients = api.ListClients()
-	sort.SliceStable(body.Clients, func(i, j int) bool {
-		return body.Clients[i].Address < body.Clients[j].Address
-	})
-	// display esp state
-	for s := range cache.Output.ListAll() {
-		if s == nil {
-			break
-		}
-		body.Outputs = append(body.Outputs, models.NewOutputSchema(s))
-	}
-	sort.SliceStable(body.Outputs, func(i, j int) bool {
-		ii := body.Outputs[i]
-		jj := body.Outputs[j]
-		return ii.Device > jj.Device
 	})
 	return body
 }

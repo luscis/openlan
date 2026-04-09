@@ -14,10 +14,22 @@ type Output struct {
 }
 
 func (h Output) Router(router *mux.Router) {
+	router.HandleFunc("/api/output", h.List).Methods("GET")
 	router.HandleFunc("/api/network/{id}/output", h.Get).Methods("GET")
 	router.HandleFunc("/api/network/{id}/output", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/{id}/output", h.Delete).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/output", h.Save).Methods("PUT")
+}
+
+func (h Output) List(w http.ResponseWriter, r *http.Request) {
+	outputs := make([]schema.Output, 0, 1024)
+	for l := range cache.Output.ListAll() {
+		if l == nil {
+			break
+		}
+		outputs = append(outputs, models.NewOutputSchema(l))
+	}
+	ResponseJson(w, outputs)
 }
 
 func (h Output) Get(w http.ResponseWriter, r *http.Request) {
