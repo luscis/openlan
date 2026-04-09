@@ -103,6 +103,25 @@ func (u Network) Save(c *cli.Context) error {
 	return nil
 }
 
+func (u Network) CacheUrl(prefix, name string) string {
+	if name == "" {
+		return prefix + "/api/cache"
+	}
+	return prefix + "/api/cache/" + name
+}
+
+func (u Network) Cache(c *cli.Context) error {
+	name := c.String("name")
+	url := u.CacheUrl(c.String("url"), name)
+	clt := u.NewHttp(c.String("token"))
+
+	var items []schema.NetworkCache
+	if err := clt.GetJSON(url, &items); err != nil {
+		return err
+	}
+	return u.Out(items, c.String("format"), "")
+}
+
 func (u Network) Commands(app *api.App) {
 	app.Command(&cli.Command{
 		Name: "network",
@@ -139,6 +158,12 @@ func (u Network) Commands(app *api.App) {
 				Usage:   "Save a network",
 				Aliases: []string{"sa"},
 				Action:  u.Save,
+			},
+			{
+				Name:    "cache",
+				Usage:   "Display network cache with leases",
+				Aliases: []string{"ca"},
+				Action:  u.Cache,
 			},
 			Address{}.Commands(),
 			Access{}.Commands(),

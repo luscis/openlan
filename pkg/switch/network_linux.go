@@ -85,9 +85,12 @@ func (w *WorkerImpl) addCache() {
 	if cfg.Subnet != nil {
 		n.IpStart = cfg.Subnet.Start
 		n.IpEnd = cfg.Subnet.End
-		n.Netmask = cfg.Subnet.Netmask
-		if cfg.Bridge != nil {
-			n.Address = cfg.Bridge.Address
+	}
+	if cfg.Bridge != nil {
+		n.Address = cfg.Bridge.Address
+		addr, err := libol.ParseNet(n.Address)
+		if err == nil {
+			n.Netmask = net.IP(addr.Mask).String()
 		}
 	}
 	cache.Network.Add(&n)
@@ -392,7 +395,7 @@ func (w *WorkerImpl) doMss() {
 
 	mss := cfg.Bridge.Mss
 	for _, rule := range w.mssRules(mss) {
-		w.firewallChainForMssRule(rule).AddRuleX(rule)
+		w.chainForMssRule(rule).AddRuleX(rule)
 	}
 }
 
@@ -424,7 +427,7 @@ func (w *WorkerImpl) mssRules(mss int) []cn.IPRule {
 	}
 }
 
-func (w *WorkerImpl) firewallChainForMssRule(rule cn.IPRule) *cn.FireWallChain {
+func (w *WorkerImpl) chainForMssRule(rule cn.IPRule) *cn.FireWallChain {
 	if rule.Output != "" {
 		return w.fire.Mangle.Post
 	}
@@ -433,7 +436,7 @@ func (w *WorkerImpl) firewallChainForMssRule(rule cn.IPRule) *cn.FireWallChain {
 
 func (w *WorkerImpl) clearMss(mss int) {
 	for _, rule := range w.mssRules(mss) {
-		if err := w.firewallChainForMssRule(rule).DelRuleX(rule); err != nil {
+		if err := w.chainForMssRule(rule).DelRuleX(rule); err != nil {
 			w.out.Warn("WorkerImpl.clearMss: %s", err)
 		}
 	}
@@ -1415,6 +1418,37 @@ func (w *WorkerImpl) AddAddress(value string) {
 		return
 	}
 	w.out.Info("WorkerImpl.AddAddress notSupport")
+}
+
+func (w *WorkerImpl) SetSubnet(value schema.Subnet) error {
+	cfg, _ := w.GetCfgs()
+	if cfg.Bridge == nil {
+		return libol.NewErr("subnet not supported on this network")
+	}
+	if cfg.Bridge.Address == "" {
+		return libol.NewErr("bridge address is required before setting subnet")
+	}
+
+	cfg.Subnet = &co.Subnet{}
+	cfg.Subnet.Network = cfg.Name
+	cfg.Subnet.Start = value.IpStart
+	cfg.Subnet.End = value.IpEnd
+
+	w.addCache()
+
+	return nil
+}
+
+func (w *WorkerImpl) DelSubnet() error {
+	cfg, _ := w.GetCfgs()
+	if cfg.Bridge == nil {
+		return libol.NewErr("subnet not supported on this network")
+	}
+
+	cfg.Subnet = nil
+	w.addCache()
+
+	return nil
 }
 
 func (w *WorkerImpl) DelAddress() {

@@ -3,9 +3,11 @@ package api
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/gorilla/mux"
 	"github.com/luscis/openlan/pkg/cache"
@@ -49,6 +51,9 @@ func (h Network) List(w http.ResponseWriter, r *http.Request) {
 		}
 		nets = append(nets, item)
 	}
+	sort.SliceStable(nets, func(i, j int) bool {
+		return nets[i].Name < nets[j].Name
+	})
 	ResponseJson(w, nets)
 }
 
@@ -68,6 +73,55 @@ func (h Network) Get(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, vars["id"], http.StatusNotFound)
 	}
+}
+
+type NetworkCache struct{}
+
+func (h NetworkCache) item(net *models.Network) *schema.NetworkCache {
+	item := &schema.NetworkCache{
+		Name:    net.Name,
+		Address: net.Address,
+		IpStart: net.IpStart,
+		IpEnd:   net.IpEnd,
+		Netmask: net.Netmask,
+	}
+	for lease := range cache.Network.ListLease() {
+		if lease == nil {
+			break
+		}
+		if lease.Network == net.Name {
+			item.Leases = append(item.Leases, *lease)
+		}
+	}
+	return item
+}
+
+func (h NetworkCache) Router(router *mux.Router) {
+	router.HandleFunc("/api/cache", h.Get).Methods("GET")
+	router.HandleFunc("/api/cache/{id}", h.Get).Methods("GET")
+}
+
+func (h NetworkCache) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	items := make([]*schema.NetworkCache, 0, 1024)
+	if name := vars["id"]; name == "" {
+		for u := range cache.Network.List() {
+			if u == nil {
+				break
+			}
+			if u.Address == "" {
+				continue
+			}
+			items = append(items, h.item(u))
+		}
+	} else if u := cache.Network.Get(name); u != nil {
+		items = append(items, h.item(u))
+	}
+	if GetQueryOne(r, "format") == "yaml" {
+		ResponseYaml(w, items)
+		return
+	}
+	ResponseJson(w, items)
 }
 
 func processStatusByPidFile(file string) string {
@@ -346,6 +400,62 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+type Subnet struct {
+	cs SwitchApi
+}
+
+func (h Subnet) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/subnet", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/subnet", h.Delete).Methods("DELETE")
+}
+
+func (h Subnet) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	caller := Call.GetWorker(name)
+	if caller == nil {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+
+	value := schema.Subnet{}
+	if err := GetData(r, &value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if net.ParseIP(value.IpStart) == nil {
+		http.Error(w, "invalid subnet startAt", http.StatusBadRequest)
+		return
+	}
+	if net.ParseIP(value.IpEnd) == nil {
+		http.Error(w, "invalid subnet endAt", http.StatusBadRequest)
+		return
+	}
+
+	if err := caller.SetSubnet(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h Subnet) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	caller := Call.GetWorker(name)
+	if caller == nil {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+	if err := caller.DelSubnet(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
 type MSS struct {
 	cs SwitchApi
 }
@@ -370,7 +480,6 @@ func (h MSS) Post(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		obj.SetMss(value.Value)
-		h.cs.SaveNetwork(name)
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return
@@ -384,7 +493,6 @@ func (h MSS) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if obj := Call.GetWorker(name); obj != nil {
 		obj.SetMss(0)
-		h.cs.SaveNetwork(name)
 	} else {
 		http.Error(w, name+" not found", http.StatusBadRequest)
 		return

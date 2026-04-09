@@ -123,6 +123,8 @@ type NetworkApi interface {
 	Provider() string
 	IfAddr() string
 	SetMss(mss int)
+	SetSubnet(value schema.Subnet) error
+	DelSubnet() error
 	OutputApi
 	RouteApi
 	VPNApi

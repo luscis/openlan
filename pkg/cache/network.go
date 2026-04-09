@@ -17,7 +17,7 @@ type network struct {
 }
 
 func (w *network) Add(n *models.Network) {
-	_ = w.Networks.Set(n.Name, n)
+	_ = w.Networks.Mod(n.Name, n)
 }
 
 func (w *network) Del(name string) {

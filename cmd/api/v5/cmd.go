@@ -30,7 +30,6 @@ func Commands(app *api.App) {
 	Version{}.Commands(app)
 	User{}.Commands(app)
 	Network{}.Commands(app)
-	Lease{}.Commands(app)
 	ACL{}.Commands(app)
 	Ldap{}.Commands(app)
 	PProf{}.Commands(app)

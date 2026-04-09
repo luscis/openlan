@@ -1038,7 +1038,7 @@ select option {
             <div class="section-body">
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Subnet</th><th>SNAT</th><th>OpenVPN</th><th>Status</th><th style="width:160px;">Actions</th></tr>
+                  <tr><th>Name</th><th>Subnet</th><th>Routes</th><th>Outputs</th><th>SNAT</th><th>OpenVPN</th><th style="width:160px;">Actions</th></tr>
                 </thead>
                 <tbody id="networks-tbody"></tbody>
               </table>
@@ -1891,23 +1891,27 @@ async function load_networks() {
     document.getElementById('networks-count').textContent = regularNets.length;
     const nb = document.getElementById('networks-tbody');
     if (regularNets.length === 0) {
-      nb.innerHTML = '<tr class="empty-row"><td colspan="6">No networks configured</td></tr>';
+      nb.innerHTML = '<tr class="empty-row"><td colspan="7">No networks configured</td></tr>';
     } else {
       nb.innerHTML = regularNets.map((n, i) => {
         // remap index to _networksData
         i = _networksData.indexOf(n);
         const cfg = n.config || {};
         const subnet = (cfg.bridge && cfg.bridge.address) || '-';
+        const routeCount = Array.isArray(cfg.routes) ? cfg.routes.length : 0;
+        const outputCount = Array.isArray(cfg.outputs) ? cfg.outputs.length : 0;
         const snat = cfg.snat || 'disable';
         const ovpn = cfg.openvpn
-          ? ((cfg.openvpn.protocol || '-') + ' | ' + (cfg.openvpn.listen || '-'))
-          : '-';
+          ? ((cfg.openvpn.protocol || '-') + (cfg.openvpn.listen || '-'))
+          : '';
+        const ovpnStatus = statusBadge(n.openvpnStatus, 'Disabled');
         return '<tr>' +
           '<td style="font-weight:600;">' + (n.name || '-') + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + subnet + '</td>' +
+          '<td class="td-muted" style="font-size:12px;">' + routeCount + '</td>' +
+          '<td class="td-muted" style="font-size:12px;">' + outputCount + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + snat + '</td>' +
-          '<td class="td-muted td-mono" style="font-size:12px;">' + ovpn + '</td>' +
-          '<td>' + statusBadge(n.openvpnStatus, 'Disabled') + '</td>' +
+          '<td class="td-muted td-mono" style="font-size:12px;"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + (ovpn ? '<span>' + ovpn + '</span>' : '') + ovpnStatus + '</div></td>' +
           '<td style="display:flex;gap:6px;">' +
             '<button class="action-btn btn-detail" onclick="openNetModal(' + i + ')">Details</button>' +
             '<button class="action-btn btn-save" onclick="saveNetwork(\'' + esc(n.name) + '\')">Save</button>' +
@@ -2591,7 +2595,10 @@ function openNetModal(i) {
   const n = _networksData[i] || {};
   const cfg = n.config || {};
   const bridge = cfg.bridge || {};
+  const subnet = cfg.subnet || {};
   const ovpn = cfg.openvpn || null;
+  const derivedSubnetNetmask = bridgeNetmask(bridge);
+  const subnetEditable = !!(bridge && bridge.address && derivedSubnetNetmask);
 
   document.getElementById('net-modal-title').textContent = 'Network: ' + (n.name || '-');
 
@@ -2612,6 +2619,22 @@ function openNetModal(i) {
     ['openvpn', 'OpenVPN']
   ];
   document.getElementById('modal-snat-section').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:12px;padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div>' +
+          '<div class="detail-section-title" style="margin:0 0 6px;padding:0;border:none;">Subnet</div>' +
+          '<div style="font-size:13px;color:var(--text-muted);">' + esc(subnetEditable ? 'Update subnet pool for this virtual network.' : 'Configure bridge address first, then subnet can be edited.') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<button class="btn btn-ghost btn-sm"' + ((subnet.startAt || subnet.endAt || subnet.netmask) ? ' onclick="deleteNetworkSubnet()"' : ' disabled') + '>Delete</button>' +
+          '<button class="btn btn-dark btn-sm"' + (subnetEditable ? ' onclick="saveNetworkSubnet()"' : ' disabled title="Bridge address required"') + '>Apply</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">' +
+        '<div class="form-group" style="margin:0;"><label>Start IP</label><input class="modal-input" id="network-subnet-start" type="text" title="Start IP" placeholder="Start IP" value="' + esc(subnet.startAt || '') + '"' + (subnetEditable ? '' : ' disabled') + ' style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);"></div>' +
+        '<div class="form-group" style="margin:0;"><label>End IP</label><input class="modal-input" id="network-subnet-end" type="text" title="End IP" placeholder="End IP" value="' + esc(subnet.endAt || '') + '"' + (subnetEditable ? '' : ' disabled') + ' style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);"></div>' +
+      '</div>' +
+    '</div>' +
     '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
         '<div>' +
@@ -2703,6 +2726,22 @@ function bridgeMssValue(bridge) {
   return String(bridge.tcpMss);
 }
 
+function bridgeNetmask(bridge) {
+  if (!bridge || !bridge.address) return '';
+  const parts = String(bridge.address).split('/');
+  if (parts.length !== 2) return '';
+  const prefix = parseInt(parts[1], 10);
+  if (!Number.isFinite(prefix) || prefix < 0 || prefix > 32) return '';
+  let bits = prefix;
+  const octets = [];
+  for (let i = 0; i < 4; i++) {
+    const size = Math.max(0, Math.min(8, bits));
+    octets.push(size === 0 ? 0 : 256 - Math.pow(2, 8 - size));
+    bits -= size;
+  }
+  return octets.join('.');
+}
+
 async function saveNetworkMSS() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
@@ -2724,6 +2763,46 @@ async function saveNetworkMSS() {
     show_toast('Network MSS updated', 'success');
   } catch(e) {
     show_toast('Failed to update network MSS: ' + e.message, 'error');
+  }
+}
+
+async function saveNetworkSubnet() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  const bridge = (n.config || {}).bridge || {};
+  if (!bridge.address) {
+    show_toast('Bridge address is required before setting subnet', 'error');
+    return;
+  }
+  const startAt = document.getElementById('network-subnet-start').value.trim();
+  const endAt = document.getElementById('network-subnet-end').value.trim();
+  if (!startAt || !endAt) {
+    show_toast('Subnet start and end are required', 'error');
+    return;
+  }
+  try {
+    await api_post('/api/network/' + encodeURIComponent(n.name) + '/subnet', { startAt, endAt });
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    show_toast('Network subnet updated', 'success');
+  } catch(e) {
+    show_toast('Failed to update network subnet: ' + e.message, 'error');
+  }
+}
+
+async function deleteNetworkSubnet() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  if (!await showConfirm('Delete subnet settings for network "' + n.name + '"?', 'Delete Subnet')) return;
+  try {
+    await api_delete('/api/network/' + encodeURIComponent(n.name) + '/subnet');
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+    show_toast('Network subnet deleted', 'success');
+  } catch(e) {
+    show_toast('Failed to delete network subnet: ' + e.message, 'error');
   }
 }
 

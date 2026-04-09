@@ -35,7 +35,7 @@ func (cl Client) GetBody(url string) ([]byte, error) {
 		return nil, err
 	}
 	if r.StatusCode != http.StatusOK {
-		return nil, libol.NewErr(r.Status)
+		return nil, libol.NewErr("%s", r.Status)
 	}
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)

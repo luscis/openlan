@@ -77,6 +77,15 @@ type Network struct {
 	OpenVPNStatus string      `json:"openvpnStatus,omitempty"`
 }
 
+type NetworkCache struct {
+	Name    string  `json:"name" yaml:"name"`
+	Address string  `json:"address,omitempty" yaml:"address,omitempty"`
+	IpStart string  `json:"startAt,omitempty" yaml:"startAt,omitempty"`
+	IpEnd   string  `json:"endAt,omitempty" yaml:"endAt,omitempty"`
+	Leases  []Lease `json:"leases,omitempty" yaml:"leases,omitempty"`
+	Netmask string  `json:"netmask,omitempty" yaml:"netmask,omitempty"`
+}
+
 type FindHop struct {
 	Name      string `json:"name"`
 	Mode      string `json:"mode"`
