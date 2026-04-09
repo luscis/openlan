@@ -2227,7 +2227,7 @@ async function routerIfaceSubmit() {
 
 function routerAddrTags(f, index) {
   const addrs = Array.isArray(f.address) ? f.address : (f.address ? [f.address] : []);
-  const values = addrs.length === 0 ? '<span style="color:var(--text-muted);font-size:13px;">-</span>' : addrs.map(a => {
+  const values = addrs.map(a => {
     const item = (typeof a === 'string') ? { address: a } : a;
     const remove = Number.isInteger(item._routerIndex)
       ? '<button onclick="routerDelAddress(' + item._routerIndex + ')" title="Remove" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;color:var(--text-muted);font-size:13px;line-height:1;">&#x2715;</button>'
