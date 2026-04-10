@@ -465,6 +465,7 @@ select option {
       <pre class="file-preview-body" id="file-preview-body"><span class="file-preview-loading">Loading...</span></pre>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-dark btn-sm" id="file-preview-copy" onclick="copyCurrentPreview()">Copy</button>
       <button class="btn btn-dark btn-sm" id="file-preview-download" onclick="downloadCurrentPreview()">Download</button>
       <button class="btn btn-ghost btn-sm" onclick="closeFilePreview()">Close</button>
     </div>
@@ -1069,10 +1070,17 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 OpenVPN Clients
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('vpnclient')">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Client
-              </button>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+                <div class="form-group" style="min-width:180px;">
+                  <select id="vpn-clients-network-filter" onchange="onVpnClientsNetworkFilterChange()" style="min-width:180px;padding:5px 10px;font-size:12px;line-height:1.2;">
+                    <option value="">All Networks</option>
+                  </select>
+                </div>
+                <button class="btn btn-dark btn-sm" onclick="openAddDialog('vpnclient')">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Client
+                </button>
+              </div>
             </div>
             <div class="section-body">
               <table>
@@ -1285,15 +1293,22 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Authenticated User
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('user')">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add User
-              </button>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+                <div class="form-group" style="min-width:180px;">
+                  <select id="users-network-filter" onchange="onUsersNetworkFilterChange()" style="min-width:180px;padding:5px 10px;font-size:12px;line-height:1.2;">
+                    <option value="">All Networks</option>
+                  </select>
+                </div>
+                <button class="btn btn-dark btn-sm" onclick="openAddDialog('user')">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add User
+                </button>
+              </div>
             </div>
             <div class="section-body">
               <table>
                 <thead>
-                  <tr><th>Username</th><th>Network</th><th>Role</th><th>Password</th><th>Lease Until</th><th>Actions</th></tr>
+                  <tr><th>Username</th><th>Role</th><th>Password</th><th>Lease Until</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="users-tbody"></tbody>
               </table>
@@ -1455,6 +1470,7 @@ function show_toast(msg, type) {
 }
 
 let _filePreviewDownload = null;
+let _filePreviewText = '';
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)
@@ -1469,10 +1485,13 @@ async function openTextPreview(url, filename, downloadAction) {
   const title = document.getElementById('file-preview-title');
   const body = document.getElementById('file-preview-body');
   const downloadBtn = document.getElementById('file-preview-download');
+  const copyBtn = document.getElementById('file-preview-copy');
   title.textContent = filename;
   body.innerHTML = '<span class="file-preview-loading">Loading...</span>';
+  _filePreviewText = '';
   _filePreviewDownload = typeof downloadAction === 'function' ? downloadAction : null;
   downloadBtn.disabled = !_filePreviewDownload;
+  copyBtn.disabled = true;
   document.getElementById('dlg-file-preview').classList.remove('hidden');
   const resp = await fetch(url, { method: 'GET' });
   if (!resp.ok) {
@@ -1480,16 +1499,26 @@ async function openTextPreview(url, filename, downloadAction) {
     throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
   }
   const text = await resp.text();
+  _filePreviewText = text;
   body.textContent = text;
+  copyBtn.disabled = false;
 }
 
 function closeFilePreview() {
   document.getElementById('dlg-file-preview').classList.add('hidden');
   _filePreviewDownload = null;
+  _filePreviewText = '';
 }
 
 function downloadCurrentPreview() {
   if (typeof _filePreviewDownload === 'function') _filePreviewDownload();
+}
+
+function copyCurrentPreview() {
+  if (!_filePreviewText) return;
+  copyTextToClipboard(_filePreviewText)
+    .then(function() { show_toast('Copied', 'success'); })
+    .catch(function(e) { show_toast('Failed to copy: ' + e.message, 'error'); });
 }
 
 function gen_password() {
@@ -2656,6 +2685,64 @@ function fmt_uptime(sec) {
   return s + 's';
 }
 
+let _vpnClientsData = [];
+let _vpnClientsNetworkFilter = '';
+
+function render_vpn_clients_filter() {
+  const sel = document.getElementById('vpn-clients-network-filter');
+  if (!sel) return;
+  const networks = _vpnClientsData
+    .map(c => c && c.network ? String(c.network) : '')
+    .filter((name, index, arr) => name && arr.indexOf(name) === index)
+    .sort();
+  const current = _vpnClientsNetworkFilter;
+  sel.innerHTML = '<option value="">All Networks</option>' +
+    networks.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+  sel.value = networks.includes(current) ? current : '';
+  _vpnClientsNetworkFilter = sel.value;
+}
+
+function get_filtered_vpn_clients() {
+  if (!_vpnClientsNetworkFilter) return _vpnClientsData.slice();
+  return _vpnClientsData.filter(c => (c && c.network ? String(c.network) : '') === _vpnClientsNetworkFilter);
+}
+
+function render_vpn_clients_table() {
+  const arr = get_filtered_vpn_clients();
+  document.getElementById('vpn-clients-count').textContent = arr.length;
+  const tb = document.getElementById('vpn-clients-tbody');
+  if (arr.length === 0) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="9">' + (_vpnClientsNetworkFilter ? 'No VPN clients in this network' : 'No VPN clients') + '</td></tr>';
+    return;
+  }
+  tb.innerHTML = arr.map(c => {
+    const state = c.state || '-';
+    const badgeCls = state === 'connected' ? 'badge-green' : 'badge-gray';
+    const net = esc(c.network || '');
+    const name = esc(c.name || '');
+    return '<tr>' +
+      '<td style="font-weight:600;" class="td-mono">' + (c.name || '-') + '</td>' +
+      '<td class="td-muted">' + (c.network || '-') + '</td>' +
+      '<td class="td-mono">' + (c.address || '-') + '</td>' +
+      '<td class="td-mono td-muted" style="font-size:12px;">' + (c.remote || '-') + '</td>' +
+      '<td><span class="badge ' + badgeCls + '">' + state + '</span></td>' +
+      '<td class="td-muted">' + fmt_bytes(c.rxBytes) + '</td>' +
+      '<td class="td-muted">' + fmt_bytes(c.txBytes) + '</td>' +
+      '<td class="td-muted">' + fmt_uptime(c.aliveTime) + '</td>' +
+      '<td style="display:flex;gap:4px;">' +
+        (c.remote ? '<button class="action-btn" style="background:rgba(245,158,11,.1);color:var(--warning);border:none;" onclick="killVpnClient(\'' + net + '\',\'' + name + '\')">Kick</button>' : '') +
+        (!c.remote ? '<button class="action-btn action-delete" onclick="removeVpnClient(\'' + net + '\',\'' + name + '\')">Remove</button>' : '') +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function onVpnClientsNetworkFilterChange() {
+  const sel = document.getElementById('vpn-clients-network-filter');
+  _vpnClientsNetworkFilter = sel ? sel.value : '';
+  render_vpn_clients_table();
+}
+
 async function load_vpn_clients() {
   // Populate network selector
   const netSel = document.getElementById('vpn-client-network');
@@ -2673,34 +2760,11 @@ async function load_vpn_clients() {
           .catch(() => [])
       )
     );
-    const arr = results.flat().filter(Boolean);
-    document.getElementById('vpn-clients-count').textContent = arr.length;
-    const tb = document.getElementById('vpn-clients-tbody');
-    if (arr.length === 0) {
-      tb.innerHTML = '<tr class="empty-row"><td colspan="9">No VPN clients</td></tr>';
-    } else {
-      tb.innerHTML = arr.map(c => {
-        const state = c.state || '-';
-        const badgeCls = state === 'connected' ? 'badge-green' : 'badge-gray';
-        const net = esc(c.network || '');
-        const name = esc(c.name || '');
-        return '<tr>' +
-          '<td style="font-weight:600;" class="td-mono">' + (c.name || '-') + '</td>' +
-          '<td class="td-muted">' + (c.network || '-') + '</td>' +
-          '<td class="td-mono">' + (c.address || '-') + '</td>' +
-          '<td class="td-mono td-muted" style="font-size:12px;">' + (c.remote || '-') + '</td>' +
-          '<td><span class="badge ' + badgeCls + '">' + state + '</span></td>' +
-          '<td class="td-muted">' + fmt_bytes(c.rxBytes) + '</td>' +
-          '<td class="td-muted">' + fmt_bytes(c.txBytes) + '</td>' +
-          '<td class="td-muted">' + fmt_uptime(c.aliveTime) + '</td>' +
-          '<td style="display:flex;gap:4px;">' +
-            (c.remote ? '<button class="action-btn" style="background:rgba(245,158,11,.1);color:var(--warning);border:none;" onclick="killVpnClient(\'' + net + '\',\'' + name + '\')">Kick</button>' : '') +
-            (!c.remote ? '<button class="action-btn action-delete" onclick="removeVpnClient(\'' + net + '\',\'' + name + '\')">Remove</button>' : '') +
-          '</td>' +
-          '</tr>';
-      }).join('');
-    }
+    _vpnClientsData = results.flat().filter(Boolean);
+    render_vpn_clients_filter();
+    render_vpn_clients_table();
   } catch(e) {
+    _vpnClientsData = [];
     const tb = document.getElementById('vpn-clients-tbody');
     if (tb) tb.innerHTML = '<tr class="empty-row"><td colspan="9">Failed to load VPN clients</td></tr>';
   }
@@ -3342,29 +3406,64 @@ async function load_about() {
 // Users
 // =====================
 let _usersData = [];
+let _usersNetworkFilter = '';
+
+function render_users_filter() {
+  const sel = document.getElementById('users-network-filter');
+  if (!sel) return;
+  const networks = _usersData
+    .map(u => u && u.network ? String(u.network) : '')
+    .filter((name, index, arr) => name && arr.indexOf(name) === index)
+    .sort();
+  const current = _usersNetworkFilter;
+  sel.innerHTML = '<option value="">All Networks</option>' +
+    networks.map(name => '<option value="' + esc(name) + '">' + esc(name) + '</option>').join('');
+  sel.value = networks.includes(current) ? current : '';
+  _usersNetworkFilter = sel.value;
+}
+
+function get_filtered_users() {
+  if (!_usersNetworkFilter) return _usersData.slice();
+  return _usersData.filter(u => (u && u.network ? String(u.network) : '') === _usersNetworkFilter);
+}
+
+function render_users_table() {
+  const users = get_filtered_users();
+  document.getElementById('users-count').textContent = users.length;
+  const ub = document.getElementById('users-tbody');
+  if (users.length === 0) {
+    ub.innerHTML = '<tr class="empty-row"><td colspan="5">' + (_usersNetworkFilter ? 'No users found in this network' : 'No users found') + '</td></tr>';
+    return;
+  }
+  ub.innerHTML = users.map(u => {
+    const originalIndex = _usersData.indexOf(u);
+    const fullName = (u.name || '-') + ((u && u.network) ? ('@' + u.network) : '');
+    return '<tr>' +
+      '<td style="font-weight:600;">' + esc(fullName) + '</td>' +
+      '<td>' + role_badge(u.role) + '</td>' +
+      '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
+      '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
+      '<td style="white-space:nowrap;">' +
+        '<button class="action-btn action-dark" onclick="viewUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">View .yaml</button> ' +
+        '<button class="action-btn action-dark" onclick="openEditUser(' + originalIndex + ')">Edit</button> ' +
+        '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function onUsersNetworkFilterChange() {
+  const sel = document.getElementById('users-network-filter');
+  _usersNetworkFilter = sel ? sel.value : '';
+  render_users_table();
+}
 
 async function load_users() {
   try {
     const users = await api_get('/api/user');
     _usersData = Array.isArray(users) ? users : [];
-    document.getElementById('users-count').textContent = _usersData.length;
-    const ub = document.getElementById('users-tbody');
-    if (_usersData.length === 0) {
-      ub.innerHTML = '<tr class="empty-row"><td colspan="6">No users found</td></tr>';
-    } else {
-      ub.innerHTML = _usersData.map((u, i) => '<tr>' +
-        '<td style="font-weight:600;">' + esc(u.name || '-') + '</td>' +
-        '<td>' + esc(u.network || '-') + '</td>' +
-        '<td>' + role_badge(u.role) + '</td>' +
-        '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
-        '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
-        '<td style="white-space:nowrap;">' +
-          '<button class="action-btn action-dark" onclick="viewUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">View .yaml</button> ' +
-          '<button class="action-btn action-dark" onclick="openEditUser(' + i + ')">Edit</button> ' +
-          '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
-        '</td>' +
-        '</tr>').join('');
-    }
+    render_users_filter();
+    render_users_table();
   } catch(e) {
     show_toast('Failed to load users: ' + e.message, 'error');
   }
@@ -3386,6 +3485,24 @@ function viewUserAccess(fullName) {
   const filename = fullName.split('@')[0] + '.yaml';
   const url = State.baseUrl + '/api/user/' + encodeURIComponent(fullName) + '/access?token=' + encodeURIComponent(State.token);
   openTextPreview(url, filename, function() { downloadUserAccess(fullName); }).catch(e => show_toast('Failed to view access file: ' + e.message, 'error'));
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.focus();
+  area.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(area);
+  if (!ok) throw new Error('clipboard unavailable');
 }
 
 function downloadOpenVPNProfile(networkName) {
