@@ -6,12 +6,45 @@ import (
 	"time"
 )
 
+const defaultTCPBufferSize = 4 << 20
+
 type TcpConfig struct {
 	Tls     *tls.Config
 	Block   *BlockCrypt
 	Timeout time.Duration // ns
 	RdQus   int           // per frames
 	WrQus   int           // per frames
+}
+
+func setTcpConn(conn net.Conn) {
+	if conn == nil {
+		return
+	}
+
+	var tcpConn *net.TCPConn
+	switch c := conn.(type) {
+	case *net.TCPConn:
+		tcpConn = c
+	case *tls.Conn:
+		if raw := c.NetConn(); raw != nil {
+			if tc, ok := raw.(*net.TCPConn); ok {
+				tcpConn = tc
+			}
+		}
+	}
+	if tcpConn == nil {
+		return
+	}
+
+	if err := tcpConn.SetNoDelay(true); err != nil {
+		Warn("setTcpConn.SetNoDelay: %s", err)
+	}
+	if err := tcpConn.SetReadBuffer(defaultTCPBufferSize); err != nil {
+		Warn("setTcpConn.SetReadBuffer: %s", err)
+	}
+	if err := tcpConn.SetWriteBuffer(defaultTCPBufferSize); err != nil {
+		Warn("setTcpConn.SetWriteBuffer: %s", err)
+	}
 }
 
 // Server Implement
@@ -109,6 +142,7 @@ func NewTcpClient(addr string, cfg *TcpConfig) *TcpClient {
 
 func NewTcpClientFromConn(conn net.Conn, cfg *TcpConfig) *TcpClient {
 	addr := conn.RemoteAddr().String()
+	setTcpConn(conn)
 	t := &TcpClient{
 		tcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
@@ -139,6 +173,7 @@ func (t *TcpClient) Connect() error {
 	if err != nil {
 		return err
 	}
+	setTcpConn(conn)
 	t.Reset(conn)
 	if t.listener.OnConnected != nil {
 		_ = t.listener.OnConnected(t)

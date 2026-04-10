@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -92,7 +93,6 @@ type SocketClient interface {
 type StreamSocket struct {
 	message    Messager
 	connection net.Conn
-	statistics *SafeStrInt64
 	maxSize    int
 	minSize    int
 	out        *SubLogger
@@ -100,6 +100,10 @@ type StreamSocket struct {
 	localAddr  string
 	address    string
 	Block      *BlockCrypt
+	sendOkay   atomic.Int64
+	recvOkay   atomic.Int64
+	sendError  atomic.Int64
+	dropped    atomic.Int64
 }
 
 func (t *StreamSocket) LocalAddr() string {
@@ -120,10 +124,10 @@ func (t *StreamSocket) IsOk() bool {
 
 func (t *StreamSocket) WriteMsg(frame *FrameMessage) error {
 	if !t.IsOk() {
-		t.statistics.Add(CsDropped, 1)
+		t.dropped.Add(1)
 		return NewErr("%s not okay", t)
 	}
-	if frame.IsControl() {
+	if HasLog(CMD) && frame.IsControl() {
 		action, params := frame.CmdAndParams()
 		Cmd("StreamSocket.WriteMsg: %s%s", action, params)
 	}
@@ -132,10 +136,10 @@ func (t *StreamSocket) WriteMsg(frame *FrameMessage) error {
 	}
 	size, err := t.message.Send(t.connection, frame)
 	if err != nil {
-		t.statistics.Add(CsSendError, 1)
+		t.sendError.Add(1)
 		return err
 	}
-	t.statistics.Add(CsSendOkay, int64(size))
+	t.sendOkay.Add(int64(size))
 	return nil
 }
 
@@ -154,7 +158,7 @@ func (t *StreamSocket) ReadMsg() (*FrameMessage, error) {
 		return nil, err
 	}
 	size := len(frame.frame)
-	t.statistics.Add(CsRecvOkay, int64(size))
+	t.recvOkay.Add(int64(size))
 	return frame, nil
 }
 
@@ -194,7 +198,6 @@ func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 			maxSize:    1514,
 			minSize:    15,
 			message:    message,
-			statistics: NewSafeStrInt64(),
 			out:        NewSubLogger(cfg.Address),
 			remoteAddr: cfg.Address,
 			address:    cfg.Address,
@@ -317,9 +320,12 @@ func (s *SocketClientImpl) Have(state SocketStatus) bool {
 }
 
 func (s *SocketClientImpl) Statistics() map[string]int64 {
-	sts := make(map[string]int64)
-	s.statistics.Copy(sts)
-	return sts
+	return map[string]int64{
+		CsSendOkay:  s.sendOkay.Load(),
+		CsRecvOkay:  s.recvOkay.Load(),
+		CsSendError: s.sendError.Load(),
+		CsDropped:   s.dropped.Load(),
+	}
 }
 
 func (s *SocketClientImpl) SetListener(listener ClientListener) {

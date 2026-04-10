@@ -250,7 +250,10 @@ type StreamMessagerImpl struct {
 	timeout time.Duration // ns for read and write deadline.
 	block   *BlockCrypt
 	buffer  []byte
+	readBuf []byte
 	bufSize int // default is (1518 + 20+20+14) * 8
+	readAt  time.Time
+	writeAt time.Time
 }
 
 func (s *StreamMessagerImpl) SetCrypt(block *BlockCrypt) {
@@ -263,11 +266,30 @@ func (s *StreamMessagerImpl) Crypt() *BlockCrypt {
 
 func (s *StreamMessagerImpl) Flush() {
 	s.buffer = nil
+	s.readBuf = nil
+	s.readAt = time.Time{}
+	s.writeAt = time.Time{}
+}
+
+func shouldRefreshDeadline(last time.Time, timeout time.Duration, now time.Time) bool {
+	if timeout == 0 {
+		return false
+	}
+	if last.IsZero() || !now.Before(last) {
+		return true
+	}
+	refresh := timeout / 4
+	if refresh <= 0 {
+		refresh = timeout
+	}
+	return last.Sub(now) <= refresh
 }
 
 func (s *StreamMessagerImpl) write(conn net.Conn, tmp []byte) (int, error) {
-	if s.timeout != 0 {
-		err := conn.SetWriteDeadline(time.Now().Add(s.timeout))
+	now := time.Now()
+	if shouldRefreshDeadline(s.writeAt, s.timeout, now) {
+		s.writeAt = now.Add(s.timeout)
+		err := conn.SetWriteDeadline(s.writeAt)
 		if err != nil {
 			return 0, err
 		}
@@ -283,13 +305,20 @@ func (s *StreamMessagerImpl) writeX(conn net.Conn, buf []byte) error {
 	if conn == nil {
 		return NewErr("connection is nil")
 	}
-	offset := 0
 	size := len(buf)
-	left := size - offset
 	if HasLog(LOG) {
 		Log("StreamMessagerImpl.writeX: %s %d", conn.RemoteAddr(), size)
 		Log("StreamMessagerImpl.writeX: %s Data %x", conn.RemoteAddr(), buf)
 	}
+	n, err := s.write(conn, buf)
+	if err != nil {
+		return err
+	}
+	if n >= size {
+		return nil
+	}
+	offset := n
+	left := size - offset
 	for left > 0 {
 		tmp := buf[offset:]
 		if HasLog(LOG) {
@@ -327,8 +356,10 @@ func (s *StreamMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, erro
 }
 
 func (s *StreamMessagerImpl) read(conn net.Conn, tmp []byte) (int, error) {
-	if s.timeout != 0 {
-		err := conn.SetReadDeadline(time.Now().Add(s.timeout))
+	now := time.Now()
+	if shouldRefreshDeadline(s.readAt, s.timeout, now) {
+		s.readAt = now.Add(s.timeout)
+		err := conn.SetReadDeadline(s.readAt)
 		if err != nil {
 			return 0, err
 		}
@@ -384,7 +415,9 @@ func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) 
 		if HasLog(DEBUG) {
 			Debug("StreamMessagerImpl.decode: %d %x", fs, tmp[:fs])
 		}
-		return NewFrameMessageFromBytes(tmp[:fs]), nil
+		buf := make([]byte, fs)
+		copy(buf, tmp[:fs])
+		return NewFrameMessageFromBytes(buf), nil
 	}
 	return nil, nil
 }
@@ -402,7 +435,10 @@ func (s *StreamMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 		s.bufSize = MaxMsg // 1572 * 8
 	}
 	bs := len(s.buffer)
-	tmp := make([]byte, s.bufSize)
+	if len(s.readBuf) != s.bufSize {
+		s.readBuf = make([]byte, s.bufSize)
+	}
+	tmp := s.readBuf
 	if bs > 0 {
 		copy(tmp[:bs], s.buffer[:bs])
 	}
@@ -428,6 +464,8 @@ type PacketMessagerImpl struct {
 	timeout time.Duration // ns for read and write deadline
 	block   *BlockCrypt
 	bufSize int // default is (1518 + 20+20+14) * 8
+	readAt  time.Time
+	writeAt time.Time
 }
 
 func (s *PacketMessagerImpl) SetCrypt(block *BlockCrypt) {
@@ -439,7 +477,8 @@ func (s *PacketMessagerImpl) Crypt() *BlockCrypt {
 }
 
 func (s *PacketMessagerImpl) Flush() {
-	//TODO
+	s.readAt = time.Time{}
+	s.writeAt = time.Time{}
 }
 
 func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, error) {
@@ -452,8 +491,10 @@ func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, erro
 	if HasLog(DEBUG) {
 		Debug("PacketMessagerImpl.Send: %s %d %x", conn.RemoteAddr(), frame.size, frame.buffer)
 	}
-	if s.timeout != 0 {
-		err := conn.SetWriteDeadline(time.Now().Add(s.timeout))
+	now := time.Now()
+	if shouldRefreshDeadline(s.writeAt, s.timeout, now) {
+		s.writeAt = now.Add(s.timeout)
+		err := conn.SetWriteDeadline(s.writeAt)
 		if err != nil {
 			return 0, err
 		}
@@ -472,8 +513,10 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 	if HasLog(DEBUG) {
 		Debug("PacketMessagerImpl.Receive %s %d", conn.RemoteAddr(), s.timeout)
 	}
-	if s.timeout != 0 {
-		err := conn.SetReadDeadline(time.Now().Add(s.timeout))
+	now := time.Now()
+	if shouldRefreshDeadline(s.readAt, s.timeout, now) {
+		s.readAt = now.Add(s.timeout)
+		err := conn.SetReadDeadline(s.readAt)
 		if err != nil {
 			return nil, err
 		}

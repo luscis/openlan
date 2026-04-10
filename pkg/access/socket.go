@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/luscis/openlan/pkg/config"
@@ -50,6 +51,7 @@ type SocketWorker struct {
 	record     *libol.SafeStrInt64
 	out        *libol.SubLogger
 	wlFrame    *libol.FrameMessage // Last frame from write.
+	authState  atomic.Uint32
 }
 
 func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker {
@@ -99,17 +101,19 @@ func (t *SocketWorker) Initialize() {
 	defer t.lock.Unlock()
 	t.out.Info("SocketWorker.Initialize")
 	t.client.SetMaxSize(t.pinCfg.Interface.IPMtu)
-	t.client.SetListener(libol.ClientListener{
-		OnConnected: func(client libol.SocketClient) error {
-			t.record.Set(rtConnected, time.Now().Unix())
-			t.eventQueue <- NewEvent(EvSocConed, "from socket")
-			return nil
-		},
-		OnClose: func(client libol.SocketClient) error {
-			t.record.Set(rtClosed, time.Now().Unix())
-			t.eventQueue <- NewEvent(EvSocClosed, "from socket")
-			return nil
-		},
+		t.client.SetListener(libol.ClientListener{
+			OnConnected: func(client libol.SocketClient) error {
+				t.authState.Store(0)
+				t.record.Set(rtConnected, time.Now().Unix())
+				t.eventQueue <- NewEvent(EvSocConed, "from socket")
+				return nil
+			},
+			OnClose: func(client libol.SocketClient) error {
+				t.authState.Store(0)
+				t.record.Set(rtClosed, time.Now().Unix())
+				t.eventQueue <- NewEvent(EvSocClosed, "from socket")
+				return nil
+			},
 	})
 	t.record.Set(rtLast, time.Now().Unix())
 	t.record.Set(rtReConnect, time.Now().Unix())
@@ -162,6 +166,7 @@ func (t *SocketWorker) Stop() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.out.Info("SocketWorker.Stop")
+	t.authState.Store(0)
 	t.leave()
 	t.client.Terminal()
 	t.done <- true
@@ -282,11 +287,12 @@ func (t *SocketWorker) toNetwork(client libol.SocketClient) error {
 }
 
 func (t *SocketWorker) onLogin(resp []byte) error {
-	if t.client.Have(libol.ClAuth) {
+	if t.authState.Load() == 1 {
 		t.out.Cmd("SocketWorker.onLogin: %s", resp)
 		return nil
 	}
 	if strings.HasPrefix(string(resp), "okay") {
+		t.authState.Store(1)
 		t.client.SetStatus(libol.ClAuth)
 		if t.listener.OnSuccess != nil {
 			_ = t.listener.OnSuccess(t)
@@ -297,6 +303,7 @@ func (t *SocketWorker) onLogin(resp []byte) error {
 		t.eventQueue <- NewEvent(EvSocSuccess, "from login")
 		t.out.Info("SocketWorker.onLogin: success")
 	} else {
+		t.authState.Store(0)
 		t.client.SetStatus(libol.ClUnAuth)
 		t.out.Error("SocketWorker.onLogin: %s", resp)
 	}
@@ -543,19 +550,17 @@ func (t *SocketWorker) DoWrite(frame *libol.FrameMessage) error {
 	if t.out.Has(libol.DEBUG) {
 		t.out.Debug("SocketWorker.DoWrite: %x", frame)
 	}
-	t.checkAlive() // alive check immediately
 	t.lock.Lock()
-	if t.client == nil {
-		t.lock.Unlock()
+	client := t.client
+	t.lock.Unlock()
+	if client == nil {
 		return libol.NewErr("client is nil")
 	}
-	if !t.client.Have(libol.ClAuth) {
+	if t.authState.Load() == 0 {
 		t.out.Debug("SocketWorker.DoWrite: dropping by unAuth")
-		t.lock.Unlock()
 		return nil
 	}
-	t.lock.Unlock()
-	if err := t.client.WriteMsg(frame); err != nil {
+	if err := client.WriteMsg(frame); err != nil {
 		t.out.Debug("SocketWorker.DoWrite: %s", err)
 		return err
 	}
