@@ -239,7 +239,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		}
 		cn.LinkSet(port.Link, "mtu", strconv.Itoa(mtu))
 		port.Linker = link
-	case "tcp", "tls", "wss":
+	case "tcp", "udp", "tls", "wss":
 		name, pass := SplitCombined(port.Secret)
 		algo, secret := SplitCombined(port.Crypt)
 		ac := co.Access{

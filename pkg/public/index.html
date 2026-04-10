@@ -735,6 +735,7 @@ select option {
       <div class="form-group"><label>Protocol</label>
         <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-proto" onchange="onNetworkOutputProtocolChange()">
           <option value="tcp">tcp</option>
+          <option value="udp">udp</option>
           <option value="gre">gre</option>
           <option value="vxlan">vxlan</option>
         </select>
@@ -1172,7 +1173,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Interface</th><th>VLAN</th><th>Address</th><th>State</th><th></th></tr></thead>
+                <thead><tr><th>Interface</th><th>VLAN</th><th>MAC</th><th>Address</th><th>State</th><th></th></tr></thead>
                 <tbody id="router-iface-tbody"></tbody>
               </table>
             </div>
@@ -1896,8 +1897,10 @@ async function load_routes() {
     ]);
     routes = Array.isArray(routeData) ? routeData : [];
     neighbors = Array.isArray(neighborData) ? neighborData : [];
+    _kernelNeighbors = neighbors;
   } catch(e) {
     show_toast('Failed to load kernel routes: ' + e.message, 'error');
+    _kernelNeighbors = [];
   }
 
   document.getElementById('routes-count').textContent = routes.length;
@@ -2145,6 +2148,7 @@ let _routerSystemIfaces = [];
 let _routerRedirects = [];
 let _routerAddresses = [];
 let _routerAddressDevice = '';
+let _kernelNeighbors = [];
 
 async function load_router() {
   try {
@@ -2200,11 +2204,12 @@ async function load_router() {
     _routerIfaces = merged;
     const tb = document.getElementById('router-iface-tbody');
     tb.innerHTML = _routerIfaces.length === 0
-      ? '<tr class="empty-row"><td colspan="5">No interfaces</td></tr>'
+      ? '<tr class="empty-row"><td colspan="6">No interfaces</td></tr>'
       : _routerIfaces.map((f, i) =>
           '<tr>' +
           '<td class="td-mono" style="font-weight:600;">' + esc(f._displayDevice || f.name || f._device || '-') + '</td>' +
           '<td class="td-muted">' + (f.vlan ? f.vlan : '-') + '</td>' +
+          '<td class="td-mono td-muted">' + esc(f.mac || '-') + '</td>' +
           '<td>' + routerAddrTags(f, i) + '</td>' +
           '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(f.state || '-') + '</span></td>' +
           '<td style="display:flex;gap:4px;flex-wrap:wrap;">' +
@@ -2213,7 +2218,7 @@ async function load_router() {
           '</tr>'
         ).join('');
   } catch(e) {
-    document.getElementById('router-iface-tbody').innerHTML = '<tr class="empty-row"><td colspan="5">-</td></tr>';
+    document.getElementById('router-iface-tbody').innerHTML = '<tr class="empty-row"><td colspan="6">-</td></tr>';
   }
   await load_router_private();
   await load_router_redirect();
@@ -2435,7 +2440,7 @@ async function load_router_redirect() {
       tbody.innerHTML = redirects.map((r, i) =>
         '<tr>' +
           '<td class="td-mono">' + esc(r.source || '-') + '</td>' +
-          '<td class="td-mono">' + esc(r.nexthop || '-') + '</td>' +
+          '<td>' + routerRedirectNextHopCell(r.nexthop) + '</td>' +
           '<td class="td-muted">' + (r.table || '-') + '</td>' +
           '<td><button class="action-btn btn-danger" onclick="routerDelRedirect(' + i + ')">Remove</button></td>' +
         '</tr>'
@@ -2445,6 +2450,20 @@ async function load_router_redirect() {
     _routerRedirects = [];
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">-</td></tr>';
   }
+}
+
+function routerRedirectNextHopCell(nexthop) {
+  const hop = String(nexthop || '-');
+  const key = String(nexthop || '').trim();
+  if (!key) return '<span class="td-mono">-</span>';
+  const neighbor = _kernelNeighbors.find(n => String(n.address || '').trim() === key);
+  if (!neighbor || !neighbor.hwaddr) {
+    return '<span class="td-mono">' + esc(hop) + '</span>';
+  }
+  return '<div style="display:flex;flex-direction:column;gap:2px;">' +
+    '<span class="td-mono">' + esc(hop) + '</span>' +
+    '<span class="td-mono td-muted" style="font-size:12px;">' + esc(neighbor.hwaddr) + '</span>' +
+  '</div>';
 }
 
 async function routerAddRedirect() {
@@ -3258,12 +3277,14 @@ async function modalLoadOutputs(netName) {
         arr.map(o => {
           const state = o.state || '-';
           const bc = state === 'up' ? 'badge-green' : state === 'down' ? 'badge-red' : 'badge-gray';
-          const detail = o.protocol === 'tcp'
+          const detail = (o.protocol === 'tcp' || o.protocol === 'udp')
             ? '<div class="td-mono" style="font-size:12px;line-height:1.5;">' +
                 '<div>secret: ' + esc(o.secret || '-') + '</div>' +
                 '<div>crypt: ' + esc(o.crypt || '-') + '</div>' +
               '</div>'
-            : '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">segment: ' + (o.segment || '-') + '</div>';
+            : (o.protocol === 'gre' || o.protocol === 'vxlan')
+              ? '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">segment: ' + (o.segment || '-') + '</div>'
+              : '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">-</div>';
           return '<tr>' +
             '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
             '<td class="td-mono">' + (o.remote || '-') + '</td>' +
@@ -3289,9 +3310,9 @@ async function modalAddOutput() {
   const secret = document.getElementById('network-out-secret').value.trim();
   const crypt = document.getElementById('network-out-crypt').value.trim();
   if (!remote) { show_toast('Remote is required', 'error'); return; }
-  if (protocol === 'tcp') {
-    if (!secret) { show_toast('Secret is required for tcp output', 'error'); return; }
-    if (!crypt) { show_toast('Crypt is required for tcp output', 'error'); return; }
+  if (protocol === 'tcp' || protocol === 'udp') {
+    if (!secret) { show_toast('Secret is required for ' + protocol + ' output', 'error'); return; }
+    if (!crypt) { show_toast('Crypt is required for ' + protocol + ' output', 'error'); return; }
   }
   if (protocol === 'gre' || protocol === 'vxlan') {
     if (!segment) { show_toast('Segment is required for ' + protocol + ' output', 'error'); return; }
@@ -3682,7 +3703,7 @@ function onNetworkOutputProtocolChange() {
   const secretGroup = document.getElementById('network-out-secret-group');
   const cryptGroup = document.getElementById('network-out-crypt-group');
   const secretLabel = secretGroup ? secretGroup.querySelector('label') : null;
-  if (protocol === 'tcp') {
+  if (protocol === 'tcp' || protocol === 'udp') {
     if (remoteInput) remoteInput.placeholder = 'e.g. 1.2.3.4:4500';
     if (segmentGroup) segmentGroup.style.display = 'none';
     const segmentInput = document.getElementById('network-out-segment');

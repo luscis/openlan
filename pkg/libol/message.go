@@ -542,9 +542,7 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 	if s.block != nil {
 		s.block.Decrypt(tmp, tmp)
 	}
-	frame.size = size
-	frame.frame = tmp
-	return frame, nil
+	return NewFrameMessageFromBytes(frame.buffer[:HlSize+size]), nil
 }
 
 type BlockCrypt struct {
