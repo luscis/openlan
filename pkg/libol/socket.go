@@ -77,8 +77,6 @@ type SocketClient interface {
 	SetPrivate(v any)
 	Status() SocketStatus
 	SetStatus(v SocketStatus)
-	MaxSize() int
-	SetMaxSize(value int)
 	MinSize() int
 	IsOk() bool
 	Have(status SocketStatus) bool
@@ -93,7 +91,6 @@ type SocketClient interface {
 type StreamSocket struct {
 	message    Messager
 	connection net.Conn
-	maxSize    int
 	minSize    int
 	out        *SubLogger
 	remoteAddr string
@@ -153,7 +150,7 @@ func (t *StreamSocket) ReadMsg() (*FrameMessage, error) {
 	if t.message == nil { // default is stream message
 		t.message = &StreamMessagerImpl{}
 	}
-	frame, err := t.message.Receive(t.connection, t.maxSize, t.minSize)
+	frame, err := t.message.Receive(t.connection, t.minSize)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +192,6 @@ type SocketClientImpl struct {
 func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 	return &SocketClientImpl{
 		StreamSocket: &StreamSocket{
-			maxSize:    1514,
 			minSize:    15,
 			message:    message,
 			out:        NewSubLogger(cfg.Address),
@@ -301,14 +297,6 @@ func (s *SocketClientImpl) SetPrivate(v any) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.private = v
-}
-
-func (s *SocketClientImpl) MaxSize() int {
-	return s.maxSize
-}
-
-func (s *SocketClientImpl) SetMaxSize(value int) {
-	s.maxSize = value
 }
 
 func (s *SocketClientImpl) MinSize() int {

@@ -100,20 +100,19 @@ func (t *SocketWorker) Initialize() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.out.Info("SocketWorker.Initialize")
-	t.client.SetMaxSize(t.pinCfg.Interface.IPMtu)
-		t.client.SetListener(libol.ClientListener{
-			OnConnected: func(client libol.SocketClient) error {
-				t.authState.Store(0)
-				t.record.Set(rtConnected, time.Now().Unix())
-				t.eventQueue <- NewEvent(EvSocConed, "from socket")
-				return nil
-			},
-			OnClose: func(client libol.SocketClient) error {
-				t.authState.Store(0)
-				t.record.Set(rtClosed, time.Now().Unix())
-				t.eventQueue <- NewEvent(EvSocClosed, "from socket")
-				return nil
-			},
+	t.client.SetListener(libol.ClientListener{
+		OnConnected: func(client libol.SocketClient) error {
+			t.authState.Store(0)
+			t.record.Set(rtConnected, time.Now().Unix())
+			t.eventQueue <- NewEvent(EvSocConed, "from socket")
+			return nil
+		},
+		OnClose: func(client libol.SocketClient) error {
+			t.authState.Store(0)
+			t.record.Set(rtClosed, time.Now().Unix())
+			t.eventQueue <- NewEvent(EvSocClosed, "from socket")
+			return nil
+		},
 	})
 	t.record.Set(rtLast, time.Now().Unix())
 	t.record.Set(rtReConnect, time.Now().Unix())

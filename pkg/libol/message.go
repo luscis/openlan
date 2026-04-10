@@ -242,7 +242,7 @@ type Messager interface {
 	Crypt() *BlockCrypt
 	SetCrypt(*BlockCrypt)
 	Send(conn net.Conn, frame *FrameMessage) (int, error)
-	Receive(conn net.Conn, max, min int) (*FrameMessage, error)
+	Receive(conn net.Conn, min int) (*FrameMessage, error)
 	Flush()
 }
 
@@ -423,7 +423,7 @@ func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) 
 }
 
 // 430Mib
-func (s *StreamMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage, error) {
+func (s *StreamMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, error) {
 	frame, err := s.decode(s.buffer, min)
 	if err != nil {
 		return nil, err
@@ -505,7 +505,7 @@ func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, erro
 	return frame.size, nil
 }
 
-func (s *PacketMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage, error) {
+func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, error) {
 	if s.bufSize == 0 {
 		s.bufSize = MaxMsg
 	}
@@ -535,8 +535,11 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, max, min int) (*FrameMessage
 		return nil, NewErr("%s: wrong magic", conn.RemoteAddr())
 	}
 	size := int(binary.BigEndian.Uint16(frame.buffer[HlMI:HlLI]))
-	if size > max || size < min {
+	if size < min {
 		return nil, NewErr("%s: wrong size %d", conn.RemoteAddr(), size)
+	}
+	if HlSize+size > n {
+		Warn("PacketMessagerImpl.Receive: %s %d over size %d", conn.RemoteAddr(), size, n)
 	}
 	tmp := frame.buffer[HlSize : HlSize+size]
 	if s.block != nil {
