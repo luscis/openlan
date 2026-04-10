@@ -3277,6 +3277,7 @@ async function modalLoadOutputs(netName) {
         arr.map(o => {
           const state = o.state || '-';
           const bc = state === 'up' ? 'badge-green' : state === 'down' ? 'badge-red' : 'badge-gray';
+          const device = outputDeviceName(o);
           const detail = (o.protocol === 'tcp' || o.protocol === 'udp')
             ? '<div class="td-mono" style="font-size:12px;line-height:1.5;">' +
                 '<div>secret: ' + esc(o.secret || '-') + '</div>' +
@@ -3289,10 +3290,10 @@ async function modalLoadOutputs(netName) {
             '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
             '<td class="td-mono">' + (o.remote || '-') + '</td>' +
             '<td>' + detail + '</td>' +
-            '<td class="td-mono td-muted">' + (o.device || '-') + '</td>' +
+            '<td class="td-mono td-muted">' + (device || '-') + '</td>' +
             '<td><span class="badge ' + bc + '">' + state + '</span></td>' +
             '<td class="td-muted" style="font-size:12px;">' + fmt_bytes(o.rxBytes) + ' / ' + fmt_bytes(o.txBytes) + '</td>' +
-            '<td><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(o.protocol) + '\',\'' + esc(o.remote) + '\')">Remove</button></td>' +
+            '<td><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(device || '') + '\')">Remove</button></td>' +
             '</tr>';
         }).join('') + '</tbody></table>';
     }
@@ -3335,16 +3336,28 @@ async function modalAddOutput() {
   }
 }
 
-async function modalDelOutput(protocol, remote) {
+async function modalDelOutput(device) {
   const n = _networksData[_modalNetIndex];
-  if (!n || !await showConfirm('Remove output "' + protocol + '://' + remote + '"?')) return;
+  if (!n || !device || !await showConfirm('Remove output "' + device + '"?')) return;
   try {
-    await api_delete('/api/network/' + encodeURIComponent(n.name) + '/output', { protocol, remote });
+    await api_delete('/api/network/' + encodeURIComponent(n.name) + '/output', { device });
     show_toast('Output removed', 'success');
     modalLoadOutputs(n.name);
   } catch(e) {
     show_toast('Failed to remove output: ' + e.message, 'error');
   }
+}
+
+function outputDeviceName(output) {
+  if (!output) return '';
+  if (output.protocol === 'tcp' || output.protocol === 'udp') {
+    const secret = output.secret || '';
+    const user = secret.split(':', 1)[0] || '';
+    if (output.remote && user) {
+      return output.protocol + ':' + output.remote + ':' + user;
+    }
+  }
+  return output.device || '';
 }
 
 async function addNetwork() {
