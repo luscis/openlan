@@ -269,6 +269,7 @@ func (w *WorkerImpl) addOutput(bridge string, port *co.Output) {
 		link.Start()
 		port.Linker = link
 		out.StatsFile = link.StatusFile()
+		out.PidFile = link.PidFile()
 	default:
 		link, err := nl.LinkByName(port.Remote)
 		if link == nil {

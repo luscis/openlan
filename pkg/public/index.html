@@ -925,7 +925,7 @@ select option {
                     <th>Device</th>
                     <th>Remote</th>
                     <th>Protocol</th>
-                    <th>Rx / Tx Bytes</th>
+                    <th>Speed (Rx/Tx)</th>
                     <th>State</th>
                     <th>Alive</th>
                   </tr>
@@ -952,7 +952,7 @@ select option {
                     <th>Device</th>
                     <th>Remote</th>
                     <th>Protocol</th>
-                    <th>Rx / Tx Bytes</th>
+                    <th>Speed (Rx/Tx)</th>
                     <th>State</th>
                     <th>Alive</th>
                   </tr>
@@ -1851,6 +1851,17 @@ function ct_card(num, label) {
   return '<div class="ct-card"><div class="ct-num">' + num + '</div><div class="ct-label">' + label + '</div></div>';
 }
 
+function sort_by_device(items) {
+  return [...items].sort((a, b) => {
+    const deviceA = ((a && a.device) || '').toLowerCase();
+    const deviceB = ((b && b.device) || '').toLowerCase();
+    if (deviceA === deviceB) return 0;
+    if (!deviceA) return 1;
+    if (!deviceB) return -1;
+    return deviceA.localeCompare(deviceB, undefined, { numeric: true });
+  });
+}
+
 // =====================
 // Clients
 // =====================
@@ -1858,38 +1869,56 @@ async function load_clients() {
   let access = [];
   let clients = [];
   let outputs = [];
+  let devices = [];
   try {
-    const [accessData, clientData, outputData] = await Promise.all([
+    const [accessData, clientData, outputData, deviceData] = await Promise.all([
       api_get('/api/point'),
       api_get('/api/vpn/client'),
-      api_get('/api/output')
+      api_get('/api/output'),
+      api_get('/api/device')
     ]);
     access = Array.isArray(accessData) ? accessData : [];
     clients = Array.isArray(clientData) ? clientData : [];
     outputs = Array.isArray(outputData) ? outputData : [];
+    devices = Array.isArray(deviceData) ? deviceData : [];
   } catch(e) {
     show_toast('Failed to load clients: ' + e.message, 'error');
   }
+
+  const deviceSpeedMap = {};
+  devices.forEach(dev => {
+    if (!dev || !dev.name) return;
+    deviceSpeedMap[dev.name] = {
+      rxSpeed: dev.rxSpeed || 0,
+      txSpeed: dev.txSpeed || 0
+    };
+  });
+
+  access = sort_by_device(access);
+  outputs = sort_by_device(outputs);
 
   document.getElementById('access-count').textContent = access.length;
   const ab = document.getElementById('access-tbody');
   if (access.length === 0) {
     ab.innerHTML = '<tr class="empty-row"><td colspan="9">No access clients connected</td></tr>';
   } else {
-    ab.innerHTML = access.map(a => '<tr>' +
+    ab.innerHTML = access.map(a => {
+      const devSpeed = deviceSpeedMap[a.device] || {};
+      return '<tr>' +
       '<td>' + (a.network || '-') + '</td>' +
       '<td>' + (a.user || '-') + '</td>' +
       '<td>' + (a.alias || '-') + '</td>' +
       '<td class="td-mono">' + (a.device || '-') + '</td>' +
       '<td class="td-mono">' + (a.remote || '-') + '</td>' +
       '<td><span class="badge badge-blue">' + (a.protocol || '-') + '</span></td>' +
-      '<td>' + fmt_bytes(a.rxBytes||0) + ' / ' + fmt_bytes(a.txBytes||0) + '</td>' +
+      '<td>' + fmt_bits(devSpeed.rxSpeed||0) + ' / ' + fmt_bits(devSpeed.txSpeed||0) + '</td>' +
       '<td>' + state_badge(a.state) + '</td>' +
       '<td>' + fmt_duration(a.aliveTime) + '</td>' +
-      '</tr>').join('');
+      '</tr>';
+    }).join('');
   }
 
-  render_links_table(outputs);
+  render_links_table(outputs, deviceSpeedMap);
 
   document.getElementById('vpn-count').textContent = clients.length;
   const vb = document.getElementById('vpn-tbody');
@@ -1908,20 +1937,21 @@ async function load_clients() {
   }
 }
 
-function render_links_table(outputs) {
+function render_links_table(outputs, deviceSpeedMap) {
   document.getElementById('links-count').textContent = outputs.length;
   const lb = document.getElementById('links-tbody');
   if (outputs.length === 0) {
     lb.innerHTML = '<tr class="empty-row"><td colspan="7">No links configured</td></tr>';
   } else {
     lb.innerHTML = outputs.map(o => {
+      const devSpeed = deviceSpeedMap[o.device] || {};
       const state = (o.rxBytes && o.rxBytes > 0) ? 'success' : (o.state || 'unknown');
       return '<tr>' +
         '<td>' + (o.network || '-') + '</td>' +
         '<td class="td-mono">' + (o.device || '-') + '</td>' +
         '<td><a href="https://' + (o.remote||'') + ':10000" target="_blank" class="td-mono" style="color:var(--primary);text-decoration:none;">' + (o.remote || '-') + '</a></td>' +
         '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
-        '<td>' + fmt_bytes(o.rxBytes||0) + ' / ' + fmt_bytes(o.txBytes||0) + '</td>' +
+        '<td>' + fmt_bits(devSpeed.rxSpeed||0) + ' / ' + fmt_bits(devSpeed.txSpeed||0) + '</td>' +
         '<td>' + state_badge(state) + '</td>' +
         '<td>' + fmt_duration(o.aliveTime) + '</td>' +
         '</tr>';
