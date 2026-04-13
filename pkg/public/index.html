@@ -3414,7 +3414,6 @@ function outputDeviceName(output) {
 
 function outputDeleteKey(output) {
   if (!output) return '';
-  if (output.device) return output.device;
   const protocol = String(output.protocol || '').trim();
   if (protocol === 'tcp' || protocol === 'udp' || protocol === 'tls' || protocol === 'wss') {
     const secret = String(output.secret || '');
@@ -3423,7 +3422,11 @@ function outputDeleteKey(output) {
       return protocol + ':' + output.remote + ':' + user;
     }
   }
-  return '';
+  if (protocol === 'gre' && output.segment) return 'xgi' + output.segment;
+  if (protocol === 'vxlan' && output.segment) return 'xei' + output.segment;
+  if (output.device) return output.device;
+  if (output.segment) return String(output.remote || '') + '.' + output.segment;
+  return output.remote || '';
 }
 
 async function addNetwork() {
