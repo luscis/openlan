@@ -462,6 +462,9 @@ select option {
       <button class="modal-close" onclick="closeFilePreview()">&#x2715;</button>
     </div>
     <div class="modal-body">
+      <div id="file-preview-tabs" style="display:none;justify-content:flex-end;margin-bottom:12px;">
+        <div id="file-preview-tab-buttons" style="display:inline-flex;gap:6px;padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);"></div>
+      </div>
       <pre class="file-preview-body" id="file-preview-body"><span class="file-preview-loading">Loading...</span></pre>
     </div>
     <div class="modal-footer">
@@ -800,10 +803,6 @@ select option {
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Access Client
         </div>
-        <div class="nav-item" onclick="showPage('links')" id="nav-links">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          Internal Link
-        </div>
         <div class="nav-item" onclick="showPage('routes')" id="nav-routes">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Kernel Route
@@ -914,15 +913,39 @@ select option {
           <div class="section" style="margin-bottom:24px;">
             <div class="section-header">
               <span class="section-title">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Access Points
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Internal Output
               </span>
             </div>
             <div class="section-body">
               <table>
                 <thead>
                   <tr>
-                    <th>UUID</th>
+                    <th>Network</th>
+                    <th>Device</th>
+                    <th>Remote</th>
+                    <th>Protocol</th>
+                    <th>Rx / Tx Bytes</th>
+                    <th>State</th>
+                    <th>Alive</th>
+                  </tr>
+                </thead>
+                <tbody id="links-tbody"></tbody>
+              </table>
+              <div class="section-footer" id="links-count">0</div>
+            </div>
+          </div>
+          <div class="section" style="margin-bottom:24px;">
+            <div class="section-header">
+              <span class="section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Access Client
+              </span>
+            </div>
+            <div class="section-body">
+              <table>
+                <thead>
+                  <tr>
                     <th>Network</th>
                     <th>User</th>
                     <th>Alias</th>
@@ -962,35 +985,6 @@ select option {
                 <tbody id="vpn-tbody"></tbody>
               </table>
               <div class="section-footer" id="vpn-count">0</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LINKS PAGE -->
-        <div class="page" id="page-links">
-          <div class="section">
-            <div class="section-header">
-              <span class="section-title">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                Inter-Node Link
-              </span>
-            </div>
-            <div class="section-body">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Network</th>
-                    <th>Device</th>
-                    <th>Remote</th>
-                    <th>Protocol</th>
-                    <th>Rx / Tx Bytes</th>
-                    <th>State</th>
-                    <th>Alive</th>
-                  </tr>
-                </thead>
-                <tbody id="links-tbody"></tbody>
-              </table>
-              <div class="section-footer" id="links-count">0</div>
             </div>
           </div>
         </div>
@@ -1057,7 +1051,7 @@ select option {
             <div class="section-body">
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Subnet</th><th>Routes</th><th>Outputs</th><th>SNAT</th><th>OpenVPN</th><th style="width:160px;">Actions</th></tr>
+                  <tr><th>Name</th><th>Subnet</th><th>Routes</th><th>Outputs</th><th>SNAT</th><th>openvpn state</th><th style="width:160px;">Actions</th></tr>
                 </thead>
                 <tbody id="networks-tbody"></tbody>
               </table>
@@ -1407,7 +1401,7 @@ select option {
 // =====================
 // State
 // =====================
-const MONITOR_PAGES = new Set(['overview', 'clients', 'links', 'routes']);
+const MONITOR_PAGES = new Set(['overview', 'clients', 'routes']);
 const REFRESH_INTERVAL = 30;
 
 const State = {
@@ -1472,6 +1466,8 @@ function show_toast(msg, type) {
 
 let _filePreviewDownload = null;
 let _filePreviewText = '';
+let _filePreviewViews = [];
+let _filePreviewActiveView = '';
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)
@@ -1482,7 +1478,45 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-async function openTextPreview(url, filename, downloadAction) {
+function renderFilePreviewTabs() {
+  const tabs = document.getElementById('file-preview-tabs');
+  const buttons = document.getElementById('file-preview-tab-buttons');
+  if (!tabs || !buttons) return;
+  if (_filePreviewViews.length <= 1) {
+    tabs.style.display = 'none';
+    buttons.innerHTML = '';
+    return;
+  }
+  tabs.style.display = 'flex';
+  buttons.innerHTML = _filePreviewViews.map(view =>
+    '<button class="btn btn-sm ' + (_filePreviewActiveView === view.id ? 'btn-dark' : 'btn-ghost') + '" type="button" onclick="switchFilePreviewView(\'' + esc(view.id) + '\')">' + esc(view.label || view.id) + '</button>'
+  ).join('');
+}
+
+async function switchFilePreviewView(id) {
+  const body = document.getElementById('file-preview-body');
+  const copyBtn = document.getElementById('file-preview-copy');
+  const view = _filePreviewViews.find(v => v.id === id);
+  if (!body || !view) return;
+  _filePreviewActiveView = id;
+  renderFilePreviewTabs();
+  body.innerHTML = '<span class="file-preview-loading">Loading...</span>';
+  copyBtn.disabled = true;
+  _filePreviewText = '';
+  try {
+    if (typeof view.text !== 'string') {
+      view.text = await view.load();
+    }
+    _filePreviewText = String(view.text || '');
+    body.textContent = _filePreviewText;
+    copyBtn.disabled = false;
+  } catch(e) {
+    body.innerHTML = '<span class="file-preview-error">' + escapeHtml(e.message || 'Failed to load file') + '</span>';
+    throw e;
+  }
+}
+
+async function openTextPreview(url, filename, downloadAction, extraViews, primaryViewLabel) {
   const title = document.getElementById('file-preview-title');
   const body = document.getElementById('file-preview-body');
   const downloadBtn = document.getElementById('file-preview-download');
@@ -1490,25 +1524,44 @@ async function openTextPreview(url, filename, downloadAction) {
   title.textContent = filename;
   body.innerHTML = '<span class="file-preview-loading">Loading...</span>';
   _filePreviewText = '';
+  _filePreviewViews = [];
+  _filePreviewActiveView = '';
   _filePreviewDownload = typeof downloadAction === 'function' ? downloadAction : null;
   downloadBtn.disabled = !_filePreviewDownload;
   copyBtn.disabled = true;
   document.getElementById('dlg-file-preview').classList.remove('hidden');
-  const resp = await fetch(url, { method: 'GET' });
-  if (!resp.ok) {
-    body.innerHTML = '<span class="file-preview-error">Failed to load file: HTTP ' + escapeHtml(resp.status) + ': ' + escapeHtml(resp.statusText) + '</span>';
-    throw new Error('HTTP ' + resp.status + ': ' + resp.statusText);
+  _filePreviewViews = [{
+    id: 'yaml',
+    label: primaryViewLabel || 'YAML',
+    load: async function() {
+      const resp = await fetch(url, { method: 'GET' });
+      if (!resp.ok) {
+        throw new Error('Failed to load file: HTTP ' + resp.status + ': ' + resp.statusText);
+      }
+      return await resp.text();
+    }
+  }];
+  if (Array.isArray(extraViews) && extraViews.length > 0) {
+    _filePreviewViews = _filePreviewViews.concat(extraViews.filter(Boolean).map(function(view) {
+      return {
+        id: view.id,
+        label: view.label,
+        load: view.load,
+        text: typeof view.text === 'string' ? view.text : undefined
+      };
+    }));
   }
-  const text = await resp.text();
-  _filePreviewText = text;
-  body.textContent = text;
-  copyBtn.disabled = false;
+  renderFilePreviewTabs();
+  await switchFilePreviewView('yaml');
 }
 
 function closeFilePreview() {
   document.getElementById('dlg-file-preview').classList.add('hidden');
   _filePreviewDownload = null;
   _filePreviewText = '';
+  _filePreviewViews = [];
+  _filePreviewActiveView = '';
+  renderFilePreviewTabs();
 }
 
 function downloadCurrentPreview() {
@@ -1620,8 +1673,7 @@ function stop_refresh_timer() {
 // =====================
 const PAGE_TITLES = {
   overview: 'Overview',
-  clients: 'Clients',
-  links: 'Links',
+  clients: 'Clients / Links',
   routes: 'Routes',
   networks: 'Virtual Network',
   bgp: 'BGP Network',
@@ -1661,7 +1713,6 @@ function refreshCurrentPage() {
   const p = State.currentPage;
   if (p === 'overview') load_overview().then(done).catch(done);
   else if (p === 'clients') load_clients().then(done).catch(done);
-  else if (p === 'links') load_links().then(done).catch(done);
   else if (p === 'routes') load_routes().then(done).catch(done);
   else if (p === 'networks') load_networks().then(done).catch(done);
   else if (p === 'bgp') load_bgp().then(done).catch(done);
@@ -1731,7 +1782,7 @@ function render_overview(d) {
     stat_card('Clients', clientCount, accessCount + ' AP + ' + vpnCount + ' VPN', 'teal',
       '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
       '') +
-    stat_card('Links', linkCount, 'inter-node', 'red',
+    stat_card('Links', linkCount, 'inter-output', 'red',
       '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
       '');
 
@@ -1806,13 +1857,16 @@ function ct_card(num, label) {
 async function load_clients() {
   let access = [];
   let clients = [];
+  let outputs = [];
   try {
-    const [accessData, clientData] = await Promise.all([
+    const [accessData, clientData, outputData] = await Promise.all([
       api_get('/api/point'),
-      api_get('/api/vpn/client')
+      api_get('/api/vpn/client'),
+      api_get('/api/output')
     ]);
     access = Array.isArray(accessData) ? accessData : [];
     clients = Array.isArray(clientData) ? clientData : [];
+    outputs = Array.isArray(outputData) ? outputData : [];
   } catch(e) {
     show_toast('Failed to load clients: ' + e.message, 'error');
   }
@@ -1820,10 +1874,9 @@ async function load_clients() {
   document.getElementById('access-count').textContent = access.length;
   const ab = document.getElementById('access-tbody');
   if (access.length === 0) {
-    ab.innerHTML = '<tr class="empty-row"><td colspan="10">No access points connected</td></tr>';
+    ab.innerHTML = '<tr class="empty-row"><td colspan="9">No access clients connected</td></tr>';
   } else {
     ab.innerHTML = access.map(a => '<tr>' +
-      '<td class="td-mono td-muted" style="font-size:11px;">' + (a.uuid || '-') + '</td>' +
       '<td>' + (a.network || '-') + '</td>' +
       '<td>' + (a.user || '-') + '</td>' +
       '<td>' + (a.alias || '-') + '</td>' +
@@ -1835,6 +1888,8 @@ async function load_clients() {
       '<td>' + fmt_duration(a.aliveTime) + '</td>' +
       '</tr>').join('');
   }
+
+  render_links_table(outputs);
 
   document.getElementById('vpn-count').textContent = clients.length;
   const vb = document.getElementById('vpn-tbody');
@@ -1853,17 +1908,7 @@ async function load_clients() {
   }
 }
 
-// =====================
-// Links
-// =====================
-async function load_links() {
-  let outputs = [];
-  try {
-    const outputData = await api_get('/api/output');
-    outputs = Array.isArray(outputData) ? outputData : [];
-  } catch(e) {
-    show_toast('Failed to load links: ' + e.message, 'error');
-  }
+function render_links_table(outputs) {
   document.getElementById('links-count').textContent = outputs.length;
   const lb = document.getElementById('links-tbody');
   if (outputs.length === 0) {
@@ -1889,19 +1934,17 @@ async function load_links() {
 // =====================
 async function load_routes() {
   let routes = [];
-  let neighbors = [];
   try {
-    const [routeData, neighborData] = await Promise.all([
+    const [routeData] = await Promise.all([
       api_get('/api/kernel/route'),
-      api_get('/api/kernel/neighbor')
+      sync_kernel_neighbors()
     ]);
     routes = Array.isArray(routeData) ? routeData : [];
-    neighbors = Array.isArray(neighborData) ? neighborData : [];
-    _kernelNeighbors = neighbors;
   } catch(e) {
     show_toast('Failed to load kernel routes: ' + e.message, 'error');
-    _kernelNeighbors = [];
   }
+
+  const neighbors = Array.isArray(_kernelNeighbors) ? _kernelNeighbors : [];
 
   document.getElementById('routes-count').textContent = routes.length;
   const rb = document.getElementById('routes-tbody');
@@ -1939,6 +1982,12 @@ async function load_routes() {
       '<td>' + state_badge(n.state) + '</td>' +
       '</tr>').join('');
   }
+}
+
+async function sync_kernel_neighbors() {
+  const neighborData = await api_get('/api/kernel/neighbor');
+  _kernelNeighbors = Array.isArray(neighborData) ? neighborData : [];
+  return _kernelNeighbors;
 }
 
 // =====================
@@ -2430,7 +2479,10 @@ async function routerDelPrivate(subnet) {
 async function load_router_redirect() {
   const tbody = document.getElementById('router-redirect-tbody');
   try {
-    const data = await api_get('/api/network/router');
+    const [data] = await Promise.all([
+      api_get('/api/network/router'),
+      sync_kernel_neighbors().catch(() => _kernelNeighbors)
+    ]);
     const redirects = (data && data.config && data.config.specifies && Array.isArray(data.config.specifies.redirect))
       ? data.config.specifies.redirect : [];
     _routerRedirects = redirects;
@@ -2453,6 +2505,10 @@ async function load_router_redirect() {
 }
 
 function routerRedirectNextHopCell(nexthop) {
+  return nextHopWithMacHtml(nexthop);
+}
+
+function nextHopWithMacHtml(nexthop) {
   const hop = String(nexthop || '-');
   const key = String(nexthop || '').trim();
   if (!key) return '<span class="td-mono">-</span>';
@@ -3211,6 +3267,7 @@ async function modalLoadRoutes(netName) {
   if (!el) return;
   el.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">Loading...</span>';
   try {
+    await sync_kernel_neighbors().catch(() => _kernelNeighbors);
     const routes = await api_get('/api/network/' + encodeURIComponent(netName) + '/route');
     const arr = Array.isArray(routes) ? routes : [];
     if (arr.length === 0) {
@@ -3221,7 +3278,7 @@ async function modalLoadRoutes(netName) {
         arr.map(r =>
           '<tr>' +
           '<td class="td-mono">' + (r.prefix || '-') + '</td>' +
-          '<td class="td-mono">' + (r.nexthop || '-') + '</td>' +
+          '<td>' + nextHopWithMacHtml(r.nexthop) + '</td>' +
           '<td class="td-muted">' + (r.metric || 0) + '</td>' +
           '<td><button class="action-btn action-delete" onclick="modalDelRoute(\'' + esc(r.prefix) + '\')">Remove</button></td>' +
           '</tr>'
@@ -3273,18 +3330,19 @@ async function modalLoadOutputs(netName) {
       el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No outputs configured</p>';
     } else {
       el.innerHTML = '<table style="width:100%;">' +
-        '<thead><tr><th>Protocol</th><th>Remote</th><th>Segment / Secret / Crypt</th><th>Device</th><th>State</th><th>RX/TX</th><th></th></tr></thead><tbody>' +
+        '<thead><tr><th>Protocol</th><th>Remote</th><th>Segment / Secret</th><th>Device</th><th>State</th><th>RX/TX</th><th></th></tr></thead><tbody>' +
         arr.map(o => {
           const state = o.state || '-';
           const bc = state === 'up' ? 'badge-green' : state === 'down' ? 'badge-red' : 'badge-gray';
           const device = outputDeviceName(o);
+          const deleteKey = outputDeleteKey(o);
           const detail = (o.protocol === 'tcp' || o.protocol === 'udp')
             ? '<div class="td-mono" style="font-size:12px;line-height:1.5;">' +
-                '<div>secret: ' + esc(o.secret || '-') + '</div>' +
-                '<div>crypt: ' + esc(o.crypt || '-') + '</div>' +
+                '<div>' + esc(o.secret || '-') + '</div>' +
+                '<div>' + esc(o.crypt || '-') + '</div>' +
               '</div>'
             : (o.protocol === 'gre' || o.protocol === 'vxlan')
-              ? '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">segment: ' + (o.segment || '-') + '</div>'
+              ? '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">' + (o.segment || '-') + '</div>'
               : '<div class="td-mono td-muted" style="font-size:12px;line-height:1.5;">-</div>';
           return '<tr>' +
             '<td><span class="badge badge-blue">' + (o.protocol || '-') + '</span></td>' +
@@ -3293,7 +3351,7 @@ async function modalLoadOutputs(netName) {
             '<td class="td-mono td-muted">' + (device || '-') + '</td>' +
             '<td><span class="badge ' + bc + '">' + state + '</span></td>' +
             '<td class="td-muted" style="font-size:12px;">' + fmt_bytes(o.rxBytes) + ' / ' + fmt_bytes(o.txBytes) + '</td>' +
-            '<td><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(device || '') + '\')">Remove</button></td>' +
+            '<td><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(deleteKey || '') + '\', \'' + esc(device || deleteKey || '') + '\')">Remove</button></td>' +
             '</tr>';
         }).join('') + '</tbody></table>';
     }
@@ -3336,9 +3394,10 @@ async function modalAddOutput() {
   }
 }
 
-async function modalDelOutput(device) {
+async function modalDelOutput(device, label) {
   const n = _networksData[_modalNetIndex];
-  if (!n || !device || !await showConfirm('Remove output "' + device + '"?')) return;
+  const text = label || device;
+  if (!n || !device || !await showConfirm('Remove output "' + text + '"?')) return;
   try {
     await api_delete('/api/network/' + encodeURIComponent(n.name) + '/output', { device });
     show_toast('Output removed', 'success');
@@ -3350,14 +3409,21 @@ async function modalDelOutput(device) {
 
 function outputDeviceName(output) {
   if (!output) return '';
-  if (output.protocol === 'tcp' || output.protocol === 'udp') {
-    const secret = output.secret || '';
+  return output.device || '';
+}
+
+function outputDeleteKey(output) {
+  if (!output) return '';
+  if (output.device) return output.device;
+  const protocol = String(output.protocol || '').trim();
+  if (protocol === 'tcp' || protocol === 'udp' || protocol === 'tls' || protocol === 'wss') {
+    const secret = String(output.secret || '');
     const user = secret.split(':', 1)[0] || '';
     if (output.remote && user) {
-      return output.protocol + ':' + output.remote + ':' + user;
+      return protocol + ':' + output.remote + ':' + user;
     }
   }
-  return output.device || '';
+  return '';
 }
 
 async function addNetwork() {
@@ -3518,7 +3584,47 @@ function viewUserAccess(fullName) {
   if (!fullName) return;
   const filename = fullName.split('@')[0] + '.yaml';
   const url = State.baseUrl + '/api/user/' + encodeURIComponent(fullName) + '/access?token=' + encodeURIComponent(State.token);
-  openTextPreview(url, filename, function() { downloadUserAccess(fullName); }).catch(e => show_toast('Failed to view access file: ' + e.message, 'error'));
+  openTextPreview(url, filename, function() { downloadUserAccess(fullName); }, [{
+    id: 'output',
+    label: 'Output',
+    load: function() { return loadUserOutputParams(fullName); }
+  }], 'Access').catch(e => show_toast('Failed to view access file: ' + e.message, 'error'));
+}
+
+async function loadUserOutputParams(fullName) {
+  const accessUrl = State.baseUrl + '/api/user/' + encodeURIComponent(fullName) + '/access?token=' + encodeURIComponent(State.token);
+  const accessText = await fetch(accessUrl, { method: 'GET' }).then(async function(resp) {
+    if (!resp.ok) throw new Error('Failed to load access YAML: HTTP ' + resp.status + ': ' + resp.statusText);
+    return await resp.text();
+  });
+  const protocol = parseYamlScalar(accessText, 'protocol');
+  const remote = parseYamlScalar(accessText, 'connection');
+  const fallback = parseYamlScalar(accessText, 'fallback');
+  const username = parseYamlScalar(accessText, 'username');
+  const password = parseYamlScalar(accessText, 'password');
+  const cryptAlgo = parseYamlScalar(accessText, 'algorithm');
+  const cryptKey = parseYamlScalar(accessText, 'secret');
+  const userParts = String(username || '').split('@');
+  const userNameOnly = userParts[0] || '';
+  const network = userParts.length > 1 ? userParts.slice(1).join('@') : '';
+  const secret = userNameOnly || password ? (userNameOnly + ':' + (password || '')) : '';
+  const crypt = cryptAlgo || cryptKey ? ((cryptAlgo || '') + ':' + (cryptKey || '')) : '';
+  const lines = [
+    'protocol: ' + (protocol || '-'),
+    'remote: ' + (remote || '-')
+  ];
+  if (network) lines.push('network: ' + network);
+  if (secret) lines.push('secret: ' + secret);
+  if (crypt) lines.push('crypt: ' + crypt);
+  if (fallback) lines.push('fallback: ' + fallback);
+  return lines.join('\n') + '\n';
+}
+
+function parseYamlScalar(text, key) {
+  const pattern = new RegExp('^\\s*' + key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&') + '\\s*:\\s*(.+?)\\s*$', 'mi');
+  const match = String(text || '').match(pattern);
+  if (!match) return '';
+  return String(match[1] || '').replace(/^['"]|['"]$/g, '');
 }
 
 async function copyTextToClipboard(text) {
