@@ -93,7 +93,7 @@ func (h *Http) Prome(r *mux.Router) {
 func (h *Http) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		libol.Info("Http.Middleware %s %s", r.Method, r.URL.Path)
-		if r.URL.Path == "/favicon.ico" {
+		if r.URL.Path == "/favicon.ico" || r.URL.Path == "/openlan.png" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -141,6 +141,7 @@ func (h *Http) LoadRouter() {
 	router.HandleFunc("/", h.IndexHtml)
 	router.HandleFunc("/index.html", h.IndexHtml)
 	router.HandleFunc("/favicon.ico", h.PubFile)
+	router.HandleFunc("/openlan.png", h.PubFile)
 
 	h.PProf(router)
 	h.Prome(router)

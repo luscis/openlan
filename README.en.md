@@ -1,5 +1,9 @@
 English | [简体中文](./README.cn.md)
 
+<p align="center">
+  <img src="./pkg/public/openlan.png" alt="OpenLAN Logo" width="180" />
+</p>
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/luscis/openlan)](https://goreportcard.com/report/luscis/openlan)
 [![Codecov](https://codecov.io/gh/luscis/openlan/branch/master/graph/badge.svg)](https://codecov.io/gh/luscis/openlan)
 [![CodeQL](https://github.com/luscis/openlan/actions/workflows/codeql.yml/badge.svg)](https://github.com/luscis/openlan/actions/workflows/codeql.yml)
