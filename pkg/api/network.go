@@ -980,14 +980,15 @@ type Ceci struct {
 }
 
 func (h Ceci) Router(router *mux.Router) {
-	router.HandleFunc("/api/network/ceci/tcp", h.Get).Methods("GET")
-	router.HandleFunc("/api/network/ceci/tcp/log", h.Log).Methods("GET")
-	router.HandleFunc("/api/network/ceci/tcp", h.Post).Methods("POST")
-	router.HandleFunc("/api/network/ceci/tcp", h.Remove).Methods("DELETE")
+	router.HandleFunc("/api/network/ceci/proxy", h.Get).Methods("GET")
+	router.HandleFunc("/api/network/ceci/proxy/log", h.Log).Methods("GET")
+	router.HandleFunc("/api/network/ceci/proxy/yaml", h.Yaml).Methods("GET")
+	router.HandleFunc("/api/network/ceci/proxy", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/ceci/proxy", h.Remove).Methods("DELETE")
 }
 
 func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
-	items := make([]schema.CeciTcp, 0, 16)
+	items := make([]schema.CeciProxy, 0, 16)
 	if h.cs == nil || h.cs.Config() == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
@@ -998,14 +999,42 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if spec, ok := network.Specifies.(*cf.CeciSpecifies); ok && spec != nil {
-		for _, value := range spec.Tcp {
+		for _, value := range spec.Proxy {
 			if value == nil {
 				continue
 			}
-			items = append(items, schema.CeciTcp{
+			items = append(items, schema.CeciProxy{
 				Mode:   value.Mode,
 				Listen: value.Listen,
 				Target: value.Target,
+				Backends: func() []schema.ForwardTo {
+					out := make([]schema.ForwardTo, 0, len(value.Backends))
+					for _, backend := range value.Backends {
+						if backend == nil {
+							continue
+						}
+						out = append(out, schema.ForwardTo{
+							Server:   backend.Server,
+							Match:    backend.Match,
+							Protocol: backend.Protocol,
+							Insecure: backend.Insecure,
+							Secret:   backend.Secret,
+							Nameto:   backend.Nameto,
+						})
+					}
+					return out
+				}(),
+				Cert: func() *schema.Cert {
+					if value.Cert == nil {
+						return nil
+					}
+					return &schema.Cert{
+						CrtFile:  value.Cert.CrtFile,
+						KeyFile:  value.Cert.KeyFile,
+						CaFile:   value.Cert.CaFile,
+						Insecure: value.Cert.Insecure,
+					}
+				}(),
 				Status: processStatusByPidFile(filepath.Join("/var/openlan/ceci", value.Id()+".pid")),
 			})
 		}
@@ -1014,7 +1043,7 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Ceci) Post(w http.ResponseWriter, r *http.Request) {
-	data := schema.CeciTcp{}
+	data := schema.CeciProxy{}
 	if err := GetData(r, &data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -1023,12 +1052,15 @@ func (h Ceci) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.ceciApi.AddTcp(data)
+	if err := Call.ceciApi.AddProxy(data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseMsg(w, 0, "")
 }
 
 func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
-	data := schema.CeciTcp{}
+	data := schema.CeciProxy{}
 	if err := GetData(r, &data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -1037,7 +1069,7 @@ func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	Call.ceciApi.DelTcp(data)
+	Call.ceciApi.DelProxy(data)
 	ResponseMsg(w, 0, "")
 }
 
@@ -1047,7 +1079,23 @@ func (h Ceci) Log(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "listen is required", http.StatusBadRequest)
 		return
 	}
-	data, err := readTailFile(filepath.Join("/var/openlan/ceci", listen+".log"), 256*1024)
+	file := filepath.Join("/var/openlan/ceci", listen+".log")
+	data, err := readTailFile(file, 256*1024)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writePlainText(w, data)
+}
+
+func (h Ceci) Yaml(w http.ResponseWriter, r *http.Request) {
+	listen := GetQueryOne(r, "listen")
+	if listen == "" {
+		http.Error(w, "listen is required", http.StatusBadRequest)
+		return
+	}
+	file := filepath.Join("/var/openlan/ceci", listen+".yaml")
+	data, err := os.ReadFile(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

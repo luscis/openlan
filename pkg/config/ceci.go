@@ -2,39 +2,44 @@ package config
 
 import "fmt"
 
-type CeciTcp struct {
-	Name   string   `json:"-" yaml:"-"`
-	Mode   string   `json:"mode" yaml:"mode"`
-	Listen string   `json:"listen" yaml:"listen"`
-	Target []string `json:"target,omitempty" yaml:"target,omitempty"`
+type CeciProxy struct {
+	Name     string     `json:"-" yaml:"-"`
+	Mode     string     `json:"mode" yaml:"mode"`
+	Listen   string     `json:"listen" yaml:"listen"`
+	Target   []string   `json:"target,omitempty" yaml:"target,omitempty"`
+	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Cert     *Cert      `json:"cert,omitempty" yaml:"cert,omitempty"`
 }
 
-func (s *CeciTcp) Correct() {
+func (s *CeciProxy) Correct() {
 	if s.Mode == "" {
 		s.Mode = "tcp"
 	}
+	if s.Cert != nil {
+		s.Cert.Correct()
+	}
 }
 
-func (s *CeciTcp) Id() string {
+func (s *CeciProxy) Id() string {
 	return fmt.Sprintf("%s", s.Listen)
 }
 
 type CeciSpecifies struct {
-	Name string     `json:"-" yaml:"-"`
-	Tcp  []*CeciTcp `json:"tcp" yaml:"tcp"`
+	Name  string       `json:"-" yaml:"-"`
+	Proxy []*CeciProxy `json:"proxy" yaml:"proxy"`
 }
 
 func (s *CeciSpecifies) Correct() {
-	if s.Tcp == nil {
-		s.Tcp = make([]*CeciTcp, 0)
+	if s.Proxy == nil {
+		s.Proxy = make([]*CeciProxy, 0)
 	}
-	for _, t := range s.Tcp {
+	for _, t := range s.Proxy {
 		t.Correct()
 	}
 }
 
-func (s *CeciSpecifies) FindTcp(value *CeciTcp) (*CeciTcp, int) {
-	for index, obj := range s.Tcp {
+func (s *CeciSpecifies) FindProxy(value *CeciProxy) (*CeciProxy, int) {
+	for index, obj := range s.Proxy {
 		if obj.Id() == value.Id() {
 			return obj, index
 		}
@@ -42,18 +47,18 @@ func (s *CeciSpecifies) FindTcp(value *CeciTcp) (*CeciTcp, int) {
 	return nil, -1
 }
 
-func (s *CeciSpecifies) AddTcp(value *CeciTcp) bool {
-	_, find := s.FindTcp(value)
+func (s *CeciSpecifies) AddProxy(value *CeciProxy) bool {
+	_, find := s.FindProxy(value)
 	if find == -1 {
-		s.Tcp = append(s.Tcp, value)
+		s.Proxy = append(s.Proxy, value)
 	}
 	return find == -1
 }
 
-func (s *CeciSpecifies) DelTcp(value *CeciTcp) (*CeciTcp, bool) {
-	obj, find := s.FindTcp(value)
+func (s *CeciSpecifies) DelProxy(value *CeciProxy) (*CeciProxy, bool) {
+	obj, find := s.FindProxy(value)
 	if find != -1 {
-		s.Tcp = append(s.Tcp[:find], s.Tcp[find+1:]...)
+		s.Proxy = append(s.Proxy[:find], s.Proxy[find+1:]...)
 	}
 	return obj, find != -1
 }

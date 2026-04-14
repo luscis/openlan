@@ -160,8 +160,8 @@ type BgpApi interface {
 }
 
 type CeciApi interface {
-	AddTcp(data schema.CeciTcp)
-	DelTcp(data schema.CeciTcp)
+	AddProxy(data schema.CeciProxy) error
+	DelProxy(data schema.CeciProxy)
 }
 
 type RouterApi interface {

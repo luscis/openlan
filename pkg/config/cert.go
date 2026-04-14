@@ -29,7 +29,7 @@ func (c *Crypt) Short() string {
 }
 
 type Cert struct {
-	Dir      string `json:"directory" yaml:"directory"`
+	Dir      string `json:"-" yaml:"-"`
 	CrtFile  string `json:"cert" yaml:"cert"`
 	KeyFile  string `json:"key" yaml:"key"`
 	CaFile   string `json:"rootCa" yaml:"rootCa"`

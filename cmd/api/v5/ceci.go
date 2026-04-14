@@ -52,25 +52,33 @@ func (u Ceci) Commands(app *api.App) {
 				Aliases: []string{"sa"},
 				Action:  u.Save,
 			},
-			CeciTCP{}.Commands(app),
+			CeciProxy{}.Commands(app),
 		},
 	})
 }
 
-type CeciTCP struct {
+type CeciProxy struct {
 	Cmd
 }
 
-func (u CeciTCP) Url(prefix string) string {
-	return prefix + "/api/network/ceci/tcp"
+func (u CeciProxy) Url(prefix string) string {
+	return prefix + "/api/network/ceci/proxy"
 }
 
-func (u CeciTCP) Add(c *cli.Context) error {
+func (u CeciProxy) Add(c *cli.Context) error {
 	target := strings.Split(c.String("target"), ",")
-	data := &schema.CeciTcp{
+	data := &schema.CeciProxy{
 		Mode:   c.String("mode"),
 		Listen: c.String("listen"),
 		Target: target,
+	}
+	if cert := c.String("cert"); cert != "" || c.String("key") != "" || c.String("root-ca") != "" || c.Bool("insecure") {
+		data.Cert = &schema.Cert{
+			CrtFile:  cert,
+			KeyFile:  c.String("key"),
+			CaFile:   c.String("root-ca"),
+			Insecure: c.Bool("insecure"),
+		}
 	}
 	url := u.Url(c.String("url"))
 	clt := u.NewHttp(c.String("token"))
@@ -80,8 +88,8 @@ func (u CeciTCP) Add(c *cli.Context) error {
 	return nil
 }
 
-func (u CeciTCP) Remove(c *cli.Context) error {
-	data := &schema.CeciTcp{
+func (u CeciProxy) Remove(c *cli.Context) error {
+	data := &schema.CeciProxy{
 		Listen: c.String("listen"),
 	}
 	url := u.Url(c.String("url"))
@@ -92,7 +100,7 @@ func (u CeciTCP) Remove(c *cli.Context) error {
 	return nil
 }
 
-func (u CeciTCP) Commands(app *api.App) *cli.Command {
+func (u CeciProxy) Commands(app *api.App) *cli.Command {
 	return &cli.Command{
 		Name:  "ceci",
 		Usage: "Special Ceci proxy",
@@ -104,6 +112,10 @@ func (u CeciTCP) Commands(app *api.App) *cli.Command {
 					&cli.StringFlag{Name: "listen", Required: true},
 					&cli.StringFlag{Name: "mode", Required: true},
 					&cli.StringFlag{Name: "target"},
+					&cli.StringFlag{Name: "cert"},
+					&cli.StringFlag{Name: "key"},
+					&cli.StringFlag{Name: "root-ca"},
+					&cli.BoolFlag{Name: "insecure"},
 				},
 				Action: u.Add,
 			},
