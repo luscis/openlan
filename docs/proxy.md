@@ -26,6 +26,7 @@ root@openlan:/opt/openlan/etc/openlan# cd /opt/openlan/etc/openlan
 root@openlan:/opt/openlan/etc/openlan# cat > proxy.yaml << EOF
 http:
 - listen: 192.168.1.88:11082
+  network: default
 
 EOF
 root@openlan:/opt/openlan/etc/openlan# docker restart openlan_proxy_1

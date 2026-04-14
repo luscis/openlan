@@ -68,9 +68,10 @@ func (u CeciProxy) Url(prefix string) string {
 func (u CeciProxy) Add(c *cli.Context) error {
 	target := strings.Split(c.String("target"), ",")
 	data := &schema.CeciProxy{
-		Mode:   c.String("mode"),
-		Listen: c.String("listen"),
-		Target: target,
+		Mode:    c.String("mode"),
+		Listen:  c.String("listen"),
+		Network: c.String("network"),
+		Target:  target,
 	}
 	if cert := c.String("cert"); cert != "" || c.String("key") != "" || c.String("root-ca") != "" || c.Bool("insecure") {
 		data.Cert = &schema.Cert{
@@ -111,6 +112,7 @@ func (u CeciProxy) Commands(app *api.App) *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "listen", Required: true},
 					&cli.StringFlag{Name: "mode", Required: true},
+					&cli.StringFlag{Name: "network"},
 					&cli.StringFlag{Name: "target"},
 					&cli.StringFlag{Name: "cert"},
 					&cli.StringFlag{Name: "key"},

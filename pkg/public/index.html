@@ -648,9 +648,10 @@ select option {
   <div class="modal" style="max-width:520px;">
     <div class="modal-header">
       <span class="modal-title" id="ceci-entry-modal-title">Add Ceci Entry</span>
-      <button class="modal-close" onclick="closeAddDialog('ceci-entry')">&#x2715;</button>
+      <button class="modal-close" onclick="ceciCancelEdit()">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="ceci-entry-edit-orig" value="">
       <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;" type="text" id="ceci-entry-listen" placeholder="e.g. 127.0.0.1:1080"></div>
       <div id="ceci-entry-tcp-wrap" class="hidden" style="display:flex;flex-direction:column;gap:16px;">
         <div class="form-group"><label>Target <span style="color:var(--text-muted);font-weight:400;">(one per line)</span></label><textarea class="modal-input" style="width:100%;min-height:120px;resize:vertical;" id="ceci-entry-target" placeholder="e.g. 10.0.0.2:10002"></textarea></div>
@@ -663,6 +664,7 @@ select option {
           <option value="https">HTTPS</option>
         </select>
       </div>
+      <div class="form-group"><label>Network <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;" type="text" id="ceci-entry-network" placeholder="e.g. default"></div>
       <div class="form-group">
         <label>HTTP Backends</label>
         <div id="ceci-http-backends-list" style="display:flex;flex-direction:column;gap:10px;"></div>
@@ -687,8 +689,8 @@ select option {
       </div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
-        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('ceci-entry')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="ceciAddEntry()">Add</button>
+        <button class="btn btn-ghost btn-sm" onclick="ceciCancelEdit()">Cancel</button>
+        <button class="btn btn-dark btn-sm" id="ceci-entry-submit" onclick="ceciAddEntry()">Add</button>
       </div>
     </div>
   </div>
@@ -1330,7 +1332,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Mode</th><th>Listen</th><th>Target</th><th>Status</th><th style="width:220px;"></th></tr></thead>
+                <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Status</th><th style="width:220px;"></th></tr></thead>
                 <tbody id="ceci-tcp-tbody"></tbody>
               </table>
               <div class="section-footer" id="ceci-tcp-count">0</div>
@@ -1526,6 +1528,7 @@ let _filePreviewDownload = null;
 let _filePreviewText = '';
 let _filePreviewViews = [];
 let _filePreviewActiveView = '';
+let _filePreviewAutoScrollBottom = false;
 
 function escapeHtml(str) {
   return String(str == null ? '' : str)
@@ -1551,6 +1554,14 @@ function renderFilePreviewTabs() {
   ).join('');
 }
 
+function scrollFilePreviewToBottom() {
+  const body = document.getElementById('file-preview-body');
+  if (!body || !_filePreviewAutoScrollBottom) return;
+  requestAnimationFrame(function() {
+    body.scrollTop = body.scrollHeight;
+  });
+}
+
 async function switchFilePreviewView(id) {
   const body = document.getElementById('file-preview-body');
   const copyBtn = document.getElementById('file-preview-copy');
@@ -1568,13 +1579,14 @@ async function switchFilePreviewView(id) {
     _filePreviewText = String(view.text || '');
     body.textContent = _filePreviewText;
     copyBtn.disabled = false;
+    scrollFilePreviewToBottom();
   } catch(e) {
     body.innerHTML = '<span class="file-preview-error">' + escapeHtml(e.message || 'Failed to load file') + '</span>';
     throw e;
   }
 }
 
-async function openTextPreview(url, filename, downloadAction, extraViews, primaryViewLabel) {
+async function openTextPreview(url, filename, downloadAction, extraViews, primaryViewLabel, autoScrollBottom) {
   const title = document.getElementById('file-preview-title');
   const body = document.getElementById('file-preview-body');
   const downloadBtn = document.getElementById('file-preview-download');
@@ -1587,6 +1599,7 @@ async function openTextPreview(url, filename, downloadAction, extraViews, primar
   _filePreviewDownload = typeof downloadAction === 'function' ? downloadAction : null;
   downloadBtn.disabled = !_filePreviewDownload;
   copyBtn.disabled = true;
+  _filePreviewAutoScrollBottom = !!autoScrollBottom;
   document.getElementById('dlg-file-preview').classList.remove('hidden');
   _filePreviewViews = [{
     id: 'yaml',
@@ -1619,6 +1632,7 @@ function closeFilePreview() {
   _filePreviewText = '';
   _filePreviewViews = [];
   _filePreviewActiveView = '';
+  _filePreviewAutoScrollBottom = false;
   renderFilePreviewTabs();
 }
 
@@ -2770,22 +2784,23 @@ async function load_ceci() {
     _ceciTcpEntries = Array.isArray(entries) ? entries : [];
     document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
     if (_ceciTcpEntries.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No Ceci entries</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No Ceci entries</td></tr>';
       return;
     }
     tbody.innerHTML = _ceciTcpEntries.map((item, i) =>
       '<tr>' +
         '<td><span class="badge badge-blue">' + esc(item.mode || 'tcp') + '</span></td>' +
         '<td class="td-mono">' + esc(item.listen || '-') + '</td>' +
+        '<td class="td-muted">' + esc(item.network || '-') + '</td>' +
         '<td>' + ceciEntryHtml(item) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
-        '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
+        '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button> <button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
     _ceciTcpEntries = [];
     document.getElementById('ceci-tcp-count').textContent = '0';
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Failed to load Ceci entries</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Failed to load Ceci entries</td></tr>';
     show_toast('Failed to load ceci network: ' + e.message, 'error');
   }
 }
@@ -2867,73 +2882,129 @@ function ceciRemoveBackendRow(index) {
   ceciRenderBackendRows(current);
 }
 
-async function ceciAddTcp() {
-  const listen = document.getElementById('ceci-entry-listen').value.trim();
-  const target = ceciParseTargets(document.getElementById('ceci-entry-target').value);
-  if (!listen) { show_toast('Listen is required', 'error'); return; }
-  try {
-    await api_post('/api/network/ceci/proxy', { mode: 'tcp', listen, target });
-    document.getElementById('ceci-entry-listen').value = '';
-    document.getElementById('ceci-entry-target').value = '';
-    closeAddDialog('ceci-entry');
-    await load_ceci();
-    show_toast('Ceci TCP entry added', 'success');
-  } catch(e) {
-    show_toast('Failed to add ceci tcp entry: ' + e.message, 'error');
+function ceciResetForm() {
+  document.getElementById('ceci-entry-modal-title').textContent = 'Add Ceci Entry';
+  document.getElementById('ceci-entry-submit').textContent = 'Add';
+  document.getElementById('ceci-entry-edit-orig').value = '';
+  document.getElementById('ceci-entry-listen').value = '';
+  document.getElementById('ceci-entry-listen').placeholder = 'e.g. 127.0.0.1:1080';
+  document.getElementById('ceci-entry-network').value = '';
+  document.getElementById('ceci-entry-target').value = '';
+  document.getElementById('ceci-entry-tcp-wrap').classList.add('hidden');
+  document.getElementById('ceci-entry-http-wrap').classList.add('hidden');
+  document.getElementById('ceci-http-protocol').value = 'http';
+  document.getElementById('ceci-http-cert').value = '';
+  document.getElementById('ceci-http-key').value = '';
+  document.getElementById('ceci-http-rootca').value = '';
+  document.getElementById('ceci-http-insecure').checked = false;
+  ceciRenderBackendRows();
+  onCeciHttpProtocolChange();
+}
+
+function ceciConfigureForm(mode, item) {
+  const isEdit = !!item;
+  const isHttp = mode === 'http';
+  document.getElementById('ceci-entry-modal-title').textContent = isEdit ? 'Edit Ceci Entry' : (isHttp ? 'Add HTTP Entry' : 'Add TCP Entry');
+  document.getElementById('ceci-entry-submit').textContent = isEdit ? 'Save' : 'Add';
+  document.getElementById('ceci-entry-edit-orig').value = isEdit ? JSON.stringify(item) : '';
+  document.getElementById('ceci-entry-listen').value = item && item.listen ? item.listen : '';
+  document.getElementById('ceci-entry-listen').placeholder = isHttp ? 'e.g. 127.0.0.1:1080' : 'e.g.:2222';
+  document.getElementById('ceci-entry-network').value = item && item.network ? item.network : '';
+  document.getElementById('ceci-entry-tcp-wrap').classList.toggle('hidden', isHttp);
+  document.getElementById('ceci-entry-http-wrap').classList.toggle('hidden', !isHttp);
+  if (isHttp) {
+    document.getElementById('ceci-http-protocol').value = item && item.cert ? 'https' : 'http';
+    ceciRenderBackendRows(item && item.backends ? item.backends : []);
+    const cert = item && item.cert ? item.cert : {};
+    document.getElementById('ceci-http-cert').value = cert.certData || '';
+    document.getElementById('ceci-http-key').value = cert.keyData || '';
+    document.getElementById('ceci-http-rootca').value = cert.rootCaData || '';
+    document.getElementById('ceci-http-insecure').checked = !!cert.insecure;
+    onCeciHttpProtocolChange();
+  } else {
+    document.getElementById('ceci-entry-target').value = item && Array.isArray(item.target) ? item.target.join('\n') : '';
   }
 }
 
-async function ceciAddHttp() {
+function ceciOpenEntry(mode, item) {
+  closeAllDropdowns();
+  ceciResetForm();
+  ceciConfigureForm(mode, item);
+  document.getElementById('dlg-ceci-entry').classList.remove('hidden');
+  setTimeout(() => document.getElementById('ceci-entry-listen').focus(), 50);
+}
+
+function ceciOpenAddTcp() {
+  ceciOpenEntry('tcp', null);
+}
+
+function ceciOpenAddHttp() {
+  ceciOpenEntry('http', null);
+}
+
+function ceciOpenEdit(i) {
+  const item = _ceciTcpEntries[i];
+  if (!item) return;
+  ceciOpenEntry(item.mode || 'tcp', item);
+}
+
+function ceciCancelEdit() {
+  ceciResetForm();
+  closeAddDialog('ceci-entry');
+}
+
+async function ceciSaveEntry() {
   const listen = document.getElementById('ceci-entry-listen').value.trim();
-  const protocol = document.getElementById('ceci-http-protocol').value;
-  const backends = ceciCollectBackends();
-  const cert = document.getElementById('ceci-http-cert').value.trim();
-  const key = document.getElementById('ceci-http-key').value.trim();
-  const rootCa = document.getElementById('ceci-http-rootca').value.trim();
-  const insecure = document.getElementById('ceci-http-insecure').checked;
+  const network = document.getElementById('ceci-entry-network').value.trim();
+  const target = ceciParseTargets(document.getElementById('ceci-entry-target').value);
+  const origRaw = document.getElementById('ceci-entry-edit-orig').value;
+  const isEdit = !!origRaw;
+  const isTcpMode = !document.getElementById('ceci-entry-tcp-wrap').classList.contains('hidden');
+  const mode = isTcpMode ? 'tcp' : 'http';
   if (!listen) { show_toast('Listen is required', 'error'); return; }
-  for (const backend of backends) {
-    if (!backend.protocol || !backend.server) {
-      show_toast('Each backend requires protocol and server', 'error');
-      return;
-    }
-  }
-  if (protocol !== 'https' && (cert || key || rootCa || insecure)) {
-    show_toast('Switch protocol to HTTPS to use certificate settings', 'error');
-    return;
-  }
   try {
-    const body = { mode: 'http', listen, target: [], backends };
-    if (protocol === 'https') {
-      body.cert = { certData: cert || '', keyData: key || '', rootCaData: rootCa || '', insecure };
+    if (isEdit) {
+      const orig = JSON.parse(origRaw);
+      if ((orig.listen || '') !== listen) {
+        await api_delete('/api/network/ceci/proxy', { listen: orig.listen });
+      }
     }
-    await api_post('/api/network/ceci/proxy', body);
-    document.getElementById('ceci-entry-listen').value = '';
-    document.getElementById('ceci-http-protocol').value = 'http';
-    ceciRenderBackendRows();
-    document.getElementById('ceci-http-cert').value = '';
-    document.getElementById('ceci-http-key').value = '';
-    document.getElementById('ceci-http-rootca').value = '';
-    document.getElementById('ceci-http-insecure').checked = false;
-    onCeciHttpProtocolChange();
+    if (isTcpMode) {
+      await api_post('/api/network/ceci/proxy', { mode: 'tcp', listen, network, target });
+    } else {
+      const protocol = document.getElementById('ceci-http-protocol').value;
+      const backends = ceciCollectBackends();
+      const cert = document.getElementById('ceci-http-cert').value.trim();
+      const key = document.getElementById('ceci-http-key').value.trim();
+      const rootCa = document.getElementById('ceci-http-rootca').value.trim();
+      const insecure = document.getElementById('ceci-http-insecure').checked;
+      for (const backend of backends) {
+        if (!backend.protocol || !backend.server) {
+          show_toast('Each backend requires protocol and server', 'error');
+          return;
+        }
+      }
+      if (protocol !== 'https' && (cert || key || rootCa || insecure)) {
+        show_toast('Switch protocol to HTTPS to use certificate settings', 'error');
+        return;
+      }
+      const body = { mode: 'http', listen, network, target: [], backends };
+      if (protocol === 'https') {
+        body.cert = { certData: cert || '', keyData: key || '', rootCaData: rootCa || '', insecure };
+      }
+      await api_post('/api/network/ceci/proxy', body);
+    }
+    ceciResetForm();
     closeAddDialog('ceci-entry');
     await load_ceci();
-    show_toast('Ceci HTTP proxy added', 'success');
+    show_toast(isEdit ? 'Ceci entry updated' : (mode === 'tcp' ? 'Ceci TCP entry added' : 'Ceci HTTP proxy added'), 'success');
   } catch(e) {
-    show_toast('Failed to add ceci http proxy: ' + e.message, 'error');
+    show_toast('Failed to save ceci entry: ' + e.message, 'error');
   }
 }
 
 function ceciAddEntry() {
-  // Determine mode based on which section is visible
-  const tcpWrap = document.getElementById('ceci-entry-tcp-wrap');
-  const isTcpMode = tcpWrap && !tcpWrap.classList.contains('hidden');
-  
-  if (isTcpMode) {
-    ceciAddTcp();
-  } else {
-    ceciAddHttp();
-  }
+  return ceciSaveEntry();
 }
 
 function toggleDropdown(dropdownId) {
@@ -2960,23 +3031,11 @@ document.addEventListener('click', function(e) {
 });
 
 function ceciAddTcpDirect() {
-  closeAllDropdowns();
-  // Set mode to TCP and show TCP form
-  document.getElementById('ceci-entry-modal-title').textContent = 'Add TCP Entry';
-  document.getElementById('ceci-entry-tcp-wrap').classList.remove('hidden');
-  document.getElementById('ceci-entry-http-wrap').classList.add('hidden');
-  document.getElementById('ceci-entry-listen').placeholder = 'e.g.:2222';
-  openAddDialog('ceci-entry');
+  ceciOpenAddTcp();
 }
 
 function ceciAddHttpDirect() {
-  closeAllDropdowns();
-  // Set mode to HTTP and show HTTP form
-  document.getElementById('ceci-entry-modal-title').textContent = 'Add HTTP Entry';
-  document.getElementById('ceci-entry-tcp-wrap').classList.add('hidden');
-  document.getElementById('ceci-entry-http-wrap').classList.remove('hidden');
-  document.getElementById('ceci-entry-listen').placeholder = 'e.g. 127.0.0.1:1080';
-  openAddDialog('ceci-entry');
+  ceciOpenAddHttp();
 }
 
 async function ceciDelTcp(index) {
@@ -3920,14 +3979,14 @@ function viewOpenVPNLog(networkName) {
   if (!networkName) return;
   const filename = networkName + '-openvpn.log';
   const url = State.baseUrl + '/api/network/' + encodeURIComponent(networkName) + '/openvpn/log?token=' + encodeURIComponent(State.token);
-  openTextPreview(url, filename).catch(e => show_toast('Failed to view OpenVPN log: ' + e.message, 'error'));
+  openTextPreview(url, filename, null, null, null, true).catch(e => show_toast('Failed to view OpenVPN log: ' + e.message, 'error'));
 }
 
 function viewCeciTcpLog(listen) {
   if (!listen) return;
   const filename = 'ceci-' + listen.replace(/[^\w.-]+/g, '_') + '.log';
   const url = State.baseUrl + '/api/network/ceci/proxy/log?listen=' + encodeURIComponent(listen) + '&token=' + encodeURIComponent(State.token);
-  openTextPreview(url, filename).catch(e => show_toast('Failed to view Ceci log: ' + e.message, 'error'));
+  openTextPreview(url, filename, null, null, null, true).catch(e => show_toast('Failed to view Ceci log: ' + e.message, 'error'));
 }
 
 function viewCeciYaml(listen) {
@@ -4073,22 +4132,16 @@ function openAddDialog(type) {
     onNetworkOutputProtocolChange();
     setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
   } else if (type === 'ceci-entry') {
-    // Mode is set by dropdown buttons (ceciAddTcpDirect/ceciAddHttpDirect)
-    // Just reset common fields
-    document.getElementById('ceci-entry-listen').value = '';
-    document.getElementById('ceci-entry-target').value = '';
-    document.getElementById('ceci-http-protocol').value = 'http';
-    ceciRenderBackendRows();
-    document.getElementById('ceci-http-cert').value = '';
-    document.getElementById('ceci-http-key').value = '';
-    document.getElementById('ceci-http-rootca').value = '';
-    document.getElementById('ceci-http-insecure').checked = false;
-    onCeciHttpProtocolChange();
+    ceciResetForm();
+    document.getElementById('ceci-entry-http-wrap').classList.remove('hidden');
     setTimeout(() => document.getElementById('ceci-entry-listen').focus(), 50);
   }
 }
 function closeAddDialog(type) {
   document.getElementById('dlg-' + type).classList.add('hidden');
+  if (type === 'ceci-entry') {
+    ceciResetForm();
+  }
 }
 
 function onNetworkOutputProtocolChange() {

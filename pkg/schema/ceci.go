@@ -8,6 +8,7 @@ type Ceci struct {
 type CeciProxy struct {
 	Mode     string      `json:"mode"`
 	Listen   string      `json:"listen"`
+	Network  string      `json:"network,omitempty"`
 	Target   []string    `json:"target,omitempty"`
 	Backends []ForwardTo `json:"backends,omitempty"`
 	Cert     *Cert       `json:"cert,omitempty"`

@@ -132,6 +132,9 @@ spec:
             - -log:file
             - /dev/null
           volumeMounts:
+            - name: openlan-etc
+              mountPath: /etc/openlan/switch
+              subPath: switch
             - name: proxy-etc
               mountPath: /etc/openlan/proxy.json
               subPath: proxy.json

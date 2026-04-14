@@ -1006,6 +1006,7 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 			items = append(items, schema.CeciProxy{
 				Mode:   value.Mode,
 				Listen: value.Listen,
+				Network: value.Network,
 				Target: value.Target,
 				Backends: func() []schema.ForwardTo {
 					out := make([]schema.ForwardTo, 0, len(value.Backends))

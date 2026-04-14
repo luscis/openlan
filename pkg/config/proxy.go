@@ -3,7 +3,7 @@ package config
 import (
 	"flag"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
@@ -49,6 +49,7 @@ type HttpProxy struct {
 	ConfDir    string      `json:"-" yaml:"-"`
 	Listen     string      `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Secret     string      `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Network    string      `json:"-" yaml:"-"`
 	Cert       *Cert       `json:"cert,omitempty" yaml:"cert,omitempty"`
 	Password   string      `json:"password,omitempty" yaml:"password,omitempty"`
 	CaCert     string      `json:"cacert,omitempty" yaml:"cacert,omitempty"`
@@ -59,7 +60,7 @@ type HttpProxy struct {
 
 func (h *HttpProxy) Initialize() error {
 	if h.ConfDir == "" {
-		h.ConfDir = path.Dir(os.Args[0])
+		h.ConfDir = filepath.Dir(os.Args[0])
 	}
 	libol.Info("HttpProxy.Initialize %s", h.Conf)
 	if err := h.Load(); err != nil {
@@ -82,13 +83,14 @@ func (h *HttpProxy) Correct() {
 		h.Cert.Correct()
 	}
 	if h.Password == "" {
-		h.Password = h.Listen + ".pass"
+		h.Password = filepath.Join("/etc/openlan", "switch", "password")
 	}
-	h.Password = path.Join(h.ConfDir, h.Password)
 	if h.CaCert == "" {
 		h.CaCert = "ca.crt"
 	}
-	h.CaCert = path.Join(h.ConfDir, h.CaCert)
+	if !filepath.IsAbs(h.CaCert) {
+		h.CaCert = filepath.Join(h.ConfDir, h.CaCert)
+	}
 	if h.Socks != nil {
 		h.SocksProxy = &SocksProxy{
 			Listen: h.Socks.Listen,
@@ -201,10 +203,10 @@ func (p *Proxy) Parse() {
 
 func (p *Proxy) Initialize() {
 	if p.Conf == "" {
-		p.Conf = path.Dir(os.Args[0]) + "/" + "proxy.json"
+		p.Conf = filepath.Dir(os.Args[0]) + "/" + "proxy.json"
 	}
 	if p.ConfDir == "" {
-		p.ConfDir = path.Dir(p.Conf)
+		p.ConfDir = filepath.Dir(p.Conf)
 	}
 	if err := p.Load(); err != nil {
 		libol.Error("Proxy.Initialize %s", err)

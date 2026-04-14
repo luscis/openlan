@@ -50,6 +50,8 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 type HttpProxy struct {
 	proxer   Proxyer
 	pass     map[string]string
+	passMod  time.Time
+	passLock sync.RWMutex
 	out      *libol.SubLogger
 	server   *http.Server
 	cfg      *co.HttpProxy
@@ -74,11 +76,11 @@ func decodeBasicAuth(auth string) (username, password string, ok bool) {
 		return
 	}
 	cs := string(c)
-	s := strings.IndexByte(cs, ':')
-	if s < 0 {
+	before, after, ok0 := strings.Cut(cs, ":")
+	if !ok0 {
 		return
 	}
-	return cs[:s], cs[s+1:], true
+	return before, after, true
 }
 
 func encodeBasicAuth(value string) string {
@@ -135,11 +137,9 @@ func (t *HttpProxy) Initialize() {
 		Addr:    t.cfg.Listen,
 		Handler: t,
 	}
-	user, pass := co.SplitSecret(t.cfg.Secret)
-	if user != "" {
-		t.pass[user] = pass
-		t.out.Debug("HttpProxy: Auth user %s", user)
-	}
+	t.passLock.Lock()
+	t.pass = t.newPassMap()
+	t.passLock.Unlock()
 	if t.cfg.SocksProxy != nil {
 		t.socks = NewSocksProxy(t.cfg.SocksProxy)
 		t.socks.server.SetBackends(t)
@@ -155,8 +155,6 @@ func (t *HttpProxy) loadUrl() {
 	t.api.HandleFunc("/api/config", t.GetConfig).Methods("GET")
 	t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.AddMatch).Methods("POST")
 	t.api.HandleFunc("/api/match/{domain}/to/{backend}", t.DelMatch).Methods("DELETE")
-	t.api.HandleFunc("/api/user/{user}/{pass}", t.AddUser).Methods("POST")
-	t.api.HandleFunc("/api/user/{user}", t.DelUser).Methods("DELETE")
 	t.api.HandleFunc("/pac", t.GetPac).Methods("GET")
 
 	t.api.NotFoundHandler = http.HandlerFunc(NotFound)
@@ -164,9 +162,26 @@ func (t *HttpProxy) loadUrl() {
 
 func (t *HttpProxy) loadPass() {
 	file := t.cfg.Password
-	if file == "" || libol.FileExist(file) != nil {
+	if file == "" {
 		return
 	}
+	info, err := os.Stat(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			t.passLock.Lock()
+			t.pass = t.newPassMap()
+			t.passMod = time.Time{}
+			t.passLock.Unlock()
+		}
+		return
+	}
+	t.passLock.RLock()
+	last := t.passMod
+	t.passLock.RUnlock()
+	if !info.ModTime().After(last) {
+		return
+	}
+	passMap := t.newPassMap()
 	reader, err := libol.OpenRead(file)
 	if err != nil {
 		libol.Warn("HttpProxy.LoadPass open %v", err)
@@ -175,42 +190,77 @@ func (t *HttpProxy) loadPass() {
 	defer reader.Close()
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		line := scanner.Text()
-		columns := strings.SplitN(line, ":", 2)
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Password lines may carry extra metadata after the password, for example:
+		// user@network:password:role:expires
+		// Only the first two fields matter for authentication.
+		columns := strings.SplitN(line, ":", 4)
 		if len(columns) < 2 {
 			continue
 		}
-		user := columns[0]
-		pass := columns[1]
-		t.pass[user] = pass
+		user := strings.TrimSpace(columns[0])
+		secret := strings.TrimSpace(columns[1])
+		if name, network := parseUserNetwork(user); t.allowPassUser(network) {
+			passMap[name] = secret
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		libol.Warn("HttpProxy.LoadPass scaner %v", err)
+		return
 	}
+
+	t.passLock.Lock()
+	t.pass = passMap
+	t.passMod = info.ModTime()
+	t.passLock.Unlock()
 }
 
-func (t *HttpProxy) savePass() error {
-	file := t.cfg.Password
-	writer, err := libol.OpenTrunk(file)
-	if err != nil {
-		return err
+func (t *HttpProxy) newPassMap() map[string]string {
+	pass := make(map[string]string)
+	if user, secret := co.SplitSecret(t.cfg.Secret); user != "" {
+		pass[user] = secret
+		t.out.Debug("HttpProxy: Auth user %s", user)
 	}
-	for user, pass := range t.pass {
-		line := user + ":" + pass
-		_, _ = writer.WriteString(line + "\n")
+	return pass
+}
+
+func parseUserNetwork(user string) (string, string) {
+	user = strings.TrimSpace(user)
+	if idx := strings.LastIndexByte(user, '@'); idx >= 0 {
+		return user[:idx], user[idx+1:]
 	}
-	return nil
+	return user, ""
+}
+
+func (t *HttpProxy) allowPassUser(network string) bool {
+	if t.cfg == nil {
+		return true
+	}
+	want := strings.TrimSpace(t.cfg.Network)
+	if want == "" {
+		return true
+	}
+	return network == want
 }
 
 func (t *HttpProxy) isAuth(username, password string) bool {
-	if p, ok := t.pass[username]; ok {
-		return p == password
+	t.passLock.RLock()
+	defer t.passLock.RUnlock()
+	if p, ok := t.pass[username]; ok && p == password {
+		return true
 	}
 	return false
 }
 
 func (t *HttpProxy) CheckAuth(w http.ResponseWriter, r *http.Request) bool {
-	if len(t.pass) == 0 {
+	t.loadPass()
+	t.passLock.RLock()
+	empty := len(t.pass) == 0
+	t.passLock.RUnlock()
+	if empty {
 		return true
 	}
 	auth := r.Header.Get("Proxy-Authorization")
@@ -618,35 +668,6 @@ func (t *HttpProxy) AddMatch(w http.ResponseWriter, r *http.Request) {
 	}
 	t.lock.Unlock()
 	t.Save()
-}
-
-func (t *HttpProxy) AddUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	user := vars["user"]
-	pass := vars["pass"]
-
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	t.pass[user] = pass
-	encodeYaml(w, "success")
-	t.savePass()
-}
-
-func (t *HttpProxy) DelUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	user := vars["user"]
-
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	if _, ok := t.pass[user]; ok {
-		delete(t.pass, user)
-	}
-	encodeYaml(w, "success")
-	t.savePass()
 }
 
 func (t *HttpProxy) Save() {

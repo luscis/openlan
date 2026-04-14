@@ -6,6 +6,7 @@ type CeciProxy struct {
 	Name     string     `json:"-" yaml:"-"`
 	Mode     string     `json:"mode" yaml:"mode"`
 	Listen   string     `json:"listen" yaml:"listen"`
+	Network  string     `json:"network,omitempty" yaml:"-"`
 	Target   []string   `json:"target,omitempty" yaml:"target,omitempty"`
 	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
 	Cert     *Cert      `json:"cert,omitempty" yaml:"cert,omitempty"`
