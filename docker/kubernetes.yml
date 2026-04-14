@@ -59,25 +59,6 @@ data:
 
 ---
 
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: proxy-etc
-  namespace: openlan
-data:
-  proxy.json: |-
-    "tcp": [
-        {
-            "listen": "0.0.0.0:80",
-            "target": [
-                "192.168.100.80:80", 
-                "192.168.100.81:80"
-            ]
-        }
-    ]
-
----
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:

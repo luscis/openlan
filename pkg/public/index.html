@@ -1863,7 +1863,6 @@ function render_overview(d) {
   const v = d.version || {};
   document.getElementById('node-info-table').innerHTML =
     node_row('Alias', w.alias || '-') +
-    node_row('UUID', '<span class="td-mono">' + (w.uuid || '-') + '</span>') +
     node_row('Uptime', fmt_duration(w.uptime)) +
     node_row('Protocol', w.protocol || '-') +
     node_row('Version', (v.version || '-') + ' (' + (v.date || '') + ')') +
@@ -3799,14 +3798,13 @@ async function load_about() {
     ].join('');
     const rows = [
       about_row('Version', v.version ? '<span class="td-mono">' + esc(v.version) + '</span>' : '-'),
-      about_row('Build Date', esc(v.date || '-')),
-      about_row('Commit', v.commit ? '<span class="td-mono" style="font-size:12px;">' + esc(v.commit) + '</span>' : '-'),
-      about_row('License Expires', esc(v.expire || '-')),
-      about_row('Node Alias', esc(w.alias || '-')),
-      about_row('UUID', w.uuid ? '<span class="td-mono" style="font-size:12px;">' + esc(w.uuid) + '</span>' : '-'),
-      about_row('Protocol', esc(w.protocol || '-')),
-      about_row('Uptime', fmt_duration(w.uptime)),
-    ].join('');
+    about_row('Build Date', esc(v.date || '-')),
+    about_row('Commit', v.commit ? '<span class="td-mono" style="font-size:12px;">' + esc(v.commit) + '</span>' : '-'),
+    about_row('License Expires', esc(v.expire || '-')),
+    about_row('Node Alias', esc(w.alias || '-')),
+    about_row('Protocol', esc(w.protocol || '-')),
+    about_row('Uptime', fmt_duration(w.uptime)),
+  ].join('');
     document.getElementById('about-info-tbody').innerHTML = rows;
   } catch(e) {
     document.getElementById('about-stats').innerHTML = '';
