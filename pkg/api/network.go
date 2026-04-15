@@ -985,6 +985,7 @@ func (h Ceci) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/ceci/proxy/yaml", h.Yaml).Methods("GET")
 	router.HandleFunc("/api/network/ceci/proxy", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/ceci/proxy", h.Remove).Methods("DELETE")
+	router.HandleFunc("/api/network/ceci/proxy/restart", h.Restart).Methods("PUT")
 }
 
 func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
@@ -1004,10 +1005,10 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			items = append(items, schema.CeciProxy{
-				Mode:   value.Mode,
-				Listen: value.Listen,
+				Mode:    value.Mode,
+				Listen:  value.Listen,
 				Network: value.Network,
-				Target: value.Target,
+				Target:  value.Target,
 				Backends: func() []schema.ForwardTo {
 					out := make([]schema.ForwardTo, 0, len(value.Backends))
 					for _, backend := range value.Backends {
@@ -1071,6 +1072,23 @@ func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Call.ceciApi.DelProxy(data)
+	ResponseMsg(w, 0, "")
+}
+
+func (h Ceci) Restart(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciProxy{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	if err := Call.ceciApi.RestartProxy(data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseMsg(w, 0, "")
 }
 

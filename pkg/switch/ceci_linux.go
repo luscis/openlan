@@ -101,7 +101,7 @@ func (w *CeciWorker) start(obj *co.CeciProxy) {
 		args = append(args, "-write-pid", name+".pid")
 		cmd := exec.Command(CeciBin, args...)
 		if err := cmd.Run(); err != nil {
-			w.out.Warn("CeciWorker.start: %s", err)
+			w.out.Warn("CeciWorker.start: %s %s", args, err)
 			return
 		}
 	})
@@ -227,6 +227,18 @@ func (w *CeciWorker) AddProxy(data schema.CeciProxy) error {
 
 	w.restart(obj)
 	return nil
+}
+
+func (w *CeciWorker) RestartProxy(data schema.CeciProxy) error {
+	obj := &co.CeciProxy{
+		Listen: data.Listen,
+	}
+	obj.Correct()
+	if current, _ := w.spec.FindProxy(obj); current != nil {
+		w.restart(current)
+		return nil
+	}
+	return libol.NewErr("ceci entry not found")
 }
 
 func (w *CeciWorker) DelProxy(data schema.CeciProxy) {

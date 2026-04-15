@@ -2793,7 +2793,7 @@ async function load_ceci() {
         '<td class="td-muted">' + esc(item.network || '-') + '</td>' +
         '<td>' + ceciEntryHtml(item) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
-        '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button> <button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
+        '<td style="white-space:nowrap;"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button> <button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button> <button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
@@ -3049,6 +3049,18 @@ async function ceciDelTcp(index) {
     show_toast('Ceci entry removed', 'success');
   } catch(e) {
     show_toast('Failed to remove ceci entry: ' + e.message, 'error');
+  }
+}
+
+async function ceciRestartEntry(index) {
+  const item = _ceciTcpEntries[index];
+  if (!item) return;
+  try {
+    await api_put('/api/network/ceci/proxy/restart', { listen: item.listen });
+    show_toast('Ceci entry restarting', 'success');
+    await load_ceci();
+  } catch(e) {
+    show_toast('Failed to restart ceci entry: ' + e.message, 'error');
   }
 }
 

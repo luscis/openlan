@@ -162,6 +162,7 @@ type BgpApi interface {
 type CeciApi interface {
 	AddProxy(data schema.CeciProxy) error
 	DelProxy(data schema.CeciProxy)
+	RestartProxy(data schema.CeciProxy) error
 }
 
 type RouterApi interface {
