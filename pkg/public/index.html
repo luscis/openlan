@@ -294,6 +294,32 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 .modal-tab:hover { color: var(--text); }
 .modal-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 .modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.ceci-entry-body {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.ceci-entry-body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ceci-entry-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.ceci-entry-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(22, 27, 34, 0.75);
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+.ceci-entry-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(13, 17, 23, 0.9);
+  background-clip: padding-box;
+}
+.ceci-entry-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) rgba(255, 255, 255, 0.02);
+}
 .modal-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;
   padding: 14px 24px; border-top: 1px solid var(--border); flex-shrink: 0;
@@ -650,7 +676,7 @@ select option {
       <span class="modal-title" id="ceci-entry-modal-title">Add Ceci Entry</span>
       <button class="modal-close" onclick="ceciCancelEdit()">&#x2715;</button>
     </div>
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="modal-body ceci-entry-body" style="display:flex;flex-direction:column;gap:16px;">
       <input type="hidden" id="ceci-entry-edit-orig" value="">
       <div class="form-group"><label>Listen</label><input class="modal-input" style="width:100%;" type="text" id="ceci-entry-listen" placeholder="e.g. 127.0.0.1:1080"></div>
       <div id="ceci-entry-tcp-wrap" class="hidden" style="display:flex;flex-direction:column;gap:16px;">
@@ -778,10 +804,11 @@ select option {
 <div class="modal-overlay hidden" id="dlg-network-output">
   <div class="modal" style="max-width:460px;">
     <div class="modal-header">
-      <span class="modal-title">Add Output</span>
+      <span class="modal-title" id="network-output-modal-title">Add Output</span>
       <button class="modal-close" onclick="closeAddDialog('network-output')">&#x2715;</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="network-out-edit-key" value="">
       <div class="form-group"><label>Protocol</label>
         <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-proto" onchange="onNetworkOutputProtocolChange()">
           <option value="tcp">tcp</option>
@@ -796,7 +823,7 @@ select option {
       <div class="form-group" id="network-out-crypt-group"><label>Crypt</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-crypt" type="text" placeholder="e.g. aes-256:my-secret-key"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-output')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="modalAddOutput()">Add</button>
+        <button class="btn btn-dark btn-sm" id="network-output-submit" onclick="modalSaveOutput()">Add</button>
       </div>
     </div>
   </div>
@@ -3646,16 +3673,18 @@ async function modalDelRoute(prefix) {
 async function modalLoadOutputs(netName) {
   const el = document.getElementById('modal-outputs-list');
   if (!el) return;
+  _modalOutputs = [];
   el.innerHTML = '<span style="color:var(--text-muted);font-size:13px;">Loading...</span>';
   try {
     const outputs = await api_get('/api/network/' + encodeURIComponent(netName) + '/output');
     const arr = Array.isArray(outputs) ? outputs : [];
+    _modalOutputs = arr;
     if (arr.length === 0) {
       el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No outputs configured</p>';
     } else {
       el.innerHTML = '<table style="width:100%;">' +
         '<thead><tr><th>Protocol</th><th>Remote</th><th>Segment / Secret</th><th>Device</th><th>State</th><th>RX/TX</th><th></th></tr></thead><tbody>' +
-        arr.map(o => {
+        arr.map((o, i) => {
           const state = o.state || '-';
           const bc = state === 'up' ? 'badge-green' : state === 'down' ? 'badge-red' : 'badge-gray';
           const device = outputDeviceName(o);
@@ -3675,7 +3704,7 @@ async function modalLoadOutputs(netName) {
             '<td class="td-mono td-muted">' + (device || '-') + '</td>' +
             '<td><span class="badge ' + bc + '">' + state + '</span></td>' +
             '<td class="td-muted" style="font-size:12px;">' + fmt_bytes(o.rxBytes) + ' / ' + fmt_bytes(o.txBytes) + '</td>' +
-            '<td><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(deleteKey || '') + '\', \'' + esc(device || deleteKey || '') + '\')">Remove</button></td>' +
+            '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="modalOpenEditOutput(' + i + ')">Edit</button> <button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(deleteKey || '') + '\', \'' + esc(device || deleteKey || '') + '\')">Remove</button></td>' +
             '</tr>';
         }).join('') + '</tbody></table>';
     }
@@ -3684,9 +3713,40 @@ async function modalLoadOutputs(netName) {
   }
 }
 
-async function modalAddOutput() {
+let _modalOutputs = [];
+
+function modalResetOutputForm() {
+  document.getElementById('network-output-modal-title').textContent = 'Add Output';
+  document.getElementById('network-output-submit').textContent = 'Add';
+  document.getElementById('network-out-edit-key').value = '';
+  document.getElementById('network-out-proto').value = 'tcp';
+  document.getElementById('network-out-remote').value = '';
+  document.getElementById('network-out-segment').value = '';
+  document.getElementById('network-out-secret').value = '';
+  document.getElementById('network-out-crypt').value = '';
+  onNetworkOutputProtocolChange();
+}
+
+function modalOpenEditOutput(index) {
+  const o = _modalOutputs[index];
+  if (!o) return;
+  document.getElementById('network-output-modal-title').textContent = 'Edit Output';
+  document.getElementById('network-output-submit').textContent = 'Save';
+  document.getElementById('network-out-edit-key').value = outputDeleteKey(o) || o.device || '';
+  document.getElementById('network-out-proto').value = o.protocol || 'tcp';
+  document.getElementById('network-out-remote').value = o.remote || '';
+  document.getElementById('network-out-segment').value = o.segment ? String(o.segment) : '';
+  document.getElementById('network-out-secret').value = o.secret || '';
+  document.getElementById('network-out-crypt').value = o.crypt || '';
+  onNetworkOutputProtocolChange();
+  document.getElementById('dlg-network-output').classList.remove('hidden');
+  setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
+}
+
+async function modalSaveOutput() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
+  const editKey = document.getElementById('network-out-edit-key').value.trim();
   const protocol = document.getElementById('network-out-proto').value;
   const remote = document.getElementById('network-out-remote').value.trim();
   const segment = parseInt(document.getElementById('network-out-segment').value.trim(), 10) || 0;
@@ -3701,20 +3761,19 @@ async function modalAddOutput() {
     if (!segment) { show_toast('Segment is required for ' + protocol + ' output', 'error'); return; }
   }
   try {
+    if (editKey) {
+      await api_delete('/api/network/' + encodeURIComponent(n.name) + '/output', { device: editKey });
+    }
     const body = { protocol, remote };
     if (segment) body.segment = segment;
     if (secret) body.secret = secret;
     if (crypt) body.crypt = crypt;
     await api_post('/api/network/' + encodeURIComponent(n.name) + '/output', body);
-    document.getElementById('network-out-remote').value = '';
-    document.getElementById('network-out-segment').value = '';
-    document.getElementById('network-out-secret').value = '';
-    document.getElementById('network-out-crypt').value = '';
     closeAddDialog('network-output');
-    show_toast('Output added', 'success');
+    show_toast(editKey ? 'Output updated' : 'Output added', 'success');
     modalLoadOutputs(n.name);
   } catch(e) {
-    show_toast('Failed to add output: ' + e.message, 'error');
+    show_toast('Failed to save output: ' + e.message, 'error');
   }
 }
 
@@ -4138,12 +4197,7 @@ function openAddDialog(type) {
     document.getElementById('network-route-nexthop').value = '';
     setTimeout(() => document.getElementById('network-route-prefix').focus(), 50);
   } else if (type === 'network-output') {
-    document.getElementById('network-out-proto').value = 'tcp';
-    document.getElementById('network-out-remote').value = '';
-    document.getElementById('network-out-segment').value = '';
-    document.getElementById('network-out-secret').value = '';
-    document.getElementById('network-out-crypt').value = '';
-    onNetworkOutputProtocolChange();
+    modalResetOutputForm();
     setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
   } else if (type === 'ceci-entry') {
     ceciResetForm();
@@ -4155,6 +4209,8 @@ function closeAddDialog(type) {
   document.getElementById('dlg-' + type).classList.add('hidden');
   if (type === 'ceci-entry') {
     ceciResetForm();
+  } else if (type === 'network-output') {
+    modalResetOutputForm();
   }
 }
 
