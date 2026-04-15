@@ -1030,12 +1030,28 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 					if value.Cert == nil {
 						return nil
 					}
-					return &schema.Cert{
-						CrtFile:  value.Cert.CrtFile,
-						KeyFile:  value.Cert.KeyFile,
-						CaFile:   value.Cert.CaFile,
+					out := &schema.Cert{
 						Insecure: value.Cert.Insecure,
+						CrtData:  value.Cert.CrtData,
+						KeyData:  value.Cert.KeyData,
+						CaData:   value.Cert.CaData,
 					}
+					if out.CrtData == "" && value.Cert.CrtFile != "" {
+						if data, err := os.ReadFile(value.Cert.CrtFile); err == nil {
+							out.CrtData = string(data)
+						}
+					}
+					if out.KeyData == "" && value.Cert.KeyFile != "" {
+						if data, err := os.ReadFile(value.Cert.KeyFile); err == nil {
+							out.KeyData = string(data)
+						}
+					}
+					if out.CaData == "" && value.Cert.CaFile != "" {
+						if data, err := os.ReadFile(value.Cert.CaFile); err == nil {
+							out.CaData = string(data)
+						}
+					}
+					return out
 				}(),
 				Status: processStatusByPidFile(filepath.Join("/var/openlan/ceci", value.Id()+".pid")),
 			})

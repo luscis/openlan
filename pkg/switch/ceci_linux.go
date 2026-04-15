@@ -3,7 +3,6 @@ package cswitch
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -70,6 +69,11 @@ func (w *CeciWorker) isRunning(name string) bool {
 
 func (w *CeciWorker) start(obj *co.CeciProxy) {
 	name := CeciDir + obj.Id()
+	runtimeCert, err := w.prepareRuntimeCert(name, obj.Cert)
+	if err != nil {
+		w.out.Warn("CeciWorker.start: %s", err)
+		return
+	}
 
 	var data any
 	switch obj.Mode {
@@ -78,7 +82,7 @@ func (w *CeciWorker) start(obj *co.CeciProxy) {
 			Listen:   obj.Listen,
 			Network:  obj.Network,
 			Backends: obj.Backends,
-			Cert:     obj.Cert,
+			Cert:     runtimeCert,
 		}
 	default:
 		data = &co.TcpProxy{
@@ -118,51 +122,67 @@ func (w *CeciWorker) saveCertFile(name string, data string) (string, error) {
 	if data == "" {
 		return "", nil
 	}
-	if err := os.MkdirAll(CeciDir, 0700); err != nil {
+	if err := os.WriteFile(name, []byte(data+"\n"), 0600); err != nil {
 		return "", err
 	}
-	file := filepath.Join(CeciDir, name)
-	if err := os.WriteFile(file, []byte(data+"\n"), 0600); err != nil {
-		return "", err
-	}
-	return file, nil
+	return name, nil
 }
 
-func (w *CeciWorker) applyCertData(obj *co.CeciProxy, data *schema.Cert) error {
+func normalizeCeciCert(data *schema.Cert) (*co.Cert, error) {
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 
 	cert := &co.Cert{
+		CrtFile:  data.CrtFile,
+		KeyFile:  data.KeyFile,
+		CaFile:   data.CaFile,
+		CrtData:  data.CrtData,
+		KeyData:  data.KeyData,
+		CaData:   data.CaData,
 		Insecure: data.Insecure,
 	}
-
-	base := obj.Id()
-	if data.CrtData != "" || data.KeyData != "" || data.CaData != "" {
-		crtFile, err := w.saveCertFile(base+".crt", data.CrtData)
-		if err != nil {
-			return err
-		}
-		keyFile, err := w.saveCertFile(base+".key", data.KeyData)
-		if err != nil {
-			return err
-		}
-		caFile, err := w.saveCertFile(base+".ca.crt", data.CaData)
-		if err != nil {
-			return err
-		}
-		if crtFile != "" {
-			cert.CrtFile = crtFile
-		}
-		if keyFile != "" {
-			cert.KeyFile = keyFile
-		}
-		if caFile != "" {
-			cert.CaFile = caFile
-		}
+	if err := cert.LoadData(); err != nil {
+		return nil, err
 	}
-	obj.Cert = cert
-	return nil
+	if cert.CrtData == "" || cert.KeyData == "" {
+		return nil, libol.NewErr("certificate and key are required")
+	}
+	return cert, nil
+}
+
+func (w *CeciWorker) prepareRuntimeCert(name string, cert *co.Cert) (*co.Cert, error) {
+	if cert == nil {
+		return nil, nil
+	}
+	current := *cert
+	if err := current.LoadData(); err != nil {
+		return nil, err
+	}
+	if current.CrtData == "" || current.KeyData == "" {
+		return nil, libol.NewErr("certificate content is required")
+	}
+	crtFile, err := w.saveCertFile(name+".crt", current.CrtData)
+	if err != nil {
+		return nil, err
+	}
+	keyFile, err := w.saveCertFile(name+".key", current.KeyData)
+	if err != nil {
+		return nil, err
+	}
+	runtime := &co.Cert{
+		CrtFile:  crtFile,
+		KeyFile:  keyFile,
+		Insecure: current.Insecure,
+	}
+	if current.CaData != "" {
+		caFile, err := w.saveCertFile(name+".ca.crt", current.CaData)
+		if err != nil {
+			return nil, err
+		}
+		runtime.CaFile = caFile
+	}
+	return runtime, nil
 }
 
 func (w *CeciWorker) Start(v api.SwitchApi) {
@@ -209,9 +229,11 @@ func (w *CeciWorker) AddProxy(data schema.CeciProxy) error {
 			})
 		}
 	}
-	if err := w.applyCertData(obj, data.Cert); err != nil {
+	if cert, err := normalizeCeciCert(data.Cert); err != nil {
 		w.out.Warn("CeciWorker.AddProxy: %s", err)
 		return err
+	} else {
+		obj.Cert = cert
 	}
 
 	obj.Correct()

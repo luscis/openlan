@@ -2987,6 +2987,10 @@ async function ceciSaveEntry() {
         show_toast('Switch protocol to HTTPS to use certificate settings', 'error');
         return;
       }
+      if (protocol === 'https' && (!cert || !key)) {
+        show_toast('Certificate and key are required for HTTPS', 'error');
+        return;
+      }
       const body = { mode: 'http', listen, network, target: [], backends };
       if (protocol === 'https') {
         body.cert = { certData: cert || '', keyData: key || '', rootCaData: rootCa || '', insecure };

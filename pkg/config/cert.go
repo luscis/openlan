@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/luscis/openlan/pkg/libol"
 )
@@ -33,6 +34,9 @@ type Cert struct {
 	CrtFile  string `json:"cert" yaml:"cert"`
 	KeyFile  string `json:"key" yaml:"key"`
 	CaFile   string `json:"rootCa" yaml:"rootCa"`
+	CrtData  string `json:"certData,omitempty" yaml:"certData,omitempty"`
+	KeyData  string `json:"keyData,omitempty" yaml:"keyData,omitempty"`
+	CaData   string `json:"rootCaData,omitempty" yaml:"rootCaData,omitempty"`
 	Insecure bool   `json:"insecure" yaml:"insecure"`
 }
 
@@ -40,15 +44,43 @@ func (c *Cert) Correct() {
 	if c.Dir == "" {
 		c.Dir = VarDir("cert")
 	}
-	if c.CrtFile == "" {
+	if c.CrtFile == "" && c.CrtData == "" {
 		c.CrtFile = fmt.Sprintf("%s/crt", c.Dir)
 	}
-	if c.KeyFile == "" {
+	if c.KeyFile == "" && c.KeyData == "" {
 		c.KeyFile = fmt.Sprintf("%s/key", c.Dir)
 	}
-	if c.CaFile == "" {
+	if c.CaFile == "" && c.CaData == "" {
 		c.CaFile = fmt.Sprintf("%s/ca.crt", c.Dir)
 	}
+}
+
+func (c *Cert) LoadData() error {
+	if c == nil {
+		return nil
+	}
+	if c.CrtData == "" && strings.TrimSpace(c.CrtFile) != "" {
+		data, err := os.ReadFile(c.CrtFile)
+		if err != nil {
+			return err
+		}
+		c.CrtData = string(data)
+	}
+	if c.KeyData == "" && strings.TrimSpace(c.KeyFile) != "" {
+		data, err := os.ReadFile(c.KeyFile)
+		if err != nil {
+			return err
+		}
+		c.KeyData = string(data)
+	}
+	if c.CaData == "" && strings.TrimSpace(c.CaFile) != "" {
+		data, err := os.ReadFile(c.CaFile)
+		if err != nil {
+			return err
+		}
+		c.CaData = string(data)
+	}
+	return nil
 }
 
 func (c *Cert) GetCertificates() []tls.Certificate {
