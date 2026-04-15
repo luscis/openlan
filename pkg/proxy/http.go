@@ -237,11 +237,11 @@ func parseUserNetwork(user string) (string, string) {
 
 func (t *HttpProxy) allowPassUser(network string) bool {
 	if t.cfg == nil {
-		return true
+		return false
 	}
 	want := strings.TrimSpace(t.cfg.Network)
 	if want == "" {
-		return true
+		return false
 	}
 	return network == want
 }
