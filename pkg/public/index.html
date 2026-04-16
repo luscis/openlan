@@ -114,19 +114,271 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   font-weight: 600; padding: 2px 7px; border-radius: 10px;
 }
 .section-body { padding: 0; overflow-x: auto; }
+.section-body.ceci-table-section { overflow-x: visible; }
+.ceci-table-scroll {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding-right: 1px;
+  padding-bottom: 1px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  background-clip: padding-box;
+}
+.ceci-table-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ceci-table-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.ceci-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(22, 27, 34, 0.75);
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+.ceci-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(13, 17, 23, 0.9);
+  background-clip: padding-box;
+}
+.ceci-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) rgba(255, 255, 255, 0.02);
+}
 .section-footer { padding: 8px 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); text-align: right; }
 
 /* Tables */
-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table { width: 100%; font-size: 13.5px; }
+table:not(.ceci-table) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+.section-body > table:not(.ceci-table),
+.about-table {
+  background: var(--card-bg);
+}
+table:not(.ceci-table) thead th,
+table:not(.ceci-table) tbody td {
+  border-right: 1px solid var(--border);
+}
+table:not(.ceci-table) thead th:last-child,
+table:not(.ceci-table) tbody td:last-child {
+  border-right: none;
+}
+table:not(.ceci-table) tbody td {
+  border-bottom: 1px solid var(--border);
+}
+table:not(.ceci-table) tbody tr:last-child td {
+  border-bottom: none;
+}
+.ceci-table {
+  table-layout: fixed;
+  width: 1192px;
+  min-width: 1192px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.ceci-table th:nth-child(1),
+.ceci-table td:nth-child(1) { width: 72px; min-width: 72px; max-width: 72px; }
+.ceci-table th:nth-child(2),
+.ceci-table td:nth-child(2) { width: 160px; min-width: 160px; max-width: 160px; }
+.ceci-table th:nth-child(3),
+.ceci-table td:nth-child(3) { width: 150px; min-width: 150px; max-width: 150px; }
+.ceci-table th:nth-child(4),
+.ceci-table td:nth-child(4) {
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+}
+.ceci-table th:nth-child(5),
+.ceci-table td:nth-child(5) {
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+}
+.ceci-table th:nth-child(6),
+.ceci-table td:nth-child(6) { width: 110px; min-width: 110px; max-width: 110px; }
+.ceci-table th:nth-child(7),
+.ceci-table td:nth-child(7) { width: 220px; min-width: 220px; max-width: 220px; }
+.ceci-table td:nth-child(4),
+.ceci-table td:nth-child(5) {
+  overflow-wrap: anywhere;
+}
+.ceci-actions,
+.table-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  width: 100%;
+}
+.ceci-actions-toolbar,
+.table-actions-toolbar {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: center;
+  white-space: nowrap;
+  width: max-content;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0d1117;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  overflow: hidden;
+}
+.ceci-actions .action-btn,
+.table-actions .action-btn {
+  border: none;
+  border-radius: 0;
+  background: #161b22;
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255,255,255,.02);
+}
+.table-actions .btn {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #161b22;
+  color: var(--text);
+}
+.table-actions .action-btn {
+  border: none;
+}
+.table-actions .btn + .btn {
+  border-left: 1px solid var(--border);
+}
+.table-actions .btn-ghost,
+.table-actions .btn-dark {
+  background: #161b22;
+  color: var(--text);
+}
+.table-actions .btn-danger {
+  background: rgba(248,81,73,.08);
+  color: #ff7b72;
+}
+.table-actions .action-btn,
+.openvpn-actions .action-btn {
+  border-radius: 0;
+}
+.openvpn-actions .action-btn {
+  border: none;
+}
+.openvpn-actions .action-btn + .action-btn {
+  border-left: 1px solid var(--border);
+}
+.table-actions .btn:hover,
+.ceci-actions .action-btn:hover,
+.table-actions .action-btn:hover {
+  background: #21262d;
+}
+.ceci-actions .action-btn + .action-btn,
+.table-actions .action-btn + .action-btn {
+  border-left: 1px solid var(--border);
+}
+.ceci-actions .action-delete,
+.table-actions .action-delete {
+  background: rgba(248,81,73,.08);
+  color: #ff7b72;
+}
+.ceci-actions .action-delete:hover,
+.table-actions .action-delete:hover {
+  background: rgba(248,81,73,.16);
+}
+#net-data-tab-json,
+#net-data-tab-yaml {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  line-height: 1.1;
+  font-size: 12px;
+  border-radius: 0;
+  border: none;
+}
+#net-data-tab-json.active,
+#net-data-tab-yaml.active {
+  background: #21262d;
+  color: var(--text);
+}
+#net-data-tab-json:not(.active),
+#net-data-tab-yaml:not(.active) {
+  background: #161b22;
+  color: var(--text-muted);
+}
+#net-data-tab-json + #net-data-tab-yaml {
+  border-left: 1px solid var(--border);
+}
+#file-preview-tab-buttons {
+  display: inline-flex;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.02);
+  overflow: hidden;
+}
+#file-preview-tab-buttons .file-preview-tab-btn {
+  border: none;
+  border-radius: 0;
+  background: #161b22;
+  color: var(--text-muted);
+}
+#file-preview-tab-buttons .file-preview-tab-btn.active {
+  background: #21262d;
+  color: var(--text);
+}
+#file-preview-tab-buttons .action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  line-height: 1.1;
+  font-size: 12px;
+  border: none;
+  border-radius: 0;
+  background: #161b22;
+  color: var(--text-muted);
+}
+#file-preview-tab-buttons .action-btn.active {
+  background: #21262d;
+  color: var(--text);
+}
+#file-preview-tab-buttons .action-btn + .action-btn {
+  border-left: 1px solid var(--border);
+}
 thead th {
   background: #0d1117; padding: 10px 16px; text-align: left;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap;
 }
-tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
-tbody tr:last-child { border-bottom: none; }
+tbody tr { transition: background .1s; }
 tbody tr:hover { background: #1c2433; }
 tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
+.ceci-table tbody tr { border-bottom: 1px solid var(--border); }
+.ceci-table tbody tr:last-child { border-bottom: none; }
+.ceci-table tbody td {
+  border-bottom: 1px solid var(--border);
+}
+.ceci-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ceci-table thead th,
+.ceci-table tbody td { border-right: 1px solid var(--border); }
+.ceci-table thead th:last-child,
+.ceci-table tbody td:last-child {
+  border-right: none;
+}
+.ceci-table thead th { border-bottom: 1px solid var(--border); }
 .td-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; }
 .td-muted { color: var(--text-muted); }
 .empty-row td { text-align: center; color: var(--text-muted); padding: 32px; font-size: 14px; }
@@ -501,7 +753,7 @@ select option {
     </div>
     <div class="modal-body">
       <div id="file-preview-tabs" style="display:none;justify-content:flex-end;margin-bottom:12px;">
-        <div id="file-preview-tab-buttons" style="display:inline-flex;gap:6px;padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);"></div>
+        <div id="file-preview-tab-buttons"></div>
       </div>
       <pre class="file-preview-body" id="file-preview-body"><span class="file-preview-loading">Loading...</span></pre>
     </div>
@@ -765,9 +1017,9 @@ select option {
       <!-- JSON Tab -->
       <div class="modal-tab-pane" id="net-tab-json">
         <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
-          <div style="display:inline-flex;gap:6px;padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);">
-            <button class="btn btn-sm btn-dark" id="net-data-tab-json" type="button" onclick="switchNetDataFormat('json')">JSON</button>
-            <button class="btn btn-sm btn-ghost" id="net-data-tab-yaml" type="button" onclick="switchNetDataFormat('yaml')">YAML</button>
+          <div style="display:inline-flex;gap:0;padding:4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);">
+            <button class="action-btn btn-detail active" id="net-data-tab-json" type="button" onclick="switchNetDataFormat('json')">JSON</button>
+            <button class="action-btn action-dark" id="net-data-tab-yaml" type="button" onclick="switchNetDataFormat('yaml')">YAML</button>
           </div>
         </div>
         <pre class="detail-json" id="modal-json"></pre>
@@ -1133,7 +1385,7 @@ select option {
             </div>
           </div>
 
-          <div class="section" style="margin-top:16px;">
+            <div class="section" style="margin-top:16px;">
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -1241,7 +1493,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Interface</th><th>VLAN</th><th>MAC</th><th>Address</th><th>State</th><th></th></tr></thead>
+                <thead><tr><th>Interface</th><th>VLAN</th><th>MAC</th><th>Address</th><th>State</th></tr></thead>
                 <tbody id="router-iface-tbody"></tbody>
               </table>
             </div>
@@ -1357,11 +1609,13 @@ select option {
                 </div>
               </div>
             </div>
-            <div class="section-body">
-              <table>
-                <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Stats</th><th>Status</th><th style="width:220px;"></th></tr></thead>
-                <tbody id="ceci-tcp-tbody"></tbody>
-              </table>
+            <div class="section-body ceci-table-section">
+              <div class="ceci-table-scroll">
+                <table class="ceci-table">
+                  <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Stats</th><th>Status</th><th></th></tr></thead>
+                  <tbody id="ceci-tcp-tbody"></tbody>
+                </table>
+              </div>
               <div class="section-footer" id="ceci-tcp-count">0</div>
             </div>
           </div>
@@ -1577,7 +1831,7 @@ function renderFilePreviewTabs() {
   }
   tabs.style.display = 'flex';
   buttons.innerHTML = _filePreviewViews.map(view =>
-    '<button class="btn btn-sm ' + (_filePreviewActiveView === view.id ? 'btn-dark' : 'btn-ghost') + '" type="button" onclick="switchFilePreviewView(\'' + esc(view.id) + '\')">' + esc(view.label || view.id) + '</button>'
+    '<button class="action-btn' + (_filePreviewActiveView === view.id ? ' active' : '') + '" type="button" onclick="switchFilePreviewView(\'' + esc(view.id) + '\')">' + esc(view.label || view.id) + '</button>'
   ).join('');
 }
 
@@ -2161,11 +2415,11 @@ async function load_networks() {
           '<td class="td-muted" style="font-size:12px;">' + outputCount + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + snat + '</td>' +
           '<td class="td-muted td-mono" style="font-size:12px;"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + (ovpn ? '<span>' + ovpn + '</span>' : '') + ovpnStatus + '</div></td>' +
-          '<td style="display:flex;gap:6px;">' +
+          '<td><div class="table-actions"><div class="table-actions-toolbar">' +
             '<button class="action-btn btn-detail" onclick="openNetModal(' + i + ')">Details</button>' +
             '<button class="action-btn btn-save" onclick="saveNetwork(\'' + esc(n.name) + '\')">Save</button>' +
             (SPECIAL_NETS.has(n.name) ? '' : '<button class="action-btn action-delete" onclick="removeNetwork(\'' + esc(n.name) + '\')">Remove</button>') +
-          '</td>' +
+          '</div></div></td>' +
           '</tr>';
       }).join('');
     }
@@ -2223,7 +2477,7 @@ async function load_bgp() {
               '<td><span class="badge ' + bc + '">' + esc(nb.state || '-') + '</span></td>' +
               '<td style="min-width:140px;">' + adv + '</td>' +
               '<td style="min-width:140px;">' + rcv + '</td>' +
-              '<td><button class="action-btn btn-danger" onclick="bgpDelNeighbor(\'' + addr + '\',' + (nb.remoteas||0) + ')">Remove</button></td>' +
+              '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-danger" onclick="bgpDelNeighbor(\'' + addr + '\',' + (nb.remoteas||0) + ')">Remove</button></div></div></td>' +
               '</tr>';
           }).join('');
     }
@@ -2381,7 +2635,7 @@ async function load_router() {
     _routerIfaces = merged;
     const tb = document.getElementById('router-iface-tbody');
     tb.innerHTML = _routerIfaces.length === 0
-      ? '<tr class="empty-row"><td colspan="6">No interfaces</td></tr>'
+      ? '<tr class="empty-row"><td colspan="5">No interfaces</td></tr>'
       : _routerIfaces.map((f, i) =>
           '<tr>' +
           '<td class="td-mono" style="font-weight:600;">' + esc(f._displayDevice || f.name || f._device || '-') + '</td>' +
@@ -2389,9 +2643,6 @@ async function load_router() {
           '<td class="td-mono td-muted">' + esc(f.mac || '-') + '</td>' +
           '<td>' + routerAddrTags(f, i) + '</td>' +
           '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(f.state || '-') + '</span></td>' +
-          '<td style="display:flex;gap:4px;flex-wrap:wrap;">' +
-          (f._canDel ? '<button class="action-btn btn-danger" onclick="routerIfaceDel(' + i + ')">Remove</button>' : '') +
-          '</td>' +
           '</tr>'
         ).join('');
   } catch(e) {
@@ -2622,7 +2873,7 @@ async function load_router_redirect() {
           '<td class="td-mono">' + esc(r.source || '-') + '</td>' +
           '<td>' + routerRedirectNextHopCell(r.nexthop) + '</td>' +
           '<td class="td-muted">' + (r.table || '-') + '</td>' +
-          '<td><button class="action-btn btn-danger" onclick="routerDelRedirect(' + i + ')">Remove</button></td>' +
+          '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-danger" onclick="routerDelRedirect(' + i + ')">Remove</button></div></div></td>' +
         '</tr>'
       ).join('');
     }
@@ -2789,11 +3040,11 @@ async function load_ipsec() {
           '<td><span class="badge badge-blue">' + esc(t.protocol || '-') + '</span></td>' +
           '<td class="td-muted td-mono" style="font-size:12px;">' + esc(t.secret || '-') + '</td>' +
           '<td><span class="badge ' + (t.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(t.state || '-') + '</span></td>' +
-          '<td style="white-space:nowrap;">' +
-            '<button class="action-btn btn-detail" onclick="restartIpsecTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Restart</button> ' +
-            '<button class="action-btn action-dark" onclick="ipsecOpenEdit(' + i + ')">Edit</button> ' +
+          '<td><div class="table-actions"><div class="table-actions-toolbar">' +
+            '<button class="action-btn btn-detail" onclick="restartIpsecTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Restart</button>' +
+            '<button class="action-btn action-dark" onclick="ipsecOpenEdit(' + i + ')">Edit</button>' +
             '<button class="action-btn btn-danger" onclick="ipsecDelTunnel(\'' + esc(t.local) + '\',\'' + esc(t.remote) + '\',\'' + esc(t.protocol) + '\')">Remove</button>' +
-          '</td>' +
+          '</div></div></td>' +
           '</tr>'
         ).join('');
   } catch(e) {
@@ -2821,7 +3072,7 @@ async function load_ceci() {
         '<td>' + ceciEntryHtml(item) + '</td>' +
         '<td>' + ceciStatsHtml(item.stats) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
-        '<td style="white-space:nowrap;"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button> <button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button> <button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
+        '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></div><div class="table-actions-toolbar"><button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button><button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button></div></div></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
@@ -2890,7 +3141,7 @@ function ceciBackendRowHtml(index, backend) {
     '<div class="ceci-http-backend-row" data-index="' + index + '" style="border:1px solid var(--border);border-radius:8px;padding:12px;background:#0d1117;display:flex;flex-direction:column;gap:10px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
         '<div style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Backend ' + (index + 1) + '</div>' +
-        '<button type="button" class="action-btn action-delete" onclick="ceciRemoveBackendRow(' + index + ')">Remove</button>' +
+        '<div class="table-actions"><div class="table-actions-toolbar"><button type="button" class="action-btn action-delete" onclick="ceciRemoveBackendRow(' + index + ')">Remove</button></div></div>' +
       '</div>' +
       '<div style="display:flex;align-items:flex-end;gap:10px;">' +
         '<div class="form-group" style="flex:0 0 82px;min-width:82px;"><label>Protocol</label><select class="modal-input ceci-http-backend-protocol" style="width:100%;min-width:0;padding-right:20px;"><option value=\"http\"' + (item.protocol === 'http' ? ' selected' : '') + '>http</option><option value=\"https\"' + (item.protocol === 'https' ? ' selected' : '') + '>https</option></select></div>' +
@@ -3175,10 +3426,10 @@ function render_vpn_clients_table() {
       '<td class="td-muted">' + fmt_bytes(c.rxBytes) + '</td>' +
       '<td class="td-muted">' + fmt_bytes(c.txBytes) + '</td>' +
       '<td class="td-muted">' + fmt_uptime(c.aliveTime) + '</td>' +
-      '<td style="display:flex;gap:4px;">' +
+      '<td><div class="table-actions"><div class="table-actions-toolbar">' +
         (c.remote ? '<button class="action-btn" style="background:rgba(245,158,11,.1);color:var(--warning);border:none;" onclick="killVpnClient(\'' + net + '\',\'' + name + '\')">Kick</button>' : '') +
         (!c.remote ? '<button class="action-btn action-delete" onclick="removeVpnClient(\'' + net + '\',\'' + name + '\')">Remove</button>' : '') +
-      '</td>' +
+      '</div></div></td>' +
       '</tr>';
   }).join('');
 }
@@ -3326,7 +3577,7 @@ function openNetModal(i) {
           '<div style="font-size:13px;color:var(--text-muted);">Configure subnet source NAT behavior for this network.</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-          '<select class="modal-input" id="network-snat-scope" style="min-width:140px;background:#21262d;border-color:var(--border);color:var(--text);">' +
+          '<select class="modal-input" id="network-snat-scope" style="width:140px;min-width:140px;background:#21262d;border-color:var(--border);color:var(--text);">' +
             snatOptions.map(([value, label]) =>
               '<option value="' + value + '"' + (snatValue === value ? ' selected' : '') + '>' + label + '</option>'
             ).join('') +
@@ -3343,7 +3594,7 @@ function openNetModal(i) {
           '<div style="font-size:13px;color:var(--text-muted);">Clamp TCP MSS for bridge traffic on this network.</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-          '<input class="modal-input" id="network-mss-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Disabled" value="' + esc(bridgeMssValue(bridge)) + '" style="width:120px;background:#21262d;border-color:var(--border);color:var(--text);">' +
+          '<input class="modal-input" id="network-mss-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Disabled" value="' + esc(bridgeMssValue(bridge)) + '" style="width:140px;min-width:140px;background:#21262d;border-color:var(--border);color:var(--text);">' +
           '<button class="btn btn-dark btn-sm" onclick="saveNetworkMSS()">Apply</button>' +
         '</div>' +
       '</div>' +
@@ -3355,25 +3606,33 @@ function openNetModal(i) {
       ['Listen', ovpn.listen], ['Protocol', ovpn.protocol], ['Subnet', ovpn.subnet],
       ['Cipher', ovpn.cipher], ['Push Routes', ovpn.push ? ovpn.push.join(', ') : null],
     ].filter(([, v]) => v != null && v !== '');
-    ovpnHtml = '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
-      '<div style="display:flex;gap:8px;align-items:center;">' +
-      '<button class="btn btn-sm btn-ghost" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
-      '<button class="btn btn-sm btn-danger" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
-      '<button class="btn btn-sm btn-ghost" onclick="viewOpenVPNLog(\'' + esc(n.name) + '\')" type="button">View Log</button>' +
-      '<button class="btn btn-sm btn-ghost" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')" type="button">View .ovpn</button>' +
+    ovpnHtml = '<div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
+        '<div class="table-actions-toolbar openvpn-actions">' +
+          '<button class="action-btn btn-detail" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
+          '<button class="action-btn action-delete" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
+          '<button class="action-btn action-dark" onclick="viewOpenVPNLog(\'' + esc(n.name) + '\')" type="button">View Log</button>' +
+          '<button class="action-btn action-dark" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')" type="button">View .ovpn</button>' +
+        '</div>' +
       '</div>' +
+      '<div style="margin-top:10px;">' +
+        '<div class="detail-grid">' +
+        ovpnItems.map(([k, v]) =>
+          '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + v + '</span></div>'
+        ).join('') + '</div>' +
       '</div>' +
-      '<div class="detail-grid" style="margin-top:10px;">' +
-      ovpnItems.map(([k, v]) =>
-        '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + v + '</span></div>'
-      ).join('') + '</div>';
+    '</div>';
   } else {
-    ovpnHtml = '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
-      '<button class="btn btn-sm btn-dark" onclick="openEnableNetworkOpenVPN()" type="button">Enable OpenVPN</button>' +
+    ovpnHtml = '<div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
+        '<div class="table-actions-toolbar openvpn-actions">' +
+          '<button class="action-btn action-dark" onclick="openEnableNetworkOpenVPN()" type="button">Enable OpenVPN</button>' +
+        '</div>' +
       '</div>' +
-      '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">OpenVPN is disabled for this virtual network.</div>';
+      '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">OpenVPN is disabled for this virtual network.</div>' +
+    '</div>';
   }
   document.getElementById('modal-ovpn-section').innerHTML = ovpnHtml
     ? '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' + ovpnHtml + '</div>'
@@ -3582,8 +3841,8 @@ function switchNetDataFormat(name) {
   if (!jsonBtn || !yamlBtn || !jsonPre || !yamlPre) return;
 
   const showJson = name !== 'yaml';
-  jsonBtn.className = showJson ? 'btn btn-sm btn-dark' : 'btn btn-sm btn-ghost';
-  yamlBtn.className = showJson ? 'btn btn-sm btn-ghost' : 'btn btn-sm btn-dark';
+  jsonBtn.className = showJson ? 'action-btn btn-detail active' : 'action-btn action-dark';
+  yamlBtn.className = showJson ? 'action-btn action-dark' : 'action-btn btn-detail active';
   jsonPre.style.display = showJson ? '' : 'none';
   yamlPre.style.display = showJson ? 'none' : '';
 }
@@ -3651,7 +3910,7 @@ async function modalLoadRoutes(netName) {
           '<td class="td-mono">' + (r.prefix || '-') + '</td>' +
           '<td>' + nextHopWithMacHtml(r.nexthop) + '</td>' +
           '<td class="td-muted">' + (r.metric || 0) + '</td>' +
-          '<td><button class="action-btn action-delete" onclick="modalDelRoute(\'' + esc(r.prefix) + '\')">Remove</button></td>' +
+          '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn action-delete" onclick="modalDelRoute(\'' + esc(r.prefix) + '\')">Remove</button></div></div></td>' +
           '</tr>'
         ).join('') + '</tbody></table>';
     }
@@ -3724,7 +3983,7 @@ async function modalLoadOutputs(netName) {
             '<td class="td-mono td-muted">' + (device || '-') + '</td>' +
             '<td><span class="badge ' + bc + '">' + state + '</span></td>' +
             '<td class="td-muted" style="font-size:12px;">' + fmt_bytes(o.rxBytes) + ' / ' + fmt_bytes(o.txBytes) + '</td>' +
-            '<td style="white-space:nowrap;"><button class="action-btn action-dark" onclick="modalOpenEditOutput(' + i + ')">Edit</button> <button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(deleteKey || '') + '\', \'' + esc(device || deleteKey || '') + '\')">Remove</button></td>' +
+            '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn action-dark" onclick="modalOpenEditOutput(' + i + ')">Edit</button><button class="action-btn action-delete" onclick="modalDelOutput(\'' + esc(deleteKey || '') + '\', \'' + esc(device || deleteKey || '') + '\')">Remove</button></div></div></td>' +
             '</tr>';
         }).join('') + '</tbody></table>';
     }
@@ -3948,11 +4207,11 @@ function render_users_table() {
       '<td>' + role_badge(u.role) + '</td>' +
       '<td class="td-mono td-muted" style="font-size:12px;">' + (u.password ? esc(u.password.substring(0,4)) + '••••••••' : '-') + '</td>' +
       '<td class="td-muted">' + esc(u.leaseTime || '-') + '</td>' +
-      '<td style="white-space:nowrap;">' +
-        '<button class="action-btn action-dark" onclick="viewUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">View .yaml</button> ' +
-        '<button class="action-btn action-dark" onclick="openEditUser(' + originalIndex + ')">Edit</button> ' +
+      '<td><div class="table-actions"><div class="table-actions-toolbar">' +
+        '<button class="action-btn action-dark" onclick="viewUserAccess(\'' + esc(u.name) + '@' + esc(u.network) + '\')">View .yaml</button>' +
+        '<button class="action-btn action-dark" onclick="openEditUser(' + originalIndex + ')">Edit</button>' +
         '<button class="action-btn action-delete" onclick="removeUser(\'' + esc(u.name) + '@' + esc(u.network) + '\')">Remove</button>' +
-      '</td>' +
+      '</div></div></td>' +
       '</tr>';
   }).join('');
 }
