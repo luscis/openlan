@@ -452,8 +452,6 @@ func (t *HttpProxy) saveStats() {
 }
 
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t.out.Debug("HttpProxy.ServeHTTP %v", r.URL)
-
 	if !t.CheckAuth(w, r) {
 		t.out.Info("HttpProxy.ServeHTTP Required %v Authentication", r.URL)
 		return
@@ -466,7 +464,7 @@ func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.doRecord(r, 0)
 	via := t.FindBackend(r.URL.Host)
 	if via != nil {
-		t.out.Info("HttpProxy.ServeHTTP %s <- %s %s", via.Server, r.Method, r.URL.Host)
+		t.out.Info("HttpProxy.ServeHTTP %s <- %s %s %s", via.Server, r.RemoteAddr, r.Method, r.URL.Host)
 		conn, err := t.openConn(via.Protocol, via.Server, via.Insecure)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
