@@ -58,7 +58,7 @@ func NewACL(name string) *ACL {
 }
 
 func (a *ACL) Chain() string {
-	return "ATT_" + a.Name
+	return "AT_" + a.Name
 }
 
 func (a *ACL) Initialize() {

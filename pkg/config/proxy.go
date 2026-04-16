@@ -50,6 +50,7 @@ type HttpProxy struct {
 	Listen     string      `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Secret     string      `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Network    string      `json:"-" yaml:"-"`
+	StatsFile  string      `json:"-" yaml:"-"`
 	Cert       *Cert       `json:"cert,omitempty" yaml:"cert,omitempty"`
 	Password   string      `json:"password,omitempty" yaml:"password,omitempty"`
 	CaCert     string      `json:"cacert,omitempty" yaml:"cacert,omitempty"`

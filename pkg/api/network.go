@@ -988,6 +988,18 @@ func (h Ceci) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/ceci/proxy/restart", h.Restart).Methods("PUT")
 }
 
+func loadCeciStats(listen string) *schema.CeciStats {
+	file := filepath.Join("/var/openlan/ceci", listen+".stats")
+	stats := &schema.CeciStats{}
+	if err := libol.UnmarshalLoad(stats, file); err != nil {
+		return nil
+	}
+	if stats.StartAt == "" && stats.Total == 0 && stats.Bytes == 0 {
+		return nil
+	}
+	return stats
+}
+
 func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 	items := make([]schema.CeciProxy, 0, 16)
 	if h.cs == nil || h.cs.Config() == nil {
@@ -1053,6 +1065,7 @@ func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 					}
 					return out
 				}(),
+				Stats:  loadCeciStats(value.Listen),
 				Status: processStatusByPidFile(filepath.Join("/var/openlan/ceci", value.Id()+".pid")),
 			})
 		}

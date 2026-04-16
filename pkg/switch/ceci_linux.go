@@ -101,6 +101,9 @@ func (w *CeciWorker) start(obj *co.CeciProxy) {
 		if obj.Network != "" {
 			args = append(args, "-network", obj.Network)
 		}
+		if obj.Mode == "http" {
+			args = append(args, "-stats:file", name+".stats")
+		}
 		args = append(args, "-log:file", name+".log")
 		args = append(args, "-write-pid", name+".pid")
 		cmd := exec.Command(CeciBin, args...)

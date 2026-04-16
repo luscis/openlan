@@ -12,7 +12,7 @@ type IPSet struct {
 
 func NewIPSet(name, method string) *IPSet {
 	return &IPSet{
-		Name: "xtt_" + name,
+		Name: "TT_" + name,
 		Type: method,
 		Sudo: false,
 	}

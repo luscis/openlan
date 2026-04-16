@@ -12,7 +12,14 @@ type CeciProxy struct {
 	Target   []string    `json:"target,omitempty"`
 	Backends []ForwardTo `json:"backends,omitempty"`
 	Cert     *Cert       `json:"cert,omitempty"`
+	Stats    *CeciStats  `json:"stats,omitempty"`
 	Status   string      `json:"status,omitempty"`
+}
+
+type CeciStats struct {
+	StartAt string `json:"startAt,omitempty"`
+	Total   int    `json:"total,omitempty"`
+	Bytes   int64  `json:"bytes,omitempty"`
 }
 
 type ForwardTo struct {

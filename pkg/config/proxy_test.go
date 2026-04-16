@@ -46,8 +46,9 @@ func TestHttpProxyCorrectDefaultPassword(t *testing.T) {
 
 func TestHttpProxyMarshalOmitsNetwork(t *testing.T) {
 	obj := &HttpProxy{
-		Listen:  "0.0.0.0:1080",
-		Network: "guest",
+		Listen:    "0.0.0.0:1080",
+		Network:   "guest",
+		StatsFile: "/tmp/stats.json",
 	}
 	data, err := yaml.Marshal(obj)
 	if err != nil {
@@ -55,5 +56,8 @@ func TestHttpProxyMarshalOmitsNetwork(t *testing.T) {
 	}
 	if strings.Contains(string(data), "network:") {
 		t.Fatalf("expected network to be omitted from yaml, got %s", data)
+	}
+	if strings.Contains(string(data), "statsfile:") {
+		t.Fatalf("expected stats file to be omitted from yaml, got %s", data)
 	}
 }

@@ -64,7 +64,7 @@ func NewZGuest(network, name, source string) *ZGuest {
 }
 
 func (g *ZGuest) Chain() string {
-	return "ZTT_" + g.network + "-" + g.username
+	return "ZT_" + g.network + "-" + g.username
 }
 
 func (g *ZGuest) Start() {
@@ -163,7 +163,7 @@ func NewZTrust(network string, expire int) *ZTrust {
 }
 
 func (z *ZTrust) Chain() string {
-	return "ZTT_" + z.network
+	return "ZT_" + z.network
 }
 
 func (z *ZTrust) Initialize() {

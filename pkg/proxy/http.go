@@ -34,6 +34,12 @@ type HttpRecord struct {
 	Bytes    int64
 }
 
+type HttpStats struct {
+	StartAt string
+	Total   int
+	Bytes   int64
+}
+
 func (r *HttpRecord) Update(bytes int64) {
 	if r.Count == 0 {
 		r.CreateAt = time.Now().Local().String()
@@ -48,18 +54,21 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 type HttpProxy struct {
-	proxer   Proxyer
-	pass     map[string]string
-	passMod  time.Time
-	passLock sync.RWMutex
-	out      *libol.SubLogger
-	server   *http.Server
-	cfg      *co.HttpProxy
-	api      *mux.Router
-	startat  time.Time
-	requests map[string]*HttpRecord
-	lock     sync.RWMutex
-	socks    *SocksProxy
+	proxer    Proxyer
+	pass      map[string]string
+	passMod   time.Time
+	passLock  sync.RWMutex
+	out       *libol.SubLogger
+	server    *http.Server
+	cfg       *co.HttpProxy
+	statsFile string
+	statsDone chan struct{}
+	statsOnce sync.Once
+	api       *mux.Router
+	startat   time.Time
+	requests  map[string]*HttpRecord
+	lock      sync.RWMutex
+	socks     *SocksProxy
 }
 
 var (
@@ -121,12 +130,13 @@ func encodeText(w http.ResponseWriter, tmpl string, v interface{}) {
 
 func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 	h := &HttpProxy{
-		out:      libol.NewSubLogger(cfg.Listen),
-		cfg:      cfg,
-		pass:     make(map[string]string),
-		api:      mux.NewRouter(),
-		requests: make(map[string]*HttpRecord),
-		proxer:   px,
+		out:       libol.NewSubLogger(cfg.Listen),
+		cfg:       cfg,
+		pass:      make(map[string]string),
+		api:       mux.NewRouter(),
+		requests:  make(map[string]*HttpRecord),
+		proxer:    px,
+		statsFile: cfg.StatsFile,
 	}
 	h.Initialize()
 	return h
@@ -241,7 +251,7 @@ func (t *HttpProxy) allowPassUser(network string) bool {
 	}
 	want := strings.TrimSpace(t.cfg.Network)
 	if want == "" {
-		return false
+		return true
 	}
 	return network == want
 }
@@ -408,8 +418,6 @@ func (t *HttpProxy) cloneRequest(r *http.Request, secret string) ([]byte, error)
 
 func (t *HttpProxy) doRecord(r *http.Request, bytes int64) {
 	t.lock.Lock()
-	defer t.lock.Unlock()
-
 	record, ok := t.requests[r.URL.Host]
 	if !ok {
 		record = &HttpRecord{
@@ -418,6 +426,29 @@ func (t *HttpProxy) doRecord(r *http.Request, bytes int64) {
 		t.requests[record.Domain] = record
 	}
 	record.Update(bytes)
+	t.lock.Unlock()
+}
+
+func (t *HttpProxy) snapshotStats() *HttpStats {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	data := &HttpStats{
+		StartAt: t.startat.Local().String(),
+		Total:   len(t.requests),
+	}
+	for _, record := range t.requests {
+		data.Bytes += record.Bytes
+	}
+	return data
+}
+
+func (t *HttpProxy) saveStats() {
+	file := strings.TrimSpace(t.statsFile)
+	if file == "" {
+		return
+	}
+	_ = libol.MarshalSave(t.snapshotStats(), file, true)
 }
 
 func (t *HttpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -505,6 +536,24 @@ func (t *HttpProxy) Start() {
 	}
 	promise.Go(func() error {
 		t.startat = time.Now()
+		t.saveStats()
+		if strings.TrimSpace(t.statsFile) != "" {
+			if t.statsDone == nil {
+				t.statsDone = make(chan struct{})
+			}
+			libol.Go(func() {
+				ticker := time.NewTicker(10 * time.Second)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ticker.C:
+						t.saveStats()
+					case <-t.statsDone:
+						return
+					}
+				}
+			})
+		}
 		if crt == nil || crt.KeyFile == "" {
 			if err := t.server.ListenAndServe(); err != nil {
 				t.out.Warn("HttpProxy.start %s", err)
@@ -594,8 +643,8 @@ func (t *HttpProxy) GetIndex(w http.ResponseWriter, r *http.Request) {
 		Bytes    int64
 		Requests []*HttpRecord
 	}{
-		Total:   len(t.requests),
 		StartAt: t.startat.Local().String(),
+		Total:   len(t.requests),
 	}
 	for _, record := range t.requests {
 		data.Requests = append(data.Requests, record)
@@ -622,19 +671,7 @@ func (t *HttpProxy) GetIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *HttpProxy) GetStats(w http.ResponseWriter, r *http.Request) {
-	t.lock.RLock()
-	data := &struct {
-		StartAt string
-		Total   int
-		Bytes   int64
-	}{
-		Total:   len(t.requests),
-		StartAt: t.startat.Local().String(),
-	}
-	for _, record := range t.requests {
-		data.Bytes += record.Bytes
-	}
-	t.lock.RUnlock()
+	data := t.snapshotStats()
 
 	if t.findQuery(r, "format") == "json" {
 		encodeJson(w, data)
@@ -745,8 +782,14 @@ func (t *HttpProxy) GetApi(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *HttpProxy) Stop() {
+	t.statsOnce.Do(func() {
+		if t.statsDone != nil {
+			close(t.statsDone)
+		}
+	})
 	if t.server != nil {
 		t.server.Shutdown(context.Background())
 		t.server = nil
 	}
+	t.saveStats()
 }

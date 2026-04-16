@@ -21,6 +21,7 @@ func main() {
 	mode := "http"
 	conf := ""
 	network := ""
+	statsFile := ""
 	logFile := ""
 	logLevel := libol.INFO
 	nodate := false
@@ -29,6 +30,7 @@ func main() {
 	flag.StringVar(&mode, "mode", "http", "Proxy mode for http, socks, tcp and name")
 	flag.StringVar(&conf, "conf", "ceci.yaml", "The configuration file")
 	flag.StringVar(&network, "network", "", "Auth network for http mode")
+	flag.StringVar(&statsFile, "stats:file", "", "Stats file")
 	flag.StringVar(&logFile, "log:file", "", "Log file")
 	flag.IntVar(&logLevel, "log:level", libol.INFO, "Log level")
 	flag.BoolVar(&nodate, "nodate", nodate, "Dont display message datetime")
@@ -73,6 +75,7 @@ func main() {
 			return
 		}
 		c.Network = network
+		c.StatsFile = statsFile
 		x = proxy.NewHttpProxy(c, nil)
 	}
 

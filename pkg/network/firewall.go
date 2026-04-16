@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	OLCInput   = "XTT_in"
-	OLCForward = "XTT_for"
-	OLCOutput  = "XTT_out"
-	OLCPre     = "XTT_pre"
-	OLCPost    = "XTT_pos"
+	OLCInput   = "TT_in"
+	OLCForward = "TT_for"
+	OLCOutput  = "TT_out"
+	OLCPre     = "TT_pre"
+	OLCPost    = "TT_post"
 )
 
 type FireWallGlobal struct {

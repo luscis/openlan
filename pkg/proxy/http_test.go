@@ -3,6 +3,7 @@ package proxy
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -154,5 +155,35 @@ func TestHttpProxyLoadPassKeepsRawUserWithoutNetwork(t *testing.T) {
 	}
 	if _, ok := h.pass["alice@example"]; ok {
 		t.Fatalf("expected network info not to be stored in passmap")
+	}
+}
+
+func TestHttpProxySaveStatsFile(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "stats.json")
+	h := &HttpProxy{
+		cfg: &co.HttpProxy{
+			StatsFile: file,
+		},
+		statsFile: file,
+		requests:  make(map[string]*HttpRecord),
+		startat:   time.Now().Add(-time.Minute),
+	}
+	h.requests["example.com"] = &HttpRecord{
+		Domain: "example.com",
+		Bytes:  123,
+	}
+	h.saveStats()
+
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "\"Total\": 1") {
+		t.Fatalf("expected total count to be saved, got %s", text)
+	}
+	if !strings.Contains(text, "\"Bytes\": 123") {
+		t.Fatalf("expected byte count to be saved, got %s", text)
 	}
 }

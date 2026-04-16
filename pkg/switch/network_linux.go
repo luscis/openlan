@@ -106,8 +106,8 @@ func (w *WorkerImpl) L3Name() string {
 func (w *WorkerImpl) newFire() {
 	cfg := w.cfg
 	w.fire = cn.NewFireWallTable(cfg.Name)
-	w.snat = cn.NewFireWallChain("XTT_"+cfg.Name+"_SNAT", cn.TNat, "")
-	w.dnat = cn.NewFireWallChain("XTT_"+cfg.Name+"_DNAT", cn.TNat, "")
+	w.snat = cn.NewFireWallChain("TT_"+cfg.Name+"_SNAT", cn.TNat, "")
+	w.dnat = cn.NewFireWallChain("TT_"+cfg.Name+"_DNAT", cn.TNat, "")
 }
 
 func (w *WorkerImpl) Initialize() {
@@ -169,11 +169,17 @@ func (w *WorkerImpl) doSNAT() {
 	if vpn != nil {
 		w.toMasq_r(vpn.Subnet, w.ipser.Name, "From VPN")
 	}
+
 	switch cfg.Snat {
 	case "enable":
 		w.toMasq_i("", w.ipser.Name, "To Masq")
 	case "local":
-		w.toMasq_i(w.L3Name(), w.ipser.Name, "To Masq")
+		subnet := w.Subnet()
+		if subnet == nil {
+			w.toMasq_i(w.L3Name(), w.ipser.Name, "To Masq")
+		} else {
+			w.toMasq_r(subnet.String(), w.ipser.Name, "To Masq")
+		}
 	}
 }
 
@@ -960,114 +966,112 @@ func (w *WorkerImpl) closePort(protocol, port, comment string) {
 	})
 }
 
-func (w *WorkerImpl) toForward_i(input, pfxSet, comment string) {
-	w.out.Debug("WorkerImpl.toForward %s %s:%s", input, pfxSet)
+func (w *WorkerImpl) toForward_i(input, dSet, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s %s:%s", input, dSet)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRuleX(cn.IPRule{
 		Input:   input,
-		DestSet: pfxSet,
+		DestSet: dSet,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toForward_r(input, source, pfxSet, comment string) {
-	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, source, pfxSet)
+func (w *WorkerImpl) toForward_r(input, source, dSet, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, source, dSet)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRuleX(cn.IPRule{
 		Input:   input,
 		Source:  source,
-		DestSet: pfxSet,
+		DestSet: dSet,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) leftForward_r(input, source, pfxSet, comment string) {
-	w.out.Debug("WorkerImpl.leftForward %s:%s %s:%s", input, source, pfxSet)
+func (w *WorkerImpl) leftForward_r(input, source, dSet, comment string) {
+	w.out.Debug("WorkerImpl.leftForward %s:%s %s:%s", input, source, dSet)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.DelRuleX(cn.IPRule{
 		Input:   input,
 		Source:  source,
-		DestSet: pfxSet,
+		DestSet: dSet,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toForward_s(input, srcSet, prefix, comment string) {
-	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, srcSet, prefix)
+func (w *WorkerImpl) toForward_s(input, sSet, prefix, comment string) {
+	w.out.Debug("WorkerImpl.toForward %s:%s %s:%s", input, sSet, prefix)
 	// Allowed forward between source and prefix.
 	w.fire.Filter.For.AddRuleX(cn.IPRule{
 		Input:   input,
-		SrcSet:  srcSet,
+		SrcSet:  sSet,
 		Dest:    prefix,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toMasq_r(source, pfxSet, comment string) {
+func (w *WorkerImpl) toMasq_r(source, dSet, comment string) {
 	// Enable masquerade from source to prefix.
-	output := ""
 	w.snat.AddRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
 		Source:  source,
-		DestSet: pfxSet,
-		Output:  output,
+		DestSet: dSet,
+		Output:  "",
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) leftMasq_r(source, pfxSet, comment string) {
+func (w *WorkerImpl) leftMasq_r(source, dSet, comment string) {
 	// Enable masquerade from source to prefix.
-	output := ""
 	w.snat.DelRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
 		Source:  source,
-		DestSet: pfxSet,
-		Output:  output,
+		DestSet: dSet,
+		Output:  "",
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toMasq_i(input, pfxSet, comment string) {
+func (w *WorkerImpl) toMasq_i(input, dSet, comment string) {
 	// Enable masquerade from input to prefix.
 	w.snat.AddRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
 		Input:   input,
-		DestSet: pfxSet,
+		DestSet: dSet,
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
 
 }
 
-func (w *WorkerImpl) leftMasq_i(input, pfxSet, comment string) {
+func (w *WorkerImpl) leftMasq_i(input, dSet, comment string) {
 	// Enable masquerade from input to prefix.
 	w.snat.DelRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
 		Input:   input,
-		DestSet: pfxSet,
+		DestSet: dSet,
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) toMasq_s(srcSet, prefix, comment string) {
+func (w *WorkerImpl) toMasq_s(sSet, prefix, comment string) {
 	// Enable masquerade from source to prefix.
 	w.snat.AddRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
-		SrcSet:  srcSet,
+		SrcSet:  sSet,
 		Dest:    prefix,
 		Jump:    cn.CMasq,
 		Comment: comment,
 	})
 }
 
-func (w *WorkerImpl) leftMasq_s(srcSet, prefix, comment string) {
+func (w *WorkerImpl) leftMasq_s(sSet, prefix, comment string) {
 	// Enable masquerade from source to prefix.
 	w.snat.AddRuleX(cn.IPRule{
 		Mark:    uint32(w.table),
-		SrcSet:  srcSet,
+		SrcSet:  sSet,
 		Dest:    prefix,
 		Jump:    cn.CMasq,
 		Comment: comment,

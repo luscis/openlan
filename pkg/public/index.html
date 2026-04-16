@@ -1359,7 +1359,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Status</th><th style="width:220px;"></th></tr></thead>
+                <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Stats</th><th>Status</th><th style="width:220px;"></th></tr></thead>
                 <tbody id="ceci-tcp-tbody"></tbody>
               </table>
               <div class="section-footer" id="ceci-tcp-count">0</div>
@@ -2151,7 +2151,7 @@ async function load_networks() {
         const outputCount = Array.isArray(cfg.outputs) ? cfg.outputs.length : 0;
         const snat = cfg.snat || 'disable';
         const ovpn = cfg.openvpn
-          ? ((cfg.openvpn.protocol || '-') + (cfg.openvpn.listen || '-'))
+          ? ((cfg.openvpn.protocol || '-') + " " + (cfg.openvpn.listen || '-'))
           : '';
         const ovpnStatus = statusBadge(n.openvpnStatus, 'Disabled');
         return '<tr>' +
@@ -2810,7 +2810,7 @@ async function load_ceci() {
     _ceciTcpEntries = Array.isArray(entries) ? entries : [];
     document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
     if (_ceciTcpEntries.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No Ceci entries</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No Ceci entries</td></tr>';
       return;
     }
     tbody.innerHTML = _ceciTcpEntries.map((item, i) =>
@@ -2819,6 +2819,7 @@ async function load_ceci() {
         '<td class="td-mono">' + esc(item.listen || '-') + '</td>' +
         '<td class="td-muted">' + esc(item.network || '-') + '</td>' +
         '<td>' + ceciEntryHtml(item) + '</td>' +
+        '<td>' + ceciStatsHtml(item.stats) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
         '<td style="white-space:nowrap;"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button> <button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button> <button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button> <button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button> <button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></td>' +
       '</tr>'
@@ -2826,7 +2827,7 @@ async function load_ceci() {
   } catch(e) {
     _ceciTcpEntries = [];
     document.getElementById('ceci-tcp-count').textContent = '0';
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Failed to load Ceci entries</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Failed to load Ceci entries</td></tr>';
     show_toast('Failed to load ceci network: ' + e.message, 'error');
   }
 }
@@ -2858,6 +2859,25 @@ function ceciEntryHtml(item) {
   const backendHtml = ceciBackendHtml(item && item.backends);
   if (backendHtml) return backendHtml;
   return ceciTargetHtml(item && item.target);
+}
+
+function ceciFormatMinuteTime(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const parts = raw.split(/\s+/);
+  if (parts.length < 2) return raw;
+  const hhmm = parts[1].includes(':') ? parts[1].slice(0, 5) : parts[1];
+  const tz = parts.length >= 4 ? parts[3] : (parts.length >= 3 ? parts[2] : '');
+  return tz ? parts[0] + ' ' + hhmm + ' ' + tz : parts[0] + ' ' + hhmm;
+}
+
+function ceciStatsHtml(stats) {
+  if (!stats) return '<span class="td-muted">-</span>';
+  return [
+    stats.startAt ? '<div class="td-mono" style="font-size:12px;line-height:1.6;" title="' + esc(stats.startAt) + '">Started ' + esc(ceciFormatMinuteTime(stats.startAt)) + '</div>' : '',
+    '<div class="td-mono" style="font-size:12px;line-height:1.6;">Total Requests ' + esc(String(stats.total || 0)) + '</div>',
+    '<div class="td-mono" style="font-size:12px;line-height:1.6;">Bytes Transferred ' + esc(fmt_bytes(stats.bytes || 0)) + '</div>'
+  ].join('');
 }
 
 function ceciParseTargets(raw) {
