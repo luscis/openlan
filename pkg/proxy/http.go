@@ -251,7 +251,7 @@ func (t *HttpProxy) allowPassUser(network string) bool {
 	}
 	want := strings.TrimSpace(t.cfg.Network)
 	if want == "" {
-		return true
+		return false
 	}
 	return network == want
 }
