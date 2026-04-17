@@ -182,15 +182,15 @@ table:not(.ceci-table) tbody tr:last-child td {
 }
 .ceci-table {
   table-layout: fixed;
-  width: 1192px;
-  min-width: 1192px;
+  width: 1262px;
+  min-width: 1262px;
   border-collapse: separate;
   border-spacing: 0;
 }
 .ceci-table th:nth-child(1),
 .ceci-table td:nth-child(1) { width: 72px; min-width: 72px; max-width: 72px; }
 .ceci-table th:nth-child(2),
-.ceci-table td:nth-child(2) { width: 160px; min-width: 160px; max-width: 160px; }
+.ceci-table td:nth-child(2) { width: 230px; min-width: 230px; max-width: 230px; }
 .ceci-table th:nth-child(3),
 .ceci-table td:nth-child(3) { width: 150px; min-width: 150px; max-width: 150px; }
 .ceci-table th:nth-child(4),
@@ -434,6 +434,17 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 .btn-dark { background: #21262d; color: var(--text-secondary); border: 1px solid var(--border); }
 .btn-dark:hover { background: #30363d; color: var(--text); }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-add {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  gap: 4px;
+  line-height: 1;
+}
+.btn-add svg {
+  width: 12px;
+  height: 12px;
+}
 
 /* Dropdown menus */
 .dropdown-menu {
@@ -695,7 +706,7 @@ select option {
       <div class="form-group"><label>Namespace <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;" type="text" id="net-namespace" placeholder="default"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="addNetwork()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="addNetwork()">Add</button>
       </div>
     </div>
   </div>
@@ -714,7 +725,7 @@ select option {
       <div class="form-group"><label>Address</label><input class="modal-input" style="width:100%;" type="text" id="vpn-client-address" placeholder="e.g. 10.0.0.2"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('vpnclient')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="addVpnClient()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="addVpnClient()">Add</button>
       </div>
     </div>
   </div>
@@ -739,7 +750,7 @@ select option {
       <div class="form-group"><label>Lease Until</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="date" id="user-lease"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="userCancelEdit()">Cancel</button>
-        <button class="btn btn-dark btn-sm" id="user-dialog-submit" onclick="addUser()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" id="user-dialog-submit" onclick="addUser()">Add</button>
       </div>
     </div>
   </div>
@@ -778,7 +789,7 @@ select option {
       <div class="form-group"><label>Password <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="password" id="bgp-nei-password" placeholder=""></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('bgp-neighbor')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="bgpAddNeighbor()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="bgpAddNeighbor()">Add</button>
       </div>
     </div>
   </div>
@@ -795,7 +806,7 @@ select option {
       <div class="form-group"><label>Address (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-address-value" placeholder="e.g. 192.168.1.1/24"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('router-address')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="routerAddAddress()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="routerAddAddress()">Add</button>
       </div>
     </div>
   </div>
@@ -813,7 +824,7 @@ select option {
       <div class="form-group"><label>Address (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="router-iface-address" placeholder="e.g. 192.168.1.1/24"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="routerIfaceCancel()">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="routerIfaceSubmit()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="routerIfaceSubmit()">Add</button>
       </div>
     </div>
   </div>
@@ -840,7 +851,7 @@ select option {
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('router-redirect')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="routerAddRedirect()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="routerAddRedirect()">Add</button>
       </div>
     </div>
   </div>
@@ -883,7 +894,7 @@ select option {
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="ipsecCancelEdit()">Cancel</button>
-        <button class="btn btn-dark btn-sm" id="ipsec-tunnel-submit" onclick="ipsecAddTunnel()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" id="ipsec-tunnel-submit" onclick="ipsecAddTunnel()">Add</button>
       </div>
     </div>
   </div>
@@ -900,7 +911,7 @@ select option {
       <div class="form-group"><label>Prefix (CIDR)</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" type="text" id="bgp-prefix-value" placeholder="e.g. 10.0.0.0/8"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('bgp-prefix')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="bgpAddPrefix()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="bgpAddPrefix()">Add</button>
       </div>
     </div>
   </div>
@@ -916,7 +927,7 @@ select option {
       <div class="form-group"><label>Subnet (CIDR)</label><input class="modal-input" style="width:100%;" type="text" id="router-private-subnet" placeholder="e.g. 192.168.1.0/24"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('router-private')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="routerAddPrivate()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="routerAddPrivate()">Add</button>
       </div>
     </div>
   </div>
@@ -947,7 +958,7 @@ select option {
         <label>HTTP Backends</label>
         <div id="ceci-http-backends-list" style="display:flex;flex-direction:column;gap:10px;"></div>
         <div style="display:flex;justify-content:flex-start;">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="ceciAddBackendRow()">
+          <button type="button" class="btn btn-ghost btn-sm btn-add" onclick="ceciAddBackendRow()">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Backend
           </button>
@@ -968,7 +979,7 @@ select option {
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="ceciCancelEdit()">Cancel</button>
-        <button class="btn btn-dark btn-sm" id="ceci-entry-submit" onclick="ceciAddEntry()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" id="ceci-entry-submit" onclick="ceciAddEntry()">Add</button>
       </div>
     </div>
   </div>
@@ -997,7 +1008,7 @@ select option {
       <!-- Routes Tab -->
       <div class="modal-tab-pane" id="net-tab-routes">
         <div class="modal-form-row" style="justify-content:flex-end;">
-          <button class="btn btn-dark btn-sm" onclick="openAddDialog('network-route')">
+          <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('network-route')">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Route
           </button>
@@ -1007,7 +1018,7 @@ select option {
       <!-- Outputs Tab -->
       <div class="modal-tab-pane" id="net-tab-outputs">
         <div class="modal-form-row" style="justify-content:flex-end;">
-          <button class="btn btn-dark btn-sm" onclick="openAddDialog('network-output')">
+          <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('network-output')">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Output
           </button>
@@ -1047,7 +1058,7 @@ select option {
       <div class="form-group"><label>NextHop <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-route-nexthop" type="text" placeholder="e.g. 192.168.1.1"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-route')">Cancel</button>
-        <button class="btn btn-dark btn-sm" onclick="modalAddRoute()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" onclick="modalAddRoute()">Add</button>
       </div>
     </div>
   </div>
@@ -1075,7 +1086,7 @@ select option {
       <div class="form-group" id="network-out-crypt-group"><label>Crypt</label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-out-crypt" type="text" placeholder="e.g. aes-256:my-secret-key"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-output')">Cancel</button>
-        <button class="btn btn-dark btn-sm" id="network-output-submit" onclick="modalSaveOutput()">Add</button>
+        <button class="btn btn-dark btn-sm btn-add" id="network-output-submit" onclick="modalSaveOutput()">Add</button>
       </div>
     </div>
   </div>
@@ -1369,7 +1380,7 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5.5" y2="16.5"/><line x1="12" y1="8" x2="18.5" y2="16.5"/></svg>
                 Virtual Network
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('network')">
+              <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('network')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Network
               </button>
@@ -1393,11 +1404,11 @@ select option {
               </span>
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
                 <div class="form-group" style="min-width:180px;">
-                  <select id="vpn-clients-network-filter" onchange="onVpnClientsNetworkFilterChange()" style="min-width:180px;padding:5px 10px;font-size:12px;line-height:1.2;">
+                  <select id="vpn-clients-network-filter" onchange="onVpnClientsNetworkFilterChange()" style="min-width:180px;height:28px;padding:0 10px;font-size:12px;line-height:1;box-sizing:border-box;">
                     <option value="">All Networks</option>
                   </select>
                 </div>
-                <button class="btn btn-dark btn-sm" onclick="openAddDialog('vpnclient')">
+                <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('vpnclient')">
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Add Client
                 </button>
@@ -1451,7 +1462,7 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                 Neighbors
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('bgp-neighbor')">
+              <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('bgp-neighbor')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add
               </button>
@@ -1505,7 +1516,7 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
                 Private Subnets
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('router-private')">
+              <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('router-private')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add
               </button>
@@ -1521,7 +1532,7 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/></svg>
                 Redirect
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('router-redirect')">
+              <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('router-redirect')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add
               </button>
@@ -1556,7 +1567,7 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
                 Tunnels
               </span>
-              <button class="btn btn-dark btn-sm" onclick="openAddDialog('ipsec-tunnel')">
+              <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('ipsec-tunnel')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add
               </button>
@@ -1589,10 +1600,10 @@ select option {
             <div class="section-header">
               <span class="section-title">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
-                Ceci Entries
+                Ceci Instance
               </span>
               <div class="dropdown" style="position:relative;display:inline-block;">
-                <button class="btn btn-dark btn-sm" onclick="toggleDropdown('ceci-mode-dropdown')">
+                <button class="btn btn-dark btn-sm btn-add" onclick="toggleDropdown('ceci-mode-dropdown')">
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Add Entry
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:4px;"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1635,7 +1646,7 @@ select option {
                     <option value="">All Networks</option>
                   </select>
                 </div>
-                <button class="btn btn-dark btn-sm" onclick="openAddDialog('user')">
+                <button class="btn btn-dark btn-sm btn-add" onclick="openAddDialog('user')">
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Add User
                 </button>
@@ -2444,6 +2455,7 @@ async function load_special_nav() {
 }
 
 async function restartIpsecTunnel(local, remote, protocol) {
+  if (!await showConfirm('Restart tunnel ' + local + ' ↔ ' + remote + '?', 'Restart Tunnel')) return;
   try {
     await api_put('/api/network/ipsec/tunnel/restart', { local, remote, protocol });
     show_toast('Tunnel restarting', 'success');
@@ -3112,20 +3124,55 @@ function ceciEntryHtml(item) {
   return ceciTargetHtml(item && item.target);
 }
 
-function ceciFormatMinuteTime(value) {
+function ceciParseTimeValue(value) {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  const parts = raw.split(/\s+/);
-  if (parts.length < 2) return raw;
-  const hhmm = parts[1].includes(':') ? parts[1].slice(0, 5) : parts[1];
-  const tz = parts.length >= 4 ? parts[3] : (parts.length >= 3 ? parts[2] : '');
-  return tz ? parts[0] + ' ' + hhmm + ' ' + tz : parts[0] + ' ' + hhmm;
+  if (!raw) return null;
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})(?::(\d{2}))?(?:\s+([+-]\d{4})(?:\s+UTC)?)?(?:\s+UTC)?$/);
+  if (m) {
+    const date = m[1];
+    const time = m[2];
+    const sec = m[3] || '00';
+    const zone = m[4];
+    const iso = zone
+      ? date + 'T' + time + ':' + sec + zone.slice(0, 3) + ':' + zone.slice(3)
+      : date + 'T' + time + ':' + sec + 'Z';
+    const parsed = new Date(iso);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function ceciFormatRelativeTime(value) {
+  const parsed = ceciParseTimeValue(value);
+  if (!parsed) return String(value || '').trim();
+  const diff = Date.now() - parsed.getTime();
+  const future = diff < 0;
+  const abs = Math.abs(diff);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  let text;
+  if (abs < minute) {
+    text = 'just now';
+  } else if (abs < hour) {
+    text = Math.floor(abs / minute) + 'm';
+  } else if (abs < day) {
+    const h = Math.floor(abs / hour);
+    const m = Math.floor((abs % hour) / minute);
+    text = m > 0 ? h + 'h ' + m + 'm' : h + 'h';
+  } else {
+    const d = Math.floor(abs / day);
+    const h = Math.floor((abs % day) / hour);
+    text = h > 0 ? d + 'd ' + h + 'h' : d + 'd';
+  }
+  return future ? ('in ' + text) : (text + ' ago');
 }
 
 function ceciStatsHtml(stats) {
   if (!stats) return '<span class="td-muted">-</span>';
   return [
-    stats.startAt ? '<div class="td-mono" style="font-size:12px;line-height:1.6;" title="' + esc(stats.startAt) + '">Started ' + esc(ceciFormatMinuteTime(stats.startAt)) + '</div>' : '',
+    stats.startAt ? '<div class="td-mono" style="font-size:12px;line-height:1.6;" title="' + esc(stats.startAt) + '">Started ' + esc(ceciFormatRelativeTime(stats.startAt)) + '</div>' : '',
     '<div class="td-mono" style="font-size:12px;line-height:1.6;">Total Requests ' + esc(String(stats.total || 0)) + '</div>',
     '<div class="td-mono" style="font-size:12px;line-height:1.6;">Bytes Transferred ' + esc(fmt_bytes(stats.bytes || 0)) + '</div>'
   ].join('');
@@ -3357,6 +3404,7 @@ async function ceciDelTcp(index) {
 async function ceciRestartEntry(index) {
   const item = _ceciTcpEntries[index];
   if (!item) return;
+  if (!await showConfirm('Restart ceci entry ' + (item.listen || '-') + '?', 'Restart Ceci')) return;
   try {
     await api_put('/api/network/ceci/proxy/restart', { listen: item.listen });
     show_toast('Ceci entry restarting', 'success');
@@ -3792,6 +3840,7 @@ async function disableNetworkOpenVPN() {
 async function restartNetworkOpenVPN() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
+  if (!await showConfirm('Restart OpenVPN for network "' + n.name + '"?', 'Restart OpenVPN')) return;
   try {
     await api_post('/api/network/' + encodeURIComponent(n.name) + '/openvpn/restart', {});
     show_toast('OpenVPN restarting', 'success');

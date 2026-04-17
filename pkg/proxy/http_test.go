@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,21 +12,21 @@ import (
 	co "github.com/luscis/openlan/pkg/config"
 )
 
-func TestHttpProxyIsAuthNetworkFilter(t *testing.T) {
+func TestHttpProxyIsAuthShortNameLookup(t *testing.T) {
 	h := &HttpProxy{
 		cfg: &co.HttpProxy{
 			Network: "guest",
 		},
-		pass: map[string]string{
-			"alice": "secret",
+		pass: map[string]*passAuth{
+			"alice": &passAuth{Password: "secret"},
 		},
 	}
 
 	if !h.isAuth("alice", "secret") {
 		t.Fatalf("expected alice to authenticate")
 	}
-	if h.isAuth("alice@guest", "secret") {
-		t.Fatalf("expected alice@guest to be rejected without exact username match")
+	if !h.isAuth("alice@guest", "secret") {
+		t.Fatalf("expected alice@guest to authenticate through shortname lookup")
 	}
 	if h.isAuth("bob", "secret") {
 		t.Fatalf("expected bob to be rejected without exact username match")
@@ -34,9 +36,9 @@ func TestHttpProxyIsAuthNetworkFilter(t *testing.T) {
 func TestHttpProxyIsAuthNoDefaultFallback(t *testing.T) {
 	h := &HttpProxy{
 		cfg: &co.HttpProxy{},
-		pass: map[string]string{
-			"alice":         "secret",
-			"alice@default": "secret",
+		pass: map[string]*passAuth{
+			"alice":         &passAuth{Password: "secret"},
+			"alice@default": &passAuth{Password: "secret"},
 		},
 	}
 
@@ -57,6 +59,7 @@ func TestHttpProxyRefreshPass(t *testing.T) {
 
 	h := NewHttpProxy(&co.HttpProxy{
 		Password: file,
+		Network:  "guest",
 	}, nil)
 
 	if !h.isAuth("alice", "old") {
@@ -136,7 +139,7 @@ func TestHttpProxyLoadPassIgnoresTrailingFields(t *testing.T) {
 	}
 }
 
-func TestHttpProxyLoadPassKeepsRawUserWithoutNetwork(t *testing.T) {
+func TestHttpProxyLoadPassKeepsRawUserWithNetwork(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "password")
 	if err := os.WriteFile(file, []byte("alice@example:secret\n"), 0600); err != nil {
@@ -145,16 +148,61 @@ func TestHttpProxyLoadPassKeepsRawUserWithoutNetwork(t *testing.T) {
 
 	h := NewHttpProxy(&co.HttpProxy{
 		Password: file,
+		Network:  "example",
 	}, nil)
 
 	h.passLock.RLock()
 	defer h.passLock.RUnlock()
 
 	if _, ok := h.pass["alice"]; !ok {
-		t.Fatalf("expected short username to be kept when network is unset")
+		t.Fatalf("expected short username to be kept when network matches")
 	}
 	if _, ok := h.pass["alice@example"]; ok {
 		t.Fatalf("expected network info not to be stored in passmap")
+	}
+}
+
+func TestHttpProxyCheckAuthLease(t *testing.T) {
+	h := &HttpProxy{
+		cfg: &co.HttpProxy{
+			Network: "guest",
+		},
+		pass: map[string]*passAuth{
+			"alice": &passAuth{
+				Password: "secret",
+				Lease:    time.Now().Add(time.Hour),
+			},
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+	req.Header.Set("Proxy-Authorization", encodeBasicAuth("alice:secret"))
+	if !h.CheckAuth(httptest.NewRecorder(), req) {
+		t.Fatalf("expected valid lease to authenticate")
+	}
+}
+
+func TestHttpProxyCheckAuthExpiredLease(t *testing.T) {
+	h := &HttpProxy{
+		cfg: &co.HttpProxy{
+			Network: "guest",
+		},
+		pass: map[string]*passAuth{
+			"alice": &passAuth{
+				Password: "secret",
+				Lease:    time.Now().Add(-time.Hour),
+			},
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+	req.Header.Set("Proxy-Authorization", encodeBasicAuth("alice:secret"))
+	rec := httptest.NewRecorder()
+	if h.CheckAuth(rec, req) {
+		t.Fatalf("expected expired lease to be rejected")
+	}
+	if got := rec.Header().Get("Proxy-Authenticate"); got != "Basic" {
+		t.Fatalf("expected proxy auth challenge, got %q", got)
 	}
 }
 

@@ -26,6 +26,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type passAuth struct {
+	Password string
+	Lease    time.Time
+}
+
 type HttpRecord struct {
 	Count    int
 	LastAt   string
@@ -55,7 +60,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 type HttpProxy struct {
 	proxer    Proxyer
-	pass      map[string]string
+	pass      map[string]*passAuth
 	passMod   time.Time
 	passLock  sync.RWMutex
 	out       *libol.SubLogger
@@ -132,7 +137,7 @@ func NewHttpProxy(cfg *co.HttpProxy, px Proxyer) *HttpProxy {
 	h := &HttpProxy{
 		out:       libol.NewSubLogger(cfg.Listen),
 		cfg:       cfg,
-		pass:      make(map[string]string),
+		pass:      make(map[string]*passAuth),
 		api:       mux.NewRouter(),
 		requests:  make(map[string]*HttpRecord),
 		proxer:    px,
@@ -206,15 +211,23 @@ func (t *HttpProxy) loadPass() {
 		}
 		// Password lines may carry extra metadata after the password, for example:
 		// user@network:password:role:expires
-		// Only the first two fields matter for authentication.
+		// Only the first two fields matter for authentication, while the
+		// last field is used as the optional lease time.
 		columns := strings.SplitN(line, ":", 4)
 		if len(columns) < 2 {
 			continue
 		}
 		user := strings.TrimSpace(columns[0])
 		secret := strings.TrimSpace(columns[1])
+		lease := time.Time{}
+		if len(columns) > 3 {
+			lease, _ = libol.GetLeaseTime(strings.TrimSpace(columns[3]))
+		}
 		if name, network := parseUserNetwork(user); t.allowPassUser(network) {
-			passMap[name] = secret
+			passMap[name] = &passAuth{
+				Password: secret,
+				Lease:    lease,
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -228,10 +241,12 @@ func (t *HttpProxy) loadPass() {
 	t.passLock.Unlock()
 }
 
-func (t *HttpProxy) newPassMap() map[string]string {
-	pass := make(map[string]string)
+func (t *HttpProxy) newPassMap() map[string]*passAuth {
+	pass := make(map[string]*passAuth)
 	if user, secret := co.SplitSecret(t.cfg.Secret); user != "" {
-		pass[user] = secret
+		pass[user] = &passAuth{
+			Password: secret,
+		}
 		t.out.Debug("HttpProxy: Auth user %s", user)
 	}
 	return pass
@@ -259,8 +274,12 @@ func (t *HttpProxy) allowPassUser(network string) bool {
 func (t *HttpProxy) isAuth(username, password string) bool {
 	t.passLock.RLock()
 	defer t.passLock.RUnlock()
-	if p, ok := t.pass[username]; ok && p == password {
-		return true
+	name, _ := parseUserNetwork(username)
+	if p, ok := t.pass[name]; ok && p != nil && p.Password == password {
+		now := time.Now()
+		if p.Lease.Year() < 2000 || p.Lease.After(now) {
+			return true
+		}
 	}
 	return false
 }
