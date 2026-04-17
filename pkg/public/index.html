@@ -252,12 +252,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   border-color: var(--border);
   color: var(--text);
 }
-.kernel-network-filter {
+.modal-input.kernel-network-filter {
   min-width: 180px;
   height: 28px;
-  padding: 5px 10px;
+  padding: 0 10px;
   font-size: 12px;
-  line-height: 1.2;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 /* Tables */
@@ -295,19 +296,17 @@ table:not(.ceci-table) tbody tr:last-child td {
   border-spacing: 0;
 }
 .ceci-table th:nth-child(1),
-.ceci-table td:nth-child(1) { width: 72px; min-width: 72px; max-width: 72px; }
+.ceci-table td:nth-child(1) { min-width: 72px; }
 .ceci-table th:nth-child(2),
-.ceci-table td:nth-child(2) { width: 230px; min-width: 230px; max-width: 230px; }
+.ceci-table td:nth-child(2) { min-width: 230px; }
 .ceci-table th:nth-child(3),
-.ceci-table td:nth-child(3) { width: 150px; min-width: 150px; max-width: 150px; }
+.ceci-table td:nth-child(3) { min-width: 150px; }
 .ceci-table th:nth-child(4),
 .ceci-table td:nth-child(4) {
-  width: 240px;
   min-width: 240px;
-  max-width: 240px;
 }
 .ceci-table th:nth-child(5),
-.ceci-table td:nth-child(5) { width: 110px; min-width: 110px; max-width: 110px; }
+.ceci-table td:nth-child(5) { min-width: 110px; }
 .ceci-table td:nth-child(4),
 .ceci-table td:nth-child(5) {
   overflow-wrap: anywhere;
@@ -368,6 +367,38 @@ table:not(.ceci-table) tbody tr:last-child td {
 .table-actions .action-btn,
 .openvpn-actions .action-btn {
   border-radius: 0;
+}
+.openvpn-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 0;
+  background: #21262d;
+  color: var(--text);
+  box-shadow: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.ceci-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 0;
+  background: #21262d;
+  color: var(--text);
+  box-shadow: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.ceci-view-dropdown-up .dropdown-menu {
+  top: auto !important;
+  bottom: 100% !important;
+  margin-top: 0 !important;
+  margin-bottom: 4px !important;
 }
 .openvpn-actions .action-btn {
   border: none;
@@ -3346,7 +3377,7 @@ async function load_ceci() {
         '<td class="td-muted">' + esc(item.network || '-') + '</td>' +
         '<td>' + ceciStatsHtml(item.stats) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
-        '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button><button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button><button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></div></div></td>' +
+        '<td><div class="table-actions"><div class="table-actions-toolbar" style="overflow:visible;"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button><div class="dropdown ' + (i === _ceciTcpEntries.length - 1 ? 'ceci-view-dropdown-up' : '') + '" style="position:relative;display:inline-block;"><button type="button" class="ceci-view-toggle" onclick="toggleDropdown(\'ceci-view-dropdown-' + i + '\')">View</button><div id="ceci-view-dropdown-' + i + '" class="dropdown-menu hidden" style="position:absolute;top:100%;right:0;margin-top:4px;min-width:120px;"><div class="dropdown-item" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</div><div class="dropdown-item" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</div></div></div><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></div></div></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
@@ -3919,11 +3950,10 @@ function openNetModal(i) {
     ovpnHtml = '<div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
         '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
-        '<div class="table-actions-toolbar openvpn-actions">' +
+        '<div class="table-actions-toolbar openvpn-actions" style="overflow:visible;">' +
           '<button class="action-btn btn-detail" onclick="restartNetworkOpenVPN()" type="button">Restart</button>' +
           '<button class="action-btn action-delete" onclick="disableNetworkOpenVPN()" type="button">Disable</button>' +
-          '<button class="action-btn action-dark" onclick="viewOpenVPNLog(\'' + esc(n.name) + '\')" type="button">View Log</button>' +
-          '<button class="action-btn action-dark" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')" type="button">View .ovpn</button>' +
+          '<div class="dropdown" style="position:relative;display:inline-block;"><button type="button" class="openvpn-view-toggle" onclick="toggleDropdown(\'openvpn-view-dropdown\')">View</button><div id="openvpn-view-dropdown" class="dropdown-menu hidden" style="position:absolute;top:100%;right:0;margin-top:4px;min-width:120px;"><div class="dropdown-item" onclick="viewOpenVPNLog(\'' + esc(n.name) + '\')">View Log</div><div class="dropdown-item" onclick="viewOpenVPNProfile(\'' + esc(n.name) + '\')">View .ovpn</div></div></div>' +
         '</div>' +
       '</div>' +
       '<div style="margin-top:10px;">' +
@@ -3937,8 +3967,8 @@ function openNetModal(i) {
     ovpnHtml = '<div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
         '<div class="detail-section-title" style="margin:0;padding:0;border:none;">OpenVPN</div>' +
-        '<div class="table-actions-toolbar openvpn-actions">' +
-          '<button class="action-btn action-dark" onclick="openEnableNetworkOpenVPN()" type="button">Enable OpenVPN</button>' +
+        '<div class="table-actions-toolbar openvpn-actions" style="overflow:visible;">' +
+          '<button class="action-btn action-dark" onclick="openEnableNetworkOpenVPN()" type="button">Enable</button>' +
         '</div>' +
       '</div>' +
       '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">OpenVPN is disabled for this virtual network.</div>' +
