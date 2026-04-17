@@ -151,7 +151,107 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) rgba(255, 255, 255, 0.02);
 }
-.section-footer { padding: 8px 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); text-align: right; }
+.section-footer { padding: 8px 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); text-align: left; }
+.section-pager {
+  padding: 8px 16px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+.section-pager-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: fit-content;
+  overflow: hidden;
+  align-self: baseline;
+}
+.section-pager .pager-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+.section-pager .pager-info {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+.section-pager-card .pager-nav {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  min-width: 0;
+}
+.section-pager-card .pager-prev,
+.section-pager-card .pager-page-wrap,
+.section-pager-card .pager-next {
+  display: flex;
+  align-items: center;
+}
+.section-pager-card .pager-prev,
+.section-pager-card .pager-page-wrap {
+  border-right: 1px solid var(--border);
+}
+.section-pager-card .pager-prev,
+.section-pager-card .pager-page-wrap,
+.section-pager-card .pager-next {
+  padding: 0 4px;
+  min-height: 28px;
+}
+.section-pager-card .pager-prev {
+  flex: 0 0 auto;
+}
+.section-pager-card .pager-page-wrap {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+.section-pager-card .pager-next {
+  flex: 0 0 auto;
+  padding: 0 2px 0 0;
+}
+.section-pager-card .pager-nav .btn,
+.section-pager-card .pager-page-select {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+.section-pager-card .pager-next .btn {
+  justify-content: center;
+}
+.section-pager-card .pager-page-select {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  text-align: center;
+  text-align-last: center;
+  width: 54px;
+  min-width: 54px;
+  outline: none;
+  appearance: none;
+}
+.kernel-filter-input {
+  width: 180px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  height: 28px;
+  background: #21262d;
+  border-color: var(--border);
+  color: var(--text);
+}
 
 /* Tables */
 table { width: 100%; font-size: 13.5px; }
@@ -1334,6 +1434,11 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Kernel Routing Table
               </span>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+                <div class="form-group" style="margin:0;">
+                  <input class="modal-input kernel-filter-input" type="text" id="kernel-route-filter" oninput="onKernelRouteFilterChange()" placeholder="Filter destination">
+                </div>
+              </div>
             </div>
             <div class="section-body">
               <table>
@@ -1350,7 +1455,12 @@ select option {
                 </thead>
                 <tbody id="routes-tbody"></tbody>
               </table>
-              <div class="section-footer" id="routes-count">0</div>
+              <div class="section-pager">
+                <div class="pager-count" id="routes-count">0</div>
+                <div class="section-pager-card">
+                  <div id="routes-pager"></div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="section" style="margin-top:24px;">
@@ -1359,6 +1469,11 @@ select option {
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 ARP Neighbors
               </span>
+              <div style="display:flex;align-items:center;justify-content:flex-end;">
+                <div class="form-group" style="margin:0;">
+                  <input class="modal-input kernel-filter-input" type="text" id="kernel-neighbor-filter" oninput="onKernelNeighborFilterChange()" placeholder="Filter IPAddress">
+                </div>
+              </div>
             </div>
             <div class="section-body">
               <table>
@@ -1367,7 +1482,12 @@ select option {
                 </thead>
                 <tbody id="neighbors-tbody"></tbody>
               </table>
-              <div class="section-footer" id="neighbors-count">0</div>
+              <div class="section-pager">
+                <div class="pager-count" id="neighbors-count">0</div>
+                <div class="section-pager-card">
+                  <div id="neighbors-pager"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1659,7 +1779,12 @@ select option {
                 </thead>
                 <tbody id="users-tbody"></tbody>
               </table>
-              <div class="section-footer" id="users-count">0</div>
+              <div class="section-pager">
+                <div class="pager-count" id="users-count">0</div>
+                <div class="section-pager-card">
+                  <div id="users-pager"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1753,7 +1878,7 @@ select option {
 // =====================
 // State
 // =====================
-const MONITOR_PAGES = new Set(['overview', 'clients', 'routes']);
+const MONITOR_PAGES = new Set(['overview', 'clients']);
 const REFRESH_INTERVAL = 30;
 
 const State = {
@@ -2336,50 +2461,16 @@ async function load_routes() {
   } catch(e) {
     show_toast('Failed to load kernel routes: ' + e.message, 'error');
   }
-
-  const neighbors = Array.isArray(_kernelNeighbors) ? _kernelNeighbors : [];
-
-  document.getElementById('routes-count').textContent = routes.length;
-  const rb = document.getElementById('routes-tbody');
-  if (routes.length === 0) {
-    rb.innerHTML = '<tr class="empty-row"><td colspan="7">No routes found</td></tr>';
-  } else {
-    rb.innerHTML = routes.map(r => {
-      let nexthop = r.nexthop || '-';
-      let link = r.link || '-';
-      if (r.multipath && r.multipath.length > 0) {
-        nexthop = r.multipath.map(m => m.nexthop).join('<br>');
-        link = r.multipath.map(m => m.link).join('<br>');
-      }
-      return '<tr>' +
-        '<td>' + (r.table || '-') + '</td>' +
-        '<td><span class="badge badge-gray">' + (r.protocol || '-') + '</span></td>' +
-        '<td class="td-mono">' + (r.prefix || '-') + '</td>' +
-        '<td class="td-mono">' + nexthop + '</td>' +
-        '<td class="td-mono">' + link + '</td>' +
-        '<td class="td-mono">' + (r.source || '-') + '</td>' +
-        '<td>' + (r.metric || 0) + '</td>' +
-        '</tr>';
-    }).join('');
-  }
-
-  document.getElementById('neighbors-count').textContent = neighbors.length;
-  const nb = document.getElementById('neighbors-tbody');
-  if (neighbors.length === 0) {
-    nb.innerHTML = '<tr class="empty-row"><td colspan="4">No ARP entries found</td></tr>';
-  } else {
-    nb.innerHTML = neighbors.map(n => '<tr>' +
-      '<td class="td-mono">' + (n.address || '-') + '</td>' +
-      '<td class="td-mono td-muted">' + (n.hwaddr || '-') + '</td>' +
-      '<td class="td-mono">' + (n.link || '-') + '</td>' +
-      '<td>' + state_badge(n.state) + '</td>' +
-      '</tr>').join('');
-  }
+  _kernelRoutes = routes;
+  _kernelRoutePage = 1;
+  kernelRenderRoutesPage();
 }
 
 async function sync_kernel_neighbors() {
   const neighborData = await api_get('/api/kernel/neighbor');
   _kernelNeighbors = Array.isArray(neighborData) ? neighborData : [];
+  _kernelNeighborPage = 1;
+  kernelRenderNeighborsPage();
   return _kernelNeighbors;
 }
 
@@ -2591,7 +2682,180 @@ let _routerSystemIfaces = [];
 let _routerRedirects = [];
 let _routerAddresses = [];
 let _routerAddressDevice = '';
+let _kernelRoutes = [];
 let _kernelNeighbors = [];
+let _kernelRoutePage = 1;
+let _kernelNeighborPage = 1;
+let _kernelRouteFilter = '';
+let _kernelNeighborFilter = '';
+const _kernelPageSize = 20;
+const _kernelFilterWidth = '180px';
+
+function kernelClampPage(page, total, size) {
+  const pages = Math.max(1, Math.ceil(total / size));
+  return { page: Math.max(1, Math.min(page, pages)), pages: pages };
+}
+
+function kernelPageSlice(items, page, size) {
+  const start = (page - 1) * size;
+  return items.slice(start, start + size);
+}
+
+function kernelFilterMatch(value, filter) {
+  const q = String(filter || '').trim().toLowerCase();
+  if (!q) return true;
+  return String(value || '').toLowerCase().includes(q);
+}
+
+function getFilteredKernelRoutes() {
+  const routes = Array.isArray(_kernelRoutes) ? _kernelRoutes : [];
+  if (!_kernelRouteFilter) return routes.slice();
+  return routes.filter(r =>
+    kernelFilterMatch(r.prefix || '', _kernelRouteFilter) ||
+    kernelFilterMatch(r.link || '', _kernelRouteFilter) ||
+    kernelFilterMatch(r.source || '', _kernelRouteFilter)
+  );
+}
+
+function getFilteredKernelNeighbors() {
+  const neighbors = Array.isArray(_kernelNeighbors) ? _kernelNeighbors : [];
+  if (!_kernelNeighborFilter) return neighbors.slice();
+  return neighbors.filter(n =>
+    kernelFilterMatch(n.address || '', _kernelNeighborFilter) ||
+    kernelFilterMatch(n.link || '', _kernelNeighborFilter)
+  );
+}
+
+function kernelPagerHtml(prefix, page, total, size) {
+  const pages = Math.max(1, Math.ceil(total / size));
+  if (total <= size) return '';
+  let options = '';
+  for (let i = 1; i <= pages; i++) {
+    options += '<option value="' + i + '"' + (i === page ? ' selected' : '') + '>' + i + ' / ' + pages + '</option>';
+  }
+  return '' +
+    '<div class="pager-nav">' +
+      '<div class="pager-prev">' +
+        '<button class="btn btn-dark btn-sm" ' + (page <= 1 ? 'disabled ' : '') + 'onclick="' + prefix + 'PagePrev()">&larr; Prev</button>' +
+      '</div>' +
+      '<div class="pager-page-wrap">' +
+        '<select class="pager-page-select" onchange="kernelSetPage(\'' + prefix + '\', this.value)">' + options + '</select>' +
+      '</div>' +
+      '<div class="pager-next">' +
+        '<button class="btn btn-dark btn-sm" ' + (page >= pages ? 'disabled ' : '') + 'onclick="' + prefix + 'PageNext()">&rarr; Next</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function kernelSetPage(prefix, value) {
+  const page = parseInt(String(value).trim(), 10);
+  if (!page || page < 1) return;
+  if (prefix === 'kernelRoute') {
+    _kernelRoutePage = page;
+    kernelRenderRoutesPage();
+    return;
+  }
+  if (prefix === 'kernelNeighbor') {
+    _kernelNeighborPage = page;
+    kernelRenderNeighborsPage();
+    return;
+  }
+  if (prefix === 'users') {
+    _usersPage = page;
+    render_users_table();
+  }
+}
+
+function onKernelRouteFilterChange() {
+  const input = document.getElementById('kernel-route-filter');
+  _kernelRouteFilter = input ? input.value : '';
+  _kernelRoutePage = 1;
+  kernelRenderRoutesPage();
+}
+
+function onKernelNeighborFilterChange() {
+  const input = document.getElementById('kernel-neighbor-filter');
+  _kernelNeighborFilter = input ? input.value : '';
+  _kernelNeighborPage = 1;
+  kernelRenderNeighborsPage();
+}
+
+function kernelRenderRoutesPage() {
+  const routes = getFilteredKernelRoutes();
+  const state = kernelClampPage(_kernelRoutePage, routes.length, _kernelPageSize);
+  _kernelRoutePage = state.page;
+  document.getElementById('routes-count').textContent = routes.length;
+  const rb = document.getElementById('routes-tbody');
+  const pager = document.getElementById('routes-pager');
+  if (routes.length === 0) {
+    rb.innerHTML = '<tr class="empty-row"><td colspan="7">No routes found</td></tr>';
+    pager.innerHTML = '';
+    return;
+  }
+  const pageItems = kernelPageSlice(routes, _kernelRoutePage, _kernelPageSize);
+  rb.innerHTML = pageItems.map(r => {
+    let nexthop = r.nexthop || '-';
+    let link = r.link || '-';
+    if (r.multipath && r.multipath.length > 0) {
+      nexthop = r.multipath.map(m => m.nexthop).join('<br>');
+      link = r.multipath.map(m => m.link).join('<br>');
+    }
+    return '<tr>' +
+      '<td>' + (r.table || '-') + '</td>' +
+      '<td><span class="badge badge-gray">' + (r.protocol || '-') + '</span></td>' +
+      '<td class="td-mono">' + (r.prefix || '-') + '</td>' +
+      '<td class="td-mono">' + nexthop + '</td>' +
+      '<td class="td-mono">' + link + '</td>' +
+      '<td class="td-mono">' + (r.source || '-') + '</td>' +
+      '<td>' + (r.metric || 0) + '</td>' +
+      '</tr>';
+  }).join('');
+  pager.innerHTML = kernelPagerHtml('kernelRoute', _kernelRoutePage, routes.length, _kernelPageSize);
+}
+
+function kernelRenderNeighborsPage() {
+  const neighbors = getFilteredKernelNeighbors();
+  const state = kernelClampPage(_kernelNeighborPage, neighbors.length, _kernelPageSize);
+  _kernelNeighborPage = state.page;
+  document.getElementById('neighbors-count').textContent = neighbors.length;
+  const nb = document.getElementById('neighbors-tbody');
+  const pager = document.getElementById('neighbors-pager');
+  if (neighbors.length === 0) {
+    nb.innerHTML = '<tr class="empty-row"><td colspan="4">No ARP entries found</td></tr>';
+    pager.innerHTML = '';
+    return;
+  }
+  const pageItems = kernelPageSlice(neighbors, _kernelNeighborPage, _kernelPageSize);
+  nb.innerHTML = pageItems.map(n => '<tr>' +
+    '<td class="td-mono">' + (n.address || '-') + '</td>' +
+    '<td class="td-mono td-muted">' + (n.hwaddr || '-') + '</td>' +
+    '<td class="td-mono">' + (n.link || '-') + '</td>' +
+    '<td>' + state_badge(n.state) + '</td>' +
+    '</tr>').join('');
+  pager.innerHTML = kernelPagerHtml('kernelNeighbor', _kernelNeighborPage, neighbors.length, _kernelPageSize);
+}
+
+function kernelRoutePagePrev() {
+  _kernelRoutePage = Math.max(1, _kernelRoutePage - 1);
+  kernelRenderRoutesPage();
+}
+
+function kernelRoutePageNext() {
+  const pages = Math.max(1, Math.ceil(getFilteredKernelRoutes().length / _kernelPageSize));
+  _kernelRoutePage = Math.min(pages, _kernelRoutePage + 1);
+  kernelRenderRoutesPage();
+}
+
+function kernelNeighborPagePrev() {
+  _kernelNeighborPage = Math.max(1, _kernelNeighborPage - 1);
+  kernelRenderNeighborsPage();
+}
+
+function kernelNeighborPageNext() {
+  const pages = Math.max(1, Math.ceil(getFilteredKernelNeighbors().length / _kernelPageSize));
+  _kernelNeighborPage = Math.min(pages, _kernelNeighborPage + 1);
+  kernelRenderNeighborsPage();
+}
 
 async function load_router() {
   try {
@@ -4220,6 +4484,8 @@ async function load_about() {
 // =====================
 let _usersData = [];
 let _usersNetworkFilter = '';
+let _usersPage = 1;
+const _usersPageSize = 20;
 
 function render_users_filter() {
   const sel = document.getElementById('users-network-filter');
@@ -4242,13 +4508,19 @@ function get_filtered_users() {
 
 function render_users_table() {
   const users = get_filtered_users();
-  document.getElementById('users-count').textContent = users.length;
+  const state = kernelClampPage(_usersPage, users.length, _usersPageSize);
+  _usersPage = state.page;
+  const pageUsers = kernelPageSlice(users, _usersPage, _usersPageSize);
+  const countEl = document.getElementById('users-count');
+  if (countEl) countEl.textContent = users.length;
+  const pager = document.getElementById('users-pager');
+  if (pager) pager.innerHTML = kernelPagerHtml('users', _usersPage, users.length, _usersPageSize);
   const ub = document.getElementById('users-tbody');
-  if (users.length === 0) {
+  if (pageUsers.length === 0) {
     ub.innerHTML = '<tr class="empty-row"><td colspan="5">' + (_usersNetworkFilter ? 'No users found in this network' : 'No users found') + '</td></tr>';
     return;
   }
-  ub.innerHTML = users.map(u => {
+  ub.innerHTML = pageUsers.map(u => {
     const originalIndex = _usersData.indexOf(u);
     const fullName = (u.name || '-') + ((u && u.network) ? ('@' + u.network) : '');
     return '<tr>' +
@@ -4268,6 +4540,19 @@ function render_users_table() {
 function onUsersNetworkFilterChange() {
   const sel = document.getElementById('users-network-filter');
   _usersNetworkFilter = sel ? sel.value : '';
+  _usersPage = 1;
+  render_users_table();
+}
+
+function usersPagePrev() {
+  _usersPage = Math.max(1, _usersPage - 1);
+  render_users_table();
+}
+
+function usersPageNext() {
+  const users = get_filtered_users();
+  const pages = Math.max(1, Math.ceil(users.length / _usersPageSize));
+  _usersPage = Math.min(pages, _usersPage + 1);
   render_users_table();
 }
 
@@ -4275,6 +4560,7 @@ async function load_users() {
   try {
     const users = await api_get('/api/user');
     _usersData = Array.isArray(users) ? users : [];
+    _usersPage = 1;
     render_users_filter();
     render_users_table();
   } catch(e) {
