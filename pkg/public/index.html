@@ -252,6 +252,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   border-color: var(--border);
   color: var(--text);
 }
+.kernel-network-filter {
+  min-width: 180px;
+  height: 28px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
 
 /* Tables */
 table { width: 100%; font-size: 13.5px; }
@@ -282,8 +289,8 @@ table:not(.ceci-table) tbody tr:last-child td {
 }
 .ceci-table {
   table-layout: fixed;
-  width: 1262px;
-  min-width: 1262px;
+  width: max-content;
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -300,15 +307,7 @@ table:not(.ceci-table) tbody tr:last-child td {
   max-width: 240px;
 }
 .ceci-table th:nth-child(5),
-.ceci-table td:nth-child(5) {
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
-}
-.ceci-table th:nth-child(6),
-.ceci-table td:nth-child(6) { width: 110px; min-width: 110px; max-width: 110px; }
-.ceci-table th:nth-child(7),
-.ceci-table td:nth-child(7) { width: 220px; min-width: 220px; max-width: 220px; }
+.ceci-table td:nth-child(5) { width: 110px; min-width: 110px; max-width: 110px; }
 .ceci-table td:nth-child(4),
 .ceci-table td:nth-child(5) {
   overflow-wrap: anywhere;
@@ -1743,7 +1742,7 @@ select option {
             <div class="section-body ceci-table-section">
               <div class="ceci-table-scroll">
                 <table class="ceci-table">
-                  <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Target</th><th>Stats</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Mode</th><th>Listen</th><th>Network</th><th>Stats</th><th>Status</th><th></th></tr></thead>
                   <tbody id="ceci-tcp-tbody"></tbody>
                 </table>
               </div>
@@ -1762,7 +1761,7 @@ select option {
               </span>
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
                 <div class="form-group" style="min-width:180px;">
-                  <select id="users-network-filter" onchange="onUsersNetworkFilterChange()" style="min-width:180px;padding:5px 10px;font-size:12px;line-height:1.2;">
+                  <select id="users-network-filter" class="modal-input kernel-network-filter" onchange="onUsersNetworkFilterChange()">
                     <option value="">All Networks</option>
                   </select>
                 </div>
@@ -3337,7 +3336,7 @@ async function load_ceci() {
     _ceciTcpEntries = Array.isArray(entries) ? entries : [];
     document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
     if (_ceciTcpEntries.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No Ceci entries</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No Ceci entries</td></tr>';
       return;
     }
     tbody.innerHTML = _ceciTcpEntries.map((item, i) =>
@@ -3345,16 +3344,15 @@ async function load_ceci() {
         '<td><span class="badge badge-blue">' + esc(item.mode || 'tcp') + '</span></td>' +
         '<td class="td-mono">' + esc(item.listen || '-') + '</td>' +
         '<td class="td-muted">' + esc(item.network || '-') + '</td>' +
-        '<td>' + ceciEntryHtml(item) + '</td>' +
         '<td>' + ceciStatsHtml(item.stats) + '</td>' +
         '<td>' + statusBadge(item.status, 'Not running') + '</td>' +
-        '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></div><div class="table-actions-toolbar"><button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button><button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button></div></div></td>' +
+        '<td><div class="table-actions"><div class="table-actions-toolbar"><button class="action-btn btn-detail" onclick="ceciRestartEntry(' + i + ')">Restart</button><button class="action-btn action-dark" onclick="ceciOpenEdit(' + i + ')">Edit</button><button class="action-btn action-dark" onclick="viewCeciTcpLog(\'' + esc(item.listen || '') + '\')">View Log</button><button class="action-btn action-dark" onclick="viewCeciYaml(\'' + esc(item.listen || '') + '\')">View YAML</button><button class="action-btn action-delete" onclick="ceciDelTcp(' + i + ')">Remove</button></div></div></td>' +
       '</tr>'
     ).join('');
   } catch(e) {
     _ceciTcpEntries = [];
     document.getElementById('ceci-tcp-count').textContent = '0';
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Failed to load Ceci entries</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Failed to load Ceci entries</td></tr>';
     show_toast('Failed to load ceci network: ' + e.message, 'error');
   }
 }
