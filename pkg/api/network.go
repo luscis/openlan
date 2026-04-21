@@ -735,16 +735,17 @@ func (h RouterInterface) List(w http.ResponseWriter, r *http.Request) {
 	for _, d := range libol.ListPhyLinks() {
 		if d.Type == "device" || d.Type == "vlan" {
 			values = append(values, schema.Device{
-				Network: "router",
-				Name:    d.Name,
-				Mtu:     d.Mtu,
-				Mac:     d.Mac,
-				Recv:    d.Recv,
-				Send:    d.Send,
-				Drop:    d.Drop,
-				State:   d.State,
-				Type:    d.Type,
-				Address: cn.GetDevAddr(d.Name),
+				Network:   "router",
+				Name:      d.Name,
+				Mtu:       d.Mtu,
+				Mac:       d.Mac,
+				Recv:      d.Recv,
+				Send:      d.Send,
+				Drop:      d.Drop,
+				State:     d.State,
+				LinkState: d.LinkState,
+				Type:      d.Type,
+				Address:   cn.GetDevAddr(d.Name),
 			})
 		}
 	}

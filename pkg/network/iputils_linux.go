@@ -3,9 +3,9 @@ package network
 import (
 	"os/exec"
 	"strconv"
-	"strings"
 
 	nl "github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 func LinkAdd(name string, opts ...string) ([]byte, error) {
@@ -84,16 +84,17 @@ func GetDevInfo(name string) DeviceInfo {
 	if link, err := nl.LinkByName(name); err == nil {
 		attr := link.Attrs()
 		state := "down"
-		if strings.Contains(attr.Flags.String(), "up") {
+		if attr.Flags&unix.IFF_UP != 0 {
 			state = "up"
 		}
 		return DeviceInfo{
-			State: state,
-			Drop:  attr.Statistics.RxDropped,
-			Recv:  attr.Statistics.RxBytes,
-			Send:  attr.Statistics.TxBytes,
-			Mac:   attr.HardwareAddr.String(),
-			Mtu:   attr.MTU,
+			State:     state,
+			LinkState: attr.OperState.String(),
+			Drop:      attr.Statistics.RxDropped,
+			Recv:      attr.Statistics.RxBytes,
+			Send:      attr.Statistics.TxBytes,
+			Mac:       attr.HardwareAddr.String(),
+			Mtu:       attr.MTU,
 		}
 	}
 	return DeviceInfo{}

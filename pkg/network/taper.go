@@ -12,13 +12,14 @@ const (
 )
 
 type DeviceInfo struct {
-	Send    uint64 `json:"send"`
-	Recv    uint64 `json:"recv"`
-	Drop    uint64 `json:"drop"`
-	Mac     string `json:"mac"`
-	Address uint64 `json:"address"`
-	Mtu     int    `json:"mtu"`
-	State   string `json:"state"`
+	Send      uint64 `json:"send"`
+	Recv      uint64 `json:"recv"`
+	Drop      uint64 `json:"drop"`
+	Mac       string `json:"mac"`
+	Address   uint64 `json:"address"`
+	Mtu       int    `json:"mtu"`
+	State     string `json:"state"`
+	LinkState string `json:"linkState,omitempty"`
 }
 
 type Taper interface {

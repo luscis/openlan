@@ -230,14 +230,15 @@ func ListPhyLinks() []Device {
 				state = "up"
 			}
 			dev = append(dev, Device{
-				Name:  attr.Name,
-				Mtu:   attr.MTU,
-				Mac:   attr.HardwareAddr.String(),
-				State: state,
-				Drop:  attr.Statistics.RxDropped,
-				Recv:  attr.Statistics.RxBytes,
-				Send:  attr.Statistics.TxBytes,
-				Type:  t,
+				Name:      attr.Name,
+				Mtu:       attr.MTU,
+				Mac:       attr.HardwareAddr.String(),
+				State:     state,
+				LinkState: attr.OperState.String(),
+				Drop:      attr.Statistics.RxDropped,
+				Recv:      attr.Statistics.RxBytes,
+				Send:      attr.Statistics.TxBytes,
+				Type:      t,
 			})
 		}
 	}

@@ -255,9 +255,9 @@ type RouterInterface struct {
 
 func (s RouterInterface) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "name"}} {{ps -18 "address"}} {{ps -13 "mtu"}} {{ps -18 "mac"}} {{ps -22 "Statistics"}} {{ps -8 "Speed"}}
+{{ps -15 "name"}} {{ps -18 "address"}} {{ps -13 "mtu"}} {{ps -18 "mac"}} {{ps -8 "admin"}} {{ps -8 "link"}} {{ps -22 "Statistics"}} {{ps -8 "Speed"}}
 {{- range . }}
-{{ps -15 .Name}} {{ps -18 .Address}} {{pi -13 .Mtu}} {{ps -18 .Mac}} {{pi 10 .Recv}}/{{pi -10 .Send}}/{{pi -2 .Drop}} {{pb .RxSpeed}}/{{pb .TxSpeed}}
+{{ps -15 .Name}} {{ps -18 .Address}} {{pi -13 .Mtu}} {{ps -18 .Mac}} {{ps -8 .State}} {{ps -8 .LinkState}} {{pi 10 .Recv}}/{{pi -10 .Send}}/{{pi -2 .Drop}} {{pb .RxSpeed}}/{{pb .TxSpeed}}
 {{- end }}
 `
 }

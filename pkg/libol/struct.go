@@ -38,12 +38,13 @@ func (c ConnStats) String() string {
 }
 
 type Device struct {
-	Name  string
-	Send  uint64
-	Recv  uint64
-	Drop  uint64
-	Mac   string
-	State string
-	Mtu   int
-	Type  string
+	Name      string
+	Send      uint64
+	Recv      uint64
+	Drop      uint64
+	Mac       string
+	State     string
+	LinkState string
+	Mtu       int
+	Type      string
 }

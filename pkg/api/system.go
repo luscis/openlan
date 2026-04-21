@@ -149,15 +149,16 @@ func ListDevices() []schema.Device {
 			name := br.L3Name()
 			sts := cn.GetDevInfo(name)
 			values = append(values, schema.Device{
-				Network: c.Name,
-				Name:    name,
-				Address: cn.GetDevAddr(name),
-				Mtu:     sts.Mtu,
-				Mac:     sts.Mac,
-				Recv:    sts.Recv,
-				Send:    sts.Send,
-				Drop:    sts.Drop,
-				State:   sts.State,
+				Network:   c.Name,
+				Name:      name,
+				Address:   cn.GetDevAddr(name),
+				Mtu:       sts.Mtu,
+				Mac:       sts.Mac,
+				Recv:      sts.Recv,
+				Send:      sts.Send,
+				Drop:      sts.Drop,
+				State:     sts.State,
+				LinkState: sts.LinkState,
 			})
 		}
 		// OpenVPN device
@@ -165,15 +166,16 @@ func ListDevices() []schema.Device {
 			name := c.OpenVPN.Device
 			sts := cn.GetDevInfo(name)
 			values = append(values, schema.Device{
-				Network: c.Name,
-				Name:    name,
-				Address: cn.GetDevAddr(name),
-				Mtu:     sts.Mtu,
-				Mac:     sts.Mac,
-				Recv:    sts.Recv,
-				Send:    sts.Send,
-				Drop:    sts.Drop,
-				State:   sts.State,
+				Network:   c.Name,
+				Name:      name,
+				Address:   cn.GetDevAddr(name),
+				Mtu:       sts.Mtu,
+				Mac:       sts.Mac,
+				Recv:      sts.Recv,
+				Send:      sts.Send,
+				Drop:      sts.Drop,
+				State:     sts.State,
+				LinkState: sts.LinkState,
 			})
 		}
 	}
@@ -182,17 +184,19 @@ func ListDevices() []schema.Device {
 		if l == nil {
 			break
 		}
+		l.GetState()
 		name := l.Device
 		sts := cn.GetDevInfo(name)
 		values = append(values, schema.Device{
-			Network: l.Network,
-			Name:    name,
-			Mtu:     sts.Mtu,
-			Mac:     sts.Mac,
-			Recv:    sts.Recv,
-			Send:    sts.Send,
-			Drop:    sts.Drop,
-			State:   sts.State,
+			Network:   l.Network,
+			Name:      name,
+			Mtu:       sts.Mtu,
+			Mac:       sts.Mac,
+			Recv:      sts.Recv,
+			Send:      sts.Send,
+			Drop:      sts.Drop,
+			State:     sts.State,
+			LinkState: sts.LinkState,
 		})
 	}
 
@@ -204,29 +208,31 @@ func ListDevices() []schema.Device {
 		name := a.IfName
 		sts := cn.GetDevInfo(name)
 		values = append(values, schema.Device{
-			Network: a.Network,
-			Name:    name,
-			Mtu:     sts.Mtu,
-			Mac:     sts.Mac,
-			Recv:    sts.Recv,
-			Send:    sts.Send,
-			Drop:    sts.Drop,
-			State:   sts.State,
+			Network:   a.Network,
+			Name:      name,
+			Mtu:       sts.Mtu,
+			Mac:       sts.Mac,
+			Recv:      sts.Recv,
+			Send:      sts.Send,
+			Drop:      sts.Drop,
+			State:     sts.State,
+			LinkState: sts.LinkState,
 		})
 	}
 
 	// Physical links
 	for _, d := range libol.ListPhyLinks() {
 		values = append(values, schema.Device{
-			Network: "-",
-			Name:    d.Name,
-			Mtu:     d.Mtu,
-			Mac:     d.Mac,
-			Recv:    d.Recv,
-			Send:    d.Send,
-			Drop:    d.Drop,
-			State:   d.State,
-			Address: cn.GetDevAddr(d.Name),
+			Network:   "-",
+			Name:      d.Name,
+			Mtu:       d.Mtu,
+			Mac:       d.Mac,
+			Recv:      d.Recv,
+			Send:      d.Send,
+			Drop:      d.Drop,
+			State:     d.State,
+			LinkState: d.LinkState,
+			Address:   cn.GetDevAddr(d.Name),
 		})
 	}
 	for k, v := range values {

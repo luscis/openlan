@@ -1360,7 +1360,8 @@ select option {
                   <tr>
                     <th>Network</th>
                     <th>Device</th>
-                    <th>State</th>
+                    <th>Admin</th>
+                    <th>Link</th>
                     <th>MTU</th>
                     <th>MAC</th>
                     <th>Addresses</th>
@@ -1654,7 +1655,7 @@ select option {
             </div>
             <div class="section-body">
               <table>
-                <thead><tr><th>Interface</th><th>VLAN</th><th>MAC</th><th>Address</th><th>State</th></tr></thead>
+                <thead><tr><th>Interface</th><th>VLAN</th><th>MAC</th><th>Address</th><th>Admin</th><th>Link</th></tr></thead>
                 <tbody id="router-iface-tbody"></tbody>
               </table>
             </div>
@@ -2329,7 +2330,7 @@ function render_overview(d) {
   document.getElementById('devices-count').textContent = devs.length;
   const devBody = document.getElementById('devices-tbody');
   if (devs.length === 0) {
-    devBody.innerHTML = '<tr class="empty-row"><td colspan="8">No devices found</td></tr>';
+    devBody.innerHTML = '<tr class="empty-row"><td colspan="9">No devices found</td></tr>';
   } else {
     devBody.innerHTML = devs.map(dev => {
       const addrs = (dev.address || []).join('<br>') || '-';
@@ -2337,6 +2338,7 @@ function render_overview(d) {
         '<td>' + (dev.network || '-') + '</td>' +
         '<td class="td-mono">' + (dev.name || '-') + '</td>' +
         '<td>' + state_badge(dev.state) + '</td>' +
+        '<td>' + state_badge(dev.linkState) + '</td>' +
         '<td>' + (dev.mtu || '-') + '</td>' +
         '<td class="td-mono td-muted">' + (dev.mac || '-') + '</td>' +
         '<td class="td-mono" style="font-size:12px;">' + addrs + '</td>' +
@@ -2919,7 +2921,7 @@ async function load_router() {
       const id = vlan ? (display.device + '.' + vlan) : display.device;
       cfgNames.add(id);
       const sys = sysMap[id] || {};
-      merged.push({ name: id, _displayDevice: display.device, _device: c.device, _deleteVlan: rawVlan, address: routerDeviceAddresses(id, sys.address, c.address, cfgAddressMap), state: sys.state || '-', network: sys.network || '-', vlan, _canDel: true });
+      merged.push({ name: id, _displayDevice: display.device, _device: c.device, _deleteVlan: rawVlan, address: routerDeviceAddresses(id, sys.address, c.address, cfgAddressMap), mac: sys.mac || '-', state: sys.state || '-', linkState: sys.linkState || '-', network: sys.network || '-', vlan, _canDel: true });
     });
     _routerIfaces.forEach(f => {
       const name = f.name || f.device || '';
@@ -2935,20 +2937,21 @@ async function load_router() {
         const display = parseRouterIfaceDevice(device, 0);
         const vlan = display.vlan;
         const id = vlan ? (display.device + '.' + vlan) : display.device;
-        merged.push({ name: id, _displayDevice: display.device, _device: device, address: routerDeviceAddresses(device, '', '', cfgAddressMap), state: '-', vlan, _canDel: false });
+        merged.push({ name: id, _displayDevice: display.device, _device: device, address: routerDeviceAddresses(device, '', '', cfgAddressMap), state: '-', linkState: '-', vlan, _canDel: false });
       }
     });
     _routerIfaces = merged;
     const tb = document.getElementById('router-iface-tbody');
     tb.innerHTML = _routerIfaces.length === 0
-      ? '<tr class="empty-row"><td colspan="5">No interfaces</td></tr>'
+      ? '<tr class="empty-row"><td colspan="6">No interfaces</td></tr>'
       : _routerIfaces.map((f, i) =>
           '<tr>' +
           '<td class="td-mono" style="font-weight:600;">' + esc(f._displayDevice || f.name || f._device || '-') + '</td>' +
           '<td class="td-muted">' + (f.vlan ? f.vlan : '-') + '</td>' +
           '<td class="td-mono td-muted">' + esc(f.mac || '-') + '</td>' +
           '<td>' + routerAddrTags(f, i) + '</td>' +
-          '<td><span class="badge ' + (f.state === 'up' ? 'badge-green' : 'badge-gray') + '">' + esc(f.state || '-') + '</span></td>' +
+          '<td>' + state_badge(f.state) + '</td>' +
+          '<td>' + state_badge(f.linkState) + '</td>' +
           '</tr>'
         ).join('');
   } catch(e) {
