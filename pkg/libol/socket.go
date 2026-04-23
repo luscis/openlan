@@ -228,7 +228,7 @@ func (s *SocketClientImpl) negotiate() error {
 	}
 	Cmd("SocketClientImpl.negotiate %s %x", action, params)
 	sum := md5.Sum(key)
-	if bytes.Compare(sum[:md5.Size], params) != 0 {
+	if !bytes.Equal(sum[:md5.Size], params) {
 		return NewErr("negotiate key failed: %x != %x", key, params)
 	}
 	if block := s.message.Crypt(); block != nil {

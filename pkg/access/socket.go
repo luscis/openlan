@@ -304,7 +304,7 @@ func (t *SocketWorker) onLogin(resp []byte) error {
 	} else {
 		t.authState.Store(0)
 		t.client.SetStatus(libol.ClUnAuth)
-		t.out.Error("SocketWorker.onLogin: %s", resp)
+		t.out.Error("SocketWorker.onLogin: invalid credentials")
 	}
 	return nil
 }
