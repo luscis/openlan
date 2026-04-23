@@ -11,6 +11,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type user struct {
@@ -171,6 +172,10 @@ func (w *user) CheckLDAP(obj *models.User) *models.User {
 }
 
 func (w *user) Check(obj *models.User) (*models.User, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(obj.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
 	if w.Cert != "" {
 		pemData, err := os.ReadFile(w.Cert)
 		if err != nil {
@@ -193,7 +198,7 @@ func (w *user) Check(obj *models.User) (*models.User, error) {
 	}
 	if u := w.Get(obj.Id()); u != nil {
 		if u.Role == "" || u.Role == "admin" || u.Role == "guest" {
-			if u.Password == obj.Password {
+			if bcrypt.CompareHashAndPassword([]byte(hash), []byte(u.Password)) == nil {
 				t0 := time.Now()
 				t1 := u.Lease
 				if t1.Year() < 2000 || t1.After(t0) {
@@ -206,7 +211,7 @@ func (w *user) Check(obj *models.User) (*models.User, error) {
 	if u := w.CheckLDAP(obj); u != nil {
 		return u, nil
 	}
-	return nil, libol.NewErr("wrong password")
+	return nil, libol.NewErr("invalid credentials")
 }
 
 func (w *user) GetLDAP() *libol.LDAPService {
