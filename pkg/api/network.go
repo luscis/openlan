@@ -329,7 +329,10 @@ func (h Network) AddVPN(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	worker.AddVPN(value)
+	if err := worker.AddVPN(value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseJson(w, true)
 }
 

@@ -741,6 +741,72 @@ tbody td { padding: 10px 16px; color: var(--text); vertical-align: middle; }
 .modal-form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .modal-input { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: #0d1117; color: var(--text); font-size: 13px; }
 .modal-input:focus { outline: none; border-color: var(--primary); }
+.ovpn-cipher-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #21262d;
+}
+.ovpn-cipher-option {
+  display: inline-flex;
+  align-items: stretch;
+  position: relative;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.ovpn-cipher-option:hover {
+  transform: translateY(-1px);
+}
+.ovpn-cipher-option input[type="checkbox"]:focus-visible {
+  outline: none;
+}
+.ovpn-cipher-option input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+.ovpn-cipher-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid #30363d;
+  border-radius: 999px;
+  background: #161b22;
+  color: #c9d1d9;
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.ovpn-cipher-label::before {
+  content: none;
+}
+.ovpn-cipher-option:hover .ovpn-cipher-label {
+  border-color: #4b5563;
+  color: #e6edf3;
+}
+.ovpn-cipher-option input[type="checkbox"]:focus-visible + .ovpn-cipher-label {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.22);
+  border-color: #58a6ff;
+}
+.ovpn-cipher-option input[type="checkbox"]:checked + .ovpn-cipher-label {
+  border-color: #58a6ff;
+  background: rgba(56, 139, 253, 0.18);
+  color: #dbe8ff;
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .ovpn-cipher-group {
+    gap: 8px;
+  }
+}
 .about-shell { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
 .about-hero {
   display: grid; grid-template-columns: 72px 1fr auto; gap: 18px; align-items: center;
@@ -1237,7 +1303,17 @@ select option {
         </select>
       </div>
       <div class="form-group"><label>Subnet <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-subnet" type="text" placeholder="e.g. 10.8.0.0/24"></div>
-      <div class="form-group"><label>Cipher <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label><input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-ovpn-cipher" type="text" placeholder="e.g. AES-256-GCM"></div>
+      <div class="form-group">
+        <label>Cipher <span style="color:var(--text-muted);font-weight:400;">(optional, multi-select)</span></label>
+        <div id="network-ovpn-cipher-group" class="ovpn-cipher-group">
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="AES-128-GCM"><span class="ovpn-cipher-label">AES-128-GCM</span></label>
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="AES-128-CBC"><span class="ovpn-cipher-label">AES-128-CBC</span></label>
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="AES-256-CBC"><span class="ovpn-cipher-label">AES-256-CBC</span></label>
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="AES-256-GCM"><span class="ovpn-cipher-label">AES-256-GCM</span></label>
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="SM4-CBC"><span class="ovpn-cipher-label">SM4-CBC</span></label>
+          <label class="ovpn-cipher-option"><input type="checkbox" class="network-ovpn-cipher-option" value="SM4-GCM"><span class="ovpn-cipher-label">SM4-GCM</span></label>
+        </div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-openvpn')">Cancel</button>
         <button class="btn btn-dark btn-sm" onclick="enableNetworkOpenVPN()">Enable</button>
@@ -4002,9 +4078,30 @@ function openEnableNetworkOpenVPN() {
   document.getElementById('network-ovpn-listen').value = ovpn.listen || ':1194';
   document.getElementById('network-ovpn-protocol').value = ovpn.protocol || 'tcp';
   document.getElementById('network-ovpn-subnet').value = ovpn.subnet || '';
-  document.getElementById('network-ovpn-cipher').value = ovpn.cipher || '';
+  setOpenVPNCipherSelection(ovpn.cipher || '');
   openAddDialog('network-openvpn');
   setTimeout(() => document.getElementById('network-ovpn-listen').focus(), 50);
+}
+
+const OPENVPN_CIPHER_OPTIONS = ['AES-128-GCM', 'AES-128-CBC', 'AES-256-CBC', 'AES-256-GCM', 'SM4-CBC', 'SM4-GCM'];
+
+function setOpenVPNCipherSelection(cipher) {
+  const picked = new Set(String(cipher || '').split(':').map(v => v.trim().toUpperCase()).filter(Boolean));
+  document.querySelectorAll('.network-ovpn-cipher-option').forEach(el => {
+    el.checked = picked.has(String(el.value || '').toUpperCase());
+  });
+}
+
+function getOpenVPNCipherSelection() {
+  const selected = [];
+  const seen = new Set();
+  OPENVPN_CIPHER_OPTIONS.forEach(cipher => {
+    const el = document.querySelector('.network-ovpn-cipher-option[value="' + cipher + '"]');
+    if (!el || !el.checked || seen.has(cipher)) return;
+    seen.add(cipher);
+    selected.push(cipher);
+  });
+  return selected.join(':');
 }
 
 function bridgeMssValue(bridge) {
@@ -4098,7 +4195,7 @@ async function enableNetworkOpenVPN() {
   const listen = document.getElementById('network-ovpn-listen').value.trim();
   const protocol = document.getElementById('network-ovpn-protocol').value;
   const subnet = document.getElementById('network-ovpn-subnet').value.trim();
-  const cipher = document.getElementById('network-ovpn-cipher').value.trim();
+  const cipher = getOpenVPNCipherSelection();
   if (!listen) { show_toast('Listen is required', 'error'); return; }
   try {
     const body = { listen, protocol };

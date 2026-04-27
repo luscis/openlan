@@ -29,7 +29,7 @@ type OpenVPN struct {
 	Script    string           `json:"-" yaml:"-"`
 	Push      []string         `json:"push,omitempty" yaml:"push,omitempty"`
 	Clients   []*OpenVPNClient `json:"clients,omitempty" yaml:"clients,omitempty"`
-	Cipher    string           `json:"cipher,omitempty" yaml:"cipher,omitempty"` // AES-256-GCM:AES-128-GCM:SM4-GCM:SM4-CBC
+	Cipher    string           `json:"cipher,omitempty" yaml:"cipher,omitempty"` // AES-128-GCM:AES-128-CBC:AES-256-CBC:AES-256-GCM:SM4-CBC:SM4-GCM
 }
 
 type OpenVPNClient struct {
@@ -54,6 +54,52 @@ var defaultVpn = &OpenVPN{
 	DhPem:     VarDir("openvpn/dh.pem"),
 	TlsAuth:   VarDir("openvpn/ta.key"),
 	Script:    "/usr/bin/openlan",
+}
+
+var OpenVPNCipherOptions = []string{
+	"AES-128-GCM",
+	"AES-128-CBC",
+	"AES-256-CBC",
+	"AES-256-GCM",
+	"SM4-CBC",
+	"SM4-GCM",
+}
+
+var openVPNCipherSet = map[string]struct{}{
+	"AES-128-GCM": {},
+	"AES-128-CBC": {},
+	"AES-256-CBC": {},
+	"AES-256-GCM": {},
+	"SM4-CBC":     {},
+	"SM4-GCM":     {},
+}
+
+func NormalizeOpenVPNCipher(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+
+	items := strings.Split(value, ":")
+	picked := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+
+	for _, item := range items {
+		item = strings.ToUpper(strings.TrimSpace(item))
+		if item == "" {
+			continue
+		}
+		if _, ok := openVPNCipherSet[item]; !ok {
+			return "", libol.NewErr("unsupported openvpn cipher: %s", item)
+		}
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		picked = append(picked, item)
+	}
+
+	return strings.Join(picked, ":"), nil
 }
 
 func (o *OpenVPN) AuthBin(obj *OpenVPN) string {
@@ -97,6 +143,11 @@ func (o *OpenVPN) Correct(pool, network string) {
 	if o.Subnet == "" {
 		value, _ := strconv.Atoi(port)
 		o.Subnet = fmt.Sprintf("%s.%d.0/24", pool, value&0xff)
+	}
+	if cipher, err := NormalizeOpenVPNCipher(o.Cipher); err == nil {
+		o.Cipher = cipher
+	} else {
+		o.Cipher = ""
 	}
 
 	for _, c := range o.Clients {

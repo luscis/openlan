@@ -756,12 +756,16 @@ func (w *WorkerImpl) AddVPN(value schema.OpenVPN) error {
 	if w.vpn != nil {
 		return libol.NewErr("openvpn is running")
 	}
+	cipher, err := co.NormalizeOpenVPNCipher(value.Cipher)
+	if err != nil {
+		return err
+	}
 	cfg := &co.OpenVPN{
 		Listen:   value.Listen,
 		Protocol: value.Protocol,
 		Push:     value.Push,
 		Subnet:   value.Subnet,
-		Cipher:   value.Cipher,
+		Cipher:   cipher,
 	}
 	cfg.Correct(w.cfg.AddrPool, w.cfg.Name)
 	w.cfg.OpenVPN = cfg
