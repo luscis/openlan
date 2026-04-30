@@ -1,10 +1,10 @@
 SHELL := /bin/bash
 
 .ONESHELL:
-.PHONY: docker linux darwin darwin-zip windows windows-zip test vendor
+.PHONY: image linux darwin darwin-zip windows windows-zip test vendor
 
 ## version
-LSB = $(shell lsb_release -i -s)$(shell lsb_release -r -s)
+LSB = $(shell lsb_release -i -s | tr '[:upper:]' '[:lower:]')
 VER = $(shell ./dist/version.sh)
 
 ## declare directory
@@ -34,7 +34,7 @@ help: ## show make targets
 	printf " \033[36m%-20s\033[0m  %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 ## all platform
-bin: linux windows darwin ## build all platform binary
+all: linux windows darwin ## build all platform binary
 
 ## prepare environment
 init:
@@ -62,48 +62,42 @@ config:
 	gzip -f config.tar
 
 builder:
-	docker run -d -it \
-	--env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
-	--volume $(SD)/:/root/openlan --volume $(shell echo ~)/.ssh:/root/.ssh \
-	--name openlan_bur debian:bullseye bash
-	docker exec openlan_bur bash -c "apt update && apt install -y git lsb-release wget make gcc devscripts"
-	docker exec openlan_bur bash -c "apt install -y net-tools make build-essential libnss3-dev pkg-config libevent-dev libunbound-dev bison flex libsystemd-dev libcurl4-nss-dev libpam0g-dev libcap-ng-dev libldns-dev xmlto"
-	docker exec openlan_bur badh -c "apt install -y htmldoc libaudit-dev libkrb5-dev libldap2-dev libnss3-tools libselinux1-dev man2html"
-	docker exec openlan_bur bash -c "wget https://golang.google.cn/dl/go1.24.12.linux-amd64.tar.gz && tar -xf go1.24.12.linux-amd64.tar.gz -C /usr/local"
-	docker exec openlan_bur bash -c "cd /usr/local/bin && ln -s ../go/bin/go . && ln -s ../go/bin/gofmt ."
-	docker exec openlan_bur git config --global --add safe.directory /root/openlan
-	docker exec openlan_bur git config --global --add safe.directory /root/openlan/dist/cert
+	docker run -d -it --env HOME="/root/openlan" --env http_proxy="${http_proxy}" --env https_proxy="${https_proxy}" \
+	--volume $(SD)/:/root/openlan --volume $(shell echo ~)/.ssh:/root/.ssh --name openbui debian:bullseye bash
+	docker exec openbui bash -c "apt update && apt install -y git lsb-release wget make gcc devscripts"
+	docker exec openbui bash -c "apt install -y net-tools make build-essential libnss3-dev pkg-config libevent-dev libunbound-dev bison flex libsystemd-dev libcurl4-nss-dev libpam0g-dev libcap-ng-dev libldns-dev xmlto"
+	docker exec openbui bash -c "apt install -y htmldoc libaudit-dev libkrb5-dev libldap2-dev libnss3-tools libselinux1-dev man2html"
+	docker exec openbui bash -c "wget https://go.dev/dl/go1.24.12.linux-amd64.tar.gz && tar -xf go1.24.12.linux-amd64.tar.gz -C /usr/local"
+	docker exec openbui bash -c "cd /usr/local/bin && rm -f go gofmt && ln -s /usr/local/go/bin/go . && ln -s /usr/local/go/bin/gofmt ."
+	docker exec openbui git config --global --add safe.directory /root/openlan
+	docker exec openbui git config --global --add safe.directory /root/openlan/dist/cert
 
 ## build libreswan
 # wget http://deb.debian.org/debian/pool/main/libr/libreswan/libreswan_4.10.orig.tar.gz
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-docker-rhel: docker-bin ## build image for redhat
+im-rhel: bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
-	cd $(BD) && \
-	sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file centos/Dockerfile .
 
-docker-deb: docker-bin ## build image for debian
+im-deb: bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
-	cd $(BD) && \
-	sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
+	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file debian/Dockerfile .
 
-docker-bin:
-	docker exec openlan_bur bash -c "cd /root/openlan && make linux-bin"
+bin:
+	docker exec openbui bash -c "cd ~ && make linux-bin"
 
-docker-tar:
-	docker exec openlan_bur bash -c "cd /root/openlan && make linux-tar"
+tar:
+	docker exec openbui bash -c "cd ~ && make linux-tar"
 
-docker: docker-deb ## build docker images
+image: im-deb ## build docker images
 
-docker-builder: builder ## create a builder
-
-docker-compose: ## create a compose files
+compose: ## create a compose files
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
 	cp -rvf ./dist/rootfs/{var,etc} /tmp/openlan.c && \
 	cp -rvf ./docker/docker-compose.yml /tmp/openlan.c  && \
@@ -135,7 +129,7 @@ linux-tar: install ## build linux packages
 	gzip -f $(BD)/$(LIN_DIR).tar
 
 linux-bin: update linux-tar ## build linux install binary
-	@cat $(SD)/dist/rootfs/var/openlan/script/install.sh > $(BD)/$(LIN_DIR).bin && \
+	@cat $(SD)/dist/install.sh > $(BD)/$(LIN_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
 	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \
 	chmod +x $(BD)/$(LIN_DIR).bin && \

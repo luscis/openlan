@@ -3,11 +3,10 @@ Description=OpenLAN Central Switch daemon
 After=network.target
 
 [Service]
-Type=notify
+Type=once
 EnvironmentFile=/etc/sysconfig/openlan/switch.cfg
 ExecStart=/var/openlan/script/switch.sh start $OPTIONS
 LimitNOFILE=102400
-Restart=always
 
 [Install]
 WantedBy=multi-user.target

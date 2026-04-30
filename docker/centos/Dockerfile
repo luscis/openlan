@@ -9,8 +9,8 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/*.repo && \
     sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/*.repo
 
 ADD ${linux_bin} /tmp
-RUN DOCKER=yes /tmp/${linux_bin}
-RUN rm -rvf /tmp/* && yum clean all
+RUN /tmp/${linux_bin} --nosysm --verbose
+RUN yum clean all && rm -rf /var/cache/yum/* /tmp/*
 
 LABEL application="OpenLAN Network Solutions"
 LABEL maintainer="danieldin95@163.com"

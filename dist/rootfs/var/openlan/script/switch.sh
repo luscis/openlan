@@ -5,27 +5,34 @@ set -ex
 cs_dir="/etc/openlan/switch"
 
 function prepare() {
-    sysctl -p /etc/sysctl.d/90-openlan.conf
+    sysctl -p /etc/sysctl.d/90-openlan.conf || true
+
+    local t=""
+    local c=""
+    local chains=""
+    local sets=""
+    local s=""
+    local dir=""
 
     for t in raw mangle filter nat; do
-        chains=$(iptables -t $t -S | grep -e '^-N TT_' -e '^-N AT_' -e '^-N ZT_' -e '-N Qos_' | awk '{print $2}')
-        for c in $chains;do
-            iptables --wait -t $t -F $c
-            #iptables --wait -t $t -X $c
+        chains="$(iptables -t "$t" -S 2>/dev/null | awk '/^-N (TT_|AT_|ZT_|Qos_)/ {print $2}')"
+        for c in $chains; do
+            iptables --wait -t "$t" -F "$c" || true
+            iptables --wait -t "$t" -X "$c" || true
         done
     done
 
     # new directory.
     mkdir -p /var/openlan/{cert,openvpn,access,dhcp,ceci}
 
-    sets=$(ipset list | grep '^Name: tt'| awk '{print $2}')
+    sets="$(ipset list 2>/dev/null | awk '/^Name: tt/ {print $2}')"
     for s in $sets; do
-        ipset destroy $s
+        ipset destroy "$s" || true
     done
 
     ## START: clean older files.
     /usr/bin/env find /var/openlan/access -type f -delete
-    /usr/bin/env find /var/openlan/openvpn -type f -mindepth 2 -maxdepth 2 -delete
+    /usr/bin/env find /var/openlan/openvpn -mindepth 2 -maxdepth 2 -type f -delete
     ## END
 
     ## START: prepare external dir.
@@ -34,7 +41,7 @@ function prepare() {
     done
     ## END
 
-    [ -e $cs_dir/switch.json ] || cat > $cs_dir/switch.json << EOF
+    [ -e "$cs_dir/switch.json" ] || cat > "$cs_dir/switch.json" << EOF
 {
     "crypt": {
         "secret": "cb2ff088a34d"
@@ -43,7 +50,7 @@ function prepare() {
 EOF
 
     ## START: install default network
-    [ -e $cs_dir/network/ipsec.json ] || cat > $cs_dir/network/ipsec.json << EOF
+    [ -e "$cs_dir/network/ipsec.json" ] || cat > "$cs_dir/network/ipsec.json" << EOF
 {
     "name": "ipsec",
     "provider": "ipsec",
@@ -51,7 +58,7 @@ EOF
 }
 EOF
 
-    [ -e $cs_dir/network/bgp.json ] || cat > $cs_dir/network/bgp.json << EOF
+    [ -e "$cs_dir/network/bgp.json" ] || cat > "$cs_dir/network/bgp.json" << EOF
 {
     "name": "bgp",
     "provider": "bgp",
@@ -59,7 +66,7 @@ EOF
 }
 EOF
 
-    [ -e $cs_dir/network/ceci.json ] || cat > $cs_dir/network/ceci.json << EOF
+    [ -e "$cs_dir/network/ceci.json" ] || cat > "$cs_dir/network/ceci.json" << EOF
 {
     "name": "ceci",
     "provider": "ceci",
@@ -67,7 +74,7 @@ EOF
 }
 EOF
 
-    [ -e $cs_dir/network/router.json ] || cat > $cs_dir/network/router.json << EOF
+    [ -e "$cs_dir/network/router.json" ] || cat > "$cs_dir/network/router.json" << EOF
 {
     "name": "router",
     "provider": "router",
@@ -77,10 +84,26 @@ EOF
     ## END
 }
 
+# wai 120s for ipsec to be ready, otherwise switch may fail to start and cause a reboot loop.
+max_wait=120
 function wait_ipsec() {
-    while ! ipsec status > /dev/null; do
-        sleep 5
+    local begin=$(date +%s)
+    local now=0
+    local waited=0
+    local interval=5
+
+    while ! ipsec status > /dev/null 2>&1; do
+        now=$(date +%s)
+        waited=$(( now - begin ))
+        if [ "$waited" -ge "$max_wait" ]; then
+            echo "WARN: ipsec is still unavailable after ${max_wait}s, continue startup."
+            return 0
+        fi
+        echo "INFO: waiting for ipsec to be ready, waited ${waited}s so far ..."
+        sleep "$interval"
     done
+
+    echo "INFO: ipsec is ready after ${waited}s."
 }
 
 child=0
@@ -89,85 +112,110 @@ running="yes"
 last=0
 
 function handler_exit() {
-    kill $child & wait $child
     running="no"
+    if [ "$child" -gt 0 ] && kill -0 "$child" 2>/dev/null; then
+        kill "$child" 2>/dev/null || true
+        wait "$child" 2>/dev/null || true
+    fi
+    if [ "$jobs" -gt 0 ] && kill -0 "$jobs" 2>/dev/null; then
+        kill "$jobs" 2>/dev/null || true
+        wait "$jobs" 2>/dev/null || true
+    fi
 }
 
 options="-conf:dir $cs_dir -log:level 20"
 
 function start_switch {
-    echo "exec openlan-switch $options"
-    exec /usr/bin/openlan-switch $options & child=$!
-    trap handler_exit SIGINT SIGTERM
     last=$(date +%s)
-    wait $child
+    echo "INFO: start openlan-switch $options"
+    /usr/bin/openlan-switch $options & child=$!
+    local pid=$child
+    wait "$pid"
+    local rc=$?
+    child=0
+    echo "WARN: openlan-switch exited with code $rc"
+    return "$rc"
 }
 
 function set_cpus() {
+    local state_file="/tmp/lastpids"
     local lastpids=""
+    local switch_pid=""
+    local pids=""
     local nowpids=""
-    if [ -e /tmp/lastpids ]; then
-        lastpids=$(cat /tmp/lastpids)
-    fi
-
-    local pid=$(pidof openlan-switch)
-    if [ "$pid"x == ""x ]; then
-        return
-    fi
-
-    local pids=$(pidof openvpn | xargs -n1 | sort -n | xargs)
-    if [ "$pids"x == ""x ]; then
-        return
-    fi
-
-    nowpids="$pid $pids"
-    if [ "$lastpids"x == "$nowpids"x ]; then
-       return
-    fi
-
-    # Set openlan-switch.
-    echo "$nowpids" > /tmp/lastpids
-    taskset -pc 0 $pid # set switch affinity to cpu0
     local offset=1
-
-    # Set openvpn daemon.
+    local total_cpus=0
+    local worker_cpus=0
     local c=0
-    local cpus=$(nproc)
-    local cpus=$(( cpus - offset ))
+    local pid=""
+
+    if [ -e "$state_file" ]; then
+        lastpids="$(<"$state_file")"
+    fi
+
+    switch_pid="$(pidof openlan-switch 2>/dev/null | awk '{print $1}')"
+    [ -n "$switch_pid" ] || return
+
+    pids="$(pidof openvpn 2>/dev/null | tr ' ' '\n' | awk '/^[0-9]+$/' | sort -n | xargs)"
+    [ -n "$pids" ] || return
+
+    nowpids="$switch_pid $pids"
+    [ "$lastpids" != "$nowpids" ] || return
+
+    # Set openlan-switch to cpu0.
+    echo "$nowpids" > "$state_file"
+    taskset -pc 0 "$switch_pid"
+
+    # Spread openvpn daemons on remaining CPUs.
+    total_cpus="$(nproc)"
+    worker_cpus=$(( total_cpus - offset ))
+    if [ "$worker_cpus" -le 0 ]; then
+        echo "WARN: skip openvpn cpu binding, no cpu left after reserving cpu0."
+        return
+    fi
+
     for pid in $pids; do
-        taskset -pc $((c + offset )) $pid
-        c=$(( (c + 1) % cpus ));
+        taskset -pc $(( c + offset )) "$pid"
+        c=$(( (c + 1) % worker_cpus ))
     done
 }
 
 function start_jobs() {
-    local cpus=$(nproc)
-    if [ $cpus -lt 4 ]; then
+    local cpus=0
+    local interval=10
+
+    cpus="$(nproc)"
+    if [ "$cpus" -lt 4 ]; then
+        echo "INFO: skip cpu affinity jobs, cpu cores=$cpus (<4)."
         return
     fi
 
     if [ -e /tmp/lastpids ]; then
-        rm -vf /tmp/lastpids
+        rm -f /tmp/lastpids
     fi
 
-    while [ true ]; do
-        sleep 10
+    while [ "$running" = "yes" ]; do
         set_cpus
+        sleep "$interval"
     done
 }
 
 prepare
-wait_ipsec
 
 set +ex
+wait_ipsec
+
+trap handler_exit SIGINT SIGTERM
 start_jobs & jobs=$!
-start_switch
 while [ "$running"x == "yes"x ]; do
+    start_switch
+    if [ "$running"x != "yes"x ]; then
+        break
+    fi
     now=$(date +%s)
     during=$(( now - last ))
     if [ $during -lt 5 ]; then
-        echo "Supress booting switch after 5s."
+        echo "INFO: suppress reboot loop, wait 5s before restart."
         sleep 5
     fi
-    start_switch
 done
