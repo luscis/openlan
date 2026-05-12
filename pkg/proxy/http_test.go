@@ -18,7 +18,7 @@ func TestHttpProxyIsAuthShortNameLookup(t *testing.T) {
 			Network: "guest",
 		},
 		pass: map[string]*passAuth{
-			"alice": &passAuth{Password: "secret"},
+			"alice": {Password: "secret"},
 		},
 	}
 
@@ -37,8 +37,8 @@ func TestHttpProxyIsAuthNoDefaultFallback(t *testing.T) {
 	h := &HttpProxy{
 		cfg: &co.HttpProxy{},
 		pass: map[string]*passAuth{
-			"alice":         &passAuth{Password: "secret"},
-			"alice@default": &passAuth{Password: "secret"},
+			"alice":         {Password: "secret"},
+			"alice@default": {Password: "secret"},
 		},
 	}
 
@@ -168,7 +168,7 @@ func TestHttpProxyCheckAuthLease(t *testing.T) {
 			Network: "guest",
 		},
 		pass: map[string]*passAuth{
-			"alice": &passAuth{
+			"alice": {
 				Password: "secret",
 				Lease:    time.Now().Add(time.Hour),
 			},
@@ -188,7 +188,7 @@ func TestHttpProxyCheckAuthExpiredLease(t *testing.T) {
 			Network: "guest",
 		},
 		pass: map[string]*passAuth{
-			"alice": &passAuth{
+			"alice": {
 				Password: "secret",
 				Lease:    time.Now().Add(-time.Hour),
 			},

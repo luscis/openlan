@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -114,8 +115,8 @@ func (n *NameProxy) Forward(name, addr, nexthop string) {
 	if runtime.GOOS == "linux" {
 		opts = []string{"metric", fmt.Sprintf("%d", n.cfg.Metric)}
 	}
-	if nexthop == "" || nexthop == "local" {
-		n.out.Info("NameProxy.Forward: local <- %s via %s ", name, addr)
+	if strings.HasPrefix(nexthop, "local") {
+		n.out.Info("NameProxy.Forward: %s <- %s via %s ", nexthop, name, addr)
 		return
 	}
 	if out, err := network.RouteAdd("", addr, nexthop, opts...); err != nil {
