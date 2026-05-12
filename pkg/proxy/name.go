@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"fmt"
+	"net"
 	"runtime"
 	"sync"
 	"time"
@@ -58,6 +59,9 @@ type NameProxy struct {
 	names  map[string]*AddrCache
 	addrs  map[string]*NameCache
 	access []*access.Access
+	rlLock sync.Mutex
+	rlTick int64
+	rlStat map[string]int
 }
 
 func NewNameProxy(cfg *config.NameProxy) *NameProxy {
@@ -67,9 +71,34 @@ func NewNameProxy(cfg *config.NameProxy) *NameProxy {
 		out:    libol.NewSubLogger(cfg.Listen),
 		names:  make(map[string]*AddrCache),
 		addrs:  make(map[string]*NameCache),
+		rlStat: make(map[string]int),
 	}
 	n.Initialize()
 	return n
+}
+
+func (n *NameProxy) allowDNS(conn dns.ResponseWriter) bool {
+	if n.cfg.Rate <= 0 {
+		return true
+	}
+
+	addr := conn.RemoteAddr().String()
+	host, _, err := net.SplitHostPort(addr)
+	if err == nil {
+		addr = host
+	}
+	now := time.Now().Unix()
+
+	n.rlLock.Lock()
+	defer n.rlLock.Unlock()
+
+	if now != n.rlTick {
+		n.rlTick = now
+		n.rlStat = make(map[string]int)
+	}
+
+	n.rlStat[addr]++
+	return n.rlStat[addr] <= n.cfg.Rate
 }
 
 func (n *NameProxy) Initialize() {
@@ -84,6 +113,10 @@ func (n *NameProxy) Forward(name, addr, nexthop string) {
 	opts := []string{}
 	if runtime.GOOS == "linux" {
 		opts = []string{"metric", fmt.Sprintf("%d", n.cfg.Metric)}
+	}
+	if nexthop == "" || nexthop == "local" {
+		n.out.Info("NameProxy.Forward: local <- %s via %s ", name, addr)
+		return
 	}
 	if out, err := network.RouteAdd("", addr, nexthop, opts...); err != nil {
 		n.out.Warn("Access.Forward: %s %s: %s", addr, err, out)
@@ -139,6 +172,17 @@ func (n *NameProxy) FindBackend(r *dns.Msg) *config.ForwardTo {
 }
 
 func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
+	if !n.allowDNS(conn) {
+		msg := new(dns.Msg)
+		msg.SetReply(r)
+		msg.Rcode = dns.RcodeRefused
+		if err := conn.WriteMsg(msg); err != nil {
+			n.out.Warn("NameProxy.handleDNS ratelimit write: %s", err)
+		}
+		n.out.Warn("NameProxy.handleDNS drop %s over %d requests/s", conn.RemoteAddr(), n.cfg.Rate)
+		return
+	}
+
 	client := &dns.Client{
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,

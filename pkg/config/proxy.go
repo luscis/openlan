@@ -242,6 +242,7 @@ type NameProxy struct {
 	Conf     string     `json:"-" yaml:"-"`
 	Listen   string     `json:"listen,omitempty" yaml:"listen,omitempty"`
 	Nameto   string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
+	Rate     int        `json:"ratelimit,omitempty" yaml:"ratelimit,omitempty"`
 	Metric   int        `json:"metric,omitempty" yaml:"metric,omitempty"`
 	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
 	Access   []*Access  `json:"access,omitempty" yaml:"access,omitempty"`

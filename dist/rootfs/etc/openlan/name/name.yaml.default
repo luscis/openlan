@@ -1,4 +1,5 @@
 listen: 127.0.0.1
+ratelimit: 60
 access:
 - connection: <remote-server>
   protocol: tcp
