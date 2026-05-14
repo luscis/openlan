@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"fmt"
-	"net"
 	"runtime"
 	"strings"
 	"sync"
@@ -16,6 +15,8 @@ import (
 )
 
 const CacheTimeout = 5
+const DefaultCacheTimeout = 2 * time.Minute
+const CacheLogInterval = 5 * time.Second
 
 type AddrCache struct {
 	Address string
@@ -63,6 +64,19 @@ type NameProxy struct {
 	rlLock sync.Mutex
 	rlTick int64
 	rlStat map[string]int
+	dnsMsg map[string]*DNSMsgCache
+	chLock sync.Mutex
+	chStat map[string]*cacheHitStat
+}
+
+type DNSMsgCache struct {
+	msg  *dns.Msg
+	time time.Time
+}
+
+type cacheHitStat struct {
+	tick time.Time
+	cnt  int
 }
 
 func NewNameProxy(cfg *config.NameProxy) *NameProxy {
@@ -73,9 +87,98 @@ func NewNameProxy(cfg *config.NameProxy) *NameProxy {
 		names:  make(map[string]*AddrCache),
 		addrs:  make(map[string]*NameCache),
 		rlStat: make(map[string]int),
+		dnsMsg: make(map[string]*DNSMsgCache),
+		chStat: make(map[string]*cacheHitStat),
 	}
 	n.Initialize()
 	return n
+}
+
+func (n *NameProxy) findKey(r *dns.Msg) string {
+	if len(r.Question) != 1 {
+		return ""
+	}
+	q := r.Question[0]
+	return fmt.Sprintf("%s|%d|%d", q.Name, q.Qtype, q.Qclass)
+}
+
+func (n *NameProxy) findCache(key string) *dns.Msg {
+	if !n.dnsCacheEnabled() {
+		return nil
+	}
+	if key == "" {
+		return nil
+	}
+	n.lock.RLock()
+	entry, ok := n.dnsMsg[key]
+	n.lock.RUnlock()
+	if !ok {
+		return nil
+	}
+
+	ttl := n.dnsCacheTimeout()
+	if time.Since(entry.time) > ttl {
+		n.lock.Lock()
+		if latest, ok := n.dnsMsg[key]; ok && time.Since(latest.time) > ttl {
+			delete(n.dnsMsg, key)
+		}
+		n.lock.Unlock()
+		return nil
+	}
+
+	return entry.msg.Copy()
+}
+
+func (n *NameProxy) dnsCacheTimeout() time.Duration {
+	if n.cfg == nil || n.cfg.CacheTTL < 0 {
+		return DefaultCacheTimeout
+	}
+	return time.Duration(n.cfg.CacheTTL) * time.Second
+}
+
+func (n *NameProxy) dnsCacheEnabled() bool {
+	return n.cfg != nil && n.cfg.CacheTTL != 0
+}
+
+func (n *NameProxy) updateCache(key string, msg *dns.Msg) {
+	if !n.dnsCacheEnabled() {
+		return
+	}
+	if key == "" || msg == nil {
+		return
+	}
+	n.lock.Lock()
+	n.dnsMsg[key] = &DNSMsgCache{
+		msg:  msg.Copy(),
+		time: time.Now(),
+	}
+	n.lock.Unlock()
+}
+
+func (n *NameProxy) logCache(conn dns.ResponseWriter, r *dns.Msg) {
+	addr := libol.GetIPAddr(conn.RemoteAddr().String())
+	now := time.Now()
+	needLog := false
+	count := 0
+
+	n.chLock.Lock()
+	stat, ok := n.chStat[addr]
+	if !ok {
+		stat = &cacheHitStat{tick: now}
+		n.chStat[addr] = stat
+	}
+	if now.Sub(stat.tick) >= CacheLogInterval {
+		count = stat.cnt
+		stat.cnt = 0
+		stat.tick = now
+		needLog = true
+	}
+	stat.cnt++
+	n.chLock.Unlock()
+
+	if needLog && count > 0 {
+		n.out.Info("NameProxy.handleDNS cache hit client=%s %d/%ds latest=%v", addr, count, int(CacheLogInterval/time.Second), r.Question)
+	}
 }
 
 func (n *NameProxy) allowDNS(conn dns.ResponseWriter) bool {
@@ -83,11 +186,7 @@ func (n *NameProxy) allowDNS(conn dns.ResponseWriter) bool {
 		return true
 	}
 
-	addr := conn.RemoteAddr().String()
-	host, _, err := net.SplitHostPort(addr)
-	if err == nil {
-		addr = host
-	}
+	addr := libol.GetIPAddr(conn.RemoteAddr().String())
 	now := time.Now().Unix()
 
 	n.rlLock.Lock()
@@ -204,12 +303,24 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 
+		key := n.findKey(r)
+		if cached := n.findCache(key); cached != nil {
+			cached.Id = r.Id
+			cached.Question = r.Question
+			if err := conn.WriteMsg(cached); err != nil {
+				n.out.Error("NameProxy.handleDNS write cache: %s", err)
+			}
+			n.logCache(conn, r)
+			return
+		}
+
 		n.out.Info("NameProxy.handleDNS %s <- %v via %s", nameto, r.Question, conn.RemoteAddr())
 		resp, _, err := client.Exchange(r, nameto)
 		if err != nil {
 			n.out.Error("NameProxy.handleDNS %s: %v", r, err)
 			return
 		}
+		n.updateCache(key, resp)
 
 		if via != nil && via.Server != "" {
 			for _, rr := range resp.Answer {

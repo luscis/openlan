@@ -239,13 +239,14 @@ func (p *Proxy) Save() {
 }
 
 type NameProxy struct {
-	Conf     string     `json:"-" yaml:"-"`
-	Listen   string     `json:"listen,omitempty" yaml:"listen,omitempty"`
-	Nameto   string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
-	Rate     int        `json:"ratelimit,omitempty" yaml:"ratelimit,omitempty"`
-	Metric   int        `json:"metric,omitempty" yaml:"metric,omitempty"`
-	Backends ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
-	Access   []*Access  `json:"access,omitempty" yaml:"access,omitempty"`
+	Conf        string     `json:"-" yaml:"-"`
+	Listen      string     `json:"listen,omitempty" yaml:"listen,omitempty"`
+	Nameto      string     `json:"nameto,omitempty" yaml:"nameto,omitempty"`
+	Rate        int        `json:"ratelimit,omitempty" yaml:"ratelimit,omitempty"`
+	Metric      int        `json:"metric,omitempty" yaml:"metric,omitempty"`
+	CacheTTL    int        `json:"cachettl,omitempty" yaml:"cachettl,omitempty"`
+	Backends    ToForwards `json:"backends,omitempty" yaml:"backends,omitempty"`
+	Access      []*Access  `json:"access,omitempty" yaml:"access,omitempty"`
 }
 
 func (t *NameProxy) Initialize() error {
@@ -262,6 +263,9 @@ func (t *NameProxy) Correct() {
 	SetListen(&t.Listen, 53)
 	if t.Metric == 0 {
 		t.Metric = 300
+	}
+	if t.CacheTTL < 0 {
+		t.CacheTTL = 120
 	}
 	for _, acc := range t.Access {
 		acc.RequestAddr = true
