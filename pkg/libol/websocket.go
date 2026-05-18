@@ -3,6 +3,7 @@ package libol
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -119,6 +120,13 @@ func (t *WebServer) Accept() {
 	})
 }
 
+func (t *WebServer) UpdateCrypt(block *BlockCrypt) {
+	if t.webCfg != nil {
+		t.webCfg.Block = block
+	}
+	t.kickAllClients()
+}
+
 // Client Implement
 
 type WebClient struct {
@@ -149,8 +157,9 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  fmt.Sprintf("ws://%s", addr),
+			Protocol: "ws",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,

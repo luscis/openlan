@@ -59,7 +59,7 @@ func (v Version) Update(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		data.Ca = string(value)
+		data.Key = string(value)
 	}
 
 	url := v.Url(c.String("url"), "cert")

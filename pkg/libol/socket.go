@@ -3,6 +3,7 @@ package libol
 import (
 	"bytes"
 	"crypto/md5"
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -65,6 +66,7 @@ type ClientListener struct {
 type SocketClient interface {
 	LocalAddr() string
 	RemoteAddr() string
+	Protocol() string
 	Connect() error
 	Close()
 	WriteMsg(frame *FrameMessage) error
@@ -92,6 +94,7 @@ type StreamSocket struct {
 	message    Messager
 	connection net.Conn
 	minSize    int
+	protocol   string
 	out        *SubLogger
 	remoteAddr string
 	localAddr  string
@@ -109,6 +112,10 @@ func (t *StreamSocket) LocalAddr() string {
 
 func (t *StreamSocket) RemoteAddr() string {
 	return t.remoteAddr
+}
+
+func (t *StreamSocket) Protocol() string {
+	return t.protocol
 }
 
 func (t *StreamSocket) String() string {
@@ -174,8 +181,9 @@ func (t *StreamSocket) Key() string {
 }
 
 type SocketConfig struct {
-	Address string
-	Block   *BlockCrypt
+	Address  string
+	Protocol string
+	Block    *BlockCrypt
 }
 
 type SocketClientImpl struct {
@@ -194,6 +202,7 @@ func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 		StreamSocket: &StreamSocket{
 			minSize:    15,
 			message:    message,
+			protocol:   cfg.Protocol,
 			out:        NewSubLogger(cfg.Address),
 			remoteAddr: cfg.Address,
 			address:    cfg.Address,
@@ -329,7 +338,12 @@ func (s *SocketClientImpl) update(conn net.Conn) {
 		s.connection = conn
 		s.connectedTime = time.Now().Unix()
 		s.localAddr = conn.LocalAddr().String()
-		s.remoteAddr = conn.RemoteAddr().String()
+		remote := conn.RemoteAddr().String()
+		if s.protocol != "" {
+			s.remoteAddr = fmt.Sprintf("%s://%s", s.protocol, remote)
+		} else {
+			s.remoteAddr = remote
+		}
 	} else {
 		if s.connection != nil {
 			_ = s.connection.Close()
@@ -385,6 +399,7 @@ type SocketServer interface {
 	Close()
 	Accept()
 	ListClient() <-chan SocketClient
+	UpdateCrypt(block *BlockCrypt)
 	OffClient(client SocketClient)
 	TotalClient() int
 	Loop(call ServerListener)
@@ -443,6 +458,19 @@ func (t *SocketServerImpl) OffClient(client SocketClient) {
 	Warn("SocketServerImpl.OffClient %s", client)
 	if client != nil {
 		t.offClients <- client
+	}
+}
+
+func (t *SocketServerImpl) UpdateCrypt(block *BlockCrypt) {
+	// implemented by concrete servers when they have protocol config to update
+}
+
+func (t *SocketServerImpl) kickAllClients() {
+	for client := range t.ListClient() {
+		if client == nil {
+			break
+		}
+		t.OffClient(client)
 	}
 }
 

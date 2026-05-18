@@ -32,6 +32,8 @@ type SwitchApi interface {
 	RateLimitApi
 	UpdateCert(schema.VersionCert)
 	GetCert() schema.VersionCert
+	UpdateCrypt(schema.SwitchCrypt)
+	GetCrypt() schema.SwitchCrypt
 	LdapApi
 }
 

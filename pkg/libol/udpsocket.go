@@ -1,6 +1,7 @@
 package libol
 
 import (
+	"fmt"
 	"net"
 	"time"
 )
@@ -83,6 +84,13 @@ func (k *UdpServer) Accept() {
 	}
 }
 
+func (k *UdpServer) UpdateCrypt(block *BlockCrypt) {
+	if k.udpCfg != nil {
+		k.udpCfg.Block = block
+	}
+	k.kickAllClients()
+}
+
 // Client Implement
 
 type UdpClient struct {
@@ -114,8 +122,9 @@ func NewUdpClientFromConn(conn net.Conn, cfg *UdpConfig) *UdpClient {
 	addr := conn.RemoteAddr().String()
 	c := &UdpClient{
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  fmt.Sprintf("udp://%s", addr),
+			Protocol: "udp",
+			Block:    cfg.Block,
 		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,

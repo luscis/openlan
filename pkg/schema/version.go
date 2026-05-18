@@ -24,3 +24,8 @@ type VersionCert struct {
 	CertExpire string `json:"crtExpire,omitempty"`
 	CaExpire   string `json:"caExpire,omitempty"`
 }
+
+type SwitchCrypt struct {
+	Algorithm string `json:"algorithm,omitempty"`
+	Secret    string `json:"secret,omitempty"`
+}

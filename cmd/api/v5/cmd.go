@@ -40,6 +40,7 @@ func Commands(app *api.App) {
 	Log{}.Commands(app)
 	ZTrust{}.Commands(app)
 	RateLimit{}.Commands(app)
+	Crypt{}.Commands(app)
 
 	Index{}.Commands(app)
 	BGP{}.Commands(app)

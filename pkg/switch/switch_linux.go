@@ -29,62 +29,84 @@ const (
 func GetSocketServer(s *co.Switch) libol.SocketServer {
 	crypt := s.Crypt
 	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
-	switch s.Protocol {
-	case "kcp":
-		c := libol.NewKcpConfig()
-		c.Block = block
-		c.Timeout = time.Duration(s.Timeout) * time.Second
-		return libol.NewKcpServer(s.Listen, c)
-	case "tcp":
-		c := &libol.TcpConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-			RdQus:   s.Queue.SockRd,
-			WrQus:   s.Queue.SockWr,
-		}
-		return libol.NewTcpServer(s.Listen, c)
-	case "udp":
-		c := &libol.UdpConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-		}
-		return libol.NewUdpServer(s.Listen, c)
-	case "ws":
-		c := &libol.WebConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-			RdQus:   s.Queue.SockRd,
-			WrQus:   s.Queue.SockWr,
-		}
-		return libol.NewWebServer(s.Listen, c)
-	case "wss":
-		c := &libol.WebConfig{
+	streamProto, packetProto := getSwitchTransports(s.Protocol)
+
+	var tcpServer libol.SocketServer
+	switch streamProto {
+	case "tls":
+		tcpCfg := &libol.TcpConfig{
 			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
 		}
 		if s.Cert != nil {
-			c.Cert = &libol.CertConfig{
+			tcpCfg.Tls = &tls.Config{
+				Certificates: s.Cert.GetCertificates(),
+			}
+		}
+		tcpServer = libol.NewTcpServer(s.Listen, tcpCfg)
+	case "ws", "wss":
+		webCfg := &libol.WebConfig{
+			Block:   block,
+			Timeout: time.Duration(s.Timeout) * time.Second,
+			RdQus:   s.Queue.SockRd,
+			WrQus:   s.Queue.SockWr,
+		}
+		if streamProto == "wss" && s.Cert != nil {
+			webCfg.Cert = &libol.CertConfig{
 				Crt: s.Cert.CrtFile,
 				Key: s.Cert.KeyFile,
 			}
 		}
-		return libol.NewWebServer(s.Listen, c)
+		tcpServer = libol.NewWebServer(s.Listen, webCfg)
 	default:
-		c := &libol.TcpConfig{
+		tcpCfg := &libol.TcpConfig{
 			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
 		}
-		if s.Cert != nil {
-			c.Tls = &tls.Config{
-				Certificates: s.Cert.GetCertificates(),
-			}
-		}
-		return libol.NewTcpServer(s.Listen, c)
+		tcpServer = libol.NewTcpServer(s.Listen, tcpCfg)
 	}
+
+	var udpServer libol.SocketServer
+	if packetProto == "kcp" {
+		kcpCfg := libol.NewKcpConfig()
+		kcpCfg.Block = block
+		kcpCfg.Timeout = time.Duration(s.Timeout) * time.Second
+		udpServer = libol.NewKcpServer(s.Listen, kcpCfg)
+	} else {
+		udpCfg := &libol.UdpConfig{
+			Block:   block,
+			Timeout: time.Duration(s.Timeout) * time.Second,
+		}
+		udpServer = libol.NewUdpServer(s.Listen, udpCfg)
+	}
+	return libol.NewMultiSocketServer(tcpServer, udpServer)
+}
+
+func getSwitchTransports(value string) (streamProto string, packetProto string) {
+	streamProto = "tcp"
+	packetProto = "udp"
+	items := strings.Split(strings.ToLower(value), ",")
+	for _, item := range items {
+		switch strings.TrimSpace(item) {
+		case "tcp":
+			streamProto = "tcp"
+		case "tls", "ssl":
+			streamProto = "tls"
+		case "ws":
+			streamProto = "ws"
+		case "wss":
+			streamProto = "wss"
+		case "udp":
+			packetProto = "udp"
+		case "kcp":
+			packetProto = "kcp"
+		}
+	}
+	return streamProto, packetProto
 }
 
 type Apps struct {
@@ -332,6 +354,35 @@ func (v *Switch) GetCert() (ce schema.VersionCert) {
 	ce.CaExpire = xcert.NotAfter.Format(time.RFC3339)
 
 	return ce
+}
+
+func (v *Switch) UpdateCrypt(data schema.SwitchCrypt) {
+	crypt := v.cfg.Crypt
+	if crypt == nil {
+		crypt = &co.Crypt{}
+		v.cfg.Crypt = crypt
+	}
+
+	if data.Algorithm != "" {
+		crypt.Algo = data.Algorithm
+	}
+	if data.Secret != "" {
+		crypt.Secret = data.Secret
+	}
+	crypt.Correct()
+	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	v.server.UpdateCrypt(block)
+	v.out.Info("Switch.UpdateCrypt: synced to socket server")
+}
+
+func (v *Switch) GetCrypt() (cp schema.SwitchCrypt) {
+	crypt := v.cfg.Crypt
+	if crypt == nil {
+		return cp
+	}
+	cp.Algorithm = crypt.Algo
+	cp.Secret = crypt.Secret
+	return cp
 }
 
 func (v *Switch) onFrame(client libol.SocketClient, frame *libol.FrameMessage) error {

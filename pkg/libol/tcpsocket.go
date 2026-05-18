@@ -2,6 +2,7 @@ package libol
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"time"
 )
@@ -119,6 +120,13 @@ func (t *TcpServer) Accept() {
 	}
 }
 
+func (t *TcpServer) UpdateCrypt(block *BlockCrypt) {
+	if t.tcpCfg != nil {
+		t.tcpCfg.Block = block
+	}
+	t.kickAllClients()
+}
+
 // Client Implement
 
 type TcpClient struct {
@@ -146,8 +154,9 @@ func NewTcpClientFromConn(conn net.Conn, cfg *TcpConfig) *TcpClient {
 	t := &TcpClient{
 		tcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  fmt.Sprintf("tcp://%s", addr),
+			Protocol: "tcp",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,

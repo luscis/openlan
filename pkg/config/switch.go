@@ -104,7 +104,7 @@ type Switch struct {
 	Alias     string              `json:"alias" yaml:"alias"`
 	Queue     Queue               `json:"-" yaml:"-"`
 	Limit     Limit               `json:"limit" yaml:"limit"`
-	Protocol  string              `json:"protocol" yaml:"protocol"` // tcp, tls, udp, kcp, ws and wss.
+	Protocol  string              `json:"protocol" yaml:"protocol"` // stream: tcp|tls|ws|wss, packet: udp|kcp (comma separated)
 	Listen    string              `json:"listen" yaml:"listen"`
 	Timeout   int                 `json:"timeout" yaml:"timeout"`
 	Http      *Http               `json:"http,omitempty" yaml:"http,omitempty"`
@@ -196,9 +196,6 @@ func (s *Switch) Correct() {
 	s.Limit.Correct()
 
 	s.PassFile = s.Dir("password", "")
-	if s.Protocol == "" {
-		s.Protocol = "tcp"
-	}
 	if s.AddrPool == "" {
 		s.AddrPool = "100.255"
 	}

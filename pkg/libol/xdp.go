@@ -137,7 +137,7 @@ func (c *XDPConn) Read(b []byte) (n int, err error) {
 			c.lock.RUnlock()
 			return 0, NewErr("read timeout")
 		}
-		delay := c.readDead.Sub(time.Now())
+		delay := time.Until(c.readDead)
 		timeout = time.NewTimer(delay)
 		outChan = timeout.C
 	}
