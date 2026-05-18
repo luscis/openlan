@@ -3,7 +3,6 @@ package libol
 import (
 	"bytes"
 	"crypto/md5"
-	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -119,7 +118,7 @@ func (t *StreamSocket) Protocol() string {
 }
 
 func (t *StreamSocket) String() string {
-	return t.address
+	return t.protocol + ":" + t.remoteAddr
 }
 
 func (t *StreamSocket) IsOk() bool {
@@ -198,12 +197,11 @@ type SocketClientImpl struct {
 }
 
 func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
-	return &SocketClientImpl{
+	client := &SocketClientImpl{
 		StreamSocket: &StreamSocket{
 			minSize:    15,
 			message:    message,
 			protocol:   cfg.Protocol,
-			out:        NewSubLogger(cfg.Address),
 			remoteAddr: cfg.Address,
 			address:    cfg.Address,
 			Block:      cfg.Block,
@@ -211,6 +209,8 @@ func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 		newTime: time.Now().Unix(),
 		status:  ClInit,
 	}
+	client.out = NewSubLogger(client.String())
+	return client
 }
 
 func (s *SocketClientImpl) negotiate() error {
@@ -338,12 +338,7 @@ func (s *SocketClientImpl) update(conn net.Conn) {
 		s.connection = conn
 		s.connectedTime = time.Now().Unix()
 		s.localAddr = conn.LocalAddr().String()
-		remote := conn.RemoteAddr().String()
-		if s.protocol != "" {
-			s.remoteAddr = fmt.Sprintf("%s://%s", s.protocol, remote)
-		} else {
-			s.remoteAddr = remote
-		}
+		s.remoteAddr = conn.RemoteAddr().String()
 	} else {
 		if s.connection != nil {
 			_ = s.connection.Close()
@@ -356,7 +351,7 @@ func (s *SocketClientImpl) update(conn net.Conn) {
 	if s.Block != nil {
 		s.message.SetCrypt(s.Block)
 	}
-	s.out.Event("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
+	s.out.Info("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
 }
 
 func (s *SocketClientImpl) Reset(conn net.Conn) {

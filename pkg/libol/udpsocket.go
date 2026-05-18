@@ -1,7 +1,6 @@
 package libol
 
 import (
-	"fmt"
 	"net"
 	"time"
 )
@@ -105,8 +104,9 @@ func NewUdpClient(addr string, cfg *UdpConfig) *UdpClient {
 	c := &UdpClient{
 		udpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "udp",
+			Block:    cfg.Block,
 		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -122,7 +122,7 @@ func NewUdpClientFromConn(conn net.Conn, cfg *UdpConfig) *UdpClient {
 	addr := conn.RemoteAddr().String()
 	c := &UdpClient{
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address:  fmt.Sprintf("udp://%s", addr),
+			Address:  addr,
 			Protocol: "udp",
 			Block:    cfg.Block,
 		}, &PacketMessagerImpl{

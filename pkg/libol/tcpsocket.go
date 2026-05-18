@@ -2,7 +2,6 @@ package libol
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"time"
 )
@@ -138,8 +137,9 @@ func NewTcpClient(addr string, cfg *TcpConfig) *TcpClient {
 	t := &TcpClient{
 		tcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "tcp",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -154,7 +154,7 @@ func NewTcpClientFromConn(conn net.Conn, cfg *TcpConfig) *TcpClient {
 	t := &TcpClient{
 		tcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address:  fmt.Sprintf("tcp://%s", addr),
+			Address:  addr,
 			Protocol: "tcp",
 			Block:    cfg.Block,
 		}, &StreamMessagerImpl{

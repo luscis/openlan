@@ -1,7 +1,6 @@
 package libol
 
 import (
-	"fmt"
 	"net"
 	"time"
 
@@ -135,8 +134,9 @@ func NewKcpClient(addr string, cfg *KcpConfig) *KcpClient {
 	c := &KcpClient{
 		kcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "kcp",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -152,7 +152,7 @@ func NewKcpClientFromConn(conn net.Conn, cfg *KcpConfig) *KcpClient {
 	addr := conn.RemoteAddr().String()
 	c := &KcpClient{
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address:  fmt.Sprintf("kcp://%s", addr),
+			Address:  addr,
 			Protocol: "kcp",
 			Block:    cfg.Block,
 		}, &StreamMessagerImpl{

@@ -1,5 +1,5 @@
 {
-  "protocol": "tcp",
+  "protocol": "",
   "listen": "0.0.0.0:10002",
   "http": {
     "listen": "0.0.0.0:10000"

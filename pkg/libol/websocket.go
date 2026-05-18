@@ -3,7 +3,6 @@ package libol
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -141,8 +140,9 @@ func NewWebClient(addr string, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "ws",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -157,7 +157,7 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address:  fmt.Sprintf("ws://%s", addr),
+			Address:  addr,
 			Protocol: "ws",
 			Block:    cfg.Block,
 		}, &StreamMessagerImpl{

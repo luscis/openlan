@@ -14,7 +14,7 @@ func NewAccessSchema(p *Access) schema.Access {
 		Alias:     p.Alias,
 		User:      p.User,
 		Protocol:  p.Protocol,
-		Remote:    client.String(),
+		Remote:    client.RemoteAddr(),
 		Device:    dev.Name(),
 		RxBytes:   uint64(sts[libol.CsRecvOkay]),
 		TxBytes:   uint64(sts[libol.CsSendOkay]),

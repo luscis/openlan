@@ -429,7 +429,7 @@ func (v *Switch) SignIn(client libol.SocketClient) error {
 }
 
 func client2Access(client libol.SocketClient) (*models.Access, error) {
-	addr := client.RemoteAddr()
+	addr := client.String()
 	if private := client.Private(); private == nil {
 		return nil, libol.NewErr("Access %s notFound.", addr)
 	} else {
@@ -442,7 +442,7 @@ func client2Access(client libol.SocketClient) (*models.Access, error) {
 }
 
 func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage) error {
-	addr := client.RemoteAddr()
+	addr := client.String()
 	if v.out.Has(libol.LOG) {
 		v.out.Log("Switch.ReadClient: %s %x", addr, frame.Frame())
 	}
@@ -460,22 +460,23 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 	}
 	// process ethernet frame message.
 	obj, err := client2Access(client)
-	if err != nil {
+	if err == nil {
+		device := obj.Device
+		if device == nil {
+			return libol.NewErr("Tap devices is nil")
+		}
+		if _, err := device.Write(frame.Frame()); err != nil {
+			v.out.Error("Switch.ReadClient: %s", err)
+			return err
+		}
+		return nil
+	} else {
 		return err
 	}
-	device := obj.Device
-	if device == nil {
-		return libol.NewErr("Tap devices is nil")
-	}
-	if _, err := device.Write(frame.Frame()); err != nil {
-		v.out.Error("Switch.ReadClient: %s", err)
-		return err
-	}
-	return nil
 }
 
 func (v *Switch) OnClose(client libol.SocketClient) error {
-	addr := client.RemoteAddr()
+	addr := client.String()
 	v.out.Info("Switch.OnClose: %s", addr)
 	if obj, err := client2Access(client); err == nil {
 		cache.Network.DelLease(obj.Alias, obj.Network)
