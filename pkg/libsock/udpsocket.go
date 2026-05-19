@@ -92,6 +92,10 @@ func (k *UdpServer) UpdateCrypt(block *BlockCrypt) {
 	k.kickAllClients()
 }
 
+func (k *UdpServer) Protocol() string {
+	return "udp"
+}
+
 // Client Implement
 
 type UdpClient struct {

@@ -121,6 +121,10 @@ func (k *KcpServer) UpdateCrypt(block *BlockCrypt) {
 	k.kickAllClients()
 }
 
+func (k *KcpServer) Protocol() string {
+	return "kcp"
+}
+
 // Client Implement
 
 type KcpClient struct {

@@ -127,6 +127,10 @@ func (t *WebServer) UpdateCrypt(block *BlockCrypt) {
 	t.kickAllClients()
 }
 
+func (t *WebServer) Protocol() string {
+	return "ws"
+}
+
 // Client Implement
 
 type WebClient struct {

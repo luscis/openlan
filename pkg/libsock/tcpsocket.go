@@ -128,6 +128,10 @@ func (t *TcpServer) UpdateCrypt(block *BlockCrypt) {
 	t.kickAllClients()
 }
 
+func (t *TcpServer) Protocol() string {
+	return "tcp"
+}
+
 // Client Implement
 
 type TcpClient struct {

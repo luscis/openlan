@@ -123,6 +123,7 @@ func (m *MultiSocketServer) Statistics() map[string]int64 {
 	for _, s := range m.servers {
 		for k, v := range s.Statistics() {
 			stat[k] += v
+			stat[s.Protocol()+k] = v
 		}
 	}
 	return stat
@@ -132,4 +133,8 @@ func (m *MultiSocketServer) SetTimeout(v int64) {
 	for _, s := range m.servers {
 		s.SetTimeout(v)
 	}
+}
+
+func (m *MultiSocketServer) Protocol() string {
+	return "tcp+udp"
 }

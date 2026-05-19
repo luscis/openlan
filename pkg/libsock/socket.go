@@ -53,7 +53,7 @@ func (s SocketStatus) String() string {
 
 const (
 	CsSendOkay  = "send"
-	CsRecvOkay  = "recv"
+	CsRecvOkay  = "receive"
 	CsSendError = "error"
 	CsDropped   = "dropped"
 )
@@ -374,7 +374,7 @@ func (s *SocketClientImpl) SetStatus(v SocketStatus) {
 // Socket Server Interface and Implement
 
 const (
-	SsRecv   = "recv"
+	SsRecv   = "receive"
 	SsDeny   = "deny"
 	SsAlive  = "alive"
 	SsSend   = "send"
@@ -405,6 +405,7 @@ type SocketServer interface {
 	Address() string
 	Statistics() map[string]int64
 	SetTimeout(v int64)
+	Protocol() string
 }
 
 // TODO keepalive to release zombie connections.
@@ -432,6 +433,10 @@ func NewSocketServer(listen string) *SocketServerImpl {
 		offClients: make(chan SocketClient, 1024),
 		WrQus:      1024,
 	}
+}
+
+func (t *SocketServerImpl) Protocol() string {
+	return "unknown"
 }
 
 func (t *SocketServerImpl) ListClient() <-chan SocketClient {
@@ -480,13 +485,13 @@ func (t *SocketServerImpl) negotiate(client SocketClient) error {
 		return err
 	}
 	if !request.IsControl() {
-		libol.Info("SocketServerImpl.negotiate %s", request.String())
+		libol.Warn("SocketServerImpl.negotiate: except control but %s", request.String())
 		return libol.NewErr("wrong message type")
 	}
 	client.SetStatus(ClNegotiated)
 	action, params := request.CmdAndParams()
 	if action == NegoReq {
-		libol.Cmd("SocketServerImpl.negotiate %s", params)
+		libol.Cmd("SocketServerImpl.negotiate: %s", params)
 		sum := md5.Sum(params)
 		reply := NewControlFrame(NegoResp, sum[:md5.Size])
 		if err := client.WriteMsg(reply); err != nil {
@@ -500,13 +505,13 @@ func (t *SocketServerImpl) negotiate(client SocketClient) error {
 }
 
 func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) {
-	libol.Info("SocketServerImpl.doOnClient: +%s", client)
+	libol.Info("SocketServerImpl.doOnClient: %s", client)
 	_ = t.clients.Set(client.RemoteAddr(), client)
 	if call.OnClient != nil {
 		libol.Go(func() {
 			if err := t.negotiate(client); err != nil {
 				t.OffClient(client)
-				libol.Warn("SocketServerImpl.doOnClient %s %s", client, err)
+				libol.Warn("SocketServerImpl.doOnClient: %s %s", client, err)
 				return
 			}
 			_ = call.OnClient(client)
@@ -518,7 +523,7 @@ func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) 
 }
 
 func (t *SocketServerImpl) doOffClient(call ServerListener, client SocketClient) {
-	libol.Info("SocketServerImpl.doOffClient: -%s", client)
+	libol.Info("SocketServerImpl.doOffClient: %s", client)
 	addr := client.RemoteAddr()
 	if _, ok := t.clients.GetEx(addr); ok {
 		libol.Info("SocketServerImpl.doOffClient: close %s", addr)
