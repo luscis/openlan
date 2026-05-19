@@ -6,6 +6,7 @@ import (
 	"github.com/luscis/openlan/pkg/access/http"
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 )
@@ -14,7 +15,7 @@ type Acceser interface {
 	Addr() string
 	IfName() string
 	IfAddr() string
-	Status() libol.SocketStatus
+	Status() libsock.SocketStatus
 	UpTime() int64
 	UUID() string
 	Protocol() string
@@ -82,7 +83,7 @@ func (p *MixAccess) UUID() string {
 	return p.uuid
 }
 
-func (p *MixAccess) Status() libol.SocketStatus {
+func (p *MixAccess) Status() libsock.SocketStatus {
 	client := p.client()
 	if client == nil {
 		return 0
@@ -102,7 +103,7 @@ func (p *MixAccess) IfName() string {
 	return device.Name()
 }
 
-func (p *MixAccess) client() libol.SocketClient {
+func (p *MixAccess) client() libsock.SocketClient {
 	conn := p.worker.conWorker
 	if conn == nil {
 		return nil

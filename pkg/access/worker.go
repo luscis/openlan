@@ -11,6 +11,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
@@ -81,56 +82,56 @@ type PrefixRule struct {
 	NextHop     net.IP
 }
 
-func GetSocketClient(p *config.Access, remote string) libol.SocketClient {
+func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 	crypt := p.Crypt
-	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	block := libsock.NewBlockCrypt(crypt.Algo, crypt.Secret)
 
 	if remote == "" {
 		remote = p.Connection
 	}
 	switch p.Protocol {
 	case "kcp":
-		c := libol.NewKcpConfig()
+		c := libsock.NewKcpConfig()
 		c.Block = block
 		c.RdQus = p.Queue.SockRd
 		c.WrQus = p.Queue.SockWr
-		return libol.NewKcpClient(remote, c)
+		return libsock.NewKcpClient(remote, c)
 	case "tcp":
-		c := &libol.TcpConfig{
+		c := &libsock.TcpConfig{
 			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libol.NewTcpClient(remote, c)
+		return libsock.NewTcpClient(remote, c)
 	case "udp":
-		c := &libol.UdpConfig{
+		c := &libsock.UdpConfig{
 			Block:   block,
 			Timeout: time.Duration(p.Timeout) * time.Second,
 			RdQus:   p.Queue.SockRd,
 			WrQus:   p.Queue.SockWr,
 		}
-		return libol.NewUdpClient(remote, c)
+		return libsock.NewUdpClient(remote, c)
 	case "ws":
-		c := &libol.WebConfig{
+		c := &libsock.WebConfig{
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libol.NewWebClient(remote, c)
+		return libsock.NewWebClient(remote, c)
 	case "wss":
-		c := &libol.WebConfig{
+		c := &libsock.WebConfig{
 			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
 		if p.Cert != nil {
-			c.Cert = &libol.CertConfig{
+			c.Cert = &libsock.CertConfig{
 				Insecure: p.Cert.Insecure,
 				RootCa:   p.Cert.CaFile,
 			}
 		}
-		return libol.NewWebClient(remote, c)
+		return libsock.NewWebClient(remote, c)
 	default:
-		c := &libol.TcpConfig{
+		c := &libsock.TcpConfig{
 			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
@@ -141,7 +142,7 @@ func GetSocketClient(p *config.Access, remote string) libol.SocketClient {
 				RootCAs:            p.Cert.GetCertPool(),
 			}
 		}
-		return libol.NewTcpClient(remote, c)
+		return libsock.NewTcpClient(remote, c)
 	}
 }
 
@@ -150,8 +151,6 @@ func GetTapCfg(c *config.Access) network.TapConfig {
 		Provider: c.Interface.Provider,
 		Name:     c.Interface.Name,
 		Network:  c.Interface.Address,
-		KernBuf:  c.Queue.VirSnd,
-		VirBuf:   c.Queue.VirWrt,
 	}
 	if c.Interface.Provider == "tun" {
 		cfg.Type = network.TUN
@@ -233,9 +232,9 @@ func (w *Worker) Initialize() {
 			}
 			return nil
 		},
-		ReadAt: func(frame *libol.FrameMessage) error {
+		ReadAt: func(frame *libsock.FrameMessage) error {
 			for _, conn := range w.sosWorker {
-				if !conn.client.Have(libol.ClAuth) {
+				if !conn.client.Have(libsock.ClAuth) {
 					continue
 				}
 				return conn.Write(frame)
@@ -260,9 +259,9 @@ func (w *Worker) SaveStatus() {
 
 	sts := client.Statistics()
 	access := &schema.Access{
-		RxBytes:   uint64(sts[libol.CsRecvOkay]),
-		TxBytes:   uint64(sts[libol.CsSendOkay]),
-		ErrPkt:    uint64(sts[libol.CsSendError]),
+		RxBytes:   uint64(sts[libsock.CsRecvOkay]),
+		TxBytes:   uint64(sts[libsock.CsSendOkay]),
+		ErrPkt:    uint64(sts[libsock.CsSendError]),
 		Uptime:    client.UpTime(),
 		State:     client.Status().String(),
 		Device:    device.Name(),

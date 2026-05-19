@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -268,7 +269,7 @@ func (w *user) LDAPState() string {
 	return ldap.State()
 }
 
-func (w *user) SetCert(cfg *libol.CertConfig) {
+func (w *user) SetCert(cfg *libsock.CertConfig) {
 	w.Cert = cfg.Crt
 }
 

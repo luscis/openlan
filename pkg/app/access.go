@@ -5,6 +5,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 )
 
@@ -20,7 +21,7 @@ func NewAccess(m Master) *Access {
 	}
 }
 
-func (p *Access) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) error {
+func (p *Access) OnFrame(client libsock.SocketClient, frame *libsock.FrameMessage) error {
 	out := client.Out()
 	if out.Has(libol.LOG) {
 		out.Log("Access.OnFrame %s.", frame)
@@ -29,34 +30,34 @@ func (p *Access) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) e
 		action, params := frame.CmdAndParams()
 		out.Debug("Access.OnFrame: %s", action)
 		switch action {
-		case libol.LoginReq:
+		case libsock.LoginReq:
 			if err := p.handleLogin(client, params); err != nil {
 				out.Error("Access.OnFrame: %s", err)
-				m := libol.NewControlFrame(libol.LoginResp, []byte(err.Error()))
+				m := libsock.NewControlFrame(libsock.LoginResp, []byte(err.Error()))
 				_ = client.WriteMsg(m)
 				//client.Close()
 				return err
 			}
-			m := libol.NewControlFrame(libol.LoginResp, []byte("okay"))
+			m := libsock.NewControlFrame(libsock.LoginResp, []byte("okay"))
 			_ = client.WriteMsg(m)
 		}
 		//If instruct is not login and already auth, continue to process.
-		if client.Have(libol.ClAuth) {
+		if client.Have(libsock.ClAuth) {
 			return nil
 		}
 	}
 	//Dropped all frames if not auth.
-	if !client.Have(libol.ClAuth) {
+	if !client.Have(libsock.ClAuth) {
 		out.Debug("Access.OnFrame: unAuth")
 		return libol.NewErr("unAuth client.")
 	}
 	return nil
 }
 
-func (p *Access) handleLogin(client libol.SocketClient, data []byte) error {
+func (p *Access) handleLogin(client libsock.SocketClient, data []byte) error {
 	out := client.Out()
 	out.Debug("Access.handleLogin: %s", data)
-	if client.Have(libol.ClAuth) {
+	if client.Have(libsock.ClAuth) {
 		out.Warn("Access.handleLogin: already auth")
 		return nil
 	}
@@ -73,20 +74,20 @@ func (p *Access) handleLogin(client libol.SocketClient, data []byte) error {
 		}
 		p.success++
 		now.Last = client
-		client.SetStatus(libol.ClAuth)
+		client.SetStatus(libsock.ClAuth)
 		out.Info("Access.handleLogin: success")
 		_ = p.onAuth(client, user)
 		return nil
 	} else {
 		p.failed++
-		client.SetStatus(libol.ClUnAuth)
+		client.SetStatus(libsock.ClUnAuth)
 		return err
 	}
 }
 
-func (p *Access) onAuth(client libol.SocketClient, user *models.User) error {
+func (p *Access) onAuth(client libsock.SocketClient, user *models.User) error {
 	out := client.Out()
-	if !client.Have(libol.ClAuth) {
+	if !client.Have(libsock.ClAuth) {
 		return libol.NewErr("not auth.")
 	}
 	out.Info("Access.onAuth")
@@ -109,7 +110,7 @@ func (p *Access) onAuth(client libol.SocketClient, user *models.User) error {
 	client.SetPrivate(m)
 	cache.Access.Add(m)
 	libol.Go(func() {
-		p.master.ReadTap(dev, func(f *libol.FrameMessage) error {
+		p.master.ReadTap(dev, func(f *libsock.FrameMessage) error {
 			if err := client.WriteMsg(f); err != nil {
 				p.master.OffClient(client)
 				return err

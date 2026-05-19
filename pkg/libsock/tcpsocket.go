@@ -1,9 +1,11 @@
-package libol
+package libsock
 
 import (
 	"crypto/tls"
 	"net"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 const defaultTCPBufferSize = 4 << 20
@@ -37,13 +39,13 @@ func setTcpConn(conn net.Conn) {
 	}
 
 	if err := tcpConn.SetNoDelay(true); err != nil {
-		Warn("setTcpConn.SetNoDelay: %s", err)
+		libol.Warn("setTcpConn.SetNoDelay: %s", err)
 	}
 	if err := tcpConn.SetReadBuffer(defaultTCPBufferSize); err != nil {
-		Warn("setTcpConn.SetReadBuffer: %s", err)
+		libol.Warn("setTcpConn.SetReadBuffer: %s", err)
 	}
 	if err := tcpConn.SetWriteBuffer(defaultTCPBufferSize); err != nil {
-		Warn("setTcpConn.SetWriteBuffer: %s", err)
+		libol.Warn("setTcpConn.SetWriteBuffer: %s", err)
 	}
 }
 
@@ -72,14 +74,14 @@ func (t *TcpServer) Listen() (err error) {
 			t.listener = nil
 			return err
 		}
-		Info("TcpServer.Listen: tls://%s", t.address)
+		libol.Info("TcpServer.Listen: tls://%s", t.address)
 	} else {
 		t.listener, err = net.Listen("tcp", t.address)
 		if err != nil {
 			t.listener = nil
 			return err
 		}
-		Info("TcpServer.Listen: tcp://%s", t.address)
+		libol.Info("TcpServer.Listen: tcp://%s", t.address)
 	}
 	return nil
 }
@@ -87,21 +89,21 @@ func (t *TcpServer) Listen() (err error) {
 func (t *TcpServer) Close() {
 	if t.listener != nil {
 		_ = t.listener.Close()
-		Info("TcpServer.Close: %s", t.address)
+		libol.Info("TcpServer.Close: %s", t.address)
 		t.listener = nil
 	}
 }
 
 func (t *TcpServer) Accept() {
-	Debug("TcpServer.Accept")
-	promise := Promise{
+	libol.Debug("TcpServer.Accept")
+	promise := libol.Promise{
 		First:  2 * time.Second,
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
 	promise.Do(func() error {
 		if err := t.Listen(); err != nil {
-			Warn("TcpServer.Accept: %s", err)
+			libol.Warn("TcpServer.Accept: %s", err)
 			return err
 		}
 		return nil

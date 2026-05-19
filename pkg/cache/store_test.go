@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 
 type SocketClientMock struct {
-	libol.SocketClientImpl
+	libsock.SocketClientImpl
 }
 
 func (s *SocketClientMock) String() string {

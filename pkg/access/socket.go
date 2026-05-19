@@ -10,6 +10,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 )
 
@@ -17,7 +18,7 @@ type SocketWorkerListener struct {
 	OnClose   func(w *SocketWorker) error
 	OnSuccess func(w *SocketWorker) error
 	OnIpAddr  func(w *SocketWorker, n *models.Network) error
-	ReadAt    func(frame *libol.FrameMessage) error
+	ReadAt    func(frame *libsock.FrameMessage) error
 }
 
 const (
@@ -36,7 +37,7 @@ const (
 type SocketWorker struct {
 	// private
 	listener   SocketWorkerListener
-	client     libol.SocketClient
+	client     libsock.SocketClient
 	lock       sync.Mutex
 	user       *models.User
 	network    *models.Network
@@ -46,15 +47,15 @@ type SocketWorker struct {
 	ticker     *time.Ticker
 	pinCfg     *config.Access
 	eventQueue chan *WorkerEvent
-	writeQueue chan *libol.FrameMessage
+	writeQueue chan *libsock.FrameMessage
 	jobber     []jobTimer
 	record     *libol.SafeStrInt64
 	out        *libol.SubLogger
-	wlFrame    *libol.FrameMessage // Last frame from write.
+	wlFrame    *libsock.FrameMessage // Last frame from write.
 	authState  atomic.Uint32
 }
 
-func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker {
+func NewSocketWorker(client libsock.SocketClient, c *config.Access) *SocketWorker {
 	module := client.String() + "|" + c.Network
 	t := &SocketWorker{
 		client:     client,
@@ -65,7 +66,7 @@ func NewSocketWorker(client libol.SocketClient, c *config.Access) *SocketWorker 
 		ticker:     time.NewTicker(2 * time.Second),
 		pinCfg:     c,
 		eventQueue: make(chan *WorkerEvent, 32),
-		writeQueue: make(chan *libol.FrameMessage, c.Queue.SockWr),
+		writeQueue: make(chan *libsock.FrameMessage, c.Queue.SockWr),
 		jobber:     make([]jobTimer, 0, 32),
 		out:        libol.NewSubLogger(module),
 	}
@@ -100,14 +101,14 @@ func (t *SocketWorker) Initialize() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.out.Info("SocketWorker.Initialize")
-	t.client.SetListener(libol.ClientListener{
-		OnConnected: func(client libol.SocketClient) error {
+	t.client.SetListener(libsock.ClientListener{
+		OnConnected: func(client libsock.SocketClient) error {
 			t.authState.Store(0)
 			t.record.Set(rtConnected, time.Now().Unix())
 			t.eventQueue <- NewEvent(EvSocConed, "from socket")
 			return nil
 		},
-		OnClose: func(client libol.SocketClient) error {
+		OnClose: func(client libsock.SocketClient) error {
 			t.authState.Store(0)
 			t.record.Set(rtClosed, time.Now().Unix())
 			t.eventQueue <- NewEvent(EvSocClosed, "from socket")
@@ -125,7 +126,7 @@ func (t *SocketWorker) Start() {
 	libol.Go(t.Loop)
 }
 
-func (t *SocketWorker) sendLeave(client libol.SocketClient) error {
+func (t *SocketWorker) sendLeave(client libsock.SocketClient) error {
 	if client == nil {
 		return libol.NewErr("client is nil")
 	}
@@ -147,7 +148,7 @@ func (t *SocketWorker) sendLeave(client libol.SocketClient) error {
 		return err
 	}
 	t.out.Cmd("SocketWorker.leave: left: %s", body)
-	m := libol.NewControlFrame(libol.LeftReq, body)
+	m := libsock.NewControlFrame(libsock.LeftReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		return err
 	}
@@ -183,9 +184,9 @@ func (t *SocketWorker) connect() error {
 	t.out.Warn("SocketWorker.connect: %s", t.client)
 	t.client.Close()
 	s := t.client.Status()
-	if s != libol.ClInit {
+	if s != libsock.ClInit {
 		t.out.Warn("SocketWorker.connect: %s %s", t.client, s)
-		t.client.SetStatus(libol.ClInit)
+		t.client.SetStatus(libsock.ClInit)
 	}
 	t.record.Add(rtConnects, 1)
 	if err := t.client.Connect(); err != nil {
@@ -220,7 +221,7 @@ func (t *SocketWorker) reconnect() {
 	t.jobber = append(t.jobber, job)
 }
 
-func (t *SocketWorker) sendLogin(client libol.SocketClient) error {
+func (t *SocketWorker) sendLogin(client libsock.SocketClient) error {
 	if client == nil {
 		return libol.NewErr("client is nil")
 	}
@@ -229,7 +230,7 @@ func (t *SocketWorker) sendLogin(client libol.SocketClient) error {
 		return err
 	}
 	t.out.Cmd("SocketWorker.toLogin: %s", body)
-	m := libol.NewControlFrame(libol.LoginReq, body)
+	m := libsock.NewControlFrame(libsock.LoginReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		return err
 	}
@@ -237,7 +238,7 @@ func (t *SocketWorker) sendLogin(client libol.SocketClient) error {
 }
 
 // toLogin request
-func (t *SocketWorker) toLogin(client libol.SocketClient) error {
+func (t *SocketWorker) toLogin(client libsock.SocketClient) error {
 	if err := t.sendLogin(client); err != nil {
 		t.out.Error("SocketWorker.toLogin: %s", err)
 		return err
@@ -245,7 +246,7 @@ func (t *SocketWorker) toLogin(client libol.SocketClient) error {
 	return nil
 }
 
-func (t *SocketWorker) sendIpAddr(client libol.SocketClient) error {
+func (t *SocketWorker) sendIpAddr(client libsock.SocketClient) error {
 	if client == nil {
 		return libol.NewErr("client is nil")
 	}
@@ -254,7 +255,7 @@ func (t *SocketWorker) sendIpAddr(client libol.SocketClient) error {
 		return err
 	}
 	t.out.Cmd("SocketWorker.toNetwork: %s", body)
-	m := libol.NewControlFrame(libol.IpAddrReq, body)
+	m := libsock.NewControlFrame(libsock.IpAddrReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		return err
 	}
@@ -273,7 +274,7 @@ func (t *SocketWorker) canReqAddr() bool {
 }
 
 // network request
-func (t *SocketWorker) toNetwork(client libol.SocketClient) error {
+func (t *SocketWorker) toNetwork(client libsock.SocketClient) error {
 	if !t.canReqAddr() {
 		t.out.Info("SocketWorker.toNetwork: notNeed")
 		return nil
@@ -292,7 +293,7 @@ func (t *SocketWorker) onLogin(resp []byte) error {
 	}
 	if strings.HasPrefix(string(resp), "okay") {
 		t.authState.Store(1)
-		t.client.SetStatus(libol.ClAuth)
+		t.client.SetStatus(libsock.ClAuth)
 		if t.listener.OnSuccess != nil {
 			_ = t.listener.OnSuccess(t)
 		}
@@ -303,7 +304,7 @@ func (t *SocketWorker) onLogin(resp []byte) error {
 		t.out.Info("SocketWorker.onLogin: success")
 	} else {
 		t.authState.Store(0)
-		t.client.SetStatus(libol.ClUnAuth)
+		t.client.SetStatus(libsock.ClUnAuth)
 		t.out.Error("SocketWorker.onLogin: invalid credentials")
 	}
 	return nil
@@ -350,7 +351,7 @@ func (t *SocketWorker) onPong(resp []byte) error {
 }
 
 // handle instruct from virtual switch
-func (t *SocketWorker) onInstruct(frame *libol.FrameMessage) error {
+func (t *SocketWorker) onInstruct(frame *libsock.FrameMessage) error {
 	if !frame.IsControl() {
 		return nil
 	}
@@ -359,17 +360,17 @@ func (t *SocketWorker) onInstruct(frame *libol.FrameMessage) error {
 		t.out.Cmd("SocketWorker.onInstruct %s %s", action, resp)
 	}
 	switch action {
-	case libol.LoginResp:
+	case libsock.LoginResp:
 		return t.onLogin(resp)
-	case libol.IpAddrResp:
+	case libsock.IpAddrResp:
 		t.record.Set(rtIpAddr, time.Now().Unix())
 		return t.onIpAddr(resp)
-	case libol.PongResp:
+	case libsock.PongResp:
 		t.record.Set(rtLive, time.Now().Unix())
 		return t.onPong(resp)
-	case libol.SignReq:
+	case libsock.SignReq:
 		return t.onSignIn(resp)
-	case libol.LeftReq:
+	case libsock.LeftReq:
 		return t.onLeft(resp)
 	default:
 		t.out.Warn("SocketWorker.onInstruct: %s %s", action, resp)
@@ -385,7 +386,7 @@ type PingMsg struct {
 	Address    string `json:"address"`
 }
 
-func (t *SocketWorker) sendPing(client libol.SocketClient) error {
+func (t *SocketWorker) sendPing(client libsock.SocketClient) error {
 	if client == nil {
 		return libol.NewErr("client is nil")
 	}
@@ -401,7 +402,7 @@ func (t *SocketWorker) sendPing(client libol.SocketClient) error {
 		return err
 	}
 	t.out.Cmd("SocketWorker.sendPing: ping= %s", body)
-	m := libol.NewControlFrame(libol.PingReq, body)
+	m := libsock.NewControlFrame(libsock.PingReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		return err
 	}
@@ -413,7 +414,7 @@ func (t *SocketWorker) keepAlive() {
 		return
 	}
 	t.keepalive.Update()
-	if t.client.Have(libol.ClAuth) {
+	if t.client.Have(libsock.ClAuth) {
 		// Whether ipAddr request was already? and try ipAddr?
 		rtIp := t.record.Get(rtIpAddr)
 		rtSuc := t.record.Get(rtSuccess)
@@ -511,10 +512,10 @@ func (t *SocketWorker) Loop() {
 }
 
 func (t *SocketWorker) isStopped() bool {
-	return t.client == nil || t.client.Have(libol.ClTerminal)
+	return t.client == nil || t.client.Have(libsock.ClTerminal)
 }
 
-func (t *SocketWorker) Read(client libol.SocketClient) {
+func (t *SocketWorker) Read(client libsock.SocketClient) {
 	for {
 		data, err := client.ReadMsg()
 		if err != nil {
@@ -545,7 +546,7 @@ func (t *SocketWorker) Read(client libol.SocketClient) {
 	}
 }
 
-func (t *SocketWorker) DoWrite(frame *libol.FrameMessage) error {
+func (t *SocketWorker) DoWrite(frame *libsock.FrameMessage) error {
 	if t.out.Has(libol.DEBUG) {
 		t.out.Debug("SocketWorker.DoWrite: %x", frame)
 	}
@@ -566,7 +567,7 @@ func (t *SocketWorker) DoWrite(frame *libol.FrameMessage) error {
 	return nil
 }
 
-func (t *SocketWorker) Write(frame *libol.FrameMessage) error {
+func (t *SocketWorker) Write(frame *libsock.FrameMessage) error {
 	t.writeQueue <- frame
 	return nil
 }

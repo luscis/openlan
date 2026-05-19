@@ -6,19 +6,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 )
 
 type User struct {
-	Alias    string             `json:"alias"`
-	Name     string             `json:"name"`
-	Network  string             `json:"network"`
-	Password string             `json:"password"`
-	UUID     string             `json:"uuid"`
-	System   string             `json:"system"`
-	Role     string             `json:"type"` // admin , guest or ldap
-	Last     libol.SocketClient `json:"last"` // lastly accessed by this.
-	Lease    time.Time          `json:"leastTime"`
+	Alias    string               `json:"alias"`
+	Name     string               `json:"name"`
+	Network  string               `json:"network"`
+	Password string               `json:"password"`
+	UUID     string               `json:"uuid"`
+	System   string               `json:"system"`
+	Role     string               `json:"type"` // admin , guest or ldap
+	Last     libsock.SocketClient `json:"last"` // lastly accessed by this.
+	Lease    time.Time            `json:"leastTime"`
 	UpdateAt int64
 }
 

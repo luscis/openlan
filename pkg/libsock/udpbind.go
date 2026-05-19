@@ -1,33 +1,35 @@
-package libol
+package libsock
 
 import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
-type XDP struct {
+type UDPBind struct {
 	lock       sync.RWMutex
 	bufSize    int
 	connection *net.UDPConn
 	address    *net.UDPAddr
-	sessions   *SafeStrMap
-	accept     chan *XDPConn
+	sessions   *libol.SafeStrMap
+	accept     chan *UDPBindConn
 }
 
-func XDPListen(addr string, clients, bufSize int) (net.Listener, error) {
+func UDPBindListen(addr string, clients, bufSize int) (net.Listener, error) {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		return nil, err
 	}
 	if bufSize == 0 {
-		bufSize = MaxBuf
+		bufSize = 4096
 	}
-	Debug("bufSize: %d", bufSize)
-	x := &XDP{
+	libol.Debug("bufSize: %d", bufSize)
+	x := &UDPBind{
 		address:  udpAddr,
-		sessions: NewSafeStrMap(clients),
-		accept:   make(chan *XDPConn, 2),
+		sessions: libol.NewSafeStrMap(clients),
+		accept:   make(chan *UDPBindConn, 2),
 		bufSize:  bufSize,
 	}
 	conn, err := net.ListenUDP("udp", udpAddr)
@@ -35,31 +37,31 @@ func XDPListen(addr string, clients, bufSize int) (net.Listener, error) {
 		return nil, err
 	}
 	x.connection = conn
-	Go(x.Loop)
+	libol.Go(x.Loop)
 	return x, nil
 }
 
-func (x *XDP) Recv(udpAddr *net.UDPAddr, data []byte) error {
-	// dispatch to XDPConn and new accept
+func (x *UDPBind) Recv(udpAddr *net.UDPAddr, data []byte) error {
+	// dispatch to UDPBindConn and new accept
 	addr := udpAddr.String()
 	if obj, ok := x.sessions.GetEx(addr); ok {
-		conn := obj.(*XDPConn)
+		conn := obj.(*UDPBindConn)
 		conn.toQueue(data)
 		return nil
 	}
-	conn := &XDPConn{
+	conn := &UDPBindConn{
 		connection: x.connection,
 		remoteAddr: udpAddr,
 		localAddr:  x.address,
 		readQueue:  make(chan []byte, 1024),
 		closed:     false,
-		onClose: func(conn *XDPConn) {
-			Info("XDP.Recv: onClose %s", conn)
+		onClose: func(conn *UDPBindConn) {
+			libol.Info("UDPBind.Recv: onClose %s", conn)
 			x.sessions.Del(addr)
 		},
 	}
 	if err := x.sessions.Set(addr, conn); err != nil {
-		return NewErr("session.Set: %s", err)
+		return libol.NewErr("session.Set: %s", err)
 	}
 	x.accept <- conn
 	conn.toQueue(data)
@@ -67,28 +69,28 @@ func (x *XDP) Recv(udpAddr *net.UDPAddr, data []byte) error {
 }
 
 // Loop forever
-func (x *XDP) Loop() {
+func (x *UDPBind) Loop() {
 	for {
 		data := make([]byte, x.bufSize)
 		n, udpAddr, err := x.connection.ReadFromUDP(data)
 		if err != nil {
-			Error("XDP.Loop %s", err)
+			libol.Error("UDPBind.Loop %s", err)
 			break
 		}
 		if err := x.Recv(udpAddr, data[:n]); err != nil {
-			Warn("XDP.Loop: %s", err)
+			libol.Warn("UDPBind.Loop: %s", err)
 		}
 	}
 }
 
 // Accept waits for and returns the next connection to the listener.
-func (x *XDP) Accept() (net.Conn, error) {
+func (x *UDPBind) Accept() (net.Conn, error) {
 	return <-x.accept, nil
 }
 
 // Close closes the listener.
 // Any blocked Accept operations will be unblocked and return errors.
-func (x *XDP) Close() error {
+func (x *UDPBind) Close() error {
 	x.lock.Lock()
 	defer x.lock.Unlock()
 
@@ -97,11 +99,11 @@ func (x *XDP) Close() error {
 }
 
 // returns the listener's network address.
-func (x *XDP) Addr() net.Addr {
+func (x *UDPBind) Addr() net.Addr {
 	return x.address
 }
 
-type XDPConn struct {
+type UDPBindConn struct {
 	lock       sync.RWMutex
 	connection *net.UDPConn
 	remoteAddr *net.UDPAddr
@@ -110,10 +112,10 @@ type XDPConn struct {
 	closed     bool
 	readDead   time.Time
 	writeDead  time.Time
-	onClose    func(conn *XDPConn)
+	onClose    func(conn *UDPBindConn)
 }
 
-func (c *XDPConn) toQueue(b []byte) {
+func (c *UDPBindConn) toQueue(b []byte) {
 	c.lock.RLock()
 	if c.closed {
 		c.lock.RUnlock()
@@ -124,18 +126,18 @@ func (c *XDPConn) toQueue(b []byte) {
 	c.readQueue <- b
 }
 
-func (c *XDPConn) Read(b []byte) (n int, err error) {
+func (c *UDPBindConn) Read(b []byte) (n int, err error) {
 	c.lock.RLock()
 	if c.closed {
 		c.lock.RUnlock()
-		return 0, NewErr("read on closed")
+		return 0, libol.NewErr("read on closed")
 	}
 	var timeout *time.Timer
 	outChan := make(<-chan time.Time)
 	if !c.readDead.IsZero() {
 		if time.Now().After(c.readDead) {
 			c.lock.RUnlock()
-			return 0, NewErr("read timeout")
+			return 0, libol.NewErr("read timeout")
 		}
 		delay := time.Until(c.readDead)
 		timeout = time.NewTimer(delay)
@@ -146,7 +148,7 @@ func (c *XDPConn) Read(b []byte) (n int, err error) {
 	// wait for read event or timeout or error
 	select {
 	case <-outChan:
-		return 0, NewErr("read timeout")
+		return 0, libol.NewErr("read timeout")
 	case d := <-c.readQueue:
 		if timeout != nil {
 			timeout.Stop()
@@ -155,18 +157,18 @@ func (c *XDPConn) Read(b []byte) (n int, err error) {
 	}
 }
 
-func (c *XDPConn) Write(b []byte) (n int, err error) {
+func (c *UDPBindConn) Write(b []byte) (n int, err error) {
 	c.lock.RLock()
 	if c.closed {
 		c.lock.RUnlock()
-		return 0, NewErr("write to closed")
+		return 0, libol.NewErr("write to closed")
 	} else {
 		c.lock.RUnlock()
 	}
 	return c.connection.WriteToUDP(b, c.remoteAddr)
 }
 
-func (c *XDPConn) Close() error {
+func (c *UDPBindConn) Close() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.closed {
@@ -181,15 +183,15 @@ func (c *XDPConn) Close() error {
 	return nil
 }
 
-func (c *XDPConn) LocalAddr() net.Addr {
+func (c *UDPBindConn) LocalAddr() net.Addr {
 	return c.localAddr
 }
 
-func (c *XDPConn) RemoteAddr() net.Addr {
+func (c *UDPBindConn) RemoteAddr() net.Addr {
 	return c.remoteAddr
 }
 
-func (c *XDPConn) SetDeadline(t time.Time) error {
+func (c *UDPBindConn) SetDeadline(t time.Time) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.readDead = t
@@ -197,20 +199,20 @@ func (c *XDPConn) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (c *XDPConn) SetReadDeadline(t time.Time) error {
+func (c *UDPBindConn) SetReadDeadline(t time.Time) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.readDead = t
 	return nil
 }
 
-func (c *XDPConn) SetWriteDeadline(t time.Time) error {
+func (c *UDPBindConn) SetWriteDeadline(t time.Time) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.writeDead = t
 	return nil
 }
 
-func (c *XDPConn) String() string {
+func (c *UDPBindConn) String() string {
 	return c.remoteAddr.String()
 }

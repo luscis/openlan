@@ -1,26 +1,26 @@
 package models
 
 import (
-	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/network"
 )
 
 type Access struct {
-	UUID     string             `json:"uuid"`
-	Alias    string             `json:"alias"`
-	Network  string             `json:"network"`
-	User     string             `json:"user"`
-	Protocol string             `json:"protocol"`
-	Server   string             `json:"server"`
-	Uptime   int64              `json:"uptime"`
-	Status   string             `json:"status"`
-	IfName   string             `json:"device"`
-	Client   libol.SocketClient `json:"-"`
-	Device   network.Taper      `json:"-"`
-	System   string             `json:"system"`
+	UUID     string               `json:"uuid"`
+	Alias    string               `json:"alias"`
+	Network  string               `json:"network"`
+	User     string               `json:"user"`
+	Protocol string               `json:"protocol"`
+	Server   string               `json:"server"`
+	Uptime   int64                `json:"uptime"`
+	Status   string               `json:"status"`
+	IfName   string               `json:"device"`
+	Client   libsock.SocketClient `json:"-"`
+	Device   network.Taper        `json:"-"`
+	System   string               `json:"system"`
 }
 
-func NewAccess(c libol.SocketClient, d network.Taper, proto string) (w *Access) {
+func NewAccess(c libsock.SocketClient, d network.Taper, proto string) (w *Access) {
 	return &Access{
 		Alias:    "",
 		Server:   c.LocalAddr(),

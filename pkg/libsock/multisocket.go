@@ -1,8 +1,10 @@
-package libol
+package libsock
 
 import (
 	"strings"
 	"sync"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type MultiSocketServer struct {
@@ -48,7 +50,7 @@ func (m *MultiSocketServer) Accept() {
 
 func (m *MultiSocketServer) ListClient() <-chan SocketClient {
 	out := make(chan SocketClient, 64)
-	Go(func() {
+	libol.Go(func() {
 		for _, s := range m.servers {
 			for c := range s.ListClient() {
 				if c == nil {
@@ -131,4 +133,3 @@ func (m *MultiSocketServer) SetTimeout(v int64) {
 		s.SetTimeout(v)
 	}
 }
-
