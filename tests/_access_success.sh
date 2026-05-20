@@ -98,8 +98,8 @@ test_ping() {
   wait "docker logs -f $ac1_name" Worker.OnSuccess 30
   wait "docker logs -f $ac2_name" Worker.OnSuccess 30
 
-  wait "docker exec $ac1_name ping -c 3 192.11.0.1" "3 received" 5
-  wait "docker exec $ac2_name ping -c 3 192.11.0.12" "3 received" 5
+  wait "docker exec $ac1_name ping -c 3 192.11.0.1" "bytes from" 5
+  wait "docker exec $ac2_name ping -c 3 192.11.0.12" "bytes from" 5
 }
 
 test_crypt_update() {

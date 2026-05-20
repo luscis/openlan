@@ -35,7 +35,7 @@ wait() {
       sleep 1
       continue
     fi
-    if cat $out | grep "$match"; then
+    if cat $out | grep "$match" -C 3; then
       code=0; break
     fi
     if ! ps -p $pid > /dev/null; then
@@ -47,6 +47,33 @@ wait() {
   if ps -p $pid > /dev/null; then
     kill $pid;
   fi
+  rm -f $out
+  set -x
+  return $code
+}
+
+check() {
+  set +x
+  local cmd=$1; local match=$2
+  local count=$3; local code=1
+  local out=/tmp/check.1
+
+  if [[ $count == "" ]]; then
+    count=3
+  fi
+
+  for i in $(seq 1 $count); do
+    rm -f $out
+    if $cmd > $out 2>&1; then
+      :
+    fi
+    if cat $out | grep "$match" -C 3; then
+      code=0
+      break
+    fi
+    sleep 1
+  done
+
   rm -f $out
   set -x
   return $code

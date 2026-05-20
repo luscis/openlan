@@ -11,6 +11,8 @@ scenario_description() {
   case "$file" in
     _access_success.sh) echo "two access clients authenticate and can communicate" ;;
     _access_fail.sh) echo "reject client authentication with wrong password" ;;
+    _access_admin_multi_login.sh) echo "admin user can login concurrently from multiple access clients" ;;
+    _access_same_user_mutex.sh) echo "same user multiple access logins are mutually exclusive" ;;
     _access_openvpn.sh) echo "add/remove OpenVPN and validate cipher negotiation" ;;
     _switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
     _switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;
