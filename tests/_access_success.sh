@@ -2,89 +2,133 @@
 
 source $PWD/macro.sh
 
+net_name=tests-net1
+sw1_name=tests-sw1
+ac1_name=tests-sw1.ac1
+ac2_name=tests-sw1.ac2
+crypt_secret_v1=ea64d5b0c96c
+crypt_secret_v2=ea64d5b0c96d
+
+# Topology:
+# - Docker mgmt network: 172.255.0.0/24
+#   sw1=172.255.0.241, ac1/ac2 join the same mgmt network.
+# - OpenLAN service network "example": 192.11.0.0/24
+#   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
+# - Validation path: ac1 -> sw1 and ac2 -> sw1 connectivity by ping.
+
+describe() {
+  echo "==> scenario: access_success"
+  echo "    description: access success path: two access clients authenticate and can communicate"
+}
+
 setup_net() {
-  docker network inspect tests-net1 || {
-    docker network create tests-net1 \
+  docker network inspect $net_name || {
+    docker network create $net_name \
       --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
   }
 }
 
 setup_sw1() {
-  mkdir -p /opt/openlan/tests-sw1
-  mkdir -p /opt/openlan/tests-sw1/etc/openlan/switch
-  cat > /opt/openlan/tests-sw1/etc/openlan/switch/switch.yaml <<EOF
-protocol: tcp
-crypt:
-  algorithm: aes-128
-  secret: ea64d5b0c96c
+  local name="$sw1_name"
+  local address=172.255.0.241
+
+  mkdir -p /opt/openlan/$name/etc/openlan/switch
+  cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
+{
+  "protocol": "tcp",
+  "crypt": {
+    "algorithm": "aes-128",
+    "secret": "$crypt_secret_v1"
+  }
+}
 EOF
 
   # Start switch: tests-sw1
-  docker run -d --rm --privileged --network tests-net1 --ip 172.255.0.2 \
-    --volume /opt/openlan/tests-sw1/etc/openlan:/etc/openlan \
-    --name tests-sw1 $IMAGE /usr/bin/openlan-switch -conf:dir /etc/openlan/switch
-
-  wait "docker logs -f tests-sw1" Http.Start 30
+  start_switch $name $net_name $address
+  wait "docker logs -f $name" Http.Start 30
 
   # Add a network.
-  docker exec tests-sw1 openlan network --name example add --address 172.11.0.1/24
+  docker exec $name openlan network --name example add --address 192.11.0.1/24
   # Add users
-  docker exec tests-sw1 openlan user add --name t1@example --password 123456
-  docker exec tests-sw1 openlan user add --name t2@example --password 123457
+  docker exec $name openlan user add --name t1@example --password 123456
+  docker exec $name openlan user add --name t2@example --password 123457
 }
 
 setup_ac1() {
-  mkdir -p /opt/openlan/tests-sw1/etc/openlan/access
+  local name="$ac1_name"
+  local secret="${1:-$crypt_secret_v1}"
+
+  mkdir -p /opt/openlan/$name/etc/openlan
   # Start access: ac1
-  cat > /opt/openlan/tests-sw1/etc/openlan/access/t1.yaml <<EOF
+  cat > /opt/openlan/$name/etc/openlan/access.yaml <<EOF
 protocol: tcp
 crypt:
   algorithm: aes-128
-  secret: ea64d5b0c96c
-connection: 172.255.0.2
+  secret: $secret
+connection: 172.255.0.241
 username: t1@example
 password: 123456
 interface:
-  address: 172.11.0.11/24
+  address: 192.11.0.11/24
 EOF
-  docker run -d --rm --privileged --network tests-net1 \
-    --volume /opt/openlan/tests-sw1/etc/openlan:/etc/openlan \
-    --name tests-sw1.ac1 $IMAGE /usr/bin/openlan-access -conf /etc/openlan/access/t1.yaml
-
-  wait "docker logs -f tests-sw1.ac1" Worker.OnSuccess 30
+  start_access $name $net_name
 }
 
 setup_ac2() {
+  local name="$ac2_name"
+  local secret="${1:-$crypt_secret_v1}"
+
+  mkdir -p /opt/openlan/$name/etc/openlan
   # Start access: ac2
-  cat > /opt/openlan/tests-sw1/etc/openlan/access/t2.yaml <<EOF
-protocol: tcp
+  cat > /opt/openlan/$name/etc/openlan/access.yaml <<EOF
+protocol: udp
 crypt:
   algorithm: aes-128
-  secret: ea64d5b0c96c
-connection: 172.255.0.2
+  secret: $secret
+connection: 172.255.0.241
 username: t2@example
 password: 123457
 interface:
-  address: 172.11.0.12/24
+  address: 192.11.0.12/24
 EOF
-  docker run -d --rm --privileged --network tests-net1 \
-    --volume /opt/openlan/tests-sw1/etc/openlan:/etc/openlan \
-    --name tests-sw1.ac2 $IMAGE /usr/bin/openlan-access -conf /etc/openlan/access/t2.yaml
-
-  wait "docker logs -f tests-sw1.ac2" Worker.OnSuccess
+  start_access $name $net_name
 }
 
-ping() {
-  wait "docker exec tests-sw1.ac1 ping -c 3 172.11.0.1" "3 received" 5
-  wait "docker exec tests-sw1.ac1 ping -c 3 172.11.0.12" "3 received" 5
+test_ping() {
+  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
+  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
+
+  wait "docker exec $ac1_name ping -c 3 192.11.0.1" "3 received" 5
+  wait "docker exec $ac2_name ping -c 3 192.11.0.12" "3 received" 5
+}
+
+test_crypt_update() {
+  docker exec $sw1_name openlan crypt update --algorithm aes-128 --secret "$crypt_secret_v2"
+  docker exec $sw1_name openlan crypt ls | grep "secret: $crypt_secret_v2"
+
+  docker stop $ac1_name
+  docker stop $ac2_name
+
+  setup_ac1 "$crypt_secret_v1"
+  wait "docker logs -f $ac1_name" SocketClientImpl.Reset 30
+
+  docker stop $ac1_name
+  setup_ac1 "$crypt_secret_v2"
+  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
+
+  setup_ac2 "$crypt_secret_v2"
+  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
+  test_ping
 }
 
 setup() {
+  describe
   setup_net
   setup_sw1
   setup_ac1
   setup_ac2
-  ping
+  test_ping
+  test_crypt_update
 }
 
 main
