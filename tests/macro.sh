@@ -2,12 +2,14 @@
 ## variables
 
 export ARCH=amd64
-export VERSION=unknown
 
 ## functions
 version() {
   $PWD/../dist/version.sh
 }
+
+export VERSION=$(version)
+export IMAGE="luscis/openlan:$VERSION.$ARCH.deb"
 
 flush() {
   local out=$1
@@ -84,9 +86,6 @@ pause() {
   read
 }
 
-export VERSION=$(version)
-export IMAGE="luscis/openlan:$VERSION.$ARCH.deb"
-
 main() {
   setup
   if [[ $PAUSE == true ]]; then
@@ -100,9 +99,17 @@ start_switch() {
   local network_name=$2
   local address=$3
 
-  # Start switch:
+  # Start a paused switch container with openlan and ipsec.
   docker run -d --rm --privileged \
     --network $network_name --ip $address \
+    --volume /opt/openlan/$name/etc/openlan:/etc/openlan \
+    --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d \
+    --volume /opt/openlan/$name/run/pluto:/run/pluto \
+    --name $name-pause $IMAGE \
+    /bin/bash -c "trap : TERM; sleep infinity & wait"
+  # Start switch:
+  docker run -d --rm --privileged \
+    --network container:$name-pause \
     --volume /opt/openlan/$name/etc/openlan:/etc/openlan \
     --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d \
     --volume /opt/openlan/$name/run/pluto:/run/pluto \
@@ -110,15 +117,15 @@ start_switch() {
     /var/openlan/script/switch.sh
   # Start ipsec.
   docker run -d --rm --privileged \
-    --network $network_name \
+    --network container:$name-pause \
     --volume /opt/openlan/$name/etc/openlan:/etc/openlan \
     --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d \
     --volume /opt/openlan/$name/run/pluto:/run/pluto \
     --name $name-ipsec $IMAGE \
     /var/openlan/script/ipsec.sh
- }
+}
 
- start_access() {
+start_access() {
   local name=$1
   local network_name=$2
 
@@ -128,9 +135,9 @@ start_switch() {
     --volume /opt/openlan/$name/etc/openlan:/etc/openlan \
     --name $name $IMAGE \
     /usr/bin/openlan-access -conf /etc/openlan/access.yaml
- }
+}
 
- start_openvpn() {
+start_openvpn() {
   local name=$1
   local network_name=$2
 
@@ -140,11 +147,22 @@ start_switch() {
     --volume /opt/openlan/$name/ovpn:/ovpn \
     --name $name $IMAGE \
     /usr/sbin/openvpn --config /ovpn/client.ovpn --auth-user-pass /ovpn/auth.txt --verb 3
- }
+}
 
- run_d() {
-  local name=$1
-  local cmd=$2
+cleanup() {
+  set +x
+  local containers
+  local networks
 
-  docker exec $name $cmd
- }
+  containers=$(docker ps -aq --filter "name=^tests-" 2>/dev/null)
+  if [[ -n "$containers" ]]; then
+    docker rm -f $containers >/dev/null 2>&1 || true
+  fi
+  networks=$(docker network ls -q --filter "name=^tests-" 2>/dev/null)
+  if [[ -n "$networks" ]]; then
+    docker network rm $networks >/dev/null 2>&1 || true
+  fi
+
+  rm -rf /opt/openlan/tests-*
+  set -x
+}

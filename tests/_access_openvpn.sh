@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN OpenVPN scenario test.
-
-source $PWD/macro.sh
 
 net_name=tests-net-openvpn
 sw1_name=tests-sw-openvpn
@@ -19,15 +16,8 @@ vpn2_name=tests-sw-openvpn.vpn2
 #   tcp/1194 with subnet 10.98.0.0/24 for SM4 cipher checks.
 # - Validation path: OpenVPN add/remove lifecycle and data channel cipher negotiation.
 
-describe() {
-  echo "==> scenario: access_openvpn"
-  echo "    description: openvpn management path: add/remove OpenVPN and validate cipher negotiation"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1
-  }
 }
 
 setup_sw1() {
@@ -132,7 +122,6 @@ EOF
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_openvpn

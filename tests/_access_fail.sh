@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN Access UT: authentication failure path.
-
-source $PWD/macro.sh
 
 net_name=tests-net-authfail
 sw1_name=tests-sw-authfail
@@ -15,15 +12,8 @@ ac1_badpass_name=tests-sw-authfail.acbad
 #   sw1 gateway=192.31.0.1, client config asks for 192.31.0.11.
 # - Validation path: authentication must fail with wrong password.
 
-describe() {
-  echo "==> scenario: access_fail"
-  echo "    description: access failure path: reject client authentication with wrong password"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
-  }
 }
 
 setup_sw1() {
@@ -72,7 +62,6 @@ EOF
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_ac_badpass

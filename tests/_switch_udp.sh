@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN Switch UT: UDP transport path.
-
-source $PWD/macro.sh
 
 net_name=tests-net-udp
 sw1_name=tests-sw-udp1
@@ -17,15 +14,8 @@ sw2_name=tests-sw-udp2
 #   sw2 -> sw1 over UDP output.
 # - Validation path: sw2 ping sw1 through udp transport.
 
-describe() {
-  echo "==> scenario: switch_udp"
-  echo "    description: switch udp path: build two switches and verify udp output connectivity"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1
-  }
 }
 
 setup_sw1() {
@@ -76,7 +66,6 @@ test_ping() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_sw2
