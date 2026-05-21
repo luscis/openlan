@@ -2,6 +2,8 @@
 
 pushd $(dirname $0) > /dev/null
 
+source ./macro.sh
+
 shopt -s nullglob
 scenarios=( _*.sh )
 shopt -u nullglob
@@ -14,6 +16,9 @@ scenario_description() {
     _access_admin_multi_login.sh) echo "admin user can login concurrently from multiple access clients" ;;
     _access_same_user_mutex.sh) echo "same user multiple access logins are mutually exclusive" ;;
     _access_openvpn.sh) echo "add/remove OpenVPN and validate cipher negotiation" ;;
+    _access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
+    _access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
+    _access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
     _switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
     _switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;
     _switch_three_node.sh) echo "validate forwarding and route reachability via sw2" ;;
@@ -31,22 +36,8 @@ print_scenario_header() {
   printf "==> %-17s : %s\n" "$name" "$desc"
 }
 
-cleanup() {
-  local containers
-  local networks
-
-  containers=$(docker ps -aq --filter "name=^tests-" 2>/dev/null)
-  if [[ -n "$containers" ]]; then
-    docker rm -f $containers
-  fi
-  networks=$(docker network ls -q --filter "name=^tests-" 2>/dev/null)
-  if [[ -n "$networks" ]]; then
-    docker network rm $networks
-  fi
-  rm -rf /opt/openlan/tests-*
-}
-
 run_scenario() {
+  set +x
   local key=$1
   local file
   local name
@@ -56,7 +47,9 @@ run_scenario() {
     name=${name%.sh}
     if [[ "$key" == "$name" || "$key" == "$file" || "$key" == "_${name}" || "$key" == "${name}.sh" ]]; then
       print_scenario_header "$file"
+      set -x
       source "$file"
+      set +x
       return 0
     fi
   done
@@ -71,11 +64,22 @@ run_scenario() {
 }
 
 run_all() {
+  set +x
   local file
+  local count=0
+  local scenario=""
   for file in "${scenarios[@]}"; do
     print_scenario_header "$file"
+    set -x
     source "$file"
+    set +x
+    local name=$(basename $file .sh | sed 's/^_//')
+    echo "scenario succeeded: $name" && sleep 2
+    count=$((count + 1))
+    scenario="$scenario $name"
   done
+  echo "Total scenarios succeeded: $count"
+  echo $scenario | xargs printf "  - %s\n"
 }
 
 if [[ $# -eq 0 ]]; then

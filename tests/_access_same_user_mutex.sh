@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN Access UT: same user multi-access mutual exclusion.
-
-source $PWD/macro.sh
 
 net_name=tests-net-same-user
 sw1_name=tests-sw-same-user
@@ -16,15 +13,8 @@ ac2_name=tests-sw-same-user.ac2
 #   same user logs in from ac1 and ac2.
 # - Validation path: same user multi-access login is mutually exclusive.
 
-describe() {
-  echo "==> scenario: access_same_user_mutex"
-  echo "    description: same user login from two access clients must be mutually exclusive"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1
-  }
 }
 
 setup_sw1() {
@@ -110,7 +100,6 @@ test_same_user_mutex() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   test_same_user_mutex

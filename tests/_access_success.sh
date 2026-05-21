@@ -1,7 +1,5 @@
 # OpenLAN Access UT.
 
-source $PWD/macro.sh
-
 net_name=tests-net1
 sw1_name=tests-sw1
 ac1_name=tests-sw1.ac1
@@ -16,16 +14,9 @@ crypt_secret_v2=ea64d5b0c96d
 #   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
 # - Validation path: ac1 -> sw1 and ac2 -> sw1 connectivity by ping.
 
-describe() {
-  echo "==> scenario: access_success"
-  echo "    description: access success path: two access clients authenticate and can communicate"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name \
       --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
-  }
 }
 
 setup_sw1() {
@@ -122,7 +113,6 @@ test_crypt_update() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_ac1

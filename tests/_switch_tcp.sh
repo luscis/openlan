@@ -1,7 +1,5 @@
 # OpenLAN Access UT.
 
-source $PWD/macro.sh
-
 net_name=tests-net1
 sw1_name=tests-sw1
 sw2_name=tests-sw2
@@ -16,15 +14,8 @@ sw3_name=tests-sw3
 #   sw2 -> sw1 first, sw3 -> sw1 first, then sw3 -> sw2.
 # - Validation path: verify tcp forwarding reachability between switches.
 
-describe() {
-  echo "==> scenario: switch_tcp"
-  echo "    description: switch tcp path: build switches and verify tcp forwarding connectivity"
-}
-
 setup_net() {
-  docker network inspect $net_name|| {
     docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
-  }
 }
 
 setup_sw1() {
@@ -125,7 +116,6 @@ test_ping() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_sw2

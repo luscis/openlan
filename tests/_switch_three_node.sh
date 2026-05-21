@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN route test: 3-node forwarding (sw3 -> sw2 -> sw1).
-
-source $PWD/macro.sh
 
 net_name=tests-net-route3
 sw1_name=tests-sw-route1
@@ -21,15 +18,8 @@ sw3_name=tests-sw-route3
 #   sw3 routes 10.251.0.11 via 192.51.0.1 and 10.251.0.12 via 192.51.0.2.
 # - Validation path: sw3 reaches sw1/sw2 service IPs and both VIPs.
 
-describe() {
-  echo "==> scenario: switch_three_node"
-  echo "    description: three-node route path: validate forwarding and route reachability via sw2"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
-  }
 }
 
 setup_sw1() {
@@ -115,7 +105,6 @@ test_route() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   setup_sw2

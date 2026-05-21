@@ -1,8 +1,5 @@
-#!/bin/bash
 
 # OpenLAN Access UT: admin user can login from multiple access clients.
-
-source $PWD/macro.sh
 
 net_name=tests-net-admin-multi
 sw1_name=tests-sw-admin-multi
@@ -16,15 +13,8 @@ ac2_name=tests-sw-admin-multi.ac2
 #   same admin user logs in from ac1 and ac2.
 # - Validation path: admin multi-login should be allowed at the same time.
 
-describe() {
-  echo "==> scenario: access_admin_multi_login"
-  echo "    description: admin user can login from two access clients concurrently"
-}
-
 setup_net() {
-  docker network inspect $net_name || {
     docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
-  }
 }
 
 setup_sw1() {
@@ -103,7 +93,6 @@ test_admin_multi_login() {
 }
 
 setup() {
-  describe
   setup_net
   setup_sw1
   test_admin_multi_login
