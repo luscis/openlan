@@ -34,11 +34,13 @@ func (l Server) List(w http.ResponseWriter, r *http.Request) {
 		}
 		data.Connection = append(data.Connection, &struct {
 			UpTime     int64            `json:"uptime"`
+			Protocol   string           `json:"protocol"`
 			LocalAddr  string           `json:"localAddr"`
 			RemoteAddr string           `json:"remoteAddr"`
 			Statistic  map[string]int64 `json:"statistic"`
 		}{
 			UpTime:     u.UpTime(),
+			Protocol:   u.Protocol(),
 			LocalAddr:  u.LocalAddr(),
 			RemoteAddr: u.RemoteAddr(),
 			Statistic:  u.Statistics(),

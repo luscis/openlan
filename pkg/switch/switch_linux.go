@@ -16,6 +16,7 @@ import (
 	"github.com/luscis/openlan/pkg/cache"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/network"
 	cn "github.com/luscis/openlan/pkg/network"
@@ -26,65 +27,87 @@ const (
 	UDPBin = "openudp"
 )
 
-func GetSocketServer(s *co.Switch) libol.SocketServer {
+func GetSocketServer(s *co.Switch) libsock.SocketServer {
 	crypt := s.Crypt
-	block := libol.NewBlockCrypt(crypt.Algo, crypt.Secret)
-	switch s.Protocol {
-	case "kcp":
-		c := libol.NewKcpConfig()
-		c.Block = block
-		c.Timeout = time.Duration(s.Timeout) * time.Second
-		return libol.NewKcpServer(s.Listen, c)
-	case "tcp":
-		c := &libol.TcpConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-			RdQus:   s.Queue.SockRd,
-			WrQus:   s.Queue.SockWr,
-		}
-		return libol.NewTcpServer(s.Listen, c)
-	case "udp":
-		c := &libol.UdpConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-		}
-		return libol.NewUdpServer(s.Listen, c)
-	case "ws":
-		c := &libol.WebConfig{
-			Block:   block,
-			Timeout: time.Duration(s.Timeout) * time.Second,
-			RdQus:   s.Queue.SockRd,
-			WrQus:   s.Queue.SockWr,
-		}
-		return libol.NewWebServer(s.Listen, c)
-	case "wss":
-		c := &libol.WebConfig{
+	block := libsock.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	streamProto, packetProto := getSwitchTransports(s.Protocol)
+
+	var tcpServer libsock.SocketServer
+	switch streamProto {
+	case "tls":
+		tcpCfg := &libsock.TcpConfig{
 			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
 		}
 		if s.Cert != nil {
-			c.Cert = &libol.CertConfig{
+			tcpCfg.Tls = &tls.Config{
+				Certificates: s.Cert.GetCertificates(),
+			}
+		}
+		tcpServer = libsock.NewTcpServer(s.Listen, tcpCfg)
+	case "ws", "wss":
+		webCfg := &libsock.WebConfig{
+			Block:   block,
+			Timeout: time.Duration(s.Timeout) * time.Second,
+			RdQus:   s.Queue.SockRd,
+			WrQus:   s.Queue.SockWr,
+		}
+		if streamProto == "wss" && s.Cert != nil {
+			webCfg.Cert = &libsock.CertConfig{
 				Crt: s.Cert.CrtFile,
 				Key: s.Cert.KeyFile,
 			}
 		}
-		return libol.NewWebServer(s.Listen, c)
+		tcpServer = libsock.NewWebServer(s.Listen, webCfg)
 	default:
-		c := &libol.TcpConfig{
+		tcpCfg := &libsock.TcpConfig{
 			Block:   block,
 			Timeout: time.Duration(s.Timeout) * time.Second,
 			RdQus:   s.Queue.SockRd,
 			WrQus:   s.Queue.SockWr,
 		}
-		if s.Cert != nil {
-			c.Tls = &tls.Config{
-				Certificates: s.Cert.GetCertificates(),
-			}
-		}
-		return libol.NewTcpServer(s.Listen, c)
+		tcpServer = libsock.NewTcpServer(s.Listen, tcpCfg)
 	}
+
+	var udpServer libsock.SocketServer
+	if packetProto == "kcp" {
+		kcpCfg := libsock.NewKcpConfig()
+		kcpCfg.Block = block
+		kcpCfg.Timeout = time.Duration(s.Timeout) * time.Second
+		udpServer = libsock.NewKcpServer(s.Listen, kcpCfg)
+	} else {
+		udpCfg := &libsock.UdpConfig{
+			Block:   block,
+			Timeout: time.Duration(s.Timeout) * time.Second,
+		}
+		udpServer = libsock.NewUdpServer(s.Listen, udpCfg)
+	}
+	return libsock.NewMultiSocketServer(tcpServer, udpServer)
+}
+
+func getSwitchTransports(value string) (streamProto string, packetProto string) {
+	streamProto = "tcp"
+	packetProto = "udp"
+	items := strings.Split(strings.ToLower(value), ",")
+	for _, item := range items {
+		switch strings.TrimSpace(item) {
+		case "tcp":
+			streamProto = "tcp"
+		case "tls", "ssl":
+			streamProto = "tls"
+		case "ws":
+			streamProto = "ws"
+		case "wss":
+			streamProto = "wss"
+		case "udp":
+			packetProto = "udp"
+		case "kcp":
+			packetProto = "kcp"
+		}
+	}
+	return streamProto, packetProto
 }
 
 type Apps struct {
@@ -92,7 +115,7 @@ type Apps struct {
 	Request *app.Request
 }
 
-type Hook func(client libol.SocketClient, frame *libol.FrameMessage) error
+type Hook func(client libsock.SocketClient, frame *libsock.FrameMessage) error
 
 type Switch struct {
 	lock    sync.Mutex
@@ -101,7 +124,7 @@ type Switch struct {
 	fire    *network.FireWallGlobal
 	hooks   []Hook
 	http    *Http
-	server  libol.SocketServer
+	server  libsock.SocketServer
 	worker  map[string]api.NetworkApi
 	uuid    string
 	newTime int64
@@ -129,8 +152,8 @@ func (v *Switch) Protocol() string {
 	return v.cfg.Protocol
 }
 
-func (v *Switch) enablePort(protocol, port string) {
-	v.out.Info("Switch.enablePort %s %s", protocol, port)
+func (v *Switch) openPort(protocol, port string) {
+	v.out.Info("Switch.openPort %s %s", protocol, port)
 	// allowed forward between source and prefix.
 	v.fire.AddRule(network.IPRule{
 		Table:   network.TFilter,
@@ -218,8 +241,8 @@ func (v *Switch) openPorts() {
 	if v.cfg.Http != nil {
 		TcpPorts = append(TcpPorts, v.GetPort(v.cfg.Http.Listen))
 	}
-	v.enablePort("udp", strings.Join(UdpPorts, ","))
-	v.enablePort("tcp", strings.Join(TcpPorts, ","))
+	v.openPort("udp", strings.Join(UdpPorts, ","))
+	v.openPort("tcp", strings.Join(TcpPorts, ","))
 }
 
 func (v *Switch) Initialize() {
@@ -257,7 +280,7 @@ func (v *Switch) Initialize() {
 	// Enable cert verify for access
 	cert := v.cfg.Cert
 	if cert != nil {
-		cache.User.SetCert(&libol.CertConfig{
+		cache.User.SetCert(&libsock.CertConfig{
 			Crt: cert.CrtFile,
 		})
 	}
@@ -334,7 +357,36 @@ func (v *Switch) GetCert() (ce schema.VersionCert) {
 	return ce
 }
 
-func (v *Switch) onFrame(client libol.SocketClient, frame *libol.FrameMessage) error {
+func (v *Switch) UpdateCrypt(data schema.SwitchCrypt) {
+	crypt := v.cfg.Crypt
+	if crypt == nil {
+		crypt = &co.Crypt{}
+		v.cfg.Crypt = crypt
+	}
+
+	if data.Algorithm != "" {
+		crypt.Algo = data.Algorithm
+	}
+	if data.Secret != "" {
+		crypt.Secret = data.Secret
+	}
+	crypt.Correct()
+	block := libsock.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	v.server.UpdateCrypt(block)
+	v.out.Info("Switch.UpdateCrypt: synced to socket server")
+}
+
+func (v *Switch) GetCrypt() (cp schema.SwitchCrypt) {
+	crypt := v.cfg.Crypt
+	if crypt == nil {
+		return cp
+	}
+	cp.Algorithm = crypt.Algo
+	cp.Secret = crypt.Secret
+	return cp
+}
+
+func (v *Switch) onFrame(client libsock.SocketClient, frame *libsock.FrameMessage) error {
 	for _, h := range v.hooks {
 		if v.out.Has(libol.LOG) {
 			v.out.Log("Switch.onFrame: %s", libol.FunName(h))
@@ -348,13 +400,13 @@ func (v *Switch) onFrame(client libol.SocketClient, frame *libol.FrameMessage) e
 	return nil
 }
 
-func (v *Switch) OnClient(client libol.SocketClient) error {
-	client.SetStatus(libol.ClConnected)
+func (v *Switch) OnClient(client libsock.SocketClient) error {
+	client.SetStatus(libsock.ClConnected)
 	v.out.Info("Switch.onClient: %s", client.String())
 	return nil
 }
 
-func (v *Switch) SignIn(client libol.SocketClient) error {
+func (v *Switch) SignIn(client libsock.SocketClient) error {
 	v.out.Cmd("Switch.SignIn %s", client.String())
 	data := struct {
 		Address string `json:"address"`
@@ -369,7 +421,7 @@ func (v *Switch) SignIn(client libol.SocketClient) error {
 		return err
 	}
 	v.out.Cmd("Switch.SignIn: %s", body)
-	m := libol.NewControlFrame(libol.SignReq, body)
+	m := libsock.NewControlFrame(libsock.SignReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		v.out.Error("Switch.SignIn: %s", err)
 		return err
@@ -377,8 +429,8 @@ func (v *Switch) SignIn(client libol.SocketClient) error {
 	return nil
 }
 
-func client2Access(client libol.SocketClient) (*models.Access, error) {
-	addr := client.RemoteAddr()
+func client2Access(client libsock.SocketClient) (*models.Access, error) {
+	addr := client.String()
 	if private := client.Private(); private == nil {
 		return nil, libol.NewErr("Access %s notFound.", addr)
 	} else {
@@ -390,15 +442,15 @@ func client2Access(client libol.SocketClient) (*models.Access, error) {
 	}
 }
 
-func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage) error {
-	addr := client.RemoteAddr()
+func (v *Switch) ReadClient(client libsock.SocketClient, frame *libsock.FrameMessage) error {
+	addr := client.String()
 	if v.out.Has(libol.LOG) {
 		v.out.Log("Switch.ReadClient: %s %x", addr, frame.Frame())
 	}
 	frame.Decode()
 	if err := v.onFrame(client, frame); err != nil {
 		v.out.Debug("Switch.ReadClient: %s dropping by %s", addr, err)
-		if frame.Action() == libol.PingReq {
+		if frame.Action() == libsock.PingReq {
 			// send sign message to Access require login.
 			_ = v.SignIn(client)
 		}
@@ -409,22 +461,23 @@ func (v *Switch) ReadClient(client libol.SocketClient, frame *libol.FrameMessage
 	}
 	// process ethernet frame message.
 	obj, err := client2Access(client)
-	if err != nil {
+	if err == nil {
+		device := obj.Device
+		if device == nil {
+			return libol.NewErr("Tap devices is nil")
+		}
+		if _, err := device.Write(frame.Frame()); err != nil {
+			v.out.Error("Switch.ReadClient: %s", err)
+			return err
+		}
+		return nil
+	} else {
 		return err
 	}
-	device := obj.Device
-	if device == nil {
-		return libol.NewErr("Tap devices is nil")
-	}
-	if _, err := device.Write(frame.Frame()); err != nil {
-		v.out.Error("Switch.ReadClient: %s", err)
-		return err
-	}
-	return nil
 }
 
-func (v *Switch) OnClose(client libol.SocketClient) error {
-	addr := client.RemoteAddr()
+func (v *Switch) OnClose(client libsock.SocketClient) error {
+	addr := client.String()
 	v.out.Info("Switch.OnClose: %s", addr)
 	if obj, err := client2Access(client); err == nil {
 		cache.Network.DelLease(obj.Alias, obj.Network)
@@ -444,7 +497,7 @@ func (v *Switch) Start() {
 	}
 	// start server for accessing
 	libol.Go(v.server.Accept)
-	call := libol.ServerListener{
+	call := libsock.ServerListener{
 		OnClient: v.OnClient,
 		OnClose:  v.OnClose,
 		ReadAt:   v.ReadClient,
@@ -488,7 +541,7 @@ func (v *Switch) UpTime() int64 {
 	return time.Now().Unix() - v.newTime
 }
 
-func (v *Switch) Server() libol.SocketServer {
+func (v *Switch) Server() libsock.SocketServer {
 	return v.server
 }
 
@@ -515,8 +568,6 @@ func (v *Switch) NewTap(tenant string) (network.Taper, error) {
 	dev, err := network.NewTaper(tenant, network.TapConfig{
 		Provider: br.Type(),
 		Type:     network.TAP,
-		VirBuf:   v.cfg.Queue.VirWrt,
-		KernBuf:  v.cfg.Queue.VirSnd,
 	})
 	if err != nil {
 		v.out.Error("Switch.NewTap: %s", err)
@@ -552,14 +603,14 @@ func (v *Switch) UUID() string {
 	return v.uuid
 }
 
-func (v *Switch) ReadTap(device network.Taper, readAt func(f *libol.FrameMessage) error) {
+func (v *Switch) ReadTap(device network.Taper, readAt func(f *libsock.FrameMessage) error) {
 	name := device.Name()
 	v.out.Info("Switch.ReadTap: %s", name)
 	done := make(chan bool, 2)
-	queue := make(chan *libol.FrameMessage, v.cfg.Queue.TapWr)
+	queue := make(chan *libsock.FrameMessage, v.cfg.Queue.TapWr)
 	libol.Go(func() {
 		for {
-			frame := libol.NewFrameMessage(0)
+			frame := libsock.NewFrameMessage(0)
 			n, err := device.Read(frame.Frame())
 			if err != nil {
 				v.out.Error("Switch.ReadTap: %s", err)
@@ -587,7 +638,7 @@ func (v *Switch) ReadTap(device network.Taper, readAt func(f *libol.FrameMessage
 	}
 }
 
-func (v *Switch) OffClient(client libol.SocketClient) {
+func (v *Switch) OffClient(client libsock.SocketClient) {
 	v.out.Info("Switch.OffClient: %s", client)
 	if v.server != nil {
 		v.server.OffClient(client)
@@ -598,7 +649,7 @@ func (v *Switch) Config() *co.Switch {
 	return v.cfg
 }
 
-func (v *Switch) leftClient(client libol.SocketClient) {
+func (v *Switch) leftClient(client libsock.SocketClient) {
 	if client == nil {
 		return
 	}
@@ -622,7 +673,7 @@ func (v *Switch) leftClient(client libol.SocketClient) {
 		return
 	}
 	v.out.Cmd("Switch.leftClient: %s", body)
-	m := libol.NewControlFrame(libol.LeftReq, body)
+	m := libsock.NewControlFrame(libsock.LeftReq, body)
 	if err := client.WriteMsg(m); err != nil {
 		v.out.Error("Switch.leftClient: %s", err)
 		return

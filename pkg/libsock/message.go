@@ -1,4 +1,4 @@
-package libol
+package libsock
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/xtaci/kcp-go/v5"
 )
 
@@ -41,7 +42,7 @@ func isControl(data []byte) bool {
 	if len(data) < 6 {
 		return false
 	}
-	if bytes.Equal(data[:EthDI], EthZero[:EthDI]) {
+	if bytes.Equal(data[:EthDI], libol.EthZero[:EthDI]) {
 		return true
 	}
 	return false
@@ -49,46 +50,46 @@ func isControl(data []byte) bool {
 
 type FrameProto struct {
 	// public
-	Eth   *Ether
-	Vlan  *Vlan
-	Arp   *Arp
-	Ip4   *Ipv4
-	Udp   *Udp
-	Tcp   *Tcp
+	Eth   *libol.Ether
+	Vlan  *libol.Vlan
+	Arp   *libol.Arp
+	Ip4   *libol.Ipv4
+	Udp   *libol.Udp
+	Tcp   *libol.Tcp
 	Err   error
 	Frame []byte
 }
 
 func (i *FrameProto) Decode() error {
 	data := i.Frame
-	if i.Eth, i.Err = NewEtherFromFrame(data); i.Err != nil {
+	if i.Eth, i.Err = libol.NewEtherFromFrame(data); i.Err != nil {
 		return i.Err
 	}
 	data = data[i.Eth.Len:]
 	if i.Eth.IsVlan() {
-		if i.Vlan, i.Err = NewVlanFromFrame(data); i.Err != nil {
+		if i.Vlan, i.Err = libol.NewVlanFromFrame(data); i.Err != nil {
 			return i.Err
 		}
 		data = data[i.Vlan.Len:]
 	}
 	switch i.Eth.Type {
-	case EthIp4:
-		if i.Ip4, i.Err = NewIpv4FromFrame(data); i.Err != nil {
+	case libol.EthIp4:
+		if i.Ip4, i.Err = libol.NewIpv4FromFrame(data); i.Err != nil {
 			return i.Err
 		}
 		data = data[i.Ip4.Len:]
 		switch i.Ip4.Protocol {
-		case IpTcp:
-			if i.Tcp, i.Err = NewTcpFromFrame(data); i.Err != nil {
+		case libol.IpTcp:
+			if i.Tcp, i.Err = libol.NewTcpFromFrame(data); i.Err != nil {
 				return i.Err
 			}
-		case IpUdp:
-			if i.Udp, i.Err = NewUdpFromFrame(data); i.Err != nil {
+		case libol.IpUdp:
+			if i.Udp, i.Err = libol.NewUdpFromFrame(data); i.Err != nil {
 				return i.Err
 			}
 		}
-	case EthArp:
-		if i.Arp, i.Err = NewArpFromFrame(data); i.Err != nil {
+	case libol.EthArp:
+		if i.Arp, i.Err = libol.NewArpFromFrame(data); i.Err != nil {
 			return i.Err
 		}
 	}
@@ -112,8 +113,8 @@ func NewFrameMessage(maxSize int) *FrameMessage {
 		maxSize = MaxBuf
 	}
 	maxSize += HlSize + EthDI
-	if HasLog(DEBUG) {
-		Debug("NewFrameMessage: size %d", maxSize)
+	if libol.HasLog(libol.DEBUG) {
+		libol.Debug("NewFrameMessage: size %d", maxSize)
 	}
 	m := FrameMessage{
 		params: make([]byte, 0, 2),
@@ -142,7 +143,7 @@ func NewFrameMessageFromBytes(buffer []byte) *FrameMessage {
 func (m *FrameMessage) Decode() bool {
 	if m.control {
 		if len(m.frame) < 2*EthDI {
-			Warn("FrameMessage.Decode: too small message")
+			libol.Warn("FrameMessage.Decode: too small message")
 		} else {
 			m.action = string(m.frame[EthDI : 2*EthDI])
 			m.params = m.frame[2*EthDI:]
@@ -181,7 +182,7 @@ func (m *FrameMessage) Append(data []byte) {
 		copy(m.frame[m.size:], data)
 		m.size += add
 	} else {
-		Warn("FrameMessage.Append: %d not enough buffer", m.total)
+		libol.Warn("FrameMessage.Append: %d not enough buffer", m.total)
 	}
 }
 
@@ -233,7 +234,7 @@ func (c *ControlMessage) Encode() *FrameMessage {
 	frame.control = c.control
 	frame.action = c.action + c.operator
 	frame.params = c.params
-	frame.Append(EthZero[:6])
+	frame.Append(libol.EthZero[:6])
 	frame.Append([]byte(p))
 	return frame
 }
@@ -303,12 +304,12 @@ func (s *StreamMessagerImpl) write(conn net.Conn, tmp []byte) (int, error) {
 
 func (s *StreamMessagerImpl) writeX(conn net.Conn, buf []byte) error {
 	if conn == nil {
-		return NewErr("connection is nil")
+		return libol.NewErr("connection is nil")
 	}
 	size := len(buf)
-	if HasLog(LOG) {
-		Log("StreamMessagerImpl.writeX: %s %d", conn.RemoteAddr(), size)
-		Log("StreamMessagerImpl.writeX: %s Data %x", conn.RemoteAddr(), buf)
+	if libol.HasLog(libol.LOG) {
+		libol.Log("StreamMessagerImpl.writeX: %s %d", conn.RemoteAddr(), size)
+		libol.Log("StreamMessagerImpl.writeX: %s Data %x", conn.RemoteAddr(), buf)
 	}
 	n, err := s.write(conn, buf)
 	if err != nil {
@@ -321,15 +322,15 @@ func (s *StreamMessagerImpl) writeX(conn net.Conn, buf []byte) error {
 	left := size - offset
 	for left > 0 {
 		tmp := buf[offset:]
-		if HasLog(LOG) {
-			Log("StreamMessagerImpl.writeX: tmp %s %d", conn.RemoteAddr(), len(tmp))
+		if libol.HasLog(libol.LOG) {
+			libol.Log("StreamMessagerImpl.writeX: tmp %s %d", conn.RemoteAddr(), len(tmp))
 		}
 		n, err := s.write(conn, tmp)
 		if err != nil {
 			return err
 		}
-		if HasLog(LOG) {
-			Log("StreamMessagerImpl.writeX: %s snd %d, size %d", conn.RemoteAddr(), n, size)
+		if libol.HasLog(libol.LOG) {
+			libol.Log("StreamMessagerImpl.writeX: %s snd %d, size %d", conn.RemoteAddr(), n, size)
 		}
 		offset += n
 		left = size - offset
@@ -374,12 +375,12 @@ func (s *StreamMessagerImpl) read(conn net.Conn, tmp []byte) (int, error) {
 // 340Mib
 func (s *StreamMessagerImpl) readX(conn net.Conn, buf []byte) error {
 	if conn == nil {
-		return NewErr("connection is nil")
+		return libol.NewErr("connection is nil")
 	}
 	offset := 0
 	left := len(buf)
-	if HasLog(LOG) {
-		Log("StreamMessagerImpl.readX: %s %d", conn.RemoteAddr(), len(buf))
+	if libol.HasLog(libol.LOG) {
+		libol.Log("StreamMessagerImpl.readX: %s %d", conn.RemoteAddr(), len(buf))
 	}
 	for left > 0 {
 		tmp := make([]byte, left)
@@ -391,8 +392,8 @@ func (s *StreamMessagerImpl) readX(conn net.Conn, buf []byte) error {
 		offset += n
 		left -= n
 	}
-	if HasLog(LOG) {
-		Log("StreamMessagerImpl.readX: Data %s %x", conn.RemoteAddr(), buf)
+	if libol.HasLog(libol.LOG) {
+		libol.Log("StreamMessagerImpl.readX: Data %s %x", conn.RemoteAddr(), buf)
 	}
 	return nil
 }
@@ -403,7 +404,7 @@ func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) 
 		return nil, nil
 	}
 	if !bytes.Equal(tmp[:HlMI], MAGIC[:HlMI]) {
-		return nil, NewErr("wrong magic")
+		return nil, libol.NewErr("wrong magic")
 	}
 	ps := binary.BigEndian.Uint16(tmp[HlMI:HlLI])
 	fs := int(ps) + HlSize
@@ -412,8 +413,8 @@ func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) 
 		if s.block != nil {
 			s.block.Decrypt(tmp[HlSize:fs], tmp[HlSize:fs])
 		}
-		if HasLog(DEBUG) {
-			Debug("StreamMessagerImpl.decode: %d %x", fs, tmp[:fs])
+		if libol.HasLog(libol.DEBUG) {
+			libol.Debug("StreamMessagerImpl.decode: %d %x", fs, tmp[:fs])
 		}
 		buf := make([]byte, fs)
 		copy(buf, tmp[:fs])
@@ -488,8 +489,8 @@ func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, erro
 	if s.block != nil {
 		s.block.Encrypt(frame.frame, frame.frame)
 	}
-	if HasLog(DEBUG) {
-		Debug("PacketMessagerImpl.Send: %s %d %x", conn.RemoteAddr(), frame.size, frame.buffer)
+	if libol.HasLog(libol.DEBUG) {
+		libol.Debug("PacketMessagerImpl.Send: %s %d %x", conn.RemoteAddr(), frame.size, frame.buffer)
 	}
 	now := time.Now()
 	if shouldRefreshDeadline(s.writeAt, s.timeout, now) {
@@ -510,8 +511,8 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, err
 		s.bufSize = MaxMsg
 	}
 	frame := NewFrameMessage(s.bufSize)
-	if HasLog(DEBUG) {
-		Debug("PacketMessagerImpl.Receive %s %d", conn.RemoteAddr(), s.timeout)
+	if libol.HasLog(libol.DEBUG) {
+		libol.Debug("PacketMessagerImpl.Receive %s %d", conn.RemoteAddr(), s.timeout)
 	}
 	now := time.Now()
 	if shouldRefreshDeadline(s.readAt, s.timeout, now) {
@@ -525,21 +526,21 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, err
 	if err != nil {
 		return nil, err
 	}
-	if HasLog(DEBUG) {
-		Debug("PacketMessagerImpl.Receive: %s %x", conn.RemoteAddr(), frame.buffer[:n])
+	if libol.HasLog(libol.DEBUG) {
+		libol.Debug("PacketMessagerImpl.Receive: %s %x", conn.RemoteAddr(), frame.buffer[:n])
 	}
 	if n <= 4 {
-		return nil, NewErr("%s: small frame", conn.RemoteAddr())
+		return nil, libol.NewErr("%s: small frame", conn.RemoteAddr())
 	}
 	if !bytes.Equal(frame.buffer[:HlMI], MAGIC[:HlMI]) {
-		return nil, NewErr("%s: wrong magic", conn.RemoteAddr())
+		return nil, libol.NewErr("%s: wrong magic", conn.RemoteAddr())
 	}
 	size := int(binary.BigEndian.Uint16(frame.buffer[HlMI:HlLI]))
 	if size < min {
-		return nil, NewErr("%s: wrong size %d", conn.RemoteAddr(), size)
+		return nil, libol.NewErr("%s: wrong size %d", conn.RemoteAddr(), size)
 	}
 	if HlSize+size > n {
-		Warn("PacketMessagerImpl.Receive: %s %d over size %d", conn.RemoteAddr(), size, n)
+		libol.Warn("PacketMessagerImpl.Receive: %s %d over size %d", conn.RemoteAddr(), size, n)
 	}
 	tmp := frame.buffer[HlSize : HlSize+size]
 	if s.block != nil {

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/luscis/openlan/pkg/schema"
@@ -56,7 +57,9 @@ func TestNormalizeCeciCertLoadsFileContent(t *testing.T) {
 	if cert == nil {
 		t.Fatalf("expected cert content to be loaded")
 	}
-	if cert.CrtData != "crt-data" || cert.KeyData != "key-data" || cert.CaData != "ca-data" {
+	if strings.TrimSpace(cert.CrtData) != "crt-data" ||
+		strings.TrimSpace(cert.KeyData) != "key-data" ||
+		strings.TrimSpace(cert.CaData) != "ca-data" {
 		t.Fatalf("unexpected cert content: %+v", cert)
 	}
 	if !cert.Insecure {

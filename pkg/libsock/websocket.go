@@ -1,4 +1,4 @@
-package libol
+package libsock
 
 import (
 	"crypto/tls"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/luscis/openlan/pkg/libol"
 	"golang.org/x/net/websocket"
 )
 
@@ -62,9 +63,9 @@ func NewWebServer(listen string, cfg *WebConfig) *WebServer {
 
 func (t *WebServer) Listen() (err error) {
 	if t.webCfg.Cert != nil {
-		Info("WebServer.Listen: wss://%s", t.address)
+		libol.Info("WebServer.Listen: wss://%s", t.address)
 	} else {
-		Info("WebServer.Listen: ws://%s", t.address)
+		libol.Info("WebServer.Listen: ws://%s", t.address)
 	}
 	t.listener = &http.Server{
 		Addr: t.address,
@@ -75,13 +76,13 @@ func (t *WebServer) Listen() (err error) {
 func (t *WebServer) Close() {
 	if t.listener != nil {
 		_ = t.listener.Close()
-		Info("WebServer.Close: %s", t.address)
+		libol.Info("WebServer.Close: %s", t.address)
 		t.listener = nil
 	}
 }
 
 func (t *WebServer) Accept() {
-	Debug("WebServer.Accept")
+	libol.Debug("WebServer.Accept")
 
 	_ = t.Listen()
 	defer t.Close()
@@ -95,9 +96,9 @@ func (t *WebServer) Accept() {
 		client := NewWebClientFromConn(wws, t.webCfg)
 		t.onClients <- client
 		<-client.done
-		Info("WebServer.Accept: %s exit", ws.RemoteAddr())
+		libol.Info("WebServer.Accept: %s exit", ws.RemoteAddr())
 	})
-	promise := Promise{
+	promise := libol.Promise{
 		First:  2 * time.Second,
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
@@ -105,18 +106,29 @@ func (t *WebServer) Accept() {
 	promise.Do(func() error {
 		if t.webCfg.Cert == nil {
 			if err := t.listener.ListenAndServe(); err != nil {
-				Error("WebServer.Accept on %s: %s", t.address, err)
+				libol.Error("WebServer.Accept on %s: %s", t.address, err)
 				return err
 			}
 		} else {
 			ca := t.webCfg.Cert
 			if err := t.listener.ListenAndServeTLS(ca.Crt, ca.Key); err != nil {
-				Error("WebServer.Accept on %s: %s", t.address, err)
+				libol.Error("WebServer.Accept on %s: %s", t.address, err)
 				return err
 			}
 		}
 		return nil
 	})
+}
+
+func (t *WebServer) UpdateCrypt(block *BlockCrypt) {
+	if t.webCfg != nil {
+		t.webCfg.Block = block
+	}
+	t.kickAllClients()
+}
+
+func (t *WebServer) Protocol() string {
+	return "ws"
 }
 
 // Client Implement
@@ -133,8 +145,9 @@ func NewWebClient(addr string, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "ws",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -149,8 +162,9 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 	t := &WebClient{
 		webCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "ws",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -164,12 +178,12 @@ func NewWebClientFromConn(conn net.Conn, cfg *WebConfig) *WebClient {
 func (t *WebClient) GetCertPool(ca string) *x509.CertPool {
 	caCert, err := os.ReadFile(ca)
 	if err != nil {
-		Error("WebClient.GetCertPool: %s", err)
+		libol.Error("WebClient.GetCertPool: %s", err)
 		return nil
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caCert) {
-		Warn("WebClient.GetCertPool: invalid cert")
+		libol.Warn("WebClient.GetCertPool: invalid cert")
 	}
 	return pool
 }

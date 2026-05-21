@@ -8,6 +8,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/network"
 )
 
@@ -15,7 +16,7 @@ type TapWorkerListener struct {
 	OnOpen   func(w *TapWorker) error
 	OnClose  func(w *TapWorker)
 	FindNext func(dest []byte) []byte
-	ReadAt   func(frame *libol.FrameMessage) error
+	ReadAt   func(frame *libsock.FrameMessage) error
 }
 
 type TunEther struct {
@@ -33,7 +34,7 @@ type TapWorker struct {
 	devCfg     network.TapConfig
 	pinCfg     *config.Access
 	ifAddr     net.IP
-	writeQueue chan *libol.FrameMessage
+	writeQueue chan *libsock.FrameMessage
 	done       chan bool
 	out        *libol.SubLogger
 	eventQueue chan *WorkerEvent
@@ -45,7 +46,7 @@ func NewTapWorker(devCfg network.TapConfig, pinCfg *config.Access) (a *TapWorker
 		devCfg:     devCfg,
 		pinCfg:     pinCfg,
 		done:       make(chan bool, 2),
-		writeQueue: make(chan *libol.FrameMessage, pinCfg.Queue.TapWr),
+		writeQueue: make(chan *libsock.FrameMessage, pinCfg.Queue.TapWr),
 		out:        libol.NewSubLogger(module),
 		eventQueue: make(chan *WorkerEvent, 32),
 	}
@@ -151,7 +152,7 @@ func (a *TapWorker) onMiss(dest []byte) {
 	reply.SHwAddr = a.ether.HwAddr
 	reply.THwAddr = libol.EthZero
 
-	frame := libol.NewFrameMessage(0)
+	frame := libsock.NewFrameMessage(0)
 	frame.Append(eth.Encode())
 	frame.Append(reply.Encode())
 	a.out.Debug("TapWorker.onMiss: %x.", frame.Frame()[:64])
@@ -160,7 +161,7 @@ func (a *TapWorker) onMiss(dest []byte) {
 	}
 }
 
-func (a *TapWorker) onFrame(frame *libol.FrameMessage, data []byte) int {
+func (a *TapWorker) onFrame(frame *libsock.FrameMessage, data []byte) int {
 	size := len(data)
 	if a.IsTun() {
 		iph, err := libol.NewIpv4FromFrame(data)
@@ -189,7 +190,7 @@ func (a *TapWorker) onFrame(frame *libol.FrameMessage, data []byte) int {
 
 func (a *TapWorker) Read(device network.Taper) {
 	for {
-		frame := libol.NewFrameMessage(0)
+		frame := libsock.NewFrameMessage(0)
 		data := frame.Frame()
 		if a.IsTun() {
 			data = data[libol.EtherLen:]
@@ -242,7 +243,7 @@ func (a *TapWorker) Loop() {
 	}
 }
 
-func (a *TapWorker) DoWrite(frame *libol.FrameMessage) error {
+func (a *TapWorker) DoWrite(frame *libsock.FrameMessage) error {
 	data := frame.Frame()
 	if a.out.Has(libol.DEBUG) {
 		a.out.Debug("TapWorker.DoWrite: %x", data)
@@ -281,7 +282,7 @@ func (a *TapWorker) DoWrite(frame *libol.FrameMessage) error {
 	return nil
 }
 
-func (a *TapWorker) Write(frame *libol.FrameMessage) error {
+func (a *TapWorker) Write(frame *libsock.FrameMessage) error {
 	a.writeQueue <- frame
 	return nil
 }
@@ -317,7 +318,7 @@ func (a *TapWorker) toArp(data []byte) bool {
 				rep.TIpAddr = arp.SIpAddr
 				rep.SHwAddr = a.ether.HwAddr
 				rep.THwAddr = arp.SHwAddr
-				frame := libol.NewFrameMessage(0)
+				frame := libsock.NewFrameMessage(0)
 				frame.Append(eth.Encode())
 				frame.Append(rep.Encode())
 				a.out.Event("TapWorker.toArp: reply %v on %x.", rep.SIpAddr, rep.SHwAddr)

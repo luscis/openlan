@@ -4,7 +4,7 @@ import (
 	"net"
 
 	co "github.com/luscis/openlan/pkg/config"
-	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	cn "github.com/luscis/openlan/pkg/network"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -24,7 +24,7 @@ type SwitchApi interface {
 	UpTime() int64
 	Alias() string
 	Config() *co.Switch
-	Server() libol.SocketServer
+	Server() libsock.SocketServer
 	Save()
 	AddNetwork(string)
 	DelNetwork(string)
@@ -32,6 +32,8 @@ type SwitchApi interface {
 	RateLimitApi
 	UpdateCert(schema.VersionCert)
 	GetCert() schema.VersionCert
+	UpdateCrypt(schema.SwitchCrypt)
+	GetCrypt() schema.SwitchCrypt
 	LdapApi
 }
 

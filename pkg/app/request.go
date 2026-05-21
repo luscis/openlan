@@ -6,6 +6,7 @@ import (
 
 	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/models"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -20,7 +21,7 @@ func NewRequest(m Master) *Request {
 	}
 }
 
-func (r *Request) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) error {
+func (r *Request) OnFrame(client libsock.SocketClient, frame *libsock.FrameMessage) error {
 	out := client.Out()
 	if frame.IsEthernet() {
 		return nil
@@ -33,11 +34,11 @@ func (r *Request) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) 
 		out.Cmd("Request.OnFrame: %s %s", action, body)
 	}
 	switch action {
-	case libol.IpAddrReq:
+	case libsock.IpAddrReq:
 		r.onIpAddr(client, body)
-	case libol.LeftReq:
+	case libsock.LeftReq:
 		r.onLeave(client, body)
-	case libol.LoginReq:
+	case libsock.LoginReq:
 		out.Debug("Request.OnFrame %s: %s", action, body)
 	default:
 		r.onDefault(client, body)
@@ -45,8 +46,8 @@ func (r *Request) OnFrame(client libol.SocketClient, frame *libol.FrameMessage) 
 	return nil
 }
 
-func (r *Request) onDefault(client libol.SocketClient, data []byte) {
-	m := libol.NewControlFrame(libol.PongResp, data)
+func (r *Request) onDefault(client libsock.SocketClient, data []byte) {
+	m := libsock.NewControlFrame(libsock.PongResp, data)
 	_ = client.WriteMsg(m)
 }
 
@@ -80,7 +81,7 @@ func findLease(ifAddr string, p *models.Access) *schema.Lease {
 	return lease
 }
 
-func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
+func (r *Request) onIpAddr(client libsock.SocketClient, data []byte) {
 	out := client.Out()
 	out.Info("Request.onIpAddr: req %s", data)
 	recv := models.NewNetwork("", "")
@@ -128,12 +129,12 @@ func (r *Request) onIpAddr(client libol.SocketClient, data []byte) {
 
 	if resp, err := json.Marshal(obj); err == nil {
 		out.Info("Request.onIpAddr: resp %s", resp)
-		m := libol.NewControlFrame(libol.IpAddrResp, resp)
+		m := libsock.NewControlFrame(libsock.IpAddrResp, resp)
 		_ = client.WriteMsg(m)
 	}
 }
 
-func (r *Request) onLeave(client libol.SocketClient, data []byte) {
+func (r *Request) onLeave(client libsock.SocketClient, data []byte) {
 	out := client.Out()
 	out.Info("Request.onLeave %s", data)
 	r.master.OffClient(client)

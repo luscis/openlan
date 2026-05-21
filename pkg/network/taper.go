@@ -102,8 +102,6 @@ type TapConfig struct {
 	Type     int
 	Network  string
 	Name     string
-	VirBuf   int
-	KernBuf  int
 	Mtu      int
 }
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/luscis/openlan/pkg/libol"
+	"github.com/luscis/openlan/pkg/libsock"
 	"github.com/luscis/openlan/pkg/schema"
 )
 
@@ -14,11 +15,11 @@ func NewAccessSchema(p *Access) schema.Access {
 		Alias:     p.Alias,
 		User:      p.User,
 		Protocol:  p.Protocol,
-		Remote:    client.String(),
+		Remote:    client.RemoteAddr(),
 		Device:    dev.Name(),
-		RxBytes:   uint64(sts[libol.CsRecvOkay]),
-		TxBytes:   uint64(sts[libol.CsSendOkay]),
-		ErrPkt:    uint64(sts[libol.CsSendError]),
+		RxBytes:   uint64(sts[libsock.CsRecvOkay]),
+		TxBytes:   uint64(sts[libsock.CsSendOkay]),
+		ErrPkt:    uint64(sts[libsock.CsSendError]),
 		State:     client.Status().String(),
 		Network:   p.Network,
 		AliveTime: client.AliveTime(),

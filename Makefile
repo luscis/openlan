@@ -191,6 +191,7 @@ test: ## execute unit test
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/cache
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/config
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/network
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/switch
 
 ## coverage
 cover: init ## execute unit test and output coverage
@@ -201,6 +202,7 @@ cover: init ## execute unit test and output coverage
 	go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/switch -coverprofile=$(CD)/6.out -race -covermode=atomic
 
 	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out
@@ -208,3 +210,7 @@ cover: init ## execute unit test and output coverage
 
 clean: ## clean cache
 	rm -rvf ./build
+
+## case test
+case: ## execute case tests.
+	bash ./tests/start.sh

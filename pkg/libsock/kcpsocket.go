@@ -1,9 +1,10 @@
-package libol
+package libsock
 
 import (
 	"net"
 	"time"
 
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/xtaci/kcp-go/v5"
 )
 
@@ -36,10 +37,10 @@ type KcpServer struct {
 }
 
 func setConn(conn *kcp.UDPSession, cfg *KcpConfig) {
-	Info("setConn %s", conn.RemoteAddr())
+	libol.Info("setConn %s", conn.RemoteAddr())
 	conn.SetStreamMode(true)
 	conn.SetWriteDelay(false)
-	Info("setConn %s to fast3", conn.RemoteAddr())
+	libol.Info("setConn %s to fast3", conn.RemoteAddr())
 	// normal: 0, 40, 2, 1
 	// fast  : 0, 30, 2, 1
 	// fast3 : 1, 10, 2, 1
@@ -71,30 +72,30 @@ func (k *KcpServer) Listen() (err error) {
 		return err
 	}
 	if err := k.listener.SetDSCP(46); err != nil {
-		Warn("KcpServer.SetDSCP %s", err)
+		libol.Warn("KcpServer.SetDSCP %s", err)
 	}
-	Info("KcpServer.Listen: kcp://%s", k.address)
+	libol.Info("KcpServer.Listen: kcp://%s", k.address)
 	return nil
 }
 
 func (k *KcpServer) Close() {
 	if k.listener != nil {
 		_ = k.listener.Close()
-		Info("KcpServer.Close: %s", k.address)
+		libol.Info("KcpServer.Close: %s", k.address)
 		k.listener = nil
 	}
 }
 
 func (k *KcpServer) Accept() {
-	Debug("KcpServer.Accept")
-	promise := Promise{
+	libol.Debug("KcpServer.Accept")
+	promise := libol.Promise{
 		First:  2 * time.Second,
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
 	promise.Do(func() error {
 		if err := k.Listen(); err != nil {
-			Warn("KcpServer.Accept: %s", err)
+			libol.Warn("KcpServer.Accept: %s", err)
 			return err
 		}
 		return nil
@@ -113,6 +114,17 @@ func (k *KcpServer) Accept() {
 	}
 }
 
+func (k *KcpServer) UpdateCrypt(block *BlockCrypt) {
+	if k.kcpCfg != nil {
+		k.kcpCfg.Block = block
+	}
+	k.kickAllClients()
+}
+
+func (k *KcpServer) Protocol() string {
+	return "kcp"
+}
+
 // Client Implement
 
 type KcpClient struct {
@@ -127,8 +139,9 @@ func NewKcpClient(addr string, cfg *KcpConfig) *KcpClient {
 	c := &KcpClient{
 		kcpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "kcp",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -144,8 +157,9 @@ func NewKcpClientFromConn(conn net.Conn, cfg *KcpConfig) *KcpClient {
 	addr := conn.RemoteAddr().String()
 	c := &KcpClient{
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "kcp",
+			Block:    cfg.Block,
 		}, &StreamMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,

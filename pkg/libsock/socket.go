@@ -1,4 +1,4 @@
-package libol
+package libsock
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 const (
@@ -51,7 +53,7 @@ func (s SocketStatus) String() string {
 
 const (
 	CsSendOkay  = "send"
-	CsRecvOkay  = "recv"
+	CsRecvOkay  = "receive"
 	CsSendError = "error"
 	CsDropped   = "dropped"
 )
@@ -65,6 +67,7 @@ type ClientListener struct {
 type SocketClient interface {
 	LocalAddr() string
 	RemoteAddr() string
+	Protocol() string
 	Connect() error
 	Close()
 	WriteMsg(frame *FrameMessage) error
@@ -83,7 +86,7 @@ type SocketClient interface {
 	Statistics() map[string]int64
 	SetListener(listener ClientListener)
 	SetTimeout(v int64)
-	Out() *SubLogger
+	Out() *libol.SubLogger
 	SetKey(key string)
 	Key() string
 }
@@ -92,7 +95,8 @@ type StreamSocket struct {
 	message    Messager
 	connection net.Conn
 	minSize    int
-	out        *SubLogger
+	protocol   string
+	out        *libol.SubLogger
 	remoteAddr string
 	localAddr  string
 	address    string
@@ -111,8 +115,12 @@ func (t *StreamSocket) RemoteAddr() string {
 	return t.remoteAddr
 }
 
+func (t *StreamSocket) Protocol() string {
+	return t.protocol
+}
+
 func (t *StreamSocket) String() string {
-	return t.address
+	return t.protocol + ":" + t.remoteAddr
 }
 
 func (t *StreamSocket) IsOk() bool {
@@ -122,11 +130,11 @@ func (t *StreamSocket) IsOk() bool {
 func (t *StreamSocket) WriteMsg(frame *FrameMessage) error {
 	if !t.IsOk() {
 		t.dropped.Add(1)
-		return NewErr("%s not okay", t)
+		return libol.NewErr("%s not okay", t)
 	}
-	if HasLog(CMD) && frame.IsControl() {
+	if libol.HasLog(libol.CMD) && frame.IsControl() {
 		action, params := frame.CmdAndParams()
-		Cmd("StreamSocket.WriteMsg: %s%s", action, params)
+		libol.Cmd("StreamSocket.WriteMsg: %s%s", action, params)
 	}
 	if t.message == nil { // default is stream message
 		t.message = &StreamMessagerImpl{}
@@ -141,11 +149,11 @@ func (t *StreamSocket) WriteMsg(frame *FrameMessage) error {
 }
 
 func (t *StreamSocket) ReadMsg() (*FrameMessage, error) {
-	if HasLog(LOG) {
-		Log("StreamSocket.ReadMsg: %s", t)
+	if libol.HasLog(libol.LOG) {
+		libol.Log("StreamSocket.ReadMsg: %s", t)
 	}
 	if !t.IsOk() {
-		return nil, NewErr("%s not okay", t)
+		return nil, libol.NewErr("%s not okay", t)
 	}
 	if t.message == nil { // default is stream message
 		t.message = &StreamMessagerImpl{}
@@ -174,8 +182,9 @@ func (t *StreamSocket) Key() string {
 }
 
 type SocketConfig struct {
-	Address string
-	Block   *BlockCrypt
+	Address  string
+	Protocol string
+	Block    *BlockCrypt
 }
 
 type SocketClientImpl struct {
@@ -190,11 +199,11 @@ type SocketClientImpl struct {
 }
 
 func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
-	return &SocketClientImpl{
+	client := &SocketClientImpl{
 		StreamSocket: &StreamSocket{
 			minSize:    15,
 			message:    message,
-			out:        NewSubLogger(cfg.Address),
+			protocol:   cfg.Protocol,
 			remoteAddr: cfg.Address,
 			address:    cfg.Address,
 			Block:      cfg.Block,
@@ -202,13 +211,15 @@ func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 		newTime: time.Now().Unix(),
 		status:  ClInit,
 	}
+	client.out = libol.NewSubLogger(client.String())
+	return client
 }
 
 func (s *SocketClientImpl) negotiate() error {
 	if s.Key() == "" {
 		return nil
 	}
-	key := GenLetters(64)
+	key := libol.GenLetters(64)
 	request := NewControlFrame(NegoReq, key)
 	if err := s.WriteMsg(request); err != nil {
 		return err
@@ -219,17 +230,17 @@ func (s *SocketClientImpl) negotiate() error {
 		return err
 	}
 	if !reply.IsControl() {
-		Info("SocketClientImpl.negotiate %s", reply.String())
-		return NewErr("wrong message type")
+		libol.Info("SocketClientImpl.negotiate %s", reply.String())
+		return libol.NewErr("wrong message type")
 	}
 	action, params := reply.CmdAndParams()
 	if action != NegoResp {
-		return NewErr("wrong message type: %s", action)
+		return libol.NewErr("wrong message type: %s", action)
 	}
-	Cmd("SocketClientImpl.negotiate %s %x", action, params)
+	libol.Cmd("SocketClientImpl.negotiate %s %x", action, params)
 	sum := md5.Sum(key)
 	if !bytes.Equal(sum[:md5.Size], params) {
-		return NewErr("negotiate key failed: %x != %x", key, params)
+		return libol.NewErr("negotiate key failed: %x != %x", key, params)
 	}
 	if block := s.message.Crypt(); block != nil {
 		block.Update(string(key))
@@ -251,9 +262,9 @@ func (s *SocketClientImpl) Close() {
 func (s *SocketClientImpl) Terminal() {
 }
 
-func (s *SocketClientImpl) Out() *SubLogger {
+func (s *SocketClientImpl) Out() *libol.SubLogger {
 	if s.out == nil {
-		s.out = NewSubLogger(s.address)
+		s.out = libol.NewSubLogger(s.address)
 	}
 	return s.out
 }
@@ -342,7 +353,7 @@ func (s *SocketClientImpl) update(conn net.Conn) {
 	if s.Block != nil {
 		s.message.SetCrypt(s.Block)
 	}
-	s.out.Event("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
+	s.out.Info("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
 }
 
 func (s *SocketClientImpl) Reset(conn net.Conn) {
@@ -363,7 +374,7 @@ func (s *SocketClientImpl) SetStatus(v SocketStatus) {
 // Socket Server Interface and Implement
 
 const (
-	SsRecv   = "recv"
+	SsRecv   = "receive"
 	SsDeny   = "deny"
 	SsAlive  = "alive"
 	SsSend   = "send"
@@ -385,6 +396,7 @@ type SocketServer interface {
 	Close()
 	Accept()
 	ListClient() <-chan SocketClient
+	UpdateCrypt(block *BlockCrypt)
 	OffClient(client SocketClient)
 	TotalClient() int
 	Loop(call ServerListener)
@@ -393,15 +405,16 @@ type SocketServer interface {
 	Address() string
 	Statistics() map[string]int64
 	SetTimeout(v int64)
+	Protocol() string
 }
 
 // TODO keepalive to release zombie connections.
 type SocketServerImpl struct {
 	lock       sync.RWMutex
-	statistics *SafeStrInt64
+	statistics *libol.SafeStrInt64
 	address    string
 	maxClient  int
-	clients    *SafeStrMap
+	clients    *libol.SafeStrMap
 	onClients  chan SocketClient
 	offClients chan SocketClient
 	close      func()
@@ -413,18 +426,22 @@ type SocketServerImpl struct {
 func NewSocketServer(listen string) *SocketServerImpl {
 	return &SocketServerImpl{
 		address:    listen,
-		statistics: NewSafeStrInt64(),
+		statistics: libol.NewSafeStrInt64(),
 		maxClient:  128,
-		clients:    NewSafeStrMap(1024),
+		clients:    libol.NewSafeStrMap(1024),
 		onClients:  make(chan SocketClient, 1024),
 		offClients: make(chan SocketClient, 1024),
 		WrQus:      1024,
 	}
 }
 
+func (t *SocketServerImpl) Protocol() string {
+	return "unknown"
+}
+
 func (t *SocketServerImpl) ListClient() <-chan SocketClient {
 	list := make(chan SocketClient, 32)
-	Go(func() {
+	libol.Go(func() {
 		t.clients.Iter(func(k string, v any) {
 			if client, ok := v.(SocketClient); ok {
 				list <- client
@@ -440,9 +457,22 @@ func (t *SocketServerImpl) TotalClient() int {
 }
 
 func (t *SocketServerImpl) OffClient(client SocketClient) {
-	Warn("SocketServerImpl.OffClient %s", client)
+	libol.Warn("SocketServerImpl.OffClient %s", client)
 	if client != nil {
 		t.offClients <- client
+	}
+}
+
+func (t *SocketServerImpl) UpdateCrypt(block *BlockCrypt) {
+	// implemented by concrete servers when they have protocol config to update
+}
+
+func (t *SocketServerImpl) kickAllClients() {
+	for client := range t.ListClient() {
+		if client == nil {
+			break
+		}
+		t.OffClient(client)
 	}
 }
 
@@ -455,13 +485,13 @@ func (t *SocketServerImpl) negotiate(client SocketClient) error {
 		return err
 	}
 	if !request.IsControl() {
-		Info("SocketServerImpl.negotiate %s", request.String())
-		return NewErr("wrong message type")
+		libol.Warn("SocketServerImpl.negotiate: except control but %s", request.String())
+		return libol.NewErr("wrong message type")
 	}
 	client.SetStatus(ClNegotiated)
 	action, params := request.CmdAndParams()
 	if action == NegoReq {
-		Cmd("SocketServerImpl.negotiate %s", params)
+		libol.Cmd("SocketServerImpl.negotiate: %s", params)
 		sum := md5.Sum(params)
 		reply := NewControlFrame(NegoResp, sum[:md5.Size])
 		if err := client.WriteMsg(reply); err != nil {
@@ -470,18 +500,18 @@ func (t *SocketServerImpl) negotiate(client SocketClient) error {
 		client.SetKey(string(params))
 		return nil
 	}
-	return NewErr("wrong message type: %s", action)
+	return libol.NewErr("wrong message type: %s", action)
 
 }
 
 func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) {
-	Info("SocketServerImpl.doOnClient: +%s", client)
+	libol.Info("SocketServerImpl.doOnClient: %s", client)
 	_ = t.clients.Set(client.RemoteAddr(), client)
 	if call.OnClient != nil {
-		Go(func() {
+		libol.Go(func() {
 			if err := t.negotiate(client); err != nil {
 				t.OffClient(client)
-				Warn("SocketServerImpl.doOnClient %s %s", client, err)
+				libol.Warn("SocketServerImpl.doOnClient: %s %s", client, err)
 				return
 			}
 			_ = call.OnClient(client)
@@ -493,10 +523,10 @@ func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) 
 }
 
 func (t *SocketServerImpl) doOffClient(call ServerListener, client SocketClient) {
-	Info("SocketServerImpl.doOffClient: -%s", client)
+	libol.Info("SocketServerImpl.doOffClient: %s", client)
 	addr := client.RemoteAddr()
 	if _, ok := t.clients.GetEx(addr); ok {
-		Info("SocketServerImpl.doOffClient: close %s", addr)
+		libol.Info("SocketServerImpl.doOffClient: close %s", addr)
 		t.statistics.Add(SsClose, 1)
 		if call.OnClose != nil {
 			_ = call.OnClose(client)
@@ -508,7 +538,7 @@ func (t *SocketServerImpl) doOffClient(call ServerListener, client SocketClient)
 }
 
 func (t *SocketServerImpl) Loop(call ServerListener) {
-	Debug("SocketServerImpl.Loop")
+	libol.Debug("SocketServerImpl.Loop")
 	defer t.close()
 	for {
 		select {
@@ -521,15 +551,15 @@ func (t *SocketServerImpl) Loop(call ServerListener) {
 }
 
 func (t *SocketServerImpl) Read(client SocketClient, ReadAt ReadClient) {
-	Log("SocketServerImpl.Read: %s", client)
+	libol.Log("SocketServerImpl.Read: %s", client)
 	done := make(chan bool, 2)
 	queue := make(chan *FrameMessage, t.WrQus)
-	Go(func() {
+	libol.Go(func() {
 		for {
 			select {
 			case frame := <-queue:
 				if err := ReadAt(client, frame); err != nil {
-					Error("SocketServerImpl.Read: readAt %s", err)
+					libol.Error("SocketServerImpl.Read: readAt %s", err)
 					return
 				}
 			case <-done:
@@ -541,18 +571,18 @@ func (t *SocketServerImpl) Read(client SocketClient, ReadAt ReadClient) {
 		frame, err := client.ReadMsg()
 		if err != nil || frame.size <= 0 {
 			if frame != nil {
-				Error("SocketServerImpl.Read: %s %d", client, frame.size)
+				libol.Error("SocketServerImpl.Read: %s %d", client, frame.size)
 			} else {
-				Error("SocketServerImpl.Read: %s %s", client, err)
+				libol.Error("SocketServerImpl.Read: %s %s", client, err)
 			}
 			done <- true
 			t.OffClient(client)
 			break
 		}
 		t.statistics.Add(SsRecv, 1)
-		if HasLog(LOG) {
-			Log("SocketServerImpl.Read: length: %d ", frame.size)
-			Log("SocketServerImpl.Read: frame : %x", frame)
+		if libol.HasLog(libol.LOG) {
+			libol.Log("SocketServerImpl.Read: length: %d ", frame.size)
+			libol.Log("SocketServerImpl.Read: frame : %x", frame)
 		}
 		queue <- frame
 	}
@@ -597,24 +627,24 @@ func (t *SocketServerImpl) SetTimeout(v int64) {
 func (t *SocketServerImpl) preAccept(conn net.Conn, err error) error {
 	if err != nil {
 		if t.error == nil || t.error.Error() != err.Error() {
-			Warn("SocketServerImpl.preAccept: %s", err)
+			libol.Warn("SocketServerImpl.preAccept: %s", err)
 		}
 		t.error = err
 		return err
 	}
 	t.error = nil
 	addr := conn.RemoteAddr()
-	Debug("SocketServerImpl.preAccept: %s", addr)
+	libol.Debug("SocketServerImpl.preAccept: %s", addr)
 	t.statistics.Add(SsAccept, 1)
 	alive := t.statistics.Get(SsAlive)
 	if alive >= int64(t.maxClient) {
-		Debug("SocketServerImpl.preAccept: close %s", addr)
+		libol.Debug("SocketServerImpl.preAccept: close %s", addr)
 		t.statistics.Add(SsDeny, 1)
 		t.statistics.Add(SsClose, 1)
 		_ = conn.Close()
-		return NewErr("too many open clients")
+		return libol.NewErr("too many open clients")
 	}
-	Debug("SocketServerImpl.preAccept: allow %s", addr)
+	libol.Debug("SocketServerImpl.preAccept: allow %s", addr)
 	t.statistics.Add(SsAlive, 1)
 	return nil
 }

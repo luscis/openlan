@@ -1,8 +1,10 @@
-package libol
+package libsock
 
 import (
 	"net"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type UdpConfig struct {
@@ -40,32 +42,32 @@ func NewUdpServer(listen string, cfg *UdpConfig) *UdpServer {
 }
 
 func (k *UdpServer) Listen() (err error) {
-	k.listener, err = XDPListen(k.address, k.udpCfg.Clients, k.udpCfg.RdQus*2)
+	k.listener, err = UDPBindListen(k.address, k.udpCfg.Clients, k.udpCfg.RdQus*2)
 	if err != nil {
 		k.listener = nil
 		return err
 	}
-	Info("UdpServer.Listen: udp://%s", k.address)
+	libol.Info("UdpServer.Listen: udp://%s", k.address)
 	return nil
 }
 
 func (k *UdpServer) Close() {
 	if k.listener != nil {
 		_ = k.listener.Close()
-		Info("UdpServer.Close: %s", k.address)
+		libol.Info("UdpServer.Close: %s", k.address)
 		k.listener = nil
 	}
 }
 
 func (k *UdpServer) Accept() {
-	promise := Promise{
+	promise := libol.Promise{
 		First:  2 * time.Second,
 		MinInt: 5 * time.Second,
 		MaxInt: 30 * time.Second,
 	}
 	promise.Do(func() error {
 		if err := k.Listen(); err != nil {
-			Warn("UdpServer.Accept: %s", err)
+			libol.Warn("UdpServer.Accept: %s", err)
 			return err
 		}
 		return nil
@@ -83,6 +85,17 @@ func (k *UdpServer) Accept() {
 	}
 }
 
+func (k *UdpServer) UpdateCrypt(block *BlockCrypt) {
+	if k.udpCfg != nil {
+		k.udpCfg.Block = block
+	}
+	k.kickAllClients()
+}
+
+func (k *UdpServer) Protocol() string {
+	return "udp"
+}
+
 // Client Implement
 
 type UdpClient struct {
@@ -97,8 +110,9 @@ func NewUdpClient(addr string, cfg *UdpConfig) *UdpClient {
 	c := &UdpClient{
 		udpCfg: cfg,
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "udp",
+			Block:    cfg.Block,
 		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
@@ -114,8 +128,9 @@ func NewUdpClientFromConn(conn net.Conn, cfg *UdpConfig) *UdpClient {
 	addr := conn.RemoteAddr().String()
 	c := &UdpClient{
 		SocketClientImpl: NewSocketClient(SocketConfig{
-			Address: addr,
-			Block:   cfg.Block,
+			Address:  addr,
+			Protocol: "udp",
+			Block:    cfg.Block,
 		}, &PacketMessagerImpl{
 			timeout: cfg.Timeout,
 			bufSize: cfg.RdQus * MaxFrame,
