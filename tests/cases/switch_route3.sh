@@ -106,12 +106,12 @@ test_route_once() {
 }
 
 test_route() {
-  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 60 || {
+  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 60 || {
     echo "unexpected output unauthenticated after reload"
     return 1
   }
 
-  check "docker exec $sw3_name openlan network --name example output ls" "authenticated" 60 || {
+  check "docker exec $sw3_name openlan network --name example output ls" "state: authenticated" 60 || {
     echo "unexpected output unauthenticated after reload"
     return 1
   }
@@ -122,12 +122,12 @@ test_route() {
   docker exec $sw2_name openlan reload --save
   docker exec $sw3_name openlan reload --save
 
-  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 60 || {
+  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 60 || {
     echo "unexpected output unauthenticated after reload"
     return 1
   }
 
-  check "docker exec $sw3_name openlan network --name example output ls" "authenticated" 60 || {
+  check "docker exec $sw3_name openlan network --name example output ls" "state: authenticated" 60 || {
     echo "unexpected output unauthenticated after reload"
     return 1
   }

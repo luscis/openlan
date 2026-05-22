@@ -19,7 +19,9 @@ scenario_description() {
     access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
     access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
     access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
+    switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;
     switch_dnat.sh) echo "verify dnat add-list-remove and nat table rule updates" ;;
+    switch_findhop.sh) echo "verify findhop route binding, remove guard, and reload state" ;;
     switch_ztrust.sh) echo "verify ztrust enable/disable with guest and knock controls" ;;
     switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
     switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;

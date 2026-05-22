@@ -45,7 +45,7 @@ setup_sw2() {
 }
 
 setup_http() {
-    docker exec $sw2_name sh -c "nohup sh -c 'while true; do printf \"HTTP/1.1 200 OK\\r\\nContent-Length: 9\\r\\n\\r\\nport-8080\" | socat - TCP-LISTEN:8080,bind=127.0.0.1,reuseaddr; done' >/tmp/dnat-8080.log 2>&1 &"
+  docker exec $sw2_name sh -c "nohup sh -c 'while true; do printf \"HTTP/1.1 200 OK\\r\\nContent-Length: 9\\r\\n\\r\\nport-8080\" | socat - TCP-LISTEN:8080,bind=127.0.0.1,reuseaddr; done' >/tmp/dnat-8080.log 2>&1 &"
 }
 
 test_dnat_add_and_reachability() {

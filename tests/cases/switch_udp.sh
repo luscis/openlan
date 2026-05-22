@@ -62,14 +62,14 @@ EOF
 }
 
 test_ping() {
-  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 15
+  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 15
   wait "docker exec $sw2_name ping -c 15 192.51.0.1" "bytes from" 20
 
   docker exec $sw1_name openlan reload --save
   docker exec $sw2_name openlan reload --save
 
   docker exec $sw2_name ip neigh flush dev hi-example
-  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 15
+  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 15
   wait "docker exec $sw2_name ping -c 15 192.51.0.1" "bytes from" 20
 }
 

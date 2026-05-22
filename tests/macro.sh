@@ -98,13 +98,16 @@ start_switch() {
   local name=$1
   local network_name=$2
   local address=$3
+  local volume_opts="--volume /opt/openlan/$name/etc/openlan:/etc/openlan --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d --volume /opt/openlan/$name/run/pluto:/run/pluto --volume /opt/openlan/$name/var/openlan/frr:/var/openlan/frr --volume /opt/openlan/$name/etc/frr:/etc/frr"
 
   # Start a paused switch container with openlan and ipsec.
-  docker run -d --rm --privileged --network $network_name --ip $address --volume /opt/openlan/$name/etc/openlan:/etc/openlan --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d --volume /opt/openlan/$name/run/pluto:/run/pluto --name $name-pause $IMAGE /bin/bash -c "trap : TERM; sleep infinity & wait"
-  # Start switch:
-  docker run -d --rm --privileged --network container:$name-pause --volume /opt/openlan/$name/etc/openlan:/etc/openlan --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d --volume /opt/openlan/$name/run/pluto:/run/pluto --name $name $IMAGE /var/openlan/script/switch.sh
+  docker run -d --rm --privileged --network $network_name --ip $address $volume_opts --name $name-pause $IMAGE /bin/bash -c "trap : TERM; sleep infinity & wait"
+  # Start frr.
+  docker run -d --rm --privileged --network container:$name-pause $volume_opts --name $name-frr $IMAGE /var/openlan/script/frr.sh
   # Start ipsec.
-  docker run -d --rm --privileged --network container:$name-pause --volume /opt/openlan/$name/etc/openlan:/etc/openlan --volume /opt/openlan/$name/etc/ipsec.d:/etc/ipsec.d --volume /opt/openlan/$name/run/pluto:/run/pluto --name $name-ipsec $IMAGE /var/openlan/script/ipsec.sh
+  docker run -d --rm --privileged --network container:$name-pause $volume_opts --name $name-ipsec $IMAGE /var/openlan/script/ipsec.sh
+  # Start switch:
+  docker run -d --rm --privileged --network container:$name-pause $volume_opts --name $name $IMAGE /var/openlan/script/switch.sh
 }
 
 start_access() {
@@ -121,6 +124,12 @@ start_openvpn() {
 
   # Start OpenVPN client.
   docker run -d --rm --cap-add=NET_ADMIN --device /dev/net/tun --network $network_name --volume /opt/openlan/$name/ovpn:/ovpn --name $name $IMAGE /usr/sbin/openvpn --config /ovpn/client.ovpn --auth-user-pass /ovpn/auth.txt --verb 3
+}
+
+stop_switch() {
+  local name=$1
+  docker exec $name openlan config save
+  docker rm -f $name $name-pause $name-ipsec $name-frr >/dev/null 2>&1 || true
 }
 
 cleanup() {

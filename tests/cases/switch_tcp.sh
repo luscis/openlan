@@ -119,7 +119,7 @@ test_ping() {
   # Add a output on sw3 to sw2
   local name="$sw3_name"
   docker exec $name openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
-  check "docker exec $name openlan network --name example output ls" "authenticated" 15
+  check "docker exec $name openlan network --name example output ls" "state: authenticated" 15
   test_ping_after_sw3_sw2_output
 
   docker exec $sw1_name openlan reload --save
