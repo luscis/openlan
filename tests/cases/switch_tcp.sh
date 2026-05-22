@@ -15,7 +15,7 @@ sw3_name=tests-sw3
 # - Validation path: verify tcp forwarding reachability between switches.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
+  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
 }
 
 setup_sw1() {
@@ -100,19 +100,34 @@ EOF
   docker exec $name openlan network --name example output ls
 }
 
-test_ping() {
+test_ping_before_sw3_sw2_output() {
   wait "docker exec $sw2_name ping -c 15 192.41.0.1" "bytes from" 15
   if wait "docker exec $sw3_name ping -c 15 192.41.0.1" "bytes from" 15; then
     echo "unexpected ping failure from sw3 to sw1"
     return 1
   fi
+}
+
+test_ping_after_sw3_sw2_output() {
+  wait "docker exec $sw2_name ping -c 15 192.41.0.2" "bytes from" 15
+  wait "docker exec $sw2_name ping -c 15 192.41.0.3" "bytes from" 15
+}
+
+test_ping() {
+  test_ping_before_sw3_sw2_output
+
   # Add a output on sw3 to sw2
   local name="$sw3_name"
   docker exec $name openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
-  docker exec $name openlan network --name example output ls
+  check "docker exec $name openlan network --name example output ls" "authenticated" 15
+  test_ping_after_sw3_sw2_output
 
-  wait "docker exec $sw2_name ping -c 15 192.41.0.2" "bytes from" 15
-  wait "docker exec $sw2_name ping -c 15 192.41.0.3" "bytes from" 15
+  docker exec $sw1_name openlan reload --save
+  docker exec $sw2_name openlan reload --save
+  docker exec $sw3_name openlan reload --save
+
+  docker exec $sw2_name ip neigh flush dev hi-example
+  test_ping_after_sw3_sw2_output
 }
 
 setup() {

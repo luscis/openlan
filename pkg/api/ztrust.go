@@ -55,7 +55,11 @@ func (h ZTrust) Enable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
-	worker.EnableZTrust()
+	err := worker.DoZTrust()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseJson(w, "success")
 }
 
@@ -68,7 +72,11 @@ func (h ZTrust) Disable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Network not found", http.StatusBadRequest)
 		return
 	}
-	worker.DisableZTrust()
+	err := worker.UndoZTrust()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	ResponseJson(w, "success")
 }
 

@@ -135,8 +135,8 @@ type NetworkApi interface {
 	Qoser() QosApi
 	ACLer() ACLApi
 	FindHoper() FindHopApi
-	EnableZTrust()
-	DisableZTrust()
+	DoZTrust() error
+	UndoZTrust() error
 	NATApi
 	AddAddress(string)
 	DelAddress()

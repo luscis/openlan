@@ -17,7 +17,7 @@ vpn2_name=tests-sw-openvpn.vpn2
 # - Validation path: OpenVPN add/remove lifecycle and data channel cipher negotiation.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1
+  docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1
 }
 
 setup_sw1() {

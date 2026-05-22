@@ -16,7 +16,7 @@ vpn2_name=tests-sw-openvpn-ping.vpn2
 # - Validation path: vpn1 and vpn2 can ping each other by static overlay IP.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
 }
 
 setup_sw1() {

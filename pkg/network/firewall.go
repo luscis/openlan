@@ -251,6 +251,7 @@ func (ch *FireWallChain) AddRuleX(rule IPRule) error {
 		order = "-A"
 	}
 	if _, err := rule.Opr(order); err != nil {
+		libol.Error("FireWallChain.AddRuleX %s", err)
 		return err
 	}
 	return nil
@@ -261,6 +262,7 @@ func (ch *FireWallChain) DelRuleX(rule IPRule) error {
 	rule.Table = chain.Table
 	rule.Chain = chain.Name
 	if _, err := rule.Opr("-D"); err != nil {
+		libol.Warn("FireWallChain.DelRuleX %s", err)
 		return err
 	}
 	return nil

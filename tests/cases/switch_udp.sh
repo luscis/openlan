@@ -15,7 +15,7 @@ sw2_name=tests-sw-udp2
 # - Validation path: sw2 ping sw1 through udp transport.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1
+  docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1
 }
 
 setup_sw1() {
@@ -62,6 +62,14 @@ EOF
 }
 
 test_ping() {
+  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 15
+  wait "docker exec $sw2_name ping -c 15 192.51.0.1" "bytes from" 20
+
+  docker exec $sw1_name openlan reload --save
+  docker exec $sw2_name openlan reload --save
+
+  docker exec $sw2_name ip neigh flush dev hi-example
+  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 15
   wait "docker exec $sw2_name ping -c 15 192.51.0.1" "bytes from" 20
 }
 

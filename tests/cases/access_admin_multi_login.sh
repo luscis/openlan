@@ -14,7 +14,7 @@ ac2_name=tests-sw-admin-multi.ac2
 # - Validation path: admin multi-login should be allowed at the same time.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
+  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
 }
 
 setup_sw1() {

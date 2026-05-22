@@ -560,6 +560,7 @@ func (w *WorkerImpl) ListDNAT(call func(data schema.DNAT)) {
 
 func (w *WorkerImpl) toTrust() {
 	_, vpn := w.GetCfgs()
+	w.out.Info("WorkerImpl.toTrust %s", vpn.Device)
 	w.fire.Mangle.Pre.AddRuleX(cn.IPRule{
 		Input:   vpn.Device,
 		Jump:    w.ztrust.Chain(),
@@ -569,6 +570,7 @@ func (w *WorkerImpl) toTrust() {
 
 func (w *WorkerImpl) leftTrust() {
 	_, vpn := w.GetCfgs()
+	w.out.Info("WorkerImpl.leftTrust %s", vpn.Device)
 	w.fire.Mangle.Pre.DelRuleX(cn.IPRule{
 		Input:   vpn.Device,
 		Jump:    w.ztrust.Chain(),
@@ -576,20 +578,26 @@ func (w *WorkerImpl) leftTrust() {
 	})
 }
 
-func (w *WorkerImpl) EnableZTrust() {
-	cfg, _ := w.GetCfgs()
+func (w *WorkerImpl) DoZTrust() error {
+	cfg, vpn := w.GetCfgs()
 	if cfg.ZTrust != "enable" {
 		cfg.ZTrust = "enable"
-		w.toTrust()
+		if vpn != nil {
+			w.toTrust()
+		}
 	}
+	return nil
 }
 
-func (w *WorkerImpl) DisableZTrust() {
-	cfg, _ := w.GetCfgs()
+func (w *WorkerImpl) UndoZTrust() error {
+	cfg, vpn := w.GetCfgs()
 	if cfg.ZTrust == "enable" {
 		cfg.ZTrust = "disable"
-		w.leftTrust()
+		if vpn != nil {
+			w.leftTrust()
+		}
 	}
+	return nil
 }
 
 func (w *WorkerImpl) setVPN2VRF() {
@@ -666,8 +674,8 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 		}
 		w.toVPNQoS()
 		w.qos.Start()
-		w.ztrust.Start()
 	}
+	w.ztrust.Start()
 
 	w.fire.Start()
 	w.snat.Install()
@@ -936,7 +944,6 @@ func (w *WorkerImpl) toACL(input string) {
 			Jump:  w.acl.Chain(),
 		})
 	}
-
 }
 
 func (w *WorkerImpl) leftACL(input string) {

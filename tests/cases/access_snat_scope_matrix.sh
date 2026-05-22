@@ -31,7 +31,7 @@ pass_ub="pw-ub-${RANDOM}-${RANDOM}"
 #   scope enable:  a.openvpn yes, a.access yes, b.openvpn yes, b.access yes.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1
+  docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1
 }
 
 setup_sw1() {

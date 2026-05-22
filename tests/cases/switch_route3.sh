@@ -19,7 +19,7 @@ sw3_name=tests-sw-route3
 # - Validation path: sw3 reaches sw1/sw2 service IPs and both VIPs.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
+  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
 }
 
 setup_sw1() {
@@ -94,14 +94,45 @@ EOF
   docker exec $name openlan network --name example route add --prefix 10.251.0.12/32 --nexthop 192.51.0.2
 }
 
-test_route() {
+test_route_once() {
   docker exec $sw3_name ip route show | grep "10.251.0.11"
   docker exec $sw3_name ip route show | grep "10.251.0.12"
 
+  docker exec $sw3_name ip neigh flush dev hi-example
   wait "docker exec $sw3_name ping -c 20 192.51.0.1" "bytes from" 25
   wait "docker exec $sw3_name ping -c 20 192.51.0.2" "bytes from" 25
   wait "docker exec $sw3_name ping -c 20 10.251.0.11" "bytes from" 25
   wait "docker exec $sw3_name ping -c 20 10.251.0.12" "bytes from" 25
+}
+
+test_route() {
+  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 60 || {
+    echo "unexpected output unauthenticated after reload"
+    return 1
+  }
+
+  check "docker exec $sw3_name openlan network --name example output ls" "authenticated" 60 || {
+    echo "unexpected output unauthenticated after reload"
+    return 1
+  }
+  
+  test_route_once
+
+  docker exec $sw1_name openlan reload --save
+  docker exec $sw2_name openlan reload --save
+  docker exec $sw3_name openlan reload --save
+
+  check "docker exec $sw2_name openlan network --name example output ls" "authenticated" 60 || {
+    echo "unexpected output unauthenticated after reload"
+    return 1
+  }
+
+  check "docker exec $sw3_name openlan network --name example output ls" "authenticated" 60 || {
+    echo "unexpected output unauthenticated after reload"
+    return 1
+  }
+
+  test_route_once
 }
 
 setup() {

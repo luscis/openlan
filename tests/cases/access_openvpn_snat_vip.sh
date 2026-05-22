@@ -19,7 +19,7 @@ vpn1_name=tests-sw-openvpn-snat-vip.vpn1
 #   vpn client reaches sw2 VIP (10.252.0.12) through sw1 with SNAT enabled.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1
+  docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1
 }
 
 setup_sw1() {

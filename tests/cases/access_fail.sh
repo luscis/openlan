@@ -13,7 +13,7 @@ ac1_badpass_name=tests-sw-authfail.acbad
 # - Validation path: authentication must fail with wrong password.
 
 setup_net() {
-    docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
 }
 
 setup_sw1() {

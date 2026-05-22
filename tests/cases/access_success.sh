@@ -15,8 +15,7 @@ crypt_secret_v2=ea64d5b0c96d
 # - Validation path: ac1 -> sw1 and ac2 -> sw1 connectivity by ping.
 
 setup_net() {
-    docker network create $net_name \
-      --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
+  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
 }
 
 setup_sw1() {

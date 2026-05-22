@@ -168,11 +168,11 @@ func (z *ZTrust) Chain() string {
 
 func (z *ZTrust) Initialize() {
 	z.chain = cn.NewFireWallChain(z.Chain(), cn.TMangle, "")
-	z.chain.AddRule(cn.IPRule{
+	z.chain.AddRuleX(cn.IPRule{
 		CtState: "RELATED,ESTABLISHED",
 		Comment: "Forwarding Accpted",
 	})
-	z.chain.AddRule(cn.IPRule{
+	z.chain.AddRuleX(cn.IPRule{
 		Comment: "ZTrust Deny All",
 		Jump:    "DROP",
 	})
@@ -260,7 +260,6 @@ func (z *ZTrust) DelGuest(name, source string) error {
 
 func (z *ZTrust) Start() {
 	z.out.Info("ZTrust.Start")
-	z.chain.Install()
 	libol.Go(z.Update)
 }
 
