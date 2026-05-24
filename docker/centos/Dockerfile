@@ -8,6 +8,16 @@ WORKDIR /root
 RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/*.repo && \
     sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/*.repo
 
+RUN yum update -y && \
+    yum install -y epel-release && \
+    yum install -y openssl net-tools iptables iputils iperf3 tcpdump && \
+    yum install -y openvpn dnsmasq bridge-utils ipset procps wget socat && \
+    wget -O /tmp/libreswan-4.10-1.el7.x86_64.rpm https://github.com/luscis/packages/raw/main/redhat/centos7/libreswan-4.10-1.el7.x86_64.rpm && \
+    (yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm || yum install -y libreswan) && \
+    wget -O /tmp/frr-stable-repo.el7.noarch.rpm https://rpm.frrouting.org/repo/frr-stable-repo.el7.noarch.rpm && \
+    yum install -y /tmp/frr-stable-repo.el7.noarch.rpm && \
+    yum install -y frr frr-pythontools
+
 ADD ${linux_bin} /tmp
 RUN /tmp/${linux_bin} --nosysm --verbose
 RUN yum clean all && rm -rf /var/cache/yum/* /tmp/*

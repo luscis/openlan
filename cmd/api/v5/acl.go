@@ -32,6 +32,10 @@ func (u ACLRule) Url(prefix, name string) string {
 	return prefix + "/api/network/" + name + "/acl"
 }
 
+func (u ACLRule) FlushUrl(prefix, name string) string {
+	return u.Url(prefix, name) + "/flush"
+}
+
 func (u ACLRule) Add(c *cli.Context) error {
 	name := c.String("name")
 	url := u.Url(c.String("url"), name)
@@ -76,9 +80,9 @@ func (u ACLRule) Remove(c *cli.Context) error {
 
 func (u ACLRule) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -4 "protocol"}} {{ps -4 "dport"}} {{ps -4 "sport"}}
+{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -8 "protocol"}} {{ps -5 "dport"}} {{ps -5 "sport"}}
 {{- range . }}
-{{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -4 .Proto}} {{pi -4 .DstPort}} {{pi -4 .SrcPort}}
+{{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -8 .Proto}} {{pi -5 .DstPort}} {{pi -5 .SrcPort}}
 {{- end }}
 `
 }
@@ -109,10 +113,23 @@ func (u ACLRule) Save(c *cli.Context) error {
 	return nil
 }
 
+func (u ACLRule) Flush(c *cli.Context) error {
+	name := c.String("name")
+	url := u.FlushUrl(c.String("url"), name)
+
+	clt := u.NewHttp(c.String("token"))
+	if err := clt.PutJSON(url, nil, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (u ACLRule) Commands() *cli.Command {
 	return &cli.Command{
-		Name:  "rule",
-		Usage: "Access control list rule",
+		Name:   "rule",
+		Usage:  "Access control list rule",
+		Action: u.List,
 		Subcommands: []*cli.Command{
 			{
 				Name:  "add",
@@ -150,6 +167,11 @@ func (u ACLRule) Commands() *cli.Command {
 				Usage:   "Save all acl rules",
 				Aliases: []string{"sa"},
 				Action:  u.Save,
+			},
+			{
+				Name:   "flush",
+				Usage:  "Flush all acl rules",
+				Action: u.Flush,
 			},
 		},
 	}

@@ -149,6 +149,12 @@ func (a *ACL) DelRule(rule *schema.ACLRule) error {
 	return nil
 }
 
+func (a *ACL) FlushRules() {
+	a.out.Info("ACL.FlushRules")
+	a.chain.Flush()
+	a.Rules = make(map[string]*ACLRule, 32)
+}
+
 func (a *ACL) ListRules(call func(obj schema.ACLRule)) {
 	for _, rule := range a.Rules {
 		obj := schema.ACLRule{

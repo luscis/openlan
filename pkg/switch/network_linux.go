@@ -660,8 +660,8 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 
 	w.acl.Start()
 
-	if cfg.Bridge != nil {
-		w.toACL(cfg.Bridge.Name)
+	if w.br != nil {
+		w.toACL(w.br.L3Name())
 		for _, output := range cfg.Outputs {
 			w.addOutput(cfg.Bridge.Name, output)
 		}

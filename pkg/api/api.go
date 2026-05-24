@@ -10,8 +10,8 @@ import (
 )
 
 type RateLimitApi interface {
-	AddRate(device string, mbit int)
-	DelRate(device string)
+	AddRate(device string, mbit int) error
+	DelRate(device string) error
 }
 
 type LdapApi interface {
@@ -53,6 +53,7 @@ func NewWorkerSchema(s SwitchApi) schema.Worker {
 type ACLApi interface {
 	AddRule(rule *schema.ACLRule) error
 	DelRule(rule *schema.ACLRule) error
+	FlushRules()
 	ListRules(call func(obj schema.ACLRule))
 	SaveRule()
 }

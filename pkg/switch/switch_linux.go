@@ -684,40 +684,51 @@ func (v *Switch) Save() {
 	v.cfg.Save()
 }
 
-func (v *Switch) AddRate(device string, mbit int) {
+func (v *Switch) AddRate(device string, mbit int) error {
 	rate := fmt.Sprintf("%dMbit", mbit)
 	burst := "64Kb"
 	latency := "400ms"
+
+	v.clearRate(device)
 
 	// Egress limit.
 	out, err := libol.Exec("tc", "qdisc", "add", "dev", device, "root",
 		"tbf", "rate", rate, "burst", burst, "latency", latency)
 	if err != nil {
 		v.out.Warn("Switch.AddRate: %s %d %s", device, mbit, out)
+		return err
 	}
 
 	// Ingress limit.
 	out, err = libol.Exec("tc", "qdisc", "add", "dev", device, "ingress")
 	if err != nil {
 		v.out.Warn("Switch.AddRate: %s %s", device, out)
+		return err
 	}
 	out, err = libol.Exec("tc", "filter", "add", "dev", device, "parent", "ffff:",
 		"protocol", "ip", "prio", "1", "u32", "match", "u32", "0", "0",
 		"police", "rate", rate, "burst", burst, "drop", "flowid", ":1")
 	if err != nil {
 		v.out.Warn("Switch.AddRate: %s %d %s", device, mbit, out)
+		return err
 	}
+	return nil
 }
 
-func (v *Switch) DelRate(device string) {
+func (v *Switch) clearRate(device string) error {
 	out, err := libol.Exec("tc", "qdisc", "del", "dev", device, "root")
 	if err != nil {
-		v.out.Debug("Switch.AddRate: %s %s", device, out)
+		v.out.Debug("Switch.clearRate: %s %s", device, out)
 	}
 	out, err = libol.Exec("tc", "qdisc", "del", "dev", device, "ingress")
 	if err != nil {
-		v.out.Debug("Switch.AddRate: %s %s", device, out)
+		v.out.Debug("Switch.clearRate: %s %s", device, out)
 	}
+	return nil
+}
+
+func (v *Switch) DelRate(device string) error {
+	return v.clearRate(device)
 }
 
 func (v *Switch) AddLDAP(value schema.LDAP) error {

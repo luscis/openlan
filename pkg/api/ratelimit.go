@@ -25,11 +25,17 @@ func (h RateLimit) Post(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.cs.AddRate(device, rate.Speed)
+	if err := h.cs.AddRate(device, rate.Speed); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
 func (h RateLimit) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	device := vars["id"]
-	h.cs.DelRate(device)
+	if err := h.cs.DelRate(device); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }

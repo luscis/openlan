@@ -77,25 +77,19 @@ builder:
 # tar xvf libreswan_4.10.orig.tar.gz
 # cd libreswan-4.10 && make deb
 
-im-rhel: bin ## build image for redhat
+image-rhel: docker-bin ## build image for redhat
 	cp -rf $(SD)/docker/centos $(BD)
 	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).el \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file centos/Dockerfile .
 
-im-deb: bin ## build image for debian
+image-deb: docker-bin ## build image for debian
 	cp -rf $(SD)/docker/debian $(BD)
 	cd $(BD) && sudo docker build -t luscis/openlan:$(VER).$(ARCH).deb \
 	--build-arg linux_bin=$(LIN_DIR).bin --build-arg http_proxy="${http_proxy}" --build-arg https_proxy="${https_proxy}" \
 	--file debian/Dockerfile .
 
-bin:
-	docker exec openbui bash -c "cd ~ && make linux-bin"
-
-tar:
-	docker exec openbui bash -c "cd ~ && make linux-tar"
-
-image: im-deb ## build docker images
+image: image-deb ## build docker images
 
 compose: ## create a compose files
 	rm -rf /tmp/openlan.c && mkdir /tmp/openlan.c && \
@@ -106,6 +100,9 @@ compose: ## create a compose files
 	echo "$ docker-compose up -d"
 
 ceci: linux-ceci darwin-ceci windows-ceci ## build all platform ceci
+
+docker-ceci:
+	docker exec openbui bash -c "cd ~ && make ceci"
 
 linux: linux-switch linux-access linux-ceci linux-proxy ## build linux binary
 
@@ -128,12 +125,18 @@ linux-tar: install ## build linux packages
 	@rm -rf $(LIN_DIR)
 	gzip -f $(BD)/$(LIN_DIR).tar
 
+docker-tar:
+	docker exec openbui bash -c "cd ~ && make linux-tar"
+
 linux-bin: update linux-tar ## build linux install binary
 	@cat $(SD)/dist/install.sh > $(BD)/$(LIN_DIR).bin && \
 	echo "__ARCHIVE_BELOW__:" >> $(BD)/$(LIN_DIR).bin && \
 	cat $(BD)/$(LIN_DIR).tar.gz >> $(BD)/$(LIN_DIR).bin && \
 	chmod +x $(BD)/$(LIN_DIR).bin && \
 	echo "Save to $(LIN_DIR).bin"
+
+docker-bin:
+	docker exec openbui bash -c "cd ~ && make linux-bin"
 
 install: init linux ## install packages
 	@mkdir -p $(LIN_DIR)
@@ -165,8 +168,6 @@ windows-gzip: init windows ## build windows packages
 	gzip -f $(BD)/$(WIN_DIR).tar && rm -rf $(WIN_DIR)
 
 ## cross build for osx
-osx: darwin
-
 darwin: darwin-ceci darwin-access ## build darwin binary
 
 darwin-ceci:
