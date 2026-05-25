@@ -1,9 +1,12 @@
+#!/bin/bash
+source tools/auto.sh
+
 # OpenLAN Switch UT: IPSec GRE output path.
 
-net_name=tests-net-ipsec-gre-output
-sw1_name=tests-sw-ipsec-gre1
-sw2_name=tests-sw-ipsec-gre2
-ipsec_secret=ea64d5b0c96c
+export net_name=tests-net-ipsec-gre-output
+export sw1_name=tests-sw-ipsec-gre1
+export sw2_name=tests-sw-ipsec-gre2
+export ipsec_secret=ea64d5b0c96c
 
 # Topology:
 # - Docker mgmt network: 172.247.0.0/24
@@ -18,7 +21,7 @@ ipsec_secret=ea64d5b0c96c
 #   sw2 can ping sw1 service address through ipsec-protected output path.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.247.0.0/24 --gateway=172.247.0.1
+  docker network create $net_name --driver=bridge --subnet=172.247.0.0/24 --gateway=172.247.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -37,11 +40,11 @@ setup_sw1() {
 EOF
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.57.0.1/24
-  docker exec $name openlan user add --name edge@example --password 123456
-  docker exec $name openlan ipsec tunnel add --remote 172.247.0.242 --protocol gre --secret $ipsec_secret --localid sw1.ipsec.gre.test --remoteid sw2.ipsec.gre.test
+  assert_cmd docker exec $name openlan network --name example add --address 192.57.0.1/24
+  assert_cmd docker exec $name openlan user add --name edge@example --password 123456
+  assert_cmd docker exec $name openlan ipsec tunnel add --remote 172.247.0.242 --protocol gre --secret $ipsec_secret --localid sw1.ipsec.gre.test --remoteid sw2.ipsec.gre.test
 }
 
 setup_sw2() {
@@ -60,37 +63,41 @@ setup_sw2() {
 EOF
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.57.0.2/24
-  docker exec $name openlan user add --name edge@example --password 123456
-  docker exec $name openlan ipsec tunnel add --remote 172.247.0.241 --protocol gre --secret $ipsec_secret --localid sw2.ipsec.gre.test --remoteid sw1.ipsec.gre.test
+  assert_cmd docker exec $name openlan network --name example add --address 192.57.0.2/24
+  assert_cmd docker exec $name openlan user add --name edge@example --password 123456
+  assert_cmd docker exec $name openlan ipsec tunnel add --remote 172.247.0.241 --protocol gre --secret $ipsec_secret --localid sw2.ipsec.gre.test --remoteid sw1.ipsec.gre.test
 }
 
 setup_output() {
-  docker exec $sw2_name openlan network --name example output add --remote 172.247.0.241 --protocol gre --segment 1057
-  docker exec $sw1_name openlan network --name example output add --remote 172.247.0.242 --protocol gre --segment 1057
+  assert_cmd docker exec $sw2_name openlan network --name example output add --remote 172.247.0.241 --protocol gre --segment 1057
+  assert_cmd docker exec $sw1_name openlan network --name example output add --remote 172.247.0.242 --protocol gre --segment 1057
 }
 
 test_ipsec_output_ping() {
-  check "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.247.0.242" "erouted" 20
-  check "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.247.0.241" "erouted" 20
-  wait "docker exec $sw2_name ping -c 15 192.57.0.1" "bytes from" 20
+  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.247.0.242" "erouted"
+  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.247.0.241" "erouted"
+  assert_match 20 "docker exec $sw2_name ping -c 3 192.57.0.1" "bytes from"
 
-  docker exec $sw1_name openlan reload --save
-  docker exec $sw2_name openlan reload --save
+  assert_cmd docker exec $sw1_name openlan reload --save
+  assert_cmd docker exec $sw2_name openlan reload --save
 
-  check "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.247.0.242" "erouted" 20
-  check "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.247.0.241" "erouted" 20
-  wait "docker exec $sw2_name ping -c 15 192.57.0.1" "bytes from" 20
+  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.247.0.242" "erouted"
+  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.247.0.241" "erouted"
+  assert_match 20 "docker exec $sw2_name ping -c 3 192.57.0.1" "bytes from"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_sw2
   setup_output
   test_ipsec_output_ping
+}
+
+setup() {
+  setup_topology
 }
 
 main

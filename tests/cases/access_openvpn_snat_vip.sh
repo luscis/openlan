@@ -1,10 +1,13 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN OpenVPN SNAT test: VPN client reaches sw2 VIP via sw1 SNAT.
 
-net_name=tests-net-openvpn-snat-vip
-sw1_name=tests-sw-openvpn-snat-vip.sw1
-sw2_name=tests-sw-openvpn-snat-vip.sw2
-vpn1_name=tests-sw-openvpn-snat-vip.vpn1
+export net_name=tests-net-openvpn-snat-vip
+export sw1_name=tests-sw-openvpn-snat-vip.sw1
+export sw2_name=tests-sw-openvpn-snat-vip.sw2
+export vpn1_name=tests-sw-openvpn-snat-vip.vpn1
 
 # Topology:
 # - Docker mgmt network: 172.250.0.0/24
@@ -19,7 +22,7 @@ vpn1_name=tests-sw-openvpn-snat-vip.vpn1
 #   vpn client reaches sw2 VIP (10.252.0.12) through sw1 with SNAT enabled.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1
+  docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -29,12 +32,12 @@ setup_sw1() {
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan crypt update --algorithm aes-128 --secret "$crypt_secret"
-  docker exec $name openlan network --name example add --address 192.52.0.1/24
-  docker exec $name openlan user add --name uplink@example --password 123456
-  docker exec $name openlan user add --name vpn1@example --password 123456
+  assert_cmd docker exec $name openlan crypt update --algorithm aes-128 --secret "$crypt_secret"
+  assert_cmd docker exec $name openlan network --name example add --address 192.52.0.1/24
+  assert_cmd docker exec $name openlan user add --name uplink@example --password 123456
+  assert_cmd docker exec $name openlan user add --name vpn1@example --password 123456
 }
 
 setup_sw2() {
@@ -45,23 +48,23 @@ setup_sw2() {
   mkdir -p /opt/openlan/$name/etc/openlan/switch
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan crypt update --algorithm aes-128 --secret "$crypt_secret"
-  docker exec $name openlan network --name example add --address 192.52.0.2/24 
-  docker exec $name openlan router address add --device lo --address 10.252.0.12/32
-  docker exec $name openlan user add --name uplink@example --password 123456
+  assert_cmd docker exec $name openlan crypt update --algorithm aes-128 --secret "$crypt_secret"
+  assert_cmd docker exec $name openlan network --name example add --address 192.52.0.2/24
+  assert_cmd docker exec $name openlan router address add --device lo --address 10.252.0.12/32
+  assert_cmd docker exec $name openlan user add --name uplink@example --password 123456
 
   # sw2 connects to sw1 to build forwarding path.
-  docker exec $name openlan network --name example output add --remote 172.250.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.250.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
 }
 
 setup_openvpn() {
   local name="$sw1_name"
 
-  docker exec $name openlan network --name example route add --prefix 10.252.0.12/32 --nexthop 192.52.0.2
-  docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.96.0.0/24 --dns 8.8.8.8
-  docker exec $name openlan network --name example client add --user vpn1 --address 10.96.0.10
+  assert_cmd docker exec $name openlan network --name example route add --prefix 10.252.0.12/32 --nexthop 192.52.0.2
+  assert_cmd docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.96.0.0/24 --dns 8.8.8.8
+  assert_cmd docker exec $name openlan network --name example client add --user vpn1 --address 10.96.0.10
 
   mkdir -p /opt/openlan/$vpn1_name/ovpn
   docker cp $name:/var/openlan/openvpn/example/tcp1194client.ovpn /opt/openlan/$vpn1_name/ovpn/client.ovpn
@@ -71,28 +74,29 @@ vpn1@example
 EOF
 
   start_openvpn $vpn1_name $net_name
-  wait "docker logs -f $vpn1_name" "Initialization Sequence Completed" 40
+  assert_expect 40 "docker logs -f $vpn1_name" "Initialization Sequence Completed"
 }
 
 test_vpn_to_vip() {
   # Disable SNAT to verify that VIP is not reachable without SNAT.
-  docker exec $sw1_name openlan network --name example snat disable
-  if wait "docker exec $vpn1_name ping -c 10 10.252.0.12" "bytes from" 20; then
-    echo "unexpected success pinging VIP before SNAT enabled"
-    return 1
-  fi
+  assert_cmd docker exec $sw1_name openlan network --name example snat disable
+  assert_unmatch 3 "docker exec $vpn1_name ping -c 3 10.252.0.12" "bytes from"
 
   # Enable SNAT for VPN subnet egress via sw1.
-  docker exec $sw1_name openlan network --name example snat enable --scope openvpn
-  wait "docker exec $vpn1_name ping -c 10 10.252.0.12" "bytes from" 20
+  assert_cmd docker exec $sw1_name openlan network --name example snat enable --scope openvpn
+  assert_match 20 "docker exec $vpn1_name ping -c 3 10.252.0.12" "bytes from"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_sw2
   setup_openvpn
   test_vpn_to_vip
+}
+
+setup() {
+  setup_topology
 }
 
 main

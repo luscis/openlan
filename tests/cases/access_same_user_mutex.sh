@@ -1,10 +1,13 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN Access UT: same user multi-access mutual exclusion.
 
-net_name=tests-net-same-user
-sw1_name=tests-sw-same-user
-ac1_name=tests-sw-same-user.ac1
-ac2_name=tests-sw-same-user.ac2
+export net_name=tests-net-same-user
+export sw1_name=tests-sw-same-user
+export ac1_name=tests-sw-same-user.ac1
+export ac2_name=tests-sw-same-user.ac2
 
 # Topology:
 # - Docker mgmt network: 172.252.0.0/24
@@ -14,7 +17,7 @@ ac2_name=tests-sw-same-user.ac2
 # - Validation path: same user multi-access login is mutually exclusive.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1
+  docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -33,10 +36,10 @@ setup_sw1() {
 JSON
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.41.0.1/24
-  docker exec $name openlan user add --name t1@example --password 123456
+  assert_cmd docker exec $name openlan network --name example add --address 192.41.0.1/24
+  assert_cmd docker exec $name openlan user add --name t1@example --password 123456
 }
 
 setup_ac1() {
@@ -81,28 +84,30 @@ YAML
 
 test_same_user_mutex() {
   setup_ac1
-  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
-  check "docker exec $sw1_name openlan network --name example access ls" "ac1.alias" 3
+  assert_expect 30 "docker logs -f $ac1_name" "Worker.OnSuccess"
+  assert_match 3 "docker exec $sw1_name openlan network --name example access ls" "ac1.alias"
 
   setup_ac2
-  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
-  check "docker exec $sw1_name openlan network --name example access ls" "ac2.alias" 3
-
-  check "docker exec $sw1_name openlan network --name example access ls" "total 1" 3
+  assert_expect 30 "docker logs -f $ac2_name" "Worker.OnSuccess"
+  assert_match 3 "docker exec $sw1_name openlan network --name example access ls" "ac2.alias"
+  assert_match 3 "docker exec $sw1_name openlan network --name example access ls" "total 1"
 
   # stop ac1 to avoid reconnect flipping and ensure ac2 remains valid
   docker stop $ac2_name
-  check "docker exec $sw1_name openlan network --name example access ls" "ac1.alias" 60
+  assert_match 60 "docker exec $sw1_name openlan network --name example access ls" "ac1.alias"
   
-  docker exec $ac1_name ping -c 5 192.41.0.1 || true
-
-  wait "docker exec $ac1_name ping -c 3 192.41.0.1" "bytes from" 15
+  docker exec $ac1_name ping -c 3 192.41.0.1 || true
+  assert_match 5 "docker exec $ac1_name ping -c 3 192.41.0.1" "bytes from"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   test_same_user_mutex
+}
+
+setup() {
+  setup_topology
 }
 
 main

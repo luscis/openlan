@@ -1,10 +1,13 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN Access UT: admin user can login from multiple access clients.
 
-net_name=tests-net-admin-multi
-sw1_name=tests-sw-admin-multi
-ac1_name=tests-sw-admin-multi.ac1
-ac2_name=tests-sw-admin-multi.ac2
+export net_name=tests-net-admin-multi
+export sw1_name=tests-sw-admin-multi
+export ac1_name=tests-sw-admin-multi.ac1
+export ac2_name=tests-sw-admin-multi.ac2
 
 # Topology:
 # - Docker mgmt network: 172.251.0.0/24
@@ -14,7 +17,7 @@ ac2_name=tests-sw-admin-multi.ac2
 # - Validation path: admin multi-login should be allowed at the same time.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
+  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -33,10 +36,10 @@ setup_sw1() {
 JSON
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.51.0.1/24
-  docker exec $name openlan user add --name admin1@example --password 123456 --role admin
+  assert_cmd docker exec $name openlan network --name example add --address 192.51.0.1/24
+  assert_cmd docker exec $name openlan user add --name admin1@example --password 123456 --role admin
 }
 
 setup_ac1() {
@@ -79,23 +82,26 @@ YAML
 
 test_admin_multi_login() {
   setup_ac1
-  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
-  check "docker exec $sw1_name openlan network --name example access ls" "total 1" 10
+  assert_expect 30 "docker logs -f $ac1_name" "Worker.OnSuccess"
+  assert_match 10 "docker exec $sw1_name openlan network --name example access ls" "total 1"
 
   setup_ac2
-  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
-  wait "docker exec $ac2_name ping -c 5 192.51.0.1" "bytes from" 15
+  assert_expect 30 "docker logs -f $ac2_name" "Worker.OnSuccess"
+  assert_match 30 "docker exec $ac2_name ping -c 3 192.51.0.1" "bytes from"
 
   # admin role should allow concurrent sessions for the same user
-  check "docker exec $sw1_name openlan network --name example access ls" "total 2" 10
-
-  wait "docker exec $ac1_name ping -c 5 192.51.0.1" "bytes from" 15
+  assert_match 10 "docker exec $sw1_name openlan network --name example access ls" "total 2"
+  assert_match 10 "docker exec $ac1_name ping -c 3 192.51.0.1" "bytes from"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   test_admin_multi_login
+}
+
+setup() {
+  setup_topology
 }
 
 main

@@ -1,10 +1,13 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN route test: 3-node forwarding (sw3 -> sw2 -> sw1).
 
-net_name=tests-net-route3
-sw1_name=tests-sw-route1
-sw2_name=tests-sw-route2
-sw3_name=tests-sw-route3
+export net_name=tests-net-route3
+export sw1_name=tests-sw-route1
+export sw2_name=tests-sw-route2
+export sw3_name=tests-sw-route3
 
 # Topology:
 # - Docker mgmt network: 172.251.0.0/24
@@ -19,7 +22,7 @@ sw3_name=tests-sw-route3
 # - Validation path: sw3 reaches sw1/sw2 service IPs and both VIPs.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
+  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -37,11 +40,11 @@ setup_sw1() {
 }
 EOF
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.51.0.1/24
-  docker exec $name openlan router address add --device lo --address 10.251.0.11/32
-  docker exec $name openlan user add --name edge1@example --password 123456
+  assert_cmd docker exec $name openlan network --name example add --address 192.51.0.1/24
+  assert_cmd docker exec $name openlan router address add --device lo --address 10.251.0.11/32
+  assert_cmd docker exec $name openlan user add --name edge1@example --password 123456
 }
 
 setup_sw2() {
@@ -59,13 +62,13 @@ setup_sw2() {
 }
 EOF
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.51.0.2/24
-  docker exec $name openlan router address add --device lo --address 10.251.0.12/32
-  docker exec $name openlan user add --name edge2@example --password 123457
+  assert_cmd docker exec $name openlan network --name example add --address 192.51.0.2/24
+  assert_cmd docker exec $name openlan router address add --device lo --address 10.251.0.12/32
+  assert_cmd docker exec $name openlan user add --name edge2@example --password 123457
   # Add a output to sw1 for 3-node forwarding validation.
-  docker exec $name openlan network --name example output add --remote 172.251.0.241 --protocol tcp --secret edge1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.251.0.241 --protocol tcp --secret edge1@example:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 setup_sw3() {
@@ -83,64 +86,54 @@ setup_sw3() {
 }
 EOF
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
   
-  docker exec $name openlan network --name example add --address 192.51.0.3/24
+  assert_cmd docker exec $name openlan network --name example add --address 192.51.0.3/24
   # Add outputs to sw2 for 3-node forwarding validation.
-  docker exec $name openlan network --name example output add --remote 172.251.0.242 --protocol tcp --secret edge2@example:123457 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.251.0.242 --protocol tcp --secret edge2@example:123457 --crypt aes-128:ea64d5b0c96c
 
   # Route VIP traffic via sw2 (192.51.0.2) for 3-node forwarding validation.
-  docker exec $name openlan network --name example route add --prefix 10.251.0.11/32 --nexthop 192.51.0.1
-  docker exec $name openlan network --name example route add --prefix 10.251.0.12/32 --nexthop 192.51.0.2
+  assert_cmd docker exec $name openlan network --name example route add --prefix 10.251.0.11/32 --nexthop 192.51.0.1
+  assert_cmd docker exec $name openlan network --name example route add --prefix 10.251.0.12/32 --nexthop 192.51.0.2
 }
 
 test_route_once() {
-  docker exec $sw3_name ip route show | grep "10.251.0.11"
-  docker exec $sw3_name ip route show | grep "10.251.0.12"
+  assert_match 1 "docker exec $sw3_name ip route show" "10.251.0.11"
+  assert_match 1 "docker exec $sw3_name ip route show" "10.251.0.12"
 
-  docker exec $sw3_name ip neigh flush dev hi-example
-  wait "docker exec $sw3_name ping -c 20 192.51.0.1" "bytes from" 25
-  wait "docker exec $sw3_name ping -c 20 192.51.0.2" "bytes from" 25
-  wait "docker exec $sw3_name ping -c 20 10.251.0.11" "bytes from" 25
-  wait "docker exec $sw3_name ping -c 20 10.251.0.12" "bytes from" 25
+  assert_cmd docker exec $sw3_name ip neigh flush dev hi-example
+  assert_match 25 "docker exec $sw3_name ping -c 3 192.51.0.1" "bytes from"
+  assert_match 25 "docker exec $sw3_name ping -c 3 192.51.0.2" "bytes from"
+  assert_match 25 "docker exec $sw3_name ping -c 3 10.251.0.11" "bytes from"
+  assert_match 25 "docker exec $sw3_name ping -c 3 10.251.0.12" "bytes from"
 }
 
 test_route() {
-  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 60 || {
-    echo "unexpected output unauthenticated after reload"
-    return 1
-  }
-
-  check "docker exec $sw3_name openlan network --name example output ls" "state: authenticated" 60 || {
-    echo "unexpected output unauthenticated after reload"
-    return 1
-  }
+  assert_match 60 "docker exec $sw2_name openlan network --name example output ls" "state: authenticated"
+  assert_match 60 "docker exec $sw3_name openlan network --name example output ls" "state: authenticated"
   
   test_route_once
 
-  docker exec $sw1_name openlan reload --save
-  docker exec $sw2_name openlan reload --save
-  docker exec $sw3_name openlan reload --save
+  assert_cmd docker exec $sw1_name openlan reload --save
+  assert_cmd docker exec $sw2_name openlan reload --save
+  assert_cmd docker exec $sw3_name openlan reload --save
 
-  check "docker exec $sw2_name openlan network --name example output ls" "state: authenticated" 60 || {
-    echo "unexpected output unauthenticated after reload"
-    return 1
-  }
-
-  check "docker exec $sw3_name openlan network --name example output ls" "state: authenticated" 60 || {
-    echo "unexpected output unauthenticated after reload"
-    return 1
-  }
+  assert_match 60 "docker exec $sw2_name openlan network --name example output ls" "state: authenticated"
+  assert_match 60 "docker exec $sw3_name openlan network --name example output ls" "state: authenticated"
 
   test_route_once
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_sw2
   setup_sw3
   test_route
+}
+
+setup() {
+  setup_topology
 }
 
 main

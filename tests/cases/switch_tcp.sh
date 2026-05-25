@@ -1,9 +1,12 @@
+#!/bin/bash
+source tools/auto.sh
+
 # OpenLAN Access UT.
 
-net_name=tests-net1
-sw1_name=tests-sw1
-sw2_name=tests-sw2
-sw3_name=tests-sw3
+export net_name=tests-net1
+export sw1_name=tests-sw1
+export sw2_name=tests-sw2
+export sw3_name=tests-sw3
 
 # Topology:
 # - Docker mgmt network: 172.255.0.0/24
@@ -15,7 +18,7 @@ sw3_name=tests-sw3
 # - Validation path: verify tcp forwarding reachability between switches.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
+  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -35,13 +38,13 @@ EOF
 
   # Start switch:
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
   # Add a network.
-  docker exec $name openlan network --name example add --address 192.41.0.1/24
-  docker exec $name openlan network ls | grep example
+  assert_cmd docker exec $name openlan network --name example add --address 192.41.0.1/24
+  assert_match 1 "docker exec $name openlan network ls" "name: example"
   # Add users
-  docker exec $name openlan user add --name t1@example --password 123456
+  assert_cmd docker exec $name openlan user add --name t1@example --password 123456
 }
 
 setup_sw2() {
@@ -61,16 +64,16 @@ EOF
 
   # Start switch:
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
   # Add a network.
-  docker exec $name openlan network --name example add --address 192.41.0.2/24
+  assert_cmd docker exec $name openlan network --name example add --address 192.41.0.2/24
   # Add users
-  docker exec $name openlan user add --name t1@example --password 123456
+  assert_cmd docker exec $name openlan user add --name t1@example --password 123456
 
   # Add a output to sw1
-  docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:password
-  docker exec $name openlan network --name example output ls
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:password
+  assert_cmd docker exec $name openlan network --name example output ls
 }
 
 
@@ -91,26 +94,23 @@ EOF
 
   # Start switch:
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
   # Add a network.
-  docker exec $name openlan network --name example add --address 192.41.0.3/24
+  assert_cmd docker exec $name openlan network --name example add --address 192.41.0.3/24
   # Add a output to sw1
-  docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
-  docker exec $name openlan network --name example output ls
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output ls
 }
 
 test_ping_before_sw3_sw2_output() {
-  wait "docker exec $sw2_name ping -c 15 192.41.0.1" "bytes from" 15
-  if wait "docker exec $sw3_name ping -c 15 192.41.0.1" "bytes from" 15; then
-    echo "unexpected ping failure from sw3 to sw1"
-    return 1
-  fi
+  assert_match 15 "docker exec $sw2_name ping -c 3 192.41.0.1" "bytes from"
+  assert_unmatch 3 "docker exec $sw3_name ping -c 3 192.41.0.1" "bytes from"
 }
 
 test_ping_after_sw3_sw2_output() {
-  wait "docker exec $sw2_name ping -c 15 192.41.0.2" "bytes from" 15
-  wait "docker exec $sw2_name ping -c 15 192.41.0.3" "bytes from" 15
+  assert_match 15 "docker exec $sw2_name ping -c 3 192.41.0.2" "bytes from"
+  assert_match 15 "docker exec $sw2_name ping -c 3 192.41.0.3" "bytes from"
 }
 
 test_ping() {
@@ -118,23 +118,27 @@ test_ping() {
 
   # Add a output on sw3 to sw2
   local name="$sw3_name"
-  docker exec $name openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
-  check "docker exec $name openlan network --name example output ls" "state: authenticated" 15
+  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_match 15 "docker exec $name openlan network --name example output ls" "state: authenticated"
   test_ping_after_sw3_sw2_output
 
-  docker exec $sw1_name openlan reload --save
-  docker exec $sw2_name openlan reload --save
-  docker exec $sw3_name openlan reload --save
+  assert_cmd docker exec $sw1_name openlan reload --save
+  assert_cmd docker exec $sw2_name openlan reload --save
+  assert_cmd docker exec $sw3_name openlan reload --save
 
-  docker exec $sw2_name ip neigh flush dev hi-example
+  assert_cmd docker exec $sw2_name ip neigh flush dev hi-example
   test_ping_after_sw3_sw2_output
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_sw2
   setup_sw3
+}
+
+setup() {
+  setup_topology
   test_ping
 }
 

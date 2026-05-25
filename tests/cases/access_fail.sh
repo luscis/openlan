@@ -1,9 +1,12 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN Access UT: authentication failure path.
 
-net_name=tests-net-authfail
-sw1_name=tests-sw-authfail
-ac1_badpass_name=tests-sw-authfail.acbad
+export net_name=tests-net-authfail
+export sw1_name=tests-sw-authfail
+export ac1_badpass_name=tests-sw-authfail.acbad
 
 # Topology:
 # - Docker mgmt network: 172.253.0.0/24
@@ -13,7 +16,7 @@ ac1_badpass_name=tests-sw-authfail.acbad
 # - Validation path: authentication must fail with wrong password.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -32,10 +35,10 @@ setup_sw1() {
 EOF
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.31.0.1/24
-  docker exec $name openlan user add --name t1@example --password 123456
+  assert_cmd docker exec $name openlan network --name example add --address 192.31.0.1/24
+  assert_cmd docker exec $name openlan user add --name t1@example --password 123456
 }
 
 setup_ac_badpass() {
@@ -55,16 +58,17 @@ interface:
 EOF
 
   start_access $name $net_name
-  if wait "docker logs -f $name" "Worker.OnSuccess" 15; then
-    echo "unexpected success with wrong password"
-    return 1
-  fi
+  assert_unexpect 15 "docker logs -f $name" "Worker.OnSuccess"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_ac_badpass
+}
+
+setup() {
+  setup_topology
 }
 
 main

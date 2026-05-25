@@ -661,7 +661,7 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	w.acl.Start()
 
 	if w.br != nil {
-		w.toACL(w.br.L3Name())
+		w.toACL(w.br.Name(), w.br.L3Name())
 		for _, output := range cfg.Outputs {
 			w.addOutput(cfg.Bridge.Name, output)
 		}
@@ -937,19 +937,19 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 	return nil
 }
 
-func (w *WorkerImpl) toACL(input string) {
-	if input != "" {
+func (w *WorkerImpl) toACL(input ...string) {
+	for _, port := range input {
 		w.fire.Raw.Pre.AddRuleX(cn.IPRule{
-			Input: input,
+			Input: port,
 			Jump:  w.acl.Chain(),
 		})
 	}
 }
 
-func (w *WorkerImpl) leftACL(input string) {
-	if input != "" {
+func (w *WorkerImpl) leftACL(input ...string) {
+	for _, port := range input {
 		w.fire.Raw.Pre.DelRuleX(cn.IPRule{
-			Input: input,
+			Input: port,
 			Jump:  w.acl.Chain(),
 		})
 	}

@@ -1,6 +1,9 @@
 package v5
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/luscis/openlan/cmd/api"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
@@ -39,6 +42,10 @@ func (u ACLRule) FlushUrl(prefix, name string) string {
 func (u ACLRule) Add(c *cli.Context) error {
 	name := c.String("name")
 	url := u.Url(c.String("url"), name)
+	action, err := u.Action(c)
+	if err != nil {
+		return err
+	}
 
 	rule := &schema.ACLRule{
 		Proto:   c.String("protocol"),
@@ -46,7 +53,7 @@ func (u ACLRule) Add(c *cli.Context) error {
 		DstIp:   c.String("destination"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
-		Action:  "drop",
+		Action:  action,
 	}
 
 	clt := u.NewHttp(c.String("token"))
@@ -60,6 +67,10 @@ func (u ACLRule) Add(c *cli.Context) error {
 func (u ACLRule) Remove(c *cli.Context) error {
 	name := c.String("name")
 	url := u.Url(c.String("url"), name)
+	action, err := u.Action(c)
+	if err != nil {
+		return err
+	}
 
 	rule := &schema.ACLRule{
 		Proto:   c.String("protocol"),
@@ -67,7 +78,7 @@ func (u ACLRule) Remove(c *cli.Context) error {
 		DstIp:   c.String("destination"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
-		Action:  "drop",
+		Action:  action,
 	}
 
 	clt := u.NewHttp(c.String("token"))
@@ -78,11 +89,22 @@ func (u ACLRule) Remove(c *cli.Context) error {
 	return nil
 }
 
+func (u ACLRule) Action(c *cli.Context) (string, error) {
+	action := strings.TrimSpace(strings.ToLower(c.String("action")))
+	if action == "" {
+		action = "drop"
+	}
+	if action != "drop" && action != "accept" {
+		return "", fmt.Errorf("invalid acl action %q, want accept or drop", action)
+	}
+	return action, nil
+}
+
 func (u ACLRule) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -8 "protocol"}} {{ps -5 "dport"}} {{ps -5 "sport"}}
+{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -8 "protocol"}} {{ps -5 "dport"}} {{ps -5 "sport"}} {{ps -8 "action"}}
 {{- range . }}
-{{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -8 .Proto}} {{pi -5 .DstPort}} {{pi -5 .SrcPort}}
+{{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -8 .Proto}} {{pi -5 .DstPort}} {{pi -5 .SrcPort}} {{ps -8 .Action}}
 {{- end }}
 `
 }
@@ -140,6 +162,7 @@ func (u ACLRule) Commands() *cli.Command {
 					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
 					&cli.IntFlag{Name: "sport", Aliases: []string{"sp"}},
 					&cli.IntFlag{Name: "dport", Aliases: []string{"dp"}},
+					&cli.StringFlag{Name: "action", Aliases: []string{"a"}, Value: "drop"},
 				},
 				Action: u.Add,
 			},
@@ -153,6 +176,7 @@ func (u ACLRule) Commands() *cli.Command {
 					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
 					&cli.IntFlag{Name: "sport", Aliases: []string{"sp"}},
 					&cli.IntFlag{Name: "dport", Aliases: []string{"dp"}},
+					&cli.StringFlag{Name: "action", Aliases: []string{"a"}, Value: "drop"},
 				},
 				Action: u.Remove,
 			},

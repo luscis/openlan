@@ -1,10 +1,13 @@
+#!/bin/bash
+source tools/auto.sh
+
 
 # OpenLAN OpenVPN client-to-client ping with static addresses.
 
-net_name=tests-net-openvpn-ping
-sw1_name=tests-sw-openvpn-ping
-vpn1_name=tests-sw-openvpn-ping.vpn1
-vpn2_name=tests-sw-openvpn-ping.vpn2
+export net_name=tests-net-openvpn-ping
+export sw1_name=tests-sw-openvpn-ping
+export vpn1_name=tests-sw-openvpn-ping.vpn1
+export vpn2_name=tests-sw-openvpn-ping.vpn2
 
 # Topology:
 # - Docker mgmt network: 172.253.0.0/24
@@ -16,7 +19,7 @@ vpn2_name=tests-sw-openvpn-ping.vpn2
 # - Validation path: vpn1 and vpn2 can ping each other by static overlay IP.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -25,11 +28,11 @@ setup_sw1() {
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.42.0.1/24
-  docker exec $name openlan user add --name vpn1@example --password 123456
-  docker exec $name openlan user add --name vpn2@example --password 123456
+  assert_cmd docker exec $name openlan network --name example add --address 192.42.0.1/24
+  assert_cmd docker exec $name openlan user add --name vpn1@example --password 123456
+  assert_cmd docker exec $name openlan user add --name vpn2@example --password 123456
 }
 
 start_vpn_client() {
@@ -46,31 +49,35 @@ $password
 EOF
 
   start_openvpn $client_name $net_name
-  wait "docker logs -f $client_name" "Initialization Sequence Completed" 40
+  assert_expect 40 "docker logs -f $client_name" "Initialization Sequence Completed"
 }
 
 setup_openvpn_and_check_ping() {
   local name="$sw1_name"
 
-  docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.97.0.0/24 --dns 8.8.8.8
+  assert_cmd docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.97.0.0/24 --dns 8.8.8.8
 
-  docker exec $name openlan network --name example client add --user vpn1 --address 10.97.0.10
-  docker exec $name openlan network --name example client add --user vpn2 --address 10.97.0.11
+  assert_cmd docker exec $name openlan network --name example client add --user vpn1 --address 10.97.0.10
+  assert_cmd docker exec $name openlan network --name example client add --user vpn2 --address 10.97.0.11
 
-  docker exec $name test -f /var/openlan/openvpn/example/ccd/vpn1@example
-  docker exec $name test -f /var/openlan/openvpn/example/ccd/vpn2@example
+  assert_cmd docker exec $name test -f /var/openlan/openvpn/example/ccd/vpn1@example
+  assert_cmd docker exec $name test -f /var/openlan/openvpn/example/ccd/vpn2@example
 
   start_vpn_client $name $vpn1_name vpn1@example 123456
   start_vpn_client $name $vpn2_name vpn2@example 123456
 
-  wait "docker exec $vpn1_name ping -c 5 10.97.0.11" "bytes from" 15
-  wait "docker exec $vpn2_name ping -c 5 10.97.0.10" "bytes from" 15
+  assert_check 5 "docker exec $vpn1_name ping -c 3 10.97.0.11" "bytes from"
+  assert_check 5 "docker exec $vpn2_name ping -c 3 10.97.0.10" "bytes from"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_openvpn_and_check_ping
+}
+
+setup() {
+  setup_topology
 }
 
 main

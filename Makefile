@@ -214,4 +214,4 @@ clean: ## clean cache
 
 ## case test
 case: ## execute case tests.
-	bash ./tests/start.sh
+	bash ./tests/start.sh --report

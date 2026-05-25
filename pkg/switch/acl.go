@@ -31,6 +31,7 @@ func (r *ACLRule) Rule() cn.IPRule {
 			Source: r.SrcIp,
 			Proto:  r.Proto,
 			Jump:   r.Action,
+			Order:  "-I",
 		}
 		if r.DstPort > 0 {
 			r.rule.DstPort = strconv.Itoa(r.DstPort)

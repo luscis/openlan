@@ -1,9 +1,12 @@
+#!/bin/bash
+source tools/auto.sh
+
 # OpenLAN RateLimit UT.
 
-net_name=tests-net-ratelimit
-sw1_name=tests-sw-ratelimit
-bridge_device=hi-example
-openvpn_device=tun1194
+export net_name=tests-net-ratelimit
+export sw1_name=tests-sw-ratelimit
+export bridge_device=hi-example
+export openvpn_device=tun1194
 
 # Topology:
 # - Docker mgmt network: 172.253.0.0/24
@@ -16,7 +19,7 @@ openvpn_device=tun1194
 #   devices, and verify Linux tc qdisc/filter state is updated.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -24,62 +27,52 @@ setup_sw1() {
   local address=172.253.0.241
 
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
-  docker exec $name openlan network --name example add --address 192.60.0.1/24
-  docker exec $name ip link show $bridge_device
+  assert_cmd docker exec $name openlan network --name example add --address 192.60.0.1/24
+  assert_cmd docker exec $name ip link show $bridge_device
 
-  docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.60.0.0/24 --dns 8.8.8.8
-  check "docker exec $name ip link show $openvpn_device" "$openvpn_device" 20
+  assert_cmd docker exec $name openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.60.0.0/24 --dns 8.8.8.8
+  assert_match 20 "docker exec $name ip link show $openvpn_device" "$openvpn_device"
 }
 
 test_ratelimit_add() {
   local device=$1
 
-  docker exec $sw1_name openlan ratelimit add --device $device --speed 1
+  assert_cmd docker exec $sw1_name openlan ratelimit add --device $device --speed 1
 
-  check "docker exec $sw1_name tc qdisc show dev $device" "rate 1Mbit" 10
-  check "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 1Mbit" 10
+  assert_match 10 "docker exec $sw1_name tc qdisc show dev $device" "rate 1Mbit"
+  assert_match 10 "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 1Mbit"
 
-  docker exec $sw1_name openlan ratelimit add --device $device --speed 2
+  assert_cmd docker exec $sw1_name openlan ratelimit add --device $device --speed 2
 
-  check "docker exec $sw1_name tc qdisc show dev $device" "rate 2Mbit" 10
-  check "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 2Mbit" 10
+  assert_match 10 "docker exec $sw1_name tc qdisc show dev $device" "rate 2Mbit"
+  assert_match 10 "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 2Mbit"
 
-  if check "docker exec $sw1_name tc qdisc show dev $device" "rate 1Mbit" 3; then
-    echo "unexpected root tbf qdisc still uses 1Mbit on $device after ratelimit add 2Mbit"
-    return 1
-  fi
-
-  if check "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 1Mbit" 3; then
-    echo "unexpected ingress filter still uses 1Mbit on $device after ratelimit add 2Mbit"
-    return 1
-  fi
+  assert_unmatch 3 "docker exec $sw1_name tc qdisc show dev $device" "rate 1Mbit"
+  assert_unmatch 3 "docker exec $sw1_name tc filter show dev $device parent ffff:" "rate 1Mbit"
 }
 
 test_ratelimit_remove() {
   local device=$1
 
-  docker exec $sw1_name openlan ratelimit remove --device $device
+  assert_cmd docker exec $sw1_name openlan ratelimit remove --device $device
 
-  if check "docker exec $sw1_name tc qdisc show dev $device" "tbf" 3; then
-    echo "unexpected root tbf qdisc remains on $device after ratelimit remove"
-    return 1
-  fi
-
-  if check "docker exec $sw1_name tc qdisc show dev $device" "ingress" 3; then
-    echo "unexpected ingress qdisc remains on $device after ratelimit remove"
-    return 1
-  fi
+  assert_unmatch 3 "docker exec $sw1_name tc qdisc show dev $device" "tbf"
+  assert_unmatch 3 "docker exec $sw1_name tc qdisc show dev $device" "ingress"
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   test_ratelimit_add $bridge_device
   test_ratelimit_remove $bridge_device
   test_ratelimit_add $openvpn_device
   test_ratelimit_remove $openvpn_device
+}
+
+setup() {
+  setup_topology
 }
 
 main

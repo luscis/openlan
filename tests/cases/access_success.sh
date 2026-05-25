@@ -1,11 +1,14 @@
+#!/bin/bash
+source tools/auto.sh
+
 # OpenLAN Access UT.
 
-net_name=tests-net1
-sw1_name=tests-sw1
-ac1_name=tests-sw1.ac1
-ac2_name=tests-sw1.ac2
-crypt_secret_v1=ea64d5b0c96c
-crypt_secret_v2=ea64d5b0c96d
+export net_name=tests-net1
+export sw1_name=tests-sw1
+export ac1_name=tests-sw1.ac1
+export ac2_name=tests-sw1.ac2
+export crypt_secret_v1=ea64d5b0c96c
+export crypt_secret_v2=ea64d5b0c96d
 
 # Topology:
 # - Docker mgmt network: 172.255.0.0/24
@@ -15,7 +18,7 @@ crypt_secret_v2=ea64d5b0c96d
 # - Validation path: ac1 -> sw1 and ac2 -> sw1 connectivity by ping.
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1
+  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
 }
 
 setup_sw1() {
@@ -35,13 +38,13 @@ EOF
 
   # Start switch: tests-sw1
   start_switch $name $net_name $address
-  wait "docker logs -f $name" Http.Start 30
+  assert_expect 30 "docker logs -f $name" "Http.Start"
 
   # Add a network.
-  docker exec $name openlan network --name example add --address 192.11.0.1/24
+  assert_cmd docker exec $name openlan network --name example add --address 192.11.0.1/24
   # Add users
-  docker exec $name openlan user add --name t1@example --password 123456
-  docker exec $name openlan user add --name t2@example --password 123457
+  assert_cmd docker exec $name openlan user add --name t1@example --password 123456
+  assert_cmd docker exec $name openlan user add --name t2@example --password 123457
 }
 
 setup_ac1() {
@@ -85,39 +88,43 @@ EOF
 }
 
 test_ping() {
-  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
-  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
+  assert_expect 30 "docker logs -f $ac1_name" "Worker.OnSuccess"
+  assert_expect 30 "docker logs -f $ac2_name" "Worker.OnSuccess"
 
-  wait "docker exec $ac1_name ping -c 3 192.11.0.1" "bytes from" 5
-  wait "docker exec $ac2_name ping -c 3 192.11.0.12" "bytes from" 5
+  assert_match 5 "docker exec $ac1_name ping -c 3 192.11.0.1" "bytes from"
+  assert_match 5 "docker exec $ac2_name ping -c 3 192.11.0.12" "bytes from"
 }
 
 test_crypt_update() {
-  docker exec $sw1_name openlan crypt update --algorithm aes-128 --secret "$crypt_secret_v2"
-  docker exec $sw1_name openlan crypt ls | grep "secret: $crypt_secret_v2"
+  assert_cmd docker exec $sw1_name openlan crypt update --algorithm aes-128 --secret "$crypt_secret_v2"
+  assert_match 1 "docker exec $sw1_name openlan crypt ls" "secret: $crypt_secret_v2"
 
   docker stop $ac1_name
   docker stop $ac2_name
 
   setup_ac1 "$crypt_secret_v1"
-  wait "docker logs -f $ac1_name" SocketClientImpl.Reset 30
+  assert_expect 30 "docker logs -f $ac1_name" "SocketClientImpl.Reset"
 
   docker stop $ac1_name
   setup_ac1 "$crypt_secret_v2"
-  wait "docker logs -f $ac1_name" Worker.OnSuccess 30
+  assert_expect 30 "docker logs -f $ac1_name" "Worker.OnSuccess"
 
   setup_ac2 "$crypt_secret_v2"
-  wait "docker logs -f $ac2_name" Worker.OnSuccess 30
+  assert_expect 30 "docker logs -f $ac2_name" "Worker.OnSuccess"
   test_ping
 }
 
-setup() {
+setup_topology() {
   setup_net
   setup_sw1
   setup_ac1
   setup_ac2
   test_ping
   test_crypt_update
+}
+
+setup() {
+  setup_topology
 }
 
 main

@@ -250,6 +250,9 @@ func (ch *FireWallChain) AddRuleX(rule IPRule) error {
 	if order == "" {
 		order = "-A"
 	}
+	if order != "-A" && order != "-I" {
+		order = "-A"
+	}
 	if _, err := rule.Opr(order); err != nil {
 		libol.Error("FireWallChain.AddRuleX %s", err)
 		return err
