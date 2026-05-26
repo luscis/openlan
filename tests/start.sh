@@ -182,8 +182,10 @@ run_batch() {
     report_line "End: $(now_text)"
     report_line "Report: $REPORT_FILE"
     write_report_html "$pass_count" "$fail_count" "$total"
+    pack_report_tar
     printf "[%s] Report generated: %s\n" "$(now_text)" "$REPORT_FILE"
     printf "[%s] HTML report: %s\n" "$(now_text)" "$REPORT_HTML"
+    printf "[%s] TAR report: %s\n" "$(now_text)" "$REPORT_TAR"
   fi
   if [[ $fail_count -gt 0 ]]; then
     return 1

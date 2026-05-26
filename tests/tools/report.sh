@@ -8,6 +8,7 @@ REPORT_ROWS_HTML=""
 REPORT_RUN_STAMP=""
 REPORT_RUN_DIR=""
 REPORT_CASE_DIR=""
+REPORT_TAR=""
 
 report_init_env() {
   local base_dir="$1"
@@ -25,8 +26,14 @@ init_report() {
   mkdir -p "$REPORT_CASE_DIR"
   REPORT_FILE="$REPORT_RUN_DIR/run.log"
   REPORT_HTML="$REPORT_RUN_DIR/run.html"
+  REPORT_TAR="$REPORT_DIR/$REPORT_RUN_STAMP.tar"
   REPORT_ROWS_HTML=""
   : > "$REPORT_FILE"
+}
+
+pack_report_tar() {
+  tar -cf "$REPORT_TAR" -C "$REPORT_DIR" "$REPORT_RUN_STAMP" && \
+    rm -rf "$REPORT_RUN_DIR"
 }
 
 report_case_log_file() {

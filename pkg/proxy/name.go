@@ -292,8 +292,7 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 
 	libol.Go(func() {
 		via := n.FindBackend(r)
-
-		if via != nil {
+		if via != nil && via.Nameto != "" { // Override nameto if backend is found.
 			nameto = via.Nameto
 		}
 
@@ -341,6 +340,12 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 }
 
 func (n *NameProxy) Start() {
+	// Forward Name Server to backend nexthop server.
+	n.cfg.Backends.List(func(ft *config.ForwardTo) {
+		n.out.Info("NameProxy.Backend %s via %s", ft.Nameto, ft.Server)
+		n.Forward("", ft.Nameto, ft.Server)
+	})
+
 	dns.HandleFunc(".", n.handleDNS)
 	n.server = &dns.Server{Addr: n.listen, Net: "udp"}
 
@@ -349,6 +354,7 @@ func (n *NameProxy) Start() {
 	for _, acc := range n.access {
 		libol.Go(acc.Start)
 	}
+
 	if err := n.server.ListenAndServe(); err != nil {
 		n.out.Error("NameProxy.StartDNS server: %v", err)
 	}
