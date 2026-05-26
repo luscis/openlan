@@ -4,12 +4,12 @@ ARG linux_bin
 
 WORKDIR /root
 
-# RUN sed -ie 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+RUN sed -ie 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
-RUN apt-get update -y && \
-    apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat && \
-    apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr && \
-    apt-get install -y libreswan
+RUN apt-get update -y
+RUN apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat
+RUN apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
+RUN apt-get install -y libreswan dnsutils
 
 ADD ${linux_bin} /tmp
 RUN /tmp/${linux_bin} --nosysm --verbose

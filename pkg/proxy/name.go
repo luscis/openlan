@@ -214,6 +214,7 @@ func (n *NameProxy) Forward(name, addr, nexthop string) {
 	if runtime.GOOS == "linux" {
 		opts = []string{"metric", fmt.Sprintf("%d", n.cfg.Metric)}
 	}
+
 	if strings.HasPrefix(nexthop, "local") {
 		n.out.Info("NameProxy.Forward: %s <- %s via %s ", nexthop, name, addr)
 		return
@@ -342,8 +343,10 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 func (n *NameProxy) Start() {
 	// Forward Name Server to backend nexthop server.
 	n.cfg.Backends.List(func(ft *config.ForwardTo) {
-		n.out.Info("NameProxy.Backend %s via %s", ft.Nameto, ft.Server)
-		n.Forward("", ft.Nameto, ft.Server)
+		if addr := libol.GetIPAddr(ft.Nameto); addr != "" {
+			n.out.Info("NameProxy.Backend %s via %s", addr, ft.Server)
+			n.Forward("", addr, ft.Server)
+		}
 	})
 
 	dns.HandleFunc(".", n.handleDNS)

@@ -63,7 +63,7 @@ test_tcp_reset() {
   assert_match 3 "docker exec $sw1_name iptables -L INPUT -v -n" "tcp-reset"
 
   # Expect reset from client side.
-  assert_fuzzy_match 5 "docker exec $vpn1_name wget -O- -T 3 -t 1 http://$sw1_overlay_ip:$rst_port" "Connection refused|Connection reset"
+  assert_fuzzy 5 "docker exec $vpn1_name wget -O- -T 3 -t 1 http://$sw1_overlay_ip:$rst_port" "Connection refused|Connection reset"
 }
 
 setup_topology() {

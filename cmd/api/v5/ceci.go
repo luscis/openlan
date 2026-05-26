@@ -103,7 +103,7 @@ func (u CeciProxy) Remove(c *cli.Context) error {
 
 func (u CeciProxy) Commands(app *api.App) *cli.Command {
 	return &cli.Command{
-		Name:  "ceci",
+		Name:  "proxy",
 		Usage: "Special Ceci proxy",
 		Subcommands: []*cli.Command{
 			{

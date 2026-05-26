@@ -84,6 +84,16 @@ func (w *CeciWorker) start(obj *co.CeciProxy) {
 			Backends: obj.Backends,
 			Cert:     runtimeCert,
 		}
+	case "name":
+		nameTo := ""
+		if len(obj.Target) > 0 {
+			nameTo = obj.Target[0]
+		}
+		data = &co.NameProxy{
+			Listen:   obj.Listen,
+			Nameto:   nameTo,
+			Backends: obj.Backends,
+		}
 	default:
 		data = &co.TcpProxy{
 			Listen: obj.Listen,
@@ -226,9 +236,11 @@ func (w *CeciWorker) AddProxy(data schema.CeciProxy) error {
 		for _, backend := range data.Backends {
 			obj.Backends = append(obj.Backends, &co.ForwardTo{
 				Server:   backend.Server,
+				Match:    backend.Match,
 				Protocol: backend.Protocol,
 				Insecure: backend.Insecure,
 				Secret:   backend.Secret,
+				Nameto:   backend.Nameto,
 			})
 		}
 	}

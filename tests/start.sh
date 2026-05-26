@@ -24,6 +24,10 @@ scenario_description() {
     access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
     access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
     access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
+    proxy_http.sh) echo "verify ceci http proxy forwarding to http target" ;;
+    proxy_name.sh) echo "verify ceci name proxy forwarding to upstream dns" ;;
+    proxy_name_backends.sh) echo "verify ceci name proxy routes domains to matched backends" ;;
+    proxy_tcp.sh) echo "verify ceci tcp proxy forwarding to tcp target" ;;
     switch_acl.sh) echo "verify acl add-list-save-reload-remove with vip tcp/80 and icmp" ;;
     switch_acl_default_action.sh) echo "verify acl default action switch between drop and accept" ;;
     switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;

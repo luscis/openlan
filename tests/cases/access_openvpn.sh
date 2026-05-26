@@ -93,9 +93,9 @@ EOF
   start_openvpn $vpn2_name $net_name
   assert_expect 40 "docker logs -f $vpn2_name" "Initialization Sequence Completed"
   assert_expect 40 "docker logs -f $vpn2_name" "Data Channel:"
-  assert_fuzzy_match 15 "docker logs $vpn2_name" "Data Channel:.*SM4-CBC"
-  assert_fuzzy_match 15 "docker logs $vpn2_name" "Outgoing Data Channel:.*SM4-CBC.*initialized"
-  assert_fuzzy_match 15 "docker logs $vpn2_name" "Incoming Data Channel:.*SM4-CBC.*initialized"
+  assert_fuzzy 15 "docker logs $vpn2_name" "Data Channel:.*SM4-CBC"
+  assert_fuzzy 15 "docker logs $vpn2_name" "Outgoing Data Channel:.*SM4-CBC.*initialized"
+  assert_fuzzy 15 "docker logs $vpn2_name" "Incoming Data Channel:.*SM4-CBC.*initialized"
 
   assert_cmd docker exec $sw1_name openlan network --name example openvpn remove
   echo "SM4 cipher negotiation check passed."

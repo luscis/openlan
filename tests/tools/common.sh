@@ -119,7 +119,7 @@ assert_match() {
   echo "${C_GREEN}[${end_text}][ASSERT#${aid}][OK] cost=${cost}${C_RESET}"
 }
 
-assert_fuzzy_match() {
+assert_fuzzy() {
   local count="$1"; local cmd="$2"; local pattern="$3"
   local script="${BASH_SOURCE[1]}"
   local line="${BASH_LINENO[0]}"
@@ -133,7 +133,7 @@ assert_fuzzy_match() {
   local end_text
   start_ms=$(now_ms)
   now_text=$(now_text)
-  echo "${C_CYAN}[${now_text}][ASSERT#${aid}][fuzzy_match] at ${script}:${line} fn=${func} retry=${count} cmd=\"${cmd}\" pattern=\"${pattern}\"${C_RESET}"
+  echo "${C_CYAN}[${now_text}][ASSERT#${aid}][fuzzy] at ${script}:${line} fn=${func} retry=${count} cmd=\"${cmd}\" pattern=\"${pattern}\"${C_RESET}"
   if ! _check_fuzzy "$count" "$cmd" "$pattern"; then
     cost=$(cost_s "$start_ms")
     end_text=$(now_text)
