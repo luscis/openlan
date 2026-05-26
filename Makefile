@@ -185,6 +185,7 @@ darwin-gzip: init darwin ## build darwin packages
 
 ## unit test
 test: ## execute unit test
+	set -euo pipefail
 	go clean -testcache
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol

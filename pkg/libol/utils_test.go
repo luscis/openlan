@@ -45,29 +45,29 @@ func TestPrettyBytes(t *testing.T) {
 	s = PrettyBytes(1023)
 	assert.Equal(t, "1023B", s, "be the same.")
 	s = PrettyBytes(1024 + 1023)
-	assert.Equal(t, "1.99K", s, "be the same.")
+	assert.Equal(t, "1.99KB", s, "be the same.")
 
 	s = PrettyBytes(1024*2 + 8)
-	assert.Equal(t, "2.00K", s, "be the same.")
+	assert.Equal(t, "2.00KB", s, "be the same.")
 
 	s = PrettyBytes(1024*2 + 1023)
-	assert.Equal(t, "2.99K", s, "be the same.")
+	assert.Equal(t, "2.99KB", s, "be the same.")
 
 	s = PrettyBytes(1024*1024 + 1)
-	assert.Equal(t, "1.00M", s, "be the same.")
+	assert.Equal(t, "1.00MB", s, "be the same.")
 
 	s = PrettyBytes(1024*1024 + 1024*256 + 1023)
-	assert.Equal(t, "1.25M", s, "be the same.")
+	assert.Equal(t, "1.25MB", s, "be the same.")
 
 	s = PrettyBytes(1024*1024 + 1024*1023)
-	assert.Equal(t, "1.99M", s, "be the same.")
+	assert.Equal(t, "1.99MB", s, "be the same.")
 
 	s = PrettyBytes(1024 * 1024 * 1024)
-	assert.Equal(t, "1.00G", s, "be the same.")
+	assert.Equal(t, "1.00GB", s, "be the same.")
 
 	s = PrettyBytes(1024*1024*1024 + 1024*1024*5 + 59)
-	assert.Equal(t, "1.00G", s, "be the same.")
+	assert.Equal(t, "1.00GB", s, "be the same.")
 
 	s = PrettyBytes(1024*1024*1024 + 1024*1024*512 + 59)
-	assert.Equal(t, "1.50G", s, "be the same.")
+	assert.Equal(t, "1.50GB", s, "be the same.")
 }
