@@ -23,54 +23,74 @@ OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，
 ## ✨ 核心功能
 
 - 🔒 **多网络空间隔离**：支持划分多个独立的网络空间，为不同业务提供逻辑网络隔离；
-- 🔗 **Central Switch 互联**：多个 Central Switch 之间可通过 OpenLAN 协议在链路层互联互通，并支持配置 SNAT 路由，轻松访问企业内部网络；
-- 🖥️ **OpenVPN 接入**：支持通过 OpenVPN 接入用户网络，兼容 Android、macOS、Windows 等多平台；
-- 🛡️ **IPSec 隧道与 VxLAN**：支持在多个 Central Switch 之间建立 IPSec 隧道网络，并可在该网络上进一步划分 VxLAN 租户网络；
-- 🔑 **简洁的认证机制**：采用用户名/密码方式进行接入认证，支持配置预共享密钥对数据报文加密；
-- 📡 **多传输协议支持**：OpenLAN 协议可运行于 TCP、TLS、UDP、KCP、WS、WSS 等多种传输协议之上——TCP 性能优异，TLS/WSS 提供更强的加密安全；
-- 🔄 **灵活代理转发**：提供 HTTP、HTTPS、SOCKS5 等正向代理功能，支持按域名匹配策略灵活配置流量转发。
+- 🔗 **Central Switch 互联与路由转发**：支持跨站点互联、三层转发与 SNAT/DNAT，覆盖分支到中心的访问与跨网络发布场景；
+- 🖥️ **OpenVPN 接入能力**：支持 OpenVPN 接入、路由重定向、客户端互通，以及通过 SNAT 访问远端 VIP；
+- 🛡️ **隧道与叠加网络**：支持 TCP/UDP 传输与 IPSec+VxLAN/GRE 叠加隧道，满足跨地域组网与租户隔离需求；
+- 🔑 **认证与分级加密**：支持用户名/密码认证、同账号互斥控制、多管理员并发登录，以及网络级预共享密钥加密；
+- 🧭 **策略控制面**：内置 ACL、零信任控制（Guest/Knock）、FindHop 路由绑定、External BGP 邻居与前缀过滤策略；
+- ⚙️ **可运维流量治理**：支持限速规则动态调整、规则重载一致性、NAT/路由状态可观测；
+- 🔄 **灵活代理转发**：支持 HTTP/TCP/DNS 代理与按域名匹配后端，便于按业务策略分流流量。
 
 ## 🗺️ 典型应用场景
 
 ### 🏢 分支中心接入
 
 ```text
-                           Central Switch(企业中心) - 10.16.1.10/24
-                                      ^
-                                      |
-                                   Wifi(DNAT)
-                                      |
-                                      |
-             ----------------------Internet-------------------------
-             ^                        ^                           ^
-             |                        |                           |
-           分支 1                    分支 2                        分支 3
-             |                        |                           |
-         OpenLAN                  OpenLAN                      OpenLAN
-      10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
+      Central Switch(企业中心) - 10.16.1.10/24
+                         ^
+                         |
+                      Wifi(DNAT)
+                         |
+                         |
+      -----------------Internet-----------------
+      ^                    ^                   ^
+      |                    |                   |
+    分支 1                分支 2               分支 3
+      |                    |                   |
+   OpenLAN              OpenLAN             OpenLAN
+10.16.1.11/24        10.16.1.12/24       10.16.1.13/24
 ```
 
 ### 🌍 多区域互联
 
 ```text
-     192.168.1.20/24                                                  192.168.1.21/24
-            |                                                                |
+      192.168.1.20/24                                    192.168.1.21/24
+             |                                                  |
         OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
-                                         |
-                                         |
-                                       互联网
-                                         |
-                                         |
-                                 Central Switch(上海) - 192.168.1.10/24
-                                         |
-                                         |
-                ------------------------------------------------------
-                ^                        ^                           ^
-                |                        |                           |
-             办公 Wifi               家庭 Wifi                 酒店 Wifi
-                |                        |                           |
-            OpenLAN                  OpenLAN                     OpenLAN
-        192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
+                                      |
+                                      |
+                                    互联网
+                                      |
+                                      |
+                         Central Switch(上海) - 192.168.1.10/24
+                                      |
+                                      |
+      -------------------------------------------------------
+      ^                     ^                              ^
+      |                     |                              |
+   办公 Wifi             家庭 Wifi                      酒店 Wifi
+      |                     |                              |
+   OpenLAN               OpenLAN                        OpenLAN
+192.168.1.11/24       192.168.1.12/24                192.168.1.13/24
+```
+
+### 🔐 零信任接入控制
+
+```text
+      访客终端                  员工终端                   运维终端
+         |                        |                         |
+      OpenVPN                  OpenVPN                   OpenVPN
+         \                        |                         /
+          \                       |                        /
+           ----------------------互联网----------------------
+                                   |
+                                   |
+                         Central Switch(策略中心)
+                     ZTrust + ACL + Knock + Auth
+                        /                         \
+                       /                           \
+          Guest Network(仅受限访问)     Trusted Network(按策略访问业务)
+                172.16.100.0/24               10.16.1.0/24
 ```
 
 ## 📚 文档指南
@@ -80,3 +100,41 @@ OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，
 - 🌍 [多区域互联](docs/multiarea.md)
 - 🔐 [零信任网络](docs/ztrust.md)
 - 🐳 [Docker Compose](docs/docker.md)
+
+## 🧪 场景测试
+
+OpenLAN 提供了可直接执行的场景测试脚本，位于 `tests/cases/*.sh`，
+统一入口为 `tests/start.sh`。
+
+常用命令：
+
+```bash
+# 列出所有场景
+bash tests/start.sh --list
+
+# 运行全部场景
+bash tests/start.sh
+
+# 运行指定场景
+bash tests/start.sh switch_tcp access_success
+
+# 生成测试报告（txt/html/tar）
+bash tests/start.sh --report
+```
+
+功能覆盖（按能力分组）：
+
+- `access_*`：验证认证链路正确性，覆盖成功/失败、多端登录与同账号互斥；
+- `access_pre_network_crypt`：验证网络级预共享密钥生效，确保隔离网络独立加密；
+- `access_openvpn*`：验证 OpenVPN 生命周期、路由重定向、客户端互通与 VIP 可达性；
+- `access_snat_scope_matrix`：验证不同入口（OpenVPN/Access）下 SNAT 作用域符合预期；
+- `proxy_*`：验证 HTTP/TCP/DNS 代理转发能力及按域名路由后端的策略正确性；
+- `switch_tcp|switch_udp`：验证 Central Switch 间基础隧道连通能力；
+- `switch_ipsec_*`：验证 IPSec 叠加 VxLAN/GRE 的跨站点互联能力；
+- `switch_acl*`：验证 ACL 增删改查、默认动作切换与重载后的规则一致性；
+- `switch_bgp`：验证 External BGP 邻居建立、路由发布过滤及配置持久化；
+- `switch_dnat`：验证 DNAT 配置变更与 NAT 表规则同步；
+- `switch_findhop`：验证 FindHop 绑定、删除保护与重载后状态恢复；
+- `switch_ztrust`：验证零信任开关及 Guest/Knock 访问控制行为；
+- `switch_ratelimit`：验证限速规则增删改与内核 tc 状态一致；
+- `switch_route3`：验证经中间节点（sw2）转发时的三层路由可达性。
