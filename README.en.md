@@ -103,8 +103,9 @@ If you need a flexible VPN solution — such as accessing enterprise internal ne
 
 ## 🧪 Scenario Tests
 
-OpenLAN provides executable scenario scripts under `tests/cases/*.sh`,
-with a unified entrypoint at `tests/start.sh`.
+OpenLAN provides 30 executable scenario scripts under `tests/cases`,
+organized into 45 validation functions with 732 assertions in total.
+The unified entrypoint is `tests/start.sh`.
 
 Common commands:
 
@@ -126,7 +127,7 @@ Capability coverage:
 
 - `access_*`: validates auth path correctness for success/failure, multi-login, and same-user mutex;
 - `access_pre_network_crypt`: validates per-network pre-shared crypt for isolated network encryption;
-- `access_openvpn*`: validates OpenVPN lifecycle, route redirect, client reachability, and VIP access;
+- `access_openvpn*`: validates OpenVPN lifecycle, route redirect, client reachability, TCP reset handling, and VIP access through SNAT;
 - `access_snat_scope_matrix`: validates SNAT scope behavior across OpenVPN and Access entry paths;
 - `proxy_*`: validates HTTP/TCP/DNS proxy forwarding and domain-based backend routing behavior;
 - `switch_tcp|switch_udp`: validates baseline inter-switch tunnel connectivity;
@@ -135,6 +136,9 @@ Capability coverage:
 - `switch_bgp`: validates External BGP peering, route filtering, and config persistence;
 - `switch_dnat`: validates DNAT updates and NAT table rule synchronization;
 - `switch_findhop`: validates FindHop binding, remove guard, and state recovery after reload;
+- `switch_namespace`: validates VRF binding and overlay reachability for namespace-backed networks;
+- `switch_namespace_snat`: validates namespace network SNAT source rewriting and confirms non-SNAT networks stay isolated even with VIP routes;
+- `switch_namespace_openvpn`: validates OpenVPN traffic in a VRF, OpenVPN-scoped SNAT to a remote VIP, and blocked access from a non-SNAT network even when a VIP route exists;
 - `switch_ztrust`: validates zero-trust toggling and Guest/Knock access controls;
 - `switch_ratelimit`: validates rate-limit CRUD and kernel tc state consistency;
 - `switch_route3`: validates L3 route reachability via an intermediate switch (sw2).
