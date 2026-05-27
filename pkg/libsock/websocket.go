@@ -215,7 +215,7 @@ func (t *WebClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	t.Reset(conn)
+	t.Try(conn)
 	if t.listener.OnConnected != nil {
 		_ = t.listener.OnConnected(t)
 	}

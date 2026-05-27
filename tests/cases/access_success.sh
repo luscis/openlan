@@ -103,7 +103,7 @@ test_crypt_update() {
   docker stop $ac2_name
 
   setup_ac1 "$crypt_secret_v1"
-  assert_expect 30 "docker logs -f $ac1_name" "SocketClientImpl.Reset"
+  assert_expect 30 "docker logs -f $ac1_name" "SocketClientImpl.Try"
 
   docker stop $ac1_name
   setup_ac1 "$crypt_secret_v2"

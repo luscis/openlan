@@ -14,14 +14,17 @@ import (
 const (
 	MaxFrame = 1600
 	MaxBuf   = 4096
-	HlMI     = 0x02
-	HlLI     = 0x04
-	HlSize   = 0x04
+	HMSize   = 0x02
+	HlSize   = 0x04 // magic 2, size 2
+	Hv1Size  = 0x13 // magic 2, size 2, networkv1 15
 	EthDI    = 0x06
 	MaxMsg   = 1600 * 8
+	V1Size   = 15
 )
 
-var MAGIC = []byte{0xff, 0xff}
+var MAGIC = [2]byte{0xff, 0xff}
+var MAGICv1 = [2]byte{0xff, 0x00}
+var ResolveNetworkCrypt func(network string) *BlockCrypt
 
 const (
 	LoginReq     = "logi= "
@@ -101,8 +104,10 @@ type FrameMessage struct {
 	control bool
 	action  string
 	params  []byte
+	magic   [2]byte
+	network string
 	buffer  []byte
-	size    int
+	size    int // size of packet or control message
 	total   int
 	frame   []byte
 	proto   *FrameProto
@@ -130,6 +135,7 @@ func NewFrameMessageFromBytes(buffer []byte) *FrameMessage {
 		params: make([]byte, 0, 2),
 		buffer: buffer,
 	}
+	m.magic = [2]byte{buffer[0], buffer[1]}
 	m.frame = m.buffer[HlSize:]
 	m.total = len(m.frame)
 	m.size = len(m.frame)
@@ -138,6 +144,17 @@ func NewFrameMessageFromBytes(buffer []byte) *FrameMessage {
 		m.Decode()
 	}
 	return &m
+}
+
+func (m *FrameMessage) MagicV1() bool {
+	return m.magic == MAGICv1
+}
+
+func (m *FrameMessage) Magic() [2]byte {
+	if m.magic == [2]byte{} {
+		m.magic = MAGIC
+	}
+	return m.magic
 }
 
 func (m *FrameMessage) Decode() bool {
@@ -194,6 +211,14 @@ func (m *FrameMessage) SetSize(v int) {
 	m.size = v
 }
 
+func setFrameMagic(m *FrameMessage, magic [2]byte, network string) {
+	if m == nil {
+		return
+	}
+	m.magic = magic
+	m.network = network
+}
+
 func (m *FrameMessage) Proto() (*FrameProto, error) {
 	if m.proto == nil {
 		m.proto = &FrameProto{Frame: m.frame}
@@ -234,7 +259,7 @@ func (c *ControlMessage) Encode() *FrameMessage {
 	frame.control = c.control
 	frame.action = c.action + c.operator
 	frame.params = c.params
-	frame.Append(libol.EthZero[:6])
+	frame.Append(libol.EthZero[:EthDI])
 	frame.Append([]byte(p))
 	return frame
 }
@@ -245,6 +270,66 @@ type Messager interface {
 	Send(conn net.Conn, frame *FrameMessage) (int, error)
 	Receive(conn net.Conn, min int) (*FrameMessage, error)
 	Flush()
+}
+
+func encodeMagicV1Frame(network string, payload []byte) []byte {
+	buf := make([]byte, len(payload)+Hv1Size)
+	buf[0] = MAGICv1[0]
+	buf[1] = MAGICv1[1]
+	binary.BigEndian.PutUint16(buf[HMSize:HlSize], uint16(V1Size+len(payload)))
+	copy(buf[HlSize:Hv1Size], []byte(network))
+	copy(buf[Hv1Size:], payload)
+	return buf
+}
+
+type frameHeader struct {
+	magic       [2]byte
+	headerLen   int
+	frameAt     int
+	payloadSize int // bytes after magic+len (for v1 includes network id)
+	frameLen    int // pure frame bytes (without network id)
+	network     string
+}
+
+func (h *frameHeader) MagicV1() bool {
+	return h.magic == MAGICv1
+}
+
+func decodeFrameHeader(buf []byte, min int) (*frameHeader, error) {
+	if len(buf) < min {
+		return nil, nil
+	}
+	h := &frameHeader{
+		magic:     [2]byte{buf[0], buf[1]},
+		headerLen: HlSize,
+		frameAt:   HlSize,
+	}
+	if h.magic == MAGICv1 {
+		h.headerLen = Hv1Size
+		h.frameAt = Hv1Size
+	}
+	if len(buf) < h.headerLen {
+		return nil, nil
+	}
+	if h.magic == MAGICv1 {
+		name := bytes.TrimRight(buf[HlSize:Hv1Size], "\x00")
+		h.network = string(name)
+		h.payloadSize = int(binary.BigEndian.Uint16(buf[HMSize:HlSize]))
+		if h.payloadSize < V1Size {
+			return nil, libol.NewErr("wrong size %d", h.payloadSize)
+		}
+		h.frameLen = h.payloadSize - V1Size
+	} else {
+		if h.magic != MAGIC {
+			return nil, libol.NewErr("wrong magic: %x", h.magic)
+		}
+		h.payloadSize = int(binary.BigEndian.Uint16(buf[HMSize:HlSize]))
+		h.frameLen = h.payloadSize
+	}
+	if h.frameLen < min {
+		return nil, libol.NewErr("wrong size %d", h.frameLen)
+	}
+	return h, nil
 }
 
 type StreamMessagerImpl struct {
@@ -308,8 +393,7 @@ func (s *StreamMessagerImpl) writeX(conn net.Conn, buf []byte) error {
 	}
 	size := len(buf)
 	if libol.HasLog(libol.LOG) {
-		libol.Log("StreamMessagerImpl.writeX: %s %d", conn.RemoteAddr(), size)
-		libol.Log("StreamMessagerImpl.writeX: %s Data %x", conn.RemoteAddr(), buf)
+		libol.Log("StreamMessagerImpl.writeX: %d %s Data %x", size, conn.RemoteAddr(), buf)
 	}
 	n, err := s.write(conn, buf)
 	if err != nil {
@@ -339,9 +423,7 @@ func (s *StreamMessagerImpl) writeX(conn net.Conn, buf []byte) error {
 }
 
 func (s *StreamMessagerImpl) encode(frame *FrameMessage) {
-	frame.buffer[0] = MAGIC[0]
-	frame.buffer[1] = MAGIC[1]
-	binary.BigEndian.PutUint16(frame.buffer[HlMI:HlLI], uint16(frame.size))
+	binary.BigEndian.PutUint16(frame.buffer[HMSize:HlSize], uint16(frame.size))
 	if s.block != nil {
 		s.block.Encrypt(frame.frame, frame.frame)
 	}
@@ -349,7 +431,18 @@ func (s *StreamMessagerImpl) encode(frame *FrameMessage) {
 
 func (s *StreamMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, error) {
 	s.encode(frame)
+	magic := frame.Magic()
+	if frame.MagicV1() {
+		network := frame.network
+		buf := encodeMagicV1Frame(network, frame.frame[:frame.size])
+		if err := s.writeX(conn, buf); err != nil {
+			return 0, err
+		}
+		return len(buf), nil
+	}
 	fs := frame.size + HlSize
+	frame.buffer[0] = magic[0]
+	frame.buffer[1] = magic[1]
 	if err := s.writeX(conn, frame.buffer[:fs]); err != nil {
 		return 0, err
 	}
@@ -400,25 +493,36 @@ func (s *StreamMessagerImpl) readX(conn net.Conn, buf []byte) error {
 
 func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) {
 	ts := len(tmp)
-	if ts < min {
-		return nil, nil
+	h, err := decodeFrameHeader(tmp, min)
+	if err != nil || h == nil {
+		return nil, err
 	}
-	if !bytes.Equal(tmp[:HlMI], MAGIC[:HlMI]) {
-		return nil, libol.NewErr("wrong magic")
+	if h.MagicV1() && ResolveNetworkCrypt != nil {
+		if block := ResolveNetworkCrypt(h.network); block != nil {
+			s.SetCrypt(block)
+			libol.Info("StreamMessagerImpl.decode: resolved network %v", block)
+		}
 	}
-	ps := binary.BigEndian.Uint16(tmp[HlMI:HlLI])
-	fs := int(ps) + HlSize
+
+	// Build the frame message.
+	fs := HlSize + h.payloadSize
 	if ts >= fs {
 		s.buffer = tmp[fs:]
+		frameData := tmp[h.frameAt : h.frameAt+h.frameLen]
 		if s.block != nil {
-			s.block.Decrypt(tmp[HlSize:fs], tmp[HlSize:fs])
+			s.block.Decrypt(frameData, frameData)
 		}
 		if libol.HasLog(libol.DEBUG) {
 			libol.Debug("StreamMessagerImpl.decode: %d %x", fs, tmp[:fs])
 		}
-		buf := make([]byte, fs)
-		copy(buf, tmp[:fs])
-		return NewFrameMessageFromBytes(buf), nil
+		buf := make([]byte, HlSize+h.frameLen)
+		copy(buf, h.magic[:])
+		binary.BigEndian.PutUint16(buf[HMSize:HlSize], uint16(h.frameLen))
+		copy(buf[HlSize:], frameData)
+
+		newframe := NewFrameMessageFromBytes(buf)
+		setFrameMagic(newframe, h.magic, h.network)
+		return newframe, nil
 	}
 	return nil, nil
 }
@@ -456,6 +560,9 @@ func (s *StreamMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, err
 		if frame != nil {
 			return frame, nil
 		}
+		if rs >= len(tmp) {
+			return nil, libol.NewErr("%s: frame too large or incomplete (%d bytes buffered)", conn.RemoteAddr(), rs)
+		}
 		// If notFound message, continue to read.
 		bs = rs
 	}
@@ -483,9 +590,8 @@ func (s *PacketMessagerImpl) Flush() {
 }
 
 func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, error) {
-	frame.buffer[0] = MAGIC[0]
-	frame.buffer[1] = MAGIC[1]
-	binary.BigEndian.PutUint16(frame.buffer[HlMI:HlLI], uint16(frame.size))
+	magic := frame.Magic()
+	binary.BigEndian.PutUint16(frame.buffer[HMSize:HlSize], uint16(frame.size))
 	if s.block != nil {
 		s.block.Encrypt(frame.frame, frame.frame)
 	}
@@ -500,10 +606,23 @@ func (s *PacketMessagerImpl) Send(conn net.Conn, frame *FrameMessage) (int, erro
 			return 0, err
 		}
 	}
-	if _, err := conn.Write(frame.buffer[:HlSize+frame.size]); err != nil {
-		return 0, err
+	if frame.MagicV1() {
+		network := frame.network
+		buf := encodeMagicV1Frame(network, frame.frame[:frame.size])
+		if n, err := conn.Write(buf); err != nil {
+			return 0, err
+		} else {
+			return n, nil
+		}
 	}
-	return frame.size, nil
+	sz := HlSize + frame.size
+	frame.buffer[0] = magic[0]
+	frame.buffer[1] = magic[1]
+	if n, err := conn.Write(frame.buffer[:sz]); err != nil {
+		return 0, err
+	} else {
+		return n, nil
+	}
 }
 
 func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, error) {
@@ -532,21 +651,37 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, err
 	if n <= 4 {
 		return nil, libol.NewErr("%s: small frame", conn.RemoteAddr())
 	}
-	if !bytes.Equal(frame.buffer[:HlMI], MAGIC[:HlMI]) {
-		return nil, libol.NewErr("%s: wrong magic", conn.RemoteAddr())
+	h, err := decodeFrameHeader(frame.buffer[:n], min)
+	if err != nil || h == nil {
+		if err != nil {
+			return nil, libol.NewErr("%s: %s", conn.RemoteAddr(), err)
+		}
+		return nil, libol.NewErr("%s: small frame", conn.RemoteAddr())
 	}
-	size := int(binary.BigEndian.Uint16(frame.buffer[HlMI:HlLI]))
-	if size < min {
-		return nil, libol.NewErr("%s: wrong size %d", conn.RemoteAddr(), size)
+	if h.MagicV1() && ResolveNetworkCrypt != nil {
+		if block := ResolveNetworkCrypt(h.network); block != nil {
+			s.SetCrypt(block)
+		}
 	}
-	if HlSize+size > n {
-		libol.Warn("PacketMessagerImpl.Receive: %s %d over size %d", conn.RemoteAddr(), size, n)
+	if HlSize+h.payloadSize > n {
+		return nil, libol.NewErr("%s: truncated frame frameLen=%d recv=%d", conn.RemoteAddr(), h.frameLen, n)
 	}
-	tmp := frame.buffer[HlSize : HlSize+size]
+
+	// Build the frame message.
+	frameData := frame.buffer[h.frameAt : h.frameAt+h.frameLen]
 	if s.block != nil {
-		s.block.Decrypt(tmp, tmp)
+		s.block.Decrypt(frameData, frameData)
 	}
-	return NewFrameMessageFromBytes(frame.buffer[:HlSize+size]), nil
+
+	buf := make([]byte, HlSize+h.frameLen)
+	buf[0] = MAGIC[0]
+	buf[1] = MAGIC[1]
+	binary.BigEndian.PutUint16(buf[HMSize:HlSize], uint16(h.frameLen))
+	copy(buf[HlSize:], frameData)
+
+	newFrame := NewFrameMessageFromBytes(buf)
+	setFrameMagic(newFrame, h.magic, h.network)
+	return newFrame, nil
 }
 
 type BlockCrypt struct {

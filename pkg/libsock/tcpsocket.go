@@ -189,7 +189,7 @@ func (t *TcpClient) Connect() error {
 		return err
 	}
 	setTcpConn(conn)
-	t.Reset(conn)
+	t.Try(conn)
 	if t.listener.OnConnected != nil {
 		_ = t.listener.OnConnected(t)
 	}

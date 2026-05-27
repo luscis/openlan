@@ -189,6 +189,7 @@ test: ## execute unit test
 	go clean -testcache
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/access
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libol
+	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/libsock
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/models
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/cache
 	go test -v -mod=vendor -bench=. github.com/luscis/openlan/pkg/config
@@ -203,8 +204,9 @@ cover: init ## execute unit test and output coverage
 	go test -mod=vendor github.com/luscis/openlan/pkg/models -coverprofile=$(CD)/2.out -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/cache -coverprofile=$(CD)/3.out -race -covermode=atomic
 	go test -mod=vendor github.com/luscis/openlan/pkg/config -coverprofile=$(CD)/4.out -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/5.out -race -covermode=atomic
-	go test -mod=vendor github.com/luscis/openlan/pkg/switch -coverprofile=$(CD)/6.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/libsock -coverprofile=$(CD)/5.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/network -coverprofile=$(CD)/6.out -race -covermode=atomic
+	go test -mod=vendor github.com/luscis/openlan/pkg/switch -coverprofile=$(CD)/7.out -race -covermode=atomic
 
 	@echo 'mode: atomic' > $(SD)/coverage.out && \
 	tail -q -n +2 $(CD)/*.out >> $(SD)/coverage.out

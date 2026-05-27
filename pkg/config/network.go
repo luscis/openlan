@@ -34,6 +34,7 @@ type Network struct {
 	Name      string              `json:"name" yaml:"name"`
 	Provider  string              `json:"provider,omitempty" yaml:"provider,omitempty"`
 	Bridge    *Bridge             `json:"bridge,omitempty" yaml:"bridge,omitempty"`
+	Crypt     *Crypt              `json:"crypt,omitempty" yaml:"crypt,omitempty"`
 	Subnet    *Subnet             `json:"subnet,omitempty" yaml:"subnet,omitempty"`
 	OpenVPN   *OpenVPN            `json:"openvpn,omitempty" yaml:"openvpn,omitempty"`
 	Links     []Access            `json:"links,omitempty" yaml:"links,omitempty"`
@@ -92,6 +93,9 @@ func (n *Network) Correct() {
 	ipMask := ""
 
 	n.Init()
+	if n.Crypt != nil {
+		n.Crypt.Correct()
+	}
 	if n.Snat == "" {
 		n.Snat = "enable"
 	}

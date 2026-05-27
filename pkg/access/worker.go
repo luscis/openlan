@@ -85,6 +85,10 @@ type PrefixRule struct {
 func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 	crypt := p.Crypt
 	block := libsock.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	decl := libsock.ClientCryptDecl{
+		Network: p.Network,
+		Level:   p.Crypt.Level,
+	}
 
 	if remote == "" {
 		remote = p.Connection
@@ -95,14 +99,18 @@ func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 		c.Block = block
 		c.RdQus = p.Queue.SockRd
 		c.WrQus = p.Queue.SockWr
-		return libsock.NewKcpClient(remote, c)
+		client := libsock.NewKcpClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	case "tcp":
 		c := &libsock.TcpConfig{
 			Block: block,
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libsock.NewTcpClient(remote, c)
+		client := libsock.NewTcpClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	case "udp":
 		c := &libsock.UdpConfig{
 			Block:   block,
@@ -110,13 +118,17 @@ func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 			RdQus:   p.Queue.SockRd,
 			WrQus:   p.Queue.SockWr,
 		}
-		return libsock.NewUdpClient(remote, c)
+		client := libsock.NewUdpClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	case "ws":
 		c := &libsock.WebConfig{
 			RdQus: p.Queue.SockRd,
 			WrQus: p.Queue.SockWr,
 		}
-		return libsock.NewWebClient(remote, c)
+		client := libsock.NewWebClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	case "wss":
 		c := &libsock.WebConfig{
 			Block: block,
@@ -129,7 +141,9 @@ func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 				RootCa:   p.Cert.CaFile,
 			}
 		}
-		return libsock.NewWebClient(remote, c)
+		client := libsock.NewWebClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	default:
 		c := &libsock.TcpConfig{
 			Block: block,
@@ -142,7 +156,9 @@ func GetSocketClient(p *config.Access, remote string) libsock.SocketClient {
 				RootCAs:            p.Cert.GetCertPool(),
 			}
 		}
-		return libsock.NewTcpClient(remote, c)
+		client := libsock.NewTcpClient(remote, c)
+		client.SetPrivate(decl)
+		return client
 	}
 }
 

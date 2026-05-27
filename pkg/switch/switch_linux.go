@@ -30,6 +30,17 @@ const (
 func GetSocketServer(s *co.Switch) libsock.SocketServer {
 	crypt := s.Crypt
 	block := libsock.NewBlockCrypt(crypt.Algo, crypt.Secret)
+	libsock.ResolveNetworkCrypt = func(network string) *libsock.BlockCrypt {
+		nCfg := s.GetNetwork(network)
+		if nCfg == nil || nCfg.Crypt == nil || nCfg.Crypt.Secret == "" {
+			return nil
+		}
+		algo := nCfg.Crypt.Algo
+		if algo == "" {
+			algo = crypt.Algo
+		}
+		return libsock.NewBlockCrypt(algo, nCfg.Crypt.Secret)
+	}
 	streamProto, packetProto := getSwitchTransports(s.Protocol)
 
 	var tcpServer libsock.SocketServer
@@ -278,8 +289,7 @@ func (v *Switch) Initialize() {
 	}
 
 	// Enable cert verify for access
-	cert := v.cfg.Cert
-	if cert != nil {
+	if cert := v.cfg.Cert; cert != nil {
 		cache.User.SetCert(&libsock.CertConfig{
 			Crt: cert.CrtFile,
 		})
