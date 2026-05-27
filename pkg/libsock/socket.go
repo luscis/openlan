@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -57,6 +58,16 @@ const (
 	CsSendError = "error"
 	CsDropped   = "dropped"
 )
+
+const (
+	CryptLevelGlobal  = "global"
+	CryptLevelNetwork = "network"
+)
+
+type ClientCryptDecl struct {
+	Network string
+	Level   string
+}
 
 type ClientListener struct {
 	OnClose     func(client SocketClient) error
@@ -215,13 +226,29 @@ func NewSocketClient(cfg SocketConfig, message Messager) *SocketClientImpl {
 	return client
 }
 
-func (s *SocketClientImpl) negotiate() error {
+func (s *SocketClientImpl) Negotiate() error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.Key() == "" {
+		libol.Warn("SocketClientImpl.negotiate: skip, empty pre-shared key")
 		return nil
 	}
-	key := libol.GenLetters(64)
-	request := NewControlFrame(NegoReq, key)
+	key := string(libol.GenLetters(64))
+	request := NewControlFrame(NegoReq, []byte(key))
+	magic := "ffff"
+	network := ""
+	if s.private != nil {
+		if decl, ok := s.private.(ClientCryptDecl); ok {
+			if strings.EqualFold(decl.Level, CryptLevelNetwork) {
+				setFrameMagic(request, MAGICv1, decl.Network)
+				magic = "v1"
+				network = decl.Network
+			}
+		}
+	}
+	libol.Info("SocketClientImpl.negotiate: send request magic=%s network=%s", magic, network)
 	if err := s.WriteMsg(request); err != nil {
+		libol.Error("SocketClientImpl.negotiate: write request failed: %s", err)
 		return err
 	}
 	s.status = ClNegotiating
@@ -238,7 +265,7 @@ func (s *SocketClientImpl) negotiate() error {
 		return libol.NewErr("wrong message type: %s", action)
 	}
 	libol.Cmd("SocketClientImpl.negotiate %s %x", action, params)
-	sum := md5.Sum(key)
+	sum := md5.Sum([]byte(key))
 	if !bytes.Equal(sum[:md5.Size], params) {
 		return libol.NewErr("negotiate key failed: %x != %x", key, params)
 	}
@@ -353,16 +380,17 @@ func (s *SocketClientImpl) update(conn net.Conn) {
 	if s.Block != nil {
 		s.message.SetCrypt(s.Block)
 	}
-	s.out.Info("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
+	libol.Info("SocketClientImpl.update: %s %s", s.localAddr, s.remoteAddr)
 }
 
-func (s *SocketClientImpl) Reset(conn net.Conn) {
+func (s *SocketClientImpl) Try(conn net.Conn) {
 	s.lock.Lock()
-	defer s.lock.Unlock()
 	s.update(conn)
 	s.status = ClConnected
-	if err := s.negotiate(); err != nil {
-		s.out.Error("SocketClientImpl.Reset %s", err)
+	s.lock.Unlock()
+	libol.Info("SocketClientImpl.Try: to connected")
+	if err := s.Negotiate(); err != nil {
+		libol.Error("SocketClientImpl.Try %s", err)
 		return
 	}
 }
@@ -423,6 +451,8 @@ type SocketServerImpl struct {
 	error      error
 }
 
+const negotiateReadTimeout = 10 * time.Second
+
 func NewSocketServer(listen string) *SocketServerImpl {
 	return &SocketServerImpl{
 		address:    listen,
@@ -476,28 +506,43 @@ func (t *SocketServerImpl) kickAllClients() {
 	}
 }
 
-func (t *SocketServerImpl) negotiate(client SocketClient) error {
+func (t *SocketServerImpl) Negotiate(client SocketClient) error {
 	if client.Key() == "" {
 		return nil
 	}
+	if sc, ok := client.(*SocketClientImpl); ok && sc.connection != nil {
+		_ = sc.connection.SetReadDeadline(time.Now().Add(negotiateReadTimeout))
+		defer func() {
+			_ = sc.connection.SetReadDeadline(time.Time{})
+		}()
+	}
+	libol.Info("SocketServerImpl.Negotiate: waiting request from %s (timeout %s)", client, negotiateReadTimeout)
 	request, err := client.ReadMsg()
 	if err != nil {
+		if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			libol.Warn("SocketServerImpl.Negotiate: timeout waiting request from %s", client)
+		}
 		return err
 	}
 	if !request.IsControl() {
-		libol.Warn("SocketServerImpl.negotiate: except control but %s", request.String())
+		libol.Warn("SocketServerImpl.Negotiate: except control but %s", request.String())
 		return libol.NewErr("wrong message type")
 	}
+	libol.Info("SocketServerImpl.Negotiate: request received from %s %v %s", client, request.magic, request.network)
 	client.SetStatus(ClNegotiated)
 	action, params := request.CmdAndParams()
 	if action == NegoReq {
-		libol.Cmd("SocketServerImpl.negotiate: %s", params)
-		sum := md5.Sum(params)
+		key := params
+		if len(key) == 0 {
+			return libol.NewErr("empty negotiate key")
+		}
+		sum := md5.Sum(key)
+		libol.Cmd("SocketServerImpl.Negotiate: key:%s", key)
 		reply := NewControlFrame(NegoResp, sum[:md5.Size])
 		if err := client.WriteMsg(reply); err != nil {
 			return err
 		}
-		client.SetKey(string(params))
+		client.SetKey(string(key))
 		return nil
 	}
 	return libol.NewErr("wrong message type: %s", action)
@@ -509,7 +554,7 @@ func (t *SocketServerImpl) doOnClient(call ServerListener, client SocketClient) 
 	_ = t.clients.Set(client.RemoteAddr(), client)
 	if call.OnClient != nil {
 		libol.Go(func() {
-			if err := t.negotiate(client); err != nil {
+			if err := t.Negotiate(client); err != nil {
 				t.OffClient(client)
 				libol.Warn("SocketServerImpl.doOnClient: %s %s", client, err)
 				return

@@ -13,6 +13,7 @@ import (
 type Crypt struct {
 	Algo   string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
 	Secret string `json:"secret,omitempty" yaml:"secret,omitempty"`
+	Level  string `json:"level,omitempty" yaml:"level,omitempty"`
 }
 
 func (c *Crypt) IsZero() bool {

@@ -149,7 +149,7 @@ func (c *UdpClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	c.Reset(conn)
+	c.Try(conn)
 	if c.listener.OnConnected != nil {
 		_ = c.listener.OnConnected(c)
 	}

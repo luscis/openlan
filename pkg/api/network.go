@@ -37,6 +37,9 @@ func (h Network) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/{id}/openvpn", h.AddVPN).Methods("POST")
 	router.HandleFunc("/api/network/{id}/openvpn", h.DelVPN).Methods("DELETE")
 	router.HandleFunc("/api/network/{id}/openvpn/restart", h.StartVPN).Methods("POST")
+	router.HandleFunc("/api/network/{id}/crypt", h.CryptGet).Methods("GET")
+	router.HandleFunc("/api/network/{id}/crypt", h.CryptPost).Methods("POST")
+	router.HandleFunc("/api/network/{id}/crypt", h.CryptDelete).Methods("DELETE")
 }
 
 func (h Network) List(w http.ResponseWriter, r *http.Request) {
@@ -358,6 +361,55 @@ func (h Network) StartVPN(w http.ResponseWriter, r *http.Request) {
 	}
 	worker.StartVPN()
 	ResponseJson(w, true)
+}
+
+func (h Network) CryptGet(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	cfg := worker.Config()
+	if cfg == nil || cfg.Crypt == nil {
+		ResponseJson(w, &cf.Crypt{})
+		return
+	}
+	ResponseJson(w, cfg.Crypt)
+}
+
+func (h Network) CryptPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	value := &cf.Crypt{}
+	if err := GetData(r, value); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if value.Secret == "" {
+		http.Error(w, "secret is required", http.StatusBadRequest)
+		return
+	}
+	worker.SetCrypt(value)
+	ResponseJson(w, "success")
+}
+
+func (h Network) CryptDelete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	worker := Call.GetWorker(id)
+	if worker == nil {
+		http.Error(w, "Network not found", http.StatusBadRequest)
+		return
+	}
+	worker.SetCrypt(nil)
+	ResponseJson(w, "success")
 }
 
 type SNAT struct {

@@ -19,6 +19,7 @@ scenario_description() {
     access_fail.sh) echo "reject client authentication with wrong password" ;;
     access_admin_multi_login.sh) echo "admin user can login concurrently from multiple access clients" ;;
     access_same_user_mutex.sh) echo "same user multiple access logins are mutually exclusive" ;;
+    access_pre_network_crypt.sh) echo "verify access level=network uses per-network pre-shared crypt" ;;
     access_openvpn.sh) echo "add/remove OpenVPN and validate cipher negotiation" ;;
     access_openvpn_redirect.sh) echo "redirect openvpn source route to sw2 and switch vip reachability" ;;
     access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;

@@ -471,6 +471,16 @@ func (w *WorkerImpl) SetSNAT(value string) {
 	}
 }
 
+func (w *WorkerImpl) SetCrypt(value *co.Crypt) {
+	cfg, _ := w.GetCfgs()
+	if value == nil || value.Secret == "" {
+		cfg.Crypt = nil
+		return
+	}
+	value.Correct()
+	cfg.Crypt = value
+}
+
 func (w *WorkerImpl) doDNAT() {
 	cfg, _ := w.GetCfgs()
 	w.out.Info("WorkerImpl: doDNAT")

@@ -170,6 +170,7 @@ func (u Network) Commands(app *api.App) {
 			ClientQoS{}.Commands(),
 			VPNClient{}.Commands(),
 			OpenVPN{}.Commands(),
+			NetworkCrypt{}.Commands(),
 			Output{}.Commands(),
 			PrefixRoute{}.Commands(),
 			FindHop{}.Commands(),
@@ -235,6 +236,81 @@ func (s Address) Commands() *cli.Command {
 
 type SNAT struct {
 	Cmd
+}
+
+type NetworkCrypt struct {
+	Cmd
+}
+
+func (s NetworkCrypt) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/crypt"
+}
+
+func (s NetworkCrypt) List(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+	clt := s.NewHttp(c.String("token"))
+	data := map[string]string{}
+	if err := clt.GetJSON(url, &data); err != nil {
+		return err
+	}
+	return s.Out(data, c.String("format"), "")
+}
+
+func (s NetworkCrypt) Update(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+	value := map[string]string{
+		"algorithm": c.String("algorithm"),
+		"secret":    c.String("secret"),
+	}
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, &value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s NetworkCrypt) Disable(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s NetworkCrypt) Commands() *cli.Command {
+	return &cli.Command{
+		Name:    "crypt",
+		Usage:   "Configure pre-shared crypt for this network",
+		Aliases: []string{"cp"},
+		Action:  s.List,
+		Subcommands: []*cli.Command{
+			{
+				Name:    "list",
+				Usage:   "Display network crypt settings",
+				Aliases: []string{"ls"},
+				Action:  s.List,
+			},
+			{
+				Name:  "update",
+				Usage: "Update network pre-shared crypt settings",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "algorithm", Value: "xor"},
+					&cli.StringFlag{Name: "secret", Required: true},
+				},
+				Action: s.Update,
+			},
+			{
+				Name:    "disable",
+				Usage:   "Disable network pre-shared crypt",
+				Aliases: []string{"dis"},
+				Action:  s.Disable,
+			},
+		},
+	}
 }
 
 func (s SNAT) Url(prefix, name string) string {

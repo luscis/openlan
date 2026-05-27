@@ -186,7 +186,7 @@ func (c *KcpClient) Connect() error {
 		c.out.Warn("KcpClient.SetDSCP: ", err)
 	}
 	setConn(conn, c.kcpCfg)
-	c.Reset(conn)
+	c.Try(conn)
 	if c.listener.OnConnected != nil {
 		_ = c.listener.OnConnected(c)
 	}
