@@ -261,6 +261,7 @@ func (c *ControlMessage) Encode() *FrameMessage {
 	frame.params = c.params
 	frame.Append(libol.EthZero[:EthDI])
 	frame.Append([]byte(p))
+	frame.magic = MAGIC
 	return frame
 }
 
@@ -497,10 +498,12 @@ func (s *StreamMessagerImpl) decode(tmp []byte, min int) (*FrameMessage, error) 
 	if err != nil || h == nil {
 		return nil, err
 	}
-	if h.MagicV1() && ResolveNetworkCrypt != nil {
+	if h.MagicV1() {
 		if block := ResolveNetworkCrypt(h.network); block != nil {
 			s.SetCrypt(block)
-			libol.Info("StreamMessagerImpl.decode: resolved network %v", block)
+			libol.Info("StreamMessagerImpl.decode: resolved %s crypt=%s", h.network, block.algorithm)
+		} else {
+			libol.Warn("StreamMessagerImpl.device: failback to global.")
 		}
 	}
 
@@ -658,7 +661,7 @@ func (s *PacketMessagerImpl) Receive(conn net.Conn, min int) (*FrameMessage, err
 		}
 		return nil, libol.NewErr("%s: small frame", conn.RemoteAddr())
 	}
-	if h.MagicV1() && ResolveNetworkCrypt != nil {
+	if h.MagicV1() {
 		if block := ResolveNetworkCrypt(h.network); block != nil {
 			s.SetCrypt(block)
 		}

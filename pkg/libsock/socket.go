@@ -235,18 +235,14 @@ func (s *SocketClientImpl) Negotiate() error {
 	}
 	key := string(libol.GenLetters(64))
 	request := NewControlFrame(NegoReq, []byte(key))
-	magic := "ffff"
-	network := ""
 	if s.private != nil {
 		if decl, ok := s.private.(ClientCryptDecl); ok {
 			if strings.EqualFold(decl.Level, CryptLevelNetwork) {
 				setFrameMagic(request, MAGICv1, decl.Network)
-				magic = "v1"
-				network = decl.Network
 			}
 		}
 	}
-	libol.Info("SocketClientImpl.negotiate: send request magic=%s network=%s", magic, network)
+	libol.Info("SocketClientImpl.negotiate: send request magic=%x network=%s", request.magic, request.network)
 	if err := s.WriteMsg(request); err != nil {
 		libol.Error("SocketClientImpl.negotiate: write request failed: %s", err)
 		return err
@@ -451,8 +447,6 @@ type SocketServerImpl struct {
 	error      error
 }
 
-const negotiateReadTimeout = 10 * time.Second
-
 func NewSocketServer(listen string) *SocketServerImpl {
 	return &SocketServerImpl{
 		address:    listen,
@@ -510,25 +504,16 @@ func (t *SocketServerImpl) Negotiate(client SocketClient) error {
 	if client.Key() == "" {
 		return nil
 	}
-	if sc, ok := client.(*SocketClientImpl); ok && sc.connection != nil {
-		_ = sc.connection.SetReadDeadline(time.Now().Add(negotiateReadTimeout))
-		defer func() {
-			_ = sc.connection.SetReadDeadline(time.Time{})
-		}()
-	}
-	libol.Info("SocketServerImpl.Negotiate: waiting request from %s (timeout %s)", client, negotiateReadTimeout)
+	libol.Info("SocketServerImpl.Negotiate: waiting request from %s", client)
 	request, err := client.ReadMsg()
 	if err != nil {
-		if ne, ok := err.(net.Error); ok && ne.Timeout() {
-			libol.Warn("SocketServerImpl.Negotiate: timeout waiting request from %s", client)
-		}
 		return err
 	}
 	if !request.IsControl() {
 		libol.Warn("SocketServerImpl.Negotiate: except control but %s", request.String())
 		return libol.NewErr("wrong message type")
 	}
-	libol.Info("SocketServerImpl.Negotiate: request received from %s %v %s", client, request.magic, request.network)
+	libol.Info("SocketServerImpl.Negotiate: request received %s magic=%x network=%s", client, request.magic, request.network)
 	client.SetStatus(ClNegotiated)
 	action, params := request.CmdAndParams()
 	if action == NegoReq {
