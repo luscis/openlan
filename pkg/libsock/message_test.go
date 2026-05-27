@@ -297,9 +297,9 @@ func TestStreamSendReceiveMagicV1WithEncryption(t *testing.T) {
 		t.Fatalf("payload mismatch: got=%q want=%q",
 			string(got.Frame()[:got.Size()]), string(want))
 	}
-	if got.buffer[0] != MAGIC[0] || got.buffer[1] != MAGIC[1] {
-		t.Fatalf("decoded v1 payload should be reconstructed as legacy frame header: got=%x%x want=%x%x",
-			got.buffer[0], got.buffer[1], MAGIC[0], MAGIC[1])
+	if got.buffer[0] != MAGICv1[0] || got.buffer[1] != MAGICv1[1] {
+		t.Fatalf("decoded v1 payload should keep v1 frame header: got=%x%x want=%x%x",
+			got.buffer[0], got.buffer[1], MAGICv1[0], MAGICv1[1])
 	}
 }
 
