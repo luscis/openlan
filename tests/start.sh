@@ -23,6 +23,7 @@ scenario_description() {
     access_openvpn.sh) echo "add/remove OpenVPN and validate cipher negotiation" ;;
     access_openvpn_redirect.sh) echo "redirect openvpn source route to sw2 and switch vip reachability" ;;
     access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
+    access_openvpn_tcp_reset.sh) echo "verify OpenVPN tcp reset handling during client reconnect" ;;
     access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
     access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
     proxy_http.sh) echo "verify ceci http proxy forwarding to http target" ;;
@@ -34,6 +35,9 @@ scenario_description() {
     switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;
     switch_dnat.sh) echo "verify dnat add-list-remove and nat table rule updates" ;;
     switch_findhop.sh) echo "verify findhop route binding, remove guard, and reload state" ;;
+    switch_namespace.sh) echo "verify network namespace vrf binding and overlay reachability" ;;
+    switch_namespace_snat.sh) echo "verify namespace snat source rewriting and non-snat isolation" ;;
+    switch_namespace_openvpn.sh) echo "verify namespace openvpn snat and non-snat network isolation" ;;
     switch_ztrust.sh) echo "verify ztrust enable/disable with guest and knock controls" ;;
     switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
     switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;
