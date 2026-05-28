@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.255.0.0/24
+#   sw1=172.255.0.241, ac1/ac2 join the same mgmt network.
+# - OpenLAN service network "example": 192.11.0.0/24
+#   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
 # OpenLAN Access UT.
 
 export net_name=tests-net1
@@ -10,12 +23,6 @@ export ac2_name=tests-sw1.ac2
 export crypt_secret_v1=ea64d5b0c96c
 export crypt_secret_v2=ea64d5b0c96d
 
-# Topology:
-# - Docker mgmt network: 172.255.0.0/24
-#   sw1=172.255.0.241, ac1/ac2 join the same mgmt network.
-# - OpenLAN service network "example": 192.11.0.0/24
-#   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
-# - Validation path: ac1 -> sw1 and ac2 -> sw1 connectivity by ping.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
@@ -127,4 +134,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

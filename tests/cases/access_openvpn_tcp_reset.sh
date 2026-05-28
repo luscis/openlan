@@ -1,10 +1,27 @@
 #!/bin/bash
 source tools/auto.sh
 
-
 # OpenLAN OpenVPN TCP reset test:
 # - before reject-with tcp-reset, vpn client can access sw1 service.
 # - after reject-with tcp-reset, vpn client gets connection reset.
+
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.248.0.0/24
+#   sw1=172.248.0.241, vpn1 client joins the same mgmt network.
+# - OpenLAN service network "example": 192.54.0.0/24
+#   sw1 overlay IP=192.54.0.1/24.
+# - OpenVPN overlay:
+#   tcp/1194, subnet 10.92.0.0/24, vpn1@example fixed address 10.92.0.10.
+# - Test service:
+#   sw1 serves HTTP on 192.54.0.1:8082.
+# Validation:
+#   before INPUT reject-with tcp-reset, vpn1 can access http://192.54.0.1:8082;
+#   after adding reject-with tcp-reset, vpn1 request is reset and becomes unreachable.
+EOF
+}
+
 
 export net_name=tests-net-openvpn-rst
 export sw1_name=tests-sw-openvpn-rst.sw1
@@ -78,4 +95,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

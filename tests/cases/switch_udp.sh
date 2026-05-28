@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN Switch UT: UDP transport path.
-
-export net_name=tests-net-udp
-export sw1_name=tests-sw-udp1
-export sw2_name=tests-sw-udp2
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.254.0.0/24
 #   sw1=172.254.0.241, sw2=172.254.0.242.
@@ -15,7 +10,19 @@ export sw2_name=tests-sw-udp2
 #   sw1=192.51.0.1, sw2=192.51.0.2.
 # - Forwarding link:
 #   sw2 -> sw1 over UDP output.
-# - Validation path: sw2 ping sw1 through udp transport.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
+
+# OpenLAN Switch UT: UDP transport path.
+
+export net_name=tests-net-udp
+export sw1_name=tests-sw-udp1
+export sw2_name=tests-sw-udp2
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1 >/dev/null
@@ -88,4 +95,11 @@ setup() {
   test_ping
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

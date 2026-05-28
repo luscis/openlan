@@ -63,7 +63,8 @@ report_case_html() {
   local status="$1"
   local name="$2"
   local cost="$3"
-  local log_path="$4"
+  local topo="$4"
+  local log_path="$5"
   local ts
   local cls
   local name_html
@@ -79,7 +80,7 @@ report_case_html() {
     name_html="<a href=\"${rel_log}\">${name}</a>"
   fi
   REPORT_ROWS_HTML="${REPORT_ROWS_HTML}
-<tr><td>${ts}</td><td class=\"${cls}\">${status}</td><td>${name_html}</td><td>${cost}</td></tr>"
+<tr><td>${ts}</td><td class=\"${cls}\">${status}</td><td>${name_html}</td><td>${topo}</td><td>${cost}</td></tr>"
 }
 
 write_report_html() {
@@ -94,17 +95,50 @@ write_report_html() {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OpenLAN Test Report</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #111827; background: #f8fafc; }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 24px;
+      color: #e5e7eb;
+      background: #0b1220;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
     h1 { margin: 0 0 8px; font-size: 22px; }
-    .meta { color: #6b7280; font-size: 14px; }
+    .meta { color: #9ca3af; font-size: 14px; }
     .sum { display: flex; gap: 16px; margin-top: 8px; }
-    .sum span { font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-    th { background: #f3f4f6; }
-    .pass { color: #065f46; font-weight: 700; }
-    .fail { color: #991b1b; font-weight: 700; }
+    .sum span { font-weight: 700; color: #f9fafb; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f2937;
+      font-size: 14px;
+    }
+    th {
+      background: #0f172a;
+      color: #cbd5e1;
+      letter-spacing: 0.01em;
+    }
+    tbody tr:nth-child(even) { background: #0f1a2f; }
+    tbody tr:hover { background: #1a2740; }
+    a { color: #93c5fd; text-decoration: none; }
+    a:hover { color: #bfdbfe; text-decoration: underline; }
+    .pass { color: #34d399; font-weight: 700; }
+    .fail { color: #f87171; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -120,7 +154,7 @@ write_report_html() {
   </div>
   <table>
     <thead>
-      <tr><th>Time</th><th>Status</th><th>Scenario</th><th>Cost</th></tr>
+      <tr><th>Time</th><th>Status</th><th>Scenario</th><th>Topo</th><th>Cost</th></tr>
     </thead>
     <tbody>
 ${REPORT_ROWS_HTML}

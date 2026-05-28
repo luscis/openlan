@@ -1,14 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN OpenVPN SNAT test: VPN client reaches sw2 VIP via sw1 SNAT.
-
-export net_name=tests-net-openvpn-snat-vip
-export sw1_name=tests-sw-openvpn-snat-vip.sw1
-export sw2_name=tests-sw-openvpn-snat-vip.sw2
-export vpn1_name=tests-sw-openvpn-snat-vip.vpn1
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.250.0.0/24
 #   sw1=172.250.0.241, sw2=172.250.0.242.
@@ -18,8 +12,20 @@ export vpn1_name=tests-sw-openvpn-snat-vip.vpn1
 #   lo=10.252.0.12/32.
 # - OpenVPN overlay on sw1:
 #   tcp/1194, subnet 10.96.0.0/24, vpn1@example fixed address 10.96.0.10.
-# - Validation:
+# Validation:
 #   vpn client reaches sw2 VIP (10.252.0.12) through sw1 with SNAT enabled.
+
+EOF
+}
+
+
+# OpenLAN OpenVPN SNAT test: VPN client reaches sw2 VIP via sw1 SNAT.
+
+export net_name=tests-net-openvpn-snat-vip
+export sw1_name=tests-sw-openvpn-snat-vip.sw1
+export sw2_name=tests-sw-openvpn-snat-vip.sw2
+export vpn1_name=tests-sw-openvpn-snat-vip.vpn1
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1 >/dev/null
@@ -99,4 +105,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

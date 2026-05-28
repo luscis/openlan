@@ -1,20 +1,26 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.246.0.0/24
+#   sw1=172.246.0.241, sw2=172.246.0.242.
+# - OpenLAN service network "example": 192.58.0.0/24
+#   sw1=192.58.0.1, sw2=192.58.0.2.
+# Validation:
+#   start local 127.0.0.1:8080 service on sw2, map example:80 to 8080 by dnat,
+#   verify unreachable before dnat and reachable after dnat from sw1.
+
+EOF
+}
+
 # OpenLAN Switch UT: DNAT add/remove path.
 
 export net_name=tests-net-dnat
 export sw1_name=tests-sw-dnat1
 export sw2_name=tests-sw-dnat2
 
-# Topology:
-# - Docker mgmt network: 172.246.0.0/24
-#   sw1=172.246.0.241, sw2=172.246.0.242.
-# - OpenLAN service network "example": 192.58.0.0/24
-#   sw1=192.58.0.1, sw2=192.58.0.2.
-# - Validation path:
-#   start local 127.0.0.1:8080 service on sw2, map example:80 to 8080 by dnat,
-#   verify unreachable before dnat and reachable after dnat from sw1.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.246.0.0/24 --gateway=172.246.0.1 >/dev/null
@@ -98,4 +104,11 @@ setup() {
   test_dnat_remove
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

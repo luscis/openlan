@@ -1,6 +1,26 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.249.0.0/24
+#   sw1=172.249.0.241, sw2=172.249.0.242.
+# - sw1 virtual networks:
+#   network int: 192.55.0.1/24 (uplink to sw2)
+#   network a: 192.53.0.1/24 (with OpenVPN subnet 10.95.0.0/24)
+#   network b: 192.54.0.1/24
+# - sw2 virtual network:
+#   network int: 192.55.0.2/24, loopback subnet target 10.253.0.12/32.
+# Validation:
+#   default: all networks snat disabled, including int.
+#   scope openvpn: a.openvpn yes, a.access no, b.openvpn no, b.access no.
+#   scope local:   a.openvpn yes, a.access yes, b.openvpn no, b.access no.
+#   scope enable:  a.openvpn yes, a.access yes, b.openvpn yes, b.access yes.
+
+EOF
+}
+
 
 # OpenLAN SNAT scope matrix test for network a.
 
@@ -18,20 +38,6 @@ export pass_vpn2="pw-vpn2-${RANDOM}-${RANDOM}"
 export pass_ua="pw-ua-${RANDOM}-${RANDOM}"
 export pass_ub="pw-ub-${RANDOM}-${RANDOM}"
 
-# Topology:
-# - Docker mgmt network: 172.249.0.0/24
-#   sw1=172.249.0.241, sw2=172.249.0.242.
-# - sw1 virtual networks:
-#   network int: 192.55.0.1/24 (uplink to sw2)
-#   network a: 192.53.0.1/24 (with OpenVPN subnet 10.95.0.0/24)
-#   network b: 192.54.0.1/24
-# - sw2 virtual network:
-#   network int: 192.55.0.2/24, loopback subnet target 10.253.0.12/32.
-# - Validation:
-#   default: all networks snat disabled, including int.
-#   scope openvpn: a.openvpn yes, a.access no, b.openvpn no, b.access no.
-#   scope local:   a.openvpn yes, a.access yes, b.openvpn no, b.access no.
-#   scope enable:  a.openvpn yes, a.access yes, b.openvpn yes, b.access yes.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1 >/dev/null
@@ -198,4 +204,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

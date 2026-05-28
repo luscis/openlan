@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.253.0.0/24
+#   sw1=172.253.0.241, bad access client joins the same mgmt network.
+# - OpenLAN service network "example": 192.31.0.0/24
+#   sw1 gateway=192.31.0.1, client config asks for 192.31.0.11.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
 
 # OpenLAN Access UT: authentication failure path.
 
@@ -8,12 +21,6 @@ export net_name=tests-net-authfail
 export sw1_name=tests-sw-authfail
 export ac1_badpass_name=tests-sw-authfail.acbad
 
-# Topology:
-# - Docker mgmt network: 172.253.0.0/24
-#   sw1=172.253.0.241, bad access client joins the same mgmt network.
-# - OpenLAN service network "example": 192.31.0.0/24
-#   sw1 gateway=192.31.0.1, client config asks for 192.31.0.11.
-# - Validation path: authentication must fail with wrong password.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
@@ -71,4 +78,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

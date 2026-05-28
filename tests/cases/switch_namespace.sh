@@ -1,14 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN Switch UT: network namespace/VRF path.
-
-export net_name=tests-net-namespace
-export sw1_name=tests-sw-namespace1
-export sw2_name=tests-sw-namespace2
-export vrf_name=vrf-example
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.242.0.0/24
 #   sw1=172.242.0.241, sw2=172.242.0.242.
@@ -17,7 +11,20 @@ export vrf_name=vrf-example
 # - Both service network L3 devices are enslaved to VRF "vrf-example".
 # - Forwarding link:
 #   sw2 -> sw1 over UDP output.
-# - Validation path: sw2 pings sw1 from inside the VRF.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
+
+# OpenLAN Switch UT: network namespace/VRF path.
+
+export net_name=tests-net-namespace
+export sw1_name=tests-sw-namespace1
+export sw2_name=tests-sw-namespace2
+export vrf_name=vrf-example
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.242.0.0/24 --gateway=172.242.0.1 >/dev/null
@@ -96,4 +103,11 @@ setup() {
   test_reload_persistence
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

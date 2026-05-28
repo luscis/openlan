@@ -49,6 +49,30 @@ scenario_description() {
   esac
 }
 
+scenario_topology_detail() {
+  local file=$1
+  local detail
+  detail=$(bash "$file" --topology 2>/dev/null)
+  if [[ -z "$detail" ]]; then
+    cat <<'EOF'
+# Topology:
+# - custom topology
+EOF
+    return
+  fi
+  printf "%s\n" "$detail"
+}
+
+scenario_topology_summary() {
+  local detail="$1"
+  local summary
+  summary=$(printf "%s\n" "$detail" | sed -n 's/^# -[[:space:]]*//p' | head -n 1)
+  if [[ -z "$summary" ]]; then
+    summary="custom topology"
+  fi
+  printf "%s\n" "$summary"
+}
+
 print_scenario_header() {
   local file=$1
   local name
@@ -56,9 +80,14 @@ print_scenario_header() {
   name=${name%.sh}
   local desc
   desc=$(scenario_description "$(basename "$file")")
+  local topo_detail
+  topo_detail=$(scenario_topology_detail "$file")
+  local topo
+  topo=$(scenario_topology_summary "$topo_detail")
 
   printf "${C_CYAN}[%s][RUN]${C_RESET} %-17s : %s\n" \
     "$(now_text)" "$name" "$desc"
+  printf "%s\n" "$topo_detail"
 }
 
 run_all() {
@@ -82,6 +111,8 @@ run_batch() {
   local cost
   local status
   local case_log
+  local topo
+  local topo_detail
 
   if [[ "$REPORT_ENABLED" == "true" ]]; then
     init_report
@@ -103,13 +134,18 @@ run_batch() {
         echo "----------------------------------------"
         print_scenario_header "$file"
         start_ms=$(now_ms)
+        topo_detail=$(scenario_topology_detail "$file")
+        topo=$(scenario_topology_summary "$topo_detail")
         if [[ "$REPORT_ENABLED" == "true" ]]; then
           case_log=$(report_case_log_file "$index" "$name")
           echo "[$(now_text)] case log: $case_log"
           {
             echo "[$(now_text)] START $name"
             echo "scenario: $file"
-            echo "capture: stdout+stderr"
+            echo "header  : $(scenario_description "$(basename "$file")")"
+            echo "topology: $topo"
+            printf "%s\n" "$topo_detail" | sed 's/^/topology: /'
+            echo ""
           } > "$case_log"
           bash "$file" >> "$case_log" 2>&1
           local rc=$?
@@ -135,8 +171,9 @@ run_batch() {
         if [[ "$REPORT_ENABLED" == "true" ]]; then
           echo "[$(now_text)] END $name status=$status cost=$cost" >> "$case_log"
           report_line "[$status] $name cost=$cost"
+          report_line "  topology: $topo"
           report_line "  log: $case_log"
-          report_case_html "$status" "$name" "$cost" "$case_log"
+          report_case_html "$status" "$name" "$cost" "$topo" "$case_log"
         fi
         break
       fi
@@ -154,10 +191,12 @@ run_batch() {
           echo "[$(now_text)] START $key"
           echo "status: FAIL"
           echo "reason: unknown scenario"
+          echo "topology: custom topology"
         } > "$case_log"
         report_line "[FAIL] unknown scenario: $key"
+        report_line "  topo: custom topology"
         report_line "  log: $case_log"
-        report_case_html "FAIL" "$key (unknown)" "0.000s" "$case_log"
+        report_case_html "FAIL" "$key (unknown)" "0.000s" "custom topology" "$case_log"
       fi
       echo "Available scenarios:"
       for file in "${scenarios[@]}"; do

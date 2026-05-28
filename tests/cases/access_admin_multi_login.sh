@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.251.0.0/24
+#   sw1=172.251.0.241, ac1/ac2 join the same mgmt network.
+# - OpenLAN service network "example": 192.51.0.0/24
+#   same admin user logs in from ac1 and ac2.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
 
 # OpenLAN Access UT: admin user can login from multiple access clients.
 
@@ -9,12 +22,6 @@ export sw1_name=tests-sw-admin-multi
 export ac1_name=tests-sw-admin-multi.ac1
 export ac2_name=tests-sw-admin-multi.ac2
 
-# Topology:
-# - Docker mgmt network: 172.251.0.0/24
-#   sw1=172.251.0.241, ac1/ac2 join the same mgmt network.
-# - OpenLAN service network "example": 192.51.0.0/24
-#   same admin user logs in from ac1 and ac2.
-# - Validation path: admin multi-login should be allowed at the same time.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
@@ -104,4 +111,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

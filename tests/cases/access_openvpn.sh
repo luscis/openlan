@@ -1,14 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN OpenVPN scenario test.
-
-export net_name=tests-net-openvpn
-export sw1_name=tests-sw-openvpn
-export vpn1_name=tests-sw-openvpn.vpn1
-export vpn2_name=tests-sw-openvpn.vpn2
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.252.0.0/24
 #   sw1=172.252.0.241, vpn containers join the same mgmt network.
@@ -17,7 +11,20 @@ export vpn2_name=tests-sw-openvpn.vpn2
 # - OpenVPN overlay:
 #   tcp/1194 with subnet 10.99.0.0/24 for default cipher checks,
 #   tcp/1194 with subnet 10.98.0.0/24 for SM4 cipher checks.
-# - Validation path: OpenVPN add/remove lifecycle and data channel cipher negotiation.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
+
+# OpenLAN OpenVPN scenario test.
+
+export net_name=tests-net-openvpn
+export sw1_name=tests-sw-openvpn
+export vpn1_name=tests-sw-openvpn.vpn1
+export vpn2_name=tests-sw-openvpn.vpn2
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1 >/dev/null
@@ -112,4 +119,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

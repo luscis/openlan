@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.252.0.0/24
+#   sw1=172.252.0.241, ac1/ac2 join the same mgmt network.
+# - OpenLAN service network "example": 192.41.0.0/24
+#   same user logs in from ac1 and ac2.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
 
 # OpenLAN Access UT: same user multi-access mutual exclusion.
 
@@ -9,12 +22,6 @@ export sw1_name=tests-sw-same-user
 export ac1_name=tests-sw-same-user.ac1
 export ac2_name=tests-sw-same-user.ac2
 
-# Topology:
-# - Docker mgmt network: 172.252.0.0/24
-#   sw1=172.252.0.241, ac1/ac2 join the same mgmt network.
-# - OpenLAN service network "example": 192.41.0.0/24
-#   same user logs in from ac1 and ac2.
-# - Validation path: same user multi-access login is mutually exclusive.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1 >/dev/null
@@ -110,4 +117,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac
