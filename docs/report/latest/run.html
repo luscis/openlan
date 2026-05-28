@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenLAN Test Report</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 24px;
+      color: #e5e7eb;
+      background: #0b1220;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .meta { color: #9ca3af; font-size: 14px; }
+    .sum { display: flex; gap: 16px; margin-top: 8px; }
+    .sum span { font-weight: 700; color: #f9fafb; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f2937;
+      font-size: 14px;
+    }
+    th {
+      background: #0f172a;
+      color: #cbd5e1;
+      letter-spacing: 0.01em;
+    }
+    tbody tr:nth-child(even) { background: #0f1a2f; }
+    tbody tr:hover { background: #1a2740; }
+    a { color: #93c5fd; text-decoration: none; }
+    a:hover { color: #bfdbfe; text-decoration: underline; }
+    .pass { color: #34d399; font-weight: 700; }
+    .fail { color: #f87171; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>OpenLAN Test Report</h1>
+    <div class="meta">Title: OpenLAN test run started</div>
+    <div class="meta">Generated: 26-05-28 07:42:49</div>
+    <div class="sum">
+      <div>Passed: <span>33</span></div>
+      <div>Failed: <span>0</span></div>
+      <div>Total: <span>33</span></div>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Status</th><th>Scenario</th><th>Topo</th><th>Cost</th></tr>
+    </thead>
+    <tbody>
+
+<tr><td>26-05-28 07:13:30</td><td class="pass">PASS</td><td><a href="cases/01-access_admin_multi_login_.log">access_admin_multi_login</a></td><td>Docker mgmt network: 172.251.0.0/24</td><td>13.757s</td></tr>
+<tr><td>26-05-28 07:13:49</td><td class="pass">PASS</td><td><a href="cases/02-access_fail_.log">access_fail</a></td><td>Docker mgmt network: 172.253.0.0/24</td><td>18.259s</td></tr>
+<tr><td>26-05-28 07:13:55</td><td class="pass">PASS</td><td><a href="cases/03-access_openvpn_client_ping_.log">access_openvpn_client_ping</a></td><td>Docker mgmt network: 172.253.0.0/24</td><td>5.798s</td></tr>
+<tr><td>26-05-28 07:14:27</td><td class="pass">PASS</td><td><a href="cases/04-access_openvpn_perf_.log">access_openvpn_perf</a></td><td>Docker mgmt network: 172.251.0.0/24</td><td>32.330s</td></tr>
+<tr><td>26-05-28 07:14:47</td><td class="pass">PASS</td><td><a href="cases/05-access_openvpn_redirect_.log">access_openvpn_redirect</a></td><td>Docker mgmt network: 172.249.0.0/24</td><td>19.954s</td></tr>
+<tr><td>26-05-28 07:14:58</td><td class="pass">PASS</td><td><a href="cases/06-access_openvpn_.log">access_openvpn</a></td><td>Docker mgmt network: 172.252.0.0/24</td><td>11.000s</td></tr>
+<tr><td>26-05-28 07:15:38</td><td class="pass">PASS</td><td><a href="cases/07-access_openvpn_snat_vip_.log">access_openvpn_snat_vip</a></td><td>Docker mgmt network: 172.250.0.0/24</td><td>39.798s</td></tr>
+<tr><td>26-05-28 07:15:43</td><td class="pass">PASS</td><td><a href="cases/08-access_openvpn_tcp_reset_.log">access_openvpn_tcp_reset</a></td><td>Docker mgmt network: 172.248.0.0/24</td><td>4.718s</td></tr>
+<tr><td>26-05-28 07:17:11</td><td class="pass">PASS</td><td><a href="cases/09-access_pre_network_crypt_.log">access_pre_network_crypt</a></td><td>Docker mgmt network: 172.251.0.0/24</td><td>88.580s</td></tr>
+<tr><td>26-05-28 07:17:27</td><td class="pass">PASS</td><td><a href="cases/10-access_same_user_mutex_.log">access_same_user_mutex</a></td><td>Docker mgmt network: 172.252.0.0/24</td><td>15.368s</td></tr>
+<tr><td>26-05-28 07:21:11</td><td class="pass">PASS</td><td><a href="cases/11-access_snat_scope_matrix_.log">access_snat_scope_matrix</a></td><td>Docker mgmt network: 172.249.0.0/24</td><td>224.442s</td></tr>
+<tr><td>26-05-28 07:21:32</td><td class="pass">PASS</td><td><a href="cases/12-access_success_.log">access_success</a></td><td>Docker mgmt network: 172.255.0.0/24</td><td>20.766s</td></tr>
+<tr><td>26-05-28 07:22:01</td><td class="pass">PASS</td><td><a href="cases/13-proxy_http_.log">proxy_http</a></td><td>Docker mgmt network: 172.252.0.0/24</td><td>28.562s</td></tr>
+<tr><td>26-05-28 07:22:36</td><td class="pass">PASS</td><td><a href="cases/14-proxy_name_backends_.log">proxy_name_backends</a></td><td>Docker mgmt network: 172.248.0.0/24</td><td>35.718s</td></tr>
+<tr><td>26-05-28 07:23:03</td><td class="pass">PASS</td><td><a href="cases/15-proxy_name_.log">proxy_name</a></td><td>Docker mgmt network: 172.249.0.0/24</td><td>26.378s</td></tr>
+<tr><td>26-05-28 07:23:32</td><td class="pass">PASS</td><td><a href="cases/16-proxy_tcp_.log">proxy_tcp</a></td><td>Docker mgmt network: 172.250.0.0/24</td><td>28.595s</td></tr>
+<tr><td>26-05-28 07:25:26</td><td class="pass">PASS</td><td><a href="cases/17-switch_acl_default_action_.log">switch_acl_default_action</a></td><td>Docker mgmt network: 172.254.1.0/24</td><td>114.901s</td></tr>
+<tr><td>26-05-28 07:28:15</td><td class="pass">PASS</td><td><a href="cases/18-switch_acl_.log">switch_acl</a></td><td>Docker mgmt network: 172.254.0.0/24</td><td>167.974s</td></tr>
+<tr><td>26-05-28 07:28:32</td><td class="pass">PASS</td><td><a href="cases/19-switch_bgp_.log">switch_bgp</a></td><td>Docker mgmt network: 172.244.0.0/24</td><td>17.185s</td></tr>
+<tr><td>26-05-28 07:29:24</td><td class="pass">PASS</td><td><a href="cases/20-switch_dnat_.log">switch_dnat</a></td><td>Docker mgmt network: 172.246.0.0/24</td><td>52.094s</td></tr>
+<tr><td>26-05-28 07:31:29</td><td class="pass">PASS</td><td><a href="cases/21-switch_findhop_.log">switch_findhop</a></td><td>Docker mgmt network: 172.243.0.0/24</td><td>124.539s</td></tr>
+<tr><td>26-05-28 07:31:46</td><td class="pass">PASS</td><td><a href="cases/22-switch_ipsec_gre_.log">switch_ipsec_gre</a></td><td>Docker mgmt network: 172.247.0.0/24</td><td>17.151s</td></tr>
+<tr><td>26-05-28 07:32:39</td><td class="pass">PASS</td><td><a href="cases/23-switch_ipsec_vxlan_perf_.log">switch_ipsec_vxlan_perf</a></td><td>Docker mgmt network: 172.247.0.0/24</td><td>53.443s</td></tr>
+<tr><td>26-05-28 07:33:29</td><td class="pass">PASS</td><td><a href="cases/24-switch_ipsec_vxlan_.log">switch_ipsec_vxlan</a></td><td>Docker mgmt network: 172.248.0.0/24</td><td>49.188s</td></tr>
+<tr><td>26-05-28 07:36:33</td><td class="pass">PASS</td><td><a href="cases/25-switch_namespace_openvpn_.log">switch_namespace_openvpn</a></td><td>Docker mgmt network: 172.240.0.0/24</td><td>184.114s</td></tr>
+<tr><td>26-05-28 07:36:53</td><td class="pass">PASS</td><td><a href="cases/26-switch_namespace_.log">switch_namespace</a></td><td>Docker mgmt network: 172.242.0.0/24</td><td>19.774s</td></tr>
+<tr><td>26-05-28 07:39:06</td><td class="pass">PASS</td><td><a href="cases/27-switch_namespace_snat_.log">switch_namespace_snat</a></td><td>Docker mgmt network: 172.241.0.0/24</td><td>133.837s</td></tr>
+<tr><td>26-05-28 07:40:02</td><td class="pass">PASS</td><td><a href="cases/28-switch_output_perf_.log">switch_output_perf</a></td><td>One center switch sw1 accepts mixed output dial-ins.</td><td>55.572s</td></tr>
+<tr><td>26-05-28 07:40:32</td><td class="pass">PASS</td><td><a href="cases/29-switch_ratelimit_.log">switch_ratelimit</a></td><td>Docker mgmt network: 172.253.0.0/24</td><td>29.448s</td></tr>
+<tr><td>26-05-28 07:41:09</td><td class="pass">PASS</td><td><a href="cases/30-switch_route3_.log">switch_route3</a></td><td>Docker mgmt network: 172.251.0.0/24</td><td>36.933s</td></tr>
+<tr><td>26-05-28 07:41:53</td><td class="pass">PASS</td><td><a href="cases/31-switch_tcp_.log">switch_tcp</a></td><td>Docker mgmt network: 172.255.0.0/24</td><td>44.408s</td></tr>
+<tr><td>26-05-28 07:42:16</td><td class="pass">PASS</td><td><a href="cases/32-switch_udp_.log">switch_udp</a></td><td>Docker mgmt network: 172.254.0.0/24</td><td>23.215s</td></tr>
+<tr><td>26-05-28 07:42:49</td><td class="pass">PASS</td><td><a href="cases/33-switch_ztrust_.log">switch_ztrust</a></td><td>Docker mgmt network: 172.245.0.0/24</td><td>32.371s</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

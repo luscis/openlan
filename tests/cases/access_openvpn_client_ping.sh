@@ -1,6 +1,21 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.253.0.0/24
+# - OpenLAN service network "example": 192.42.0.0/24
+# - OpenVPN overlay: tcp/1194, subnet 10.97.0.0/24
+# - Static OpenVPN client addresses:
+#   vpn1@example -> 10.97.0.10
+#   vpn2@example -> 10.97.0.11
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
 
 # OpenLAN OpenVPN client-to-client ping with static addresses.
 
@@ -9,14 +24,6 @@ export sw1_name=tests-sw-openvpn-ping
 export vpn1_name=tests-sw-openvpn-ping.vpn1
 export vpn2_name=tests-sw-openvpn-ping.vpn2
 
-# Topology:
-# - Docker mgmt network: 172.253.0.0/24
-# - OpenLAN service network "example": 192.42.0.0/24
-# - OpenVPN overlay: tcp/1194, subnet 10.97.0.0/24
-# - Static OpenVPN client addresses:
-#   vpn1@example -> 10.97.0.10
-#   vpn2@example -> 10.97.0.11
-# - Validation path: vpn1 and vpn2 can ping each other by static overlay IP.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
@@ -80,4 +87,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

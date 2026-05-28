@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.249.0.0/24
+#   sw1=172.249.0.241 (name proxy client), sw2=172.249.0.242 (upstream dns server).
+# - OpenLAN service network "example": 192.54.0.0/24
+#   sw1=192.54.0.1, sw2=192.54.0.2, with sw2 output to sw1.
+# Validation:
+#   sw1 nslookup -> sw1 openceci(name) -> sw2 dnsmasq(upstream).
+
+EOF
+}
+
 # OpenLAN Proxy UT: Ceci NAME proxy path.
 
 export net_name=tests-net-proxy-name
@@ -11,13 +24,6 @@ export name_domain=proxy-name.test
 export name_answer=192.54.0.2
 export upstream_dns=192.54.0.2:5300
 
-# Topology:
-# - Docker mgmt network: 172.249.0.0/24
-#   sw1=172.249.0.241 (name proxy client), sw2=172.249.0.242 (upstream dns server).
-# - OpenLAN service network "example": 192.54.0.0/24
-#   sw1=192.54.0.1, sw2=192.54.0.2, with sw2 output to sw1.
-# - Validation path:
-#   sw1 nslookup -> sw1 openceci(name) -> sw2 dnsmasq(upstream).
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1 >/dev/null
@@ -114,4 +120,11 @@ setup() {
   test_name_proxy
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

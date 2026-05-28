@@ -1,21 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN Switch UT: network namespace/VRF OpenVPN path.
-
-export net_name=tests-net-namespace-openvpn
-export sw1_name=tests-sw-namespace-openvpn1
-export sw2_name=tests-sw-namespace-openvpn2
-export vpn1_name=tests-sw-namespace-openvpn.vpn1
-export acb_name=tests-sw-namespace-openvpn.acb
-export vrf_name=vrf-vpn
-export vpn_device=tun1194
-export vpn_subnet=10.241.0.0/24
-export vpn1_ip=10.241.0.10
-export target_vip=10.240.2.12
-export access_b_ip=192.66.0.11
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.240.0.0/24
 #   sw1=172.240.0.241, sw2=172.240.0.242, vpn1 joins the same mgmt network.
@@ -32,12 +19,31 @@ export access_b_ip=192.66.0.11
 #   listens on 10.240.2.12:8081.
 # - Forwarding link:
 #   sw1 -> sw2 over TCP output.
-# - Validation:
+# Validation:
 #   vpn1 connects, server tun device is bound to the VRF. Without OpenVPN SNAT,
 #   vpn1 cannot reach sw2 VIP; after enabling OpenVPN SNAT, sw2 HTTP sees sw1
 #   overlay address as the source. acb, connected to sw1 non-namespace network
 #   b, cannot reach the same VIP because b SNAT is disabled, even though b has
 #   a route for the VIP.
+
+EOF
+}
+
+
+# OpenLAN Switch UT: network namespace/VRF OpenVPN path.
+
+export net_name=tests-net-namespace-openvpn
+export sw1_name=tests-sw-namespace-openvpn1
+export sw2_name=tests-sw-namespace-openvpn2
+export vpn1_name=tests-sw-namespace-openvpn.vpn1
+export acb_name=tests-sw-namespace-openvpn.acb
+export vrf_name=vrf-vpn
+export vpn_device=tun1194
+export vpn_subnet=10.241.0.0/24
+export vpn1_ip=10.241.0.10
+export target_vip=10.240.2.12
+export access_b_ip=192.66.0.11
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.240.0.0/24 --gateway=172.240.0.1 >/dev/null
@@ -211,4 +217,11 @@ setup() {
   test_reload_persistence
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

@@ -1,0 +1,267 @@
+[26-05-28 07:33:29] START switch_namespace_openvpn
+scenario: cases/switch_namespace_openvpn.sh
+header  : verify namespace openvpn snat and non-snat network isolation
+topology: Docker mgmt network: 172.240.0.0/24
+topology: # Topology:
+topology: # - Docker mgmt network: 172.240.0.0/24
+topology: #   sw1=172.240.0.241, sw2=172.240.0.242, vpn1 joins the same mgmt network.
+topology: # - OpenLAN service network "example": 192.65.0.0/24
+topology: #   sw1=192.65.0.1, sw2=192.65.0.2.
+topology: # - sw1 service network L3 device and OpenVPN device are enslaved to VRF
+topology: #   "vrf-vpn"; sw2 is not.
+topology: # - sw1 non-namespace network "b": 192.66.0.0/24
+topology: #   sw1=192.66.0.1, acb=192.66.0.11.
+topology: # - OpenVPN overlay:
+topology: #   tcp/1194, subnet 10.241.0.0/24, vpn1@example fixed address 10.241.0.10.
+topology: # - sw2 VIP:
+topology: #   lo=10.240.2.12/32, declared in sw2 example and sw1 b networks, HTTP service
+topology: #   listens on 10.240.2.12:8081.
+topology: # - Forwarding link:
+topology: #   sw1 -> sw2 over TCP output.
+topology: # Validation:
+topology: #   vpn1 connects, server tun device is bound to the VRF. Without OpenVPN SNAT,
+topology: #   vpn1 cannot reach sw2 VIP; after enabling OpenVPN SNAT, sw2 HTTP sees sw1
+topology: #   overlay address as the source. acb, connected to sw1 non-namespace network
+topology: #   b, cannot reach the same VIP because b SNAT is disabled, even though b has
+topology: #   a route for the VIP.
+
+Started switch pause container: tests-sw-namespace-openvpn2-pause
+Started switch frr container: tests-sw-namespace-openvpn2-frr
+Started switch ipsec container: tests-sw-namespace-openvpn2-ipsec
+Started switch container: tests-sw-namespace-openvpn2
+[26-05-28 07:33:30][ASSERT#0001][expect] at cases/switch_namespace_openvpn.sh:95 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-namespace-openvpn2" expect="Http.Start"
+2026/05/28 07:33:30 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:33:30 INFO|root|Wait: ...
+2026/05/28 07:33:30 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:33:30 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:33:31][ASSERT#0001][OK] cost=1.034s
+[26-05-28 07:33:31][ASSERT#0002][cmd] at cases/switch_namespace_openvpn.sh:97 fn=setup_sw2 cmd="docker exec tests-sw-namespace-openvpn2 openlan network --name example add --address 192.65.0.2/24"
+[26-05-28 07:33:31][ASSERT#0002][OK] cost=0.241s
+[26-05-28 07:33:31][ASSERT#0003][cmd] at cases/switch_namespace_openvpn.sh:98 fn=setup_sw2 cmd="docker exec tests-sw-namespace-openvpn2 openlan router address add --device lo --address 10.240.2.12/32"
+[26-05-28 07:33:31][ASSERT#0003][OK] cost=0.065s
+[26-05-28 07:33:31][ASSERT#0004][cmd] at cases/switch_namespace_openvpn.sh:99 fn=setup_sw2 cmd="docker exec tests-sw-namespace-openvpn2 openlan network --name example route add --prefix 10.240.2.12/32"
+[26-05-28 07:33:31][ASSERT#0004][OK] cost=0.064s
+[26-05-28 07:33:31][ASSERT#0005][cmd] at cases/switch_namespace_openvpn.sh:100 fn=setup_sw2 cmd="docker exec tests-sw-namespace-openvpn2 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-05-28T07  
+[26-05-28 07:33:31][ASSERT#0005][OK] cost=0.060s
+Started switch pause container: tests-sw-namespace-openvpn1-pause
+Started switch frr container: tests-sw-namespace-openvpn1-frr
+Started switch ipsec container: tests-sw-namespace-openvpn1-ipsec
+Started switch container: tests-sw-namespace-openvpn1
+[26-05-28 07:33:32][ASSERT#0006][expect] at cases/switch_namespace_openvpn.sh:73 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-namespace-openvpn1" expect="Http.Start"
+2026/05/28 07:33:33 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/05/28 07:33:33 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:33:33 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:33:33 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:33:33][ASSERT#0006][OK] cost=1.032s
+[26-05-28 07:33:33][ASSERT#0007][cmd] at cases/switch_namespace_openvpn.sh:75 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example add --address 192.65.0.1/24 --namespace vrf-vpn"
+[26-05-28 07:33:33][ASSERT#0007][OK] cost=0.264s
+[26-05-28 07:33:33][ASSERT#0008][match] at cases/switch_namespace_openvpn.sh:76 fn=setup_sw1 retry=1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example" expect="namespace: vrf-vpn"
+    address: 192.65.0.1/24
+    name: br-example
+  name: example
+  namespace: vrf-vpn
+  snat: enable
+  subnet:
+    netmask: 255.255.255.0
+[26-05-28 07:33:33][ASSERT#0008][OK] cost=0.068s
+[26-05-28 07:33:33][ASSERT#0009][cmd] at cases/switch_namespace_openvpn.sh:77 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 ip link show vrf-vpn"
+9: vrf-vpn: <NOARP,MASTER,UP,LOWER_UP> mtu 65575 qdisc noqueue state UP mode DEFAULT group default 
+    link/ether ce:ab:7c:62:f8:29 brd ff:ff:ff:ff:ff:ff
+[26-05-28 07:33:33][ASSERT#0009][OK] cost=0.058s
+[26-05-28 07:33:33][ASSERT#0010][match] at cases/switch_namespace_openvpn.sh:78 fn=setup_sw1 retry=5 cmd="docker exec tests-sw-namespace-openvpn1 ip link show hi-example" expect="master vrf-vpn"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-vpn state UP mode DEFAULT group default 
+    link/ether fa:ef:8b:36:23:31 brd ff:ff:ff:ff:ff:ff
+[26-05-28 07:33:33][ASSERT#0010][OK] cost=0.063s
+[26-05-28 07:33:33][ASSERT#0011][cmd] at cases/switch_namespace_openvpn.sh:79 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name b add --address 192.66.0.1/24"
+[26-05-28 07:33:34][ASSERT#0011][OK] cost=0.245s
+[26-05-28 07:33:34][ASSERT#0012][cmd] at cases/switch_namespace_openvpn.sh:80 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name b snat disable"
+[26-05-28 07:33:34][ASSERT#0012][OK] cost=0.081s
+[26-05-28 07:33:34][ASSERT#0013][cmd] at cases/switch_namespace_openvpn.sh:81 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name b route add --prefix 10.240.2.12/32 --nexthop 192.65.0.2"
+[26-05-28 07:33:34][ASSERT#0013][OK] cost=0.066s
+[26-05-28 07:33:34][ASSERT#0014][cmd] at cases/switch_namespace_openvpn.sh:82 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example snat disable"
+[26-05-28 07:33:34][ASSERT#0014][OK] cost=0.071s
+[26-05-28 07:33:34][ASSERT#0015][cmd] at cases/switch_namespace_openvpn.sh:83 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example route add --prefix 10.240.2.12/32 --nexthop 192.65.0.2"
+[26-05-28 07:33:34][ASSERT#0015][OK] cost=0.066s
+[26-05-28 07:33:34][ASSERT#0016][cmd] at cases/switch_namespace_openvpn.sh:84 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-05-28T07  
+[26-05-28 07:33:34][ASSERT#0016][OK] cost=0.069s
+[26-05-28 07:33:34][ASSERT#0017][cmd] at cases/switch_namespace_openvpn.sh:85 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan user add --name acb@b --password 123456"
+# total 1
+username                 password                 role   lease          
+acb@b                    123456                   guest  2027-05-28T07  
+[26-05-28 07:33:34][ASSERT#0017][OK] cost=0.058s
+[26-05-28 07:33:34][ASSERT#0018][cmd] at cases/switch_namespace_openvpn.sh:86 fn=setup_sw1 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example output add --remote 172.240.0.242 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-05-28 07:33:34][ASSERT#0018][OK] cost=0.064s
+[26-05-28 07:33:34][ASSERT#0019][cmd] at cases/switch_namespace_openvpn.sh:106 fn=setup_openvpn cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.241.0.0/24 --dns 8.8.8.8"
+[26-05-28 07:33:34][ASSERT#0019][OK] cost=0.112s
+[26-05-28 07:33:34][ASSERT#0020][cmd] at cases/switch_namespace_openvpn.sh:107 fn=setup_openvpn cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example client add --user vpn1 --address 10.241.0.10"
+[26-05-28 07:33:34][ASSERT#0020][OK] cost=0.050s
+[26-05-28 07:33:34][ASSERT#0021][cmd] at cases/switch_namespace_openvpn.sh:108 fn=setup_openvpn cmd="docker exec tests-sw-namespace-openvpn1 test -f /var/openlan/openvpn/example/tcp1194server.conf"
+[26-05-28 07:33:34][ASSERT#0021][OK] cost=0.047s
+[26-05-28 07:33:34][ASSERT#0022][cmd] at cases/switch_namespace_openvpn.sh:109 fn=setup_openvpn cmd="docker exec tests-sw-namespace-openvpn1 test -f /var/openlan/openvpn/example/tcp1194client.ovpn"
+[26-05-28 07:33:34][ASSERT#0022][OK] cost=0.052s
+[26-05-28 07:33:34][ASSERT#0023][cmd] at cases/switch_namespace_openvpn.sh:110 fn=setup_openvpn cmd="docker exec tests-sw-namespace-openvpn1 test -f /var/openlan/openvpn/example/ccd/vpn1@example"
+[26-05-28 07:33:34][ASSERT#0023][OK] cost=0.067s
+Started OpenVPN client container: tests-sw-namespace-openvpn.vpn1
+[26-05-28 07:33:35][ASSERT#0024][expect] at cases/switch_namespace_openvpn.sh:120 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-namespace-openvpn.vpn1" expect="Initialization Sequence Completed"
+2026-05-28 07:33:35 net_route_v4_add: 10.241.0.0/24 via 10.241.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:33:35 net_route_v4_add: 192.65.0.0/24 via 10.241.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:33:35 net_route_v4_add: 10.240.2.12/32 via 10.241.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:33:35 Initialization Sequence Completed
+[26-05-28 07:33:36][ASSERT#0024][OK] cost=1.032s
+Started access container: tests-sw-namespace-openvpn.acb
+[26-05-28 07:33:36][ASSERT#0025][expect] at cases/switch_namespace_openvpn.sh:141 fn=setup_acb retry=30 cmd="docker logs -f tests-sw-namespace-openvpn.acb" expect="onLogin: success"
+2026/05/28 07:33:36 INFO|172.240.0.241:10002|b|Worker.OnSuccess
+2026/05/28 07:33:36 INFO|172.240.0.241:10002|b|Access.AddAddr: 192.66.0.11/24 via 
+2026/05/28 07:33:36 INFO|172.240.0.241:10002|b|Access.AddRoute: 10.240.2.12/32 via 192.66.0.1
+2026/05/28 07:33:36 INFO|udp:172.240.0.241:10002|b|SocketWorker.onLogin: success
+2026/05/28 07:33:36 INFO|172.240.0.241:10002|b|Worker.OnIpAddr: name:b gateway:192.66.0.1 address:192.66.0.11 netmask:255.255.255.0 routes:[]
+2026/05/28 07:33:36 WARN|172.240.0.241:10002|b|Access.AddAddr.SetLinkIp: file exists
+2026/05/28 07:33:36 INFO|172.240.0.241:10002|b|Access.AddAddr: 192.66.0.11/24 via 192.66.0.1
+[26-05-28 07:33:37][ASSERT#0025][OK] cost=1.034s
+[26-05-28 07:33:37][ASSERT#0026][cmd] at cases/switch_namespace_openvpn.sh:145 fn=setup_vip_http cmd="docker exec tests-sw-namespace-openvpn2 sh -c cat > /tmp/namespace-openvpn-http.sh <<'EOF'
+#!/bin/sh
+printf 'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nsrc=%s\n' "$SOCAT_PEERADDR"
+EOF
+chmod +x /tmp/namespace-openvpn-http.sh
+nohup socat TCP-LISTEN:8081,bind=10.240.2.12,reuseaddr,fork EXEC:/tmp/namespace-openvpn-http.sh >/tmp/namespace-openvpn-http.log 2>&1 &"
+[26-05-28 07:33:37][ASSERT#0026][OK] cost=0.058s
+[26-05-28 07:33:37][ASSERT#0027][match] at cases/switch_namespace_openvpn.sh:172 fn=test_openvpn_namespace retry=15 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 172.240.0.242
+  secret: t1@example:123456
+  state: authenticated
+
+[26-05-28 07:33:37][ASSERT#0027][OK] cost=0.076s
+[26-05-28 07:33:37][ASSERT#0028][match] at cases/switch_namespace_openvpn.sh:173 fn=test_openvpn_namespace retry=20 cmd="docker exec tests-sw-namespace-openvpn1 ip link show tun1194" expect="master vrf-vpn"
+14: tun1194: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel master vrf-vpn state UNKNOWN mode DEFAULT group default qlen 500
+    link/none 
+[26-05-28 07:33:37][ASSERT#0028][OK] cost=0.061s
+[26-05-28 07:33:37][ASSERT#0029][match] at cases/switch_namespace_openvpn.sh:174 fn=test_openvpn_namespace retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 ping -c 3 192.65.0.1" expect="bytes from"
+PING 192.65.0.1 (192.65.0.1) 56(84) bytes of data.
+64 bytes from 192.65.0.1: icmp_seq=1 ttl=64 time=0.360 ms
+64 bytes from 192.65.0.1: icmp_seq=2 ttl=64 time=0.752 ms
+64 bytes from 192.65.0.1: icmp_seq=3 ttl=64 time=0.815 ms
+
+--- 192.65.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2025ms
+[26-05-28 07:33:39][ASSERT#0029][OK] cost=2.119s
+[26-05-28 07:33:39][ASSERT#0030][match] at cases/switch_namespace_openvpn.sh:175 fn=test_openvpn_namespace retry=5 cmd="docker exec tests-sw-namespace-openvpn1 ip route show vrf vrf-vpn" expect="10.241.0.0/24"
+10.240.2.12 via 192.65.0.2 dev hi-example metric 660 
+10.241.0.0/24 dev tun1194 proto kernel scope link src 10.241.0.1 
+192.65.0.0/24 dev hi-example proto kernel scope link src 192.65.0.1 
+[26-05-28 07:33:39][ASSERT#0030][OK] cost=0.058s
+[26-05-28 07:33:39][ASSERT#0031][match] at cases/switch_namespace_openvpn.sh:176 fn=test_openvpn_namespace retry=5 cmd="docker exec tests-sw-namespace-openvpn2 openlan network --name example route ls" expect="10.240.2.12/32"
+# total 1
+prefix                    nexthop                   metric  
+10.240.2.12/32            192.65.0.2                660     
+[26-05-28 07:33:40][ASSERT#0031][OK] cost=0.066s
+[26-05-28 07:33:40][ASSERT#0032][match] at cases/switch_namespace_openvpn.sh:177 fn=test_openvpn_namespace retry=5 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name b route ls" expect="10.240.2.12/32"
+# total 1
+prefix                    nexthop                   metric  
+10.240.2.12/32            192.65.0.2                660     
+[26-05-28 07:33:40][ASSERT#0032][OK] cost=0.073s
+[26-05-28 07:33:40][ASSERT#0033][unmatch] at cases/switch_namespace_openvpn.sh:179 fn=test_openvpn_namespace retry=3 cmd="docker exec tests-sw-namespace-openvpn.vpn1 ping -c 3 10.240.2.12" unexpected="bytes from"
+[26-05-28 07:34:19][ASSERT#0033][OK] cost=39.388s
+[26-05-28 07:34:19][ASSERT#0034][unmatch] at cases/switch_namespace_openvpn.sh:168 fn=assert_vpn_http_unreachable retry=3 cmd="docker exec tests-sw-namespace-openvpn.vpn1 wget -qO- -T 3 -t 1 http://10.240.2.12:8081" unexpected="src="
+[26-05-28 07:34:31][ASSERT#0034][OK] cost=12.276s
+[26-05-28 07:34:31][ASSERT#0035][cmd] at cases/switch_namespace_openvpn.sh:181 fn=test_openvpn_namespace cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example snat enable --scope openvpn"
+[26-05-28 07:34:31][ASSERT#0035][OK] cost=0.070s
+[26-05-28 07:34:31][ASSERT#0036][match] at cases/switch_namespace_openvpn.sh:182 fn=test_openvpn_namespace retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 ping -c 3 10.240.2.12" expect="bytes from"
+PING 10.240.2.12 (10.240.2.12) 56(84) bytes of data.
+64 bytes from 10.240.2.12: icmp_seq=1 ttl=63 time=2.62 ms
+64 bytes from 10.240.2.12: icmp_seq=2 ttl=63 time=2.46 ms
+64 bytes from 10.240.2.12: icmp_seq=3 ttl=63 time=0.793 ms
+
+--- 10.240.2.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-05-28 07:34:33][ASSERT#0036][OK] cost=2.075s
+[26-05-28 07:34:33][ASSERT#0037][match] at cases/switch_namespace_openvpn.sh:164 fn=assert_vpn_http_source retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 wget -qO- -T 3 -t 1 http://10.240.2.12:8081" expect="src=192.65.0.1"
+src=192.65.0.1
+[26-05-28 07:34:34][ASSERT#0037][OK] cost=0.083s
+[26-05-28 07:34:34][ASSERT#0038][unmatch] at cases/switch_namespace_openvpn.sh:184 fn=test_openvpn_namespace retry=3 cmd="docker exec tests-sw-namespace-openvpn.acb ping -c 3 10.240.2.12" unexpected="bytes from"
+[26-05-28 07:35:13][ASSERT#0038][OK] cost=39.347s
+[26-05-28 07:35:13][ASSERT#0039][unmatch] at cases/switch_namespace_openvpn.sh:159 fn=assert_acb_http_unreachable retry=3 cmd="docker exec tests-sw-namespace-openvpn.acb wget -qO- -T 3 -t 1 http://10.240.2.12:8081" unexpected="src="
+[26-05-28 07:35:25][ASSERT#0039][OK] cost=12.215s
+[26-05-28 07:35:25][ASSERT#0040][cmd] at cases/switch_namespace_openvpn.sh:189 fn=test_reload_persistence cmd="docker exec tests-sw-namespace-openvpn1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:993 ...
+  PID   993   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 07:35:26][ASSERT#0040][OK] cost=1.065s
+[26-05-28 07:35:26][ASSERT#0041][cmd] at cases/switch_namespace_openvpn.sh:190 fn=test_reload_persistence cmd="docker exec tests-sw-namespace-openvpn2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:650 ...
+  PID   650   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 07:35:27][ASSERT#0041][OK] cost=1.064s
+[26-05-28 07:35:27][ASSERT#0042][match] at cases/switch_namespace_openvpn.sh:192 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example" expect="namespace: vrf-vpn"
+    address: 192.65.0.1/24
+    name: br-example
+  name: example
+  namespace: vrf-vpn
+  openvpn:
+    clients:
+    - address: 10.241.0.10
+[26-05-28 07:35:27][ASSERT#0042][OK] cost=0.077s
+[26-05-28 07:35:27][ASSERT#0043][match] at cases/switch_namespace_openvpn.sh:193 fn=test_reload_persistence retry=15 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name example output ls" expect="state: authenticated"
+  remote: 172.240.0.242
+  rxBytes: 858
+  secret: t1@example:123456
+  state: authenticated
+  txBytes: 5409
+
+[26-05-28 07:35:27][ASSERT#0043][OK] cost=0.073s
+[26-05-28 07:35:27][ASSERT#0044][match] at cases/switch_namespace_openvpn.sh:194 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-namespace-openvpn1 ip link show hi-example" expect="master vrf-vpn"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-vpn state UP mode DEFAULT group default 
+    link/ether fa:ef:8b:36:23:31 brd ff:ff:ff:ff:ff:ff
+[26-05-28 07:35:27][ASSERT#0044][OK] cost=0.061s
+[26-05-28 07:35:27][ASSERT#0045][match] at cases/switch_namespace_openvpn.sh:195 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-namespace-openvpn1 ip link show tun1194" expect="master vrf-vpn"
+14: tun1194: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel master vrf-vpn state UNKNOWN mode DEFAULT group default qlen 500
+    link/none 
+[26-05-28 07:35:28][ASSERT#0045][OK] cost=0.059s
+[26-05-28 07:35:28][ASSERT#0046][match] at cases/switch_namespace_openvpn.sh:196 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 ping -c 3 192.65.0.1" expect="bytes from"
+PING 192.65.0.1 (192.65.0.1) 56(84) bytes of data.
+64 bytes from 192.65.0.1: icmp_seq=1 ttl=64 time=0.470 ms
+64 bytes from 192.65.0.1: icmp_seq=2 ttl=64 time=1.07 ms
+64 bytes from 192.65.0.1: icmp_seq=3 ttl=64 time=0.887 ms
+
+--- 192.65.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2056ms
+[26-05-28 07:35:30][ASSERT#0046][OK] cost=2.149s
+[26-05-28 07:35:30][ASSERT#0047][match] at cases/switch_namespace_openvpn.sh:197 fn=test_reload_persistence retry=5 cmd="docker exec tests-sw-namespace-openvpn2 openlan network --name example route ls" expect="10.240.2.12/32"
+# total 1
+prefix                    nexthop                   metric  
+10.240.2.12/32            192.65.0.2                660     
+[26-05-28 07:35:30][ASSERT#0047][OK] cost=0.071s
+[26-05-28 07:35:30][ASSERT#0048][match] at cases/switch_namespace_openvpn.sh:198 fn=test_reload_persistence retry=5 cmd="docker exec tests-sw-namespace-openvpn1 openlan network --name b route ls" expect="10.240.2.12/32"
+# total 1
+prefix                    nexthop                   metric  
+10.240.2.12/32            192.65.0.2                660     
+[26-05-28 07:35:30][ASSERT#0048][OK] cost=0.075s
+[26-05-28 07:35:30][ASSERT#0049][match] at cases/switch_namespace_openvpn.sh:199 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 ping -c 3 10.240.2.12" expect="bytes from"
+PING 10.240.2.12 (10.240.2.12) 56(84) bytes of data.
+64 bytes from 10.240.2.12: icmp_seq=1 ttl=63 time=0.908 ms
+64 bytes from 10.240.2.12: icmp_seq=2 ttl=63 time=2.41 ms
+64 bytes from 10.240.2.12: icmp_seq=3 ttl=63 time=2.32 ms
+
+--- 10.240.2.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2017ms
+[26-05-28 07:35:40][ASSERT#0049][OK] cost=10.460s
+[26-05-28 07:35:40][ASSERT#0050][match] at cases/switch_namespace_openvpn.sh:164 fn=assert_vpn_http_source retry=20 cmd="docker exec tests-sw-namespace-openvpn.vpn1 wget -qO- -T 3 -t 1 http://10.240.2.12:8081" expect="src=192.65.0.1"
+src=192.65.0.1
+[26-05-28 07:35:40][ASSERT#0050][OK] cost=0.093s
+[26-05-28 07:35:40][ASSERT#0051][unmatch] at cases/switch_namespace_openvpn.sh:201 fn=test_reload_persistence retry=3 cmd="docker exec tests-sw-namespace-openvpn.acb ping -c 3 10.240.2.12" unexpected="bytes from"
+[26-05-28 07:36:20][ASSERT#0051][OK] cost=39.338s
+[26-05-28 07:36:20][ASSERT#0052][unmatch] at cases/switch_namespace_openvpn.sh:159 fn=assert_acb_http_unreachable retry=3 cmd="docker exec tests-sw-namespace-openvpn.acb wget -qO- -T 3 -t 1 http://10.240.2.12:8081" unexpected="src="
+[26-05-28 07:36:32][ASSERT#0052][OK] cost=12.219s
+[26-05-28 07:36:33] END switch_namespace_openvpn status=PASS cost=184.114s

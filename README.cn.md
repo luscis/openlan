@@ -14,11 +14,11 @@
 
 ## 🌐 什么是 OpenLAN？
 
-OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，支持在用户空间创建多个虚拟以太网。
+OpenLAN 是一套多租户网络解决方案，可在广域网链路上传输局域网报文，帮助您在跨地域、云环境与分支站点之间构建并运营多个相互隔离的虚拟以太网络。
 
 ## 🤔 为什么选择 OpenLAN？
 
-如果您需要更灵活的 VPN 解决方案——例如访问企业内部网络、通过公网云主机进行网络代理或穿透——OpenLAN 能够让部署变得更加简单高效。
+如果您需要灵活的 VPN 方案来实现企业内网安全访问、流量代理转发或经公网云主机建立隧道，OpenLAN 可以显著简化部署并提升运维效率。
 
 ## ✨ 核心功能
 
@@ -36,36 +36,36 @@ OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，
 ### 🏢 分支中心接入
 
 ```text
-      Central Switch(企业中心) - 10.16.1.10/24
-                         ^
-                         |
-                      Wifi(DNAT)
-                         |
-                         |
+        Central Switch(企业中心) - 10.16.1.10/24
+                           ^
+                           |
+                        Wifi(DNAT)
+                           |
+                           |
       -----------------Internet-----------------
       ^                    ^                   ^
       |                    |                   |
     分支 1                分支 2               分支 3
       |                    |                   |
-   OpenLAN              OpenLAN             OpenLAN
+  OpenLAN              OpenLAN             OpenLAN
 10.16.1.11/24        10.16.1.12/24       10.16.1.13/24
 ```
 
 ### 🌍 多区域互联
 
 ```text
-      192.168.1.20/24                                    192.168.1.21/24
-             |                                                  |
-        OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
-                                      |
-                                      |
-                                    互联网
-                                      |
-                                      |
-                         Central Switch(上海) - 192.168.1.10/24
-                                      |
-                                      |
-      -------------------------------------------------------
+192.168.1.20/24                                    192.168.1.21/24
+      |                                                  |
+OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
+                            |
+                            |
+                          互联网
+                            |
+                            |
+                 Central Switch(上海) - 192.168.1.10/24
+                            |
+                            |
+      ------------------------------------------------------
       ^                     ^                              ^
       |                     |                              |
    办公 Wifi             家庭 Wifi                      酒店 Wifi
@@ -87,10 +87,10 @@ OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，
                                    |
                          Central Switch(策略中心)
                      ZTrust + ACL + Knock + Auth
-                        /                         \
-                       /                           \
-          Guest Network(仅受限访问)     Trusted Network(按策略访问业务)
-                172.16.100.0/24               10.16.1.0/24
+                     /                         \
+                    /                           \
+         Guest Network(仅受限访问)     Trusted Network(按策略访问业务)
+             172.16.100.0/24               10.16.1.0/24
 ```
 
 ## 📚 文档指南
@@ -103,8 +103,8 @@ OpenLAN 是一种实现局域网数据报文在广域网传输的解决方案，
 
 ## 🧪 场景测试
 
-OpenLAN 提供了 30 个可直接执行的场景测试脚本，位于 `tests/cases`，
-共组织为 45 个验证函数，累计包含 732 条断言。
+OpenLAN 提供了 33 个可直接执行的场景测试脚本，位于 `tests/cases`，
+共组织为 59 个验证函数，累计包含 796 条断言。
 统一入口为 `tests/start.sh`。
 
 常用命令：
@@ -119,26 +119,24 @@ bash tests/start.sh
 # 运行指定场景
 bash tests/start.sh switch_tcp access_success
 
-# 生成测试报告（txt/html/tar）
+# 生成测试报告（md/html）
 bash tests/start.sh --report
 ```
 
+报告查看：[run.md](./docs/report/latest/run.md)
+
 功能覆盖（按能力分组）：
 
-- `access_*`：验证认证链路正确性，覆盖成功/失败、多端登录与同账号互斥；
-- `access_pre_network_crypt`：验证网络级预共享密钥生效，确保隔离网络独立加密；
-- `access_openvpn*`：验证 OpenVPN 生命周期、路由重定向、客户端互通、TCP reset 处理，以及通过 SNAT 访问 VIP；
-- `access_snat_scope_matrix`：验证不同入口（OpenVPN/Access）下 SNAT 作用域符合预期；
-- `proxy_*`：验证 HTTP/TCP/DNS 代理转发能力及按域名路由后端的策略正确性；
-- `switch_tcp|switch_udp`：验证 Central Switch 间基础隧道连通能力；
-- `switch_ipsec_*`：验证 IPSec 叠加 VxLAN/GRE 的跨站点互联能力；
-- `switch_acl*`：验证 ACL 增删改查、默认动作切换与重载后的规则一致性；
-- `switch_bgp`：验证 External BGP 邻居建立、路由发布过滤及配置持久化；
-- `switch_dnat`：验证 DNAT 配置变更与 NAT 表规则同步；
-- `switch_findhop`：验证 FindHop 绑定、删除保护与重载后状态恢复；
-- `switch_namespace`：验证基于 namespace/VRF 的网络绑定与 overlay 连通性；
-- `switch_namespace_snat`：验证 namespace 网络的 SNAT 源地址改写，并确认未启用 SNAT 的网络即使存在 VIP 路由也保持隔离；
-- `switch_namespace_openvpn`：验证 VRF 中的 OpenVPN 流量、OpenVPN 作用域 SNAT 访问远端 VIP，以及未启用 SNAT 的独立网络在存在 VIP 路由时仍不可达；
-- `switch_ztrust`：验证零信任开关及 Guest/Knock 访问控制行为；
-- `switch_ratelimit`：验证限速规则增删改与内核 tc 状态一致；
-- `switch_route3`：验证经中间节点（sw2）转发时的三层路由可达性。
+- **Access 认证与会话（核心）**：`access_success`、`access_fail`、`access_admin_multi_login`、`access_same_user_mutex`；
+- **Access 加密与策略作用域**：`access_pre_network_crypt`、`access_snat_scope_matrix`；
+- **OpenVPN 功能**：`access_openvpn`、`access_openvpn_redirect`、`access_openvpn_client_ping`、`access_openvpn_tcp_reset`、`access_openvpn_snat_vip`；
+- **OpenVPN 性能**：`access_openvpn_perf`（时延/吞吐/协议维度对比）；
+- **Proxy 能力**：`proxy_http`、`proxy_tcp`、`proxy_name`、`proxy_name_backends`；
+- **Switch 基础隧道**：`switch_tcp`、`switch_udp`；
+- **Switch IPSec 叠加互联**：`switch_ipsec_vxlan`、`switch_ipsec_gre`；
+- **Switch IPSec 叠加性能**：`switch_ipsec_vxlan_perf`；
+- **Switch ACL 与访问控制**：`switch_acl`、`switch_acl_default_action`、`switch_ztrust`；
+- **Switch 路由与转发**：`switch_bgp`、`switch_route3`、`switch_findhop`；
+- **Switch NAT 与流控**：`switch_dnat`、`switch_ratelimit`；
+- **Switch Namespace/VRF 与隔离**：`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn`；
+- **Switch Output 综合性能**：`switch_output_perf`（混合 TCP/UDP 的连通、时延、丢包、带宽）。

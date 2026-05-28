@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: ACL default action drop/accept path.
-
-export net_name=tests-net-acl-default
-export sw1_name=tests-sw-acl-default1
-export sw2_name=tests-sw-acl-default2
-export vip_address=10.254.1.12
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.254.1.0/24
 #   sw1=172.254.1.241, sw2=172.254.1.242.
@@ -15,9 +10,20 @@ export vip_address=10.254.1.12
 #   sw1=192.62.0.1, sw2=192.62.0.2.
 # - sw2 VIP:
 #   lo=10.254.1.12/32, tcp/80 service.
-# - Validation:
+# Validation:
 #   switch ACL default action between drop and accept, then verify sw1 -> sw2
 #   VIP TCP/80 and ICMP behavior with AT_example chain state.
+
+EOF
+}
+
+# OpenLAN Switch UT: ACL default action drop/accept path.
+
+export net_name=tests-net-acl-default
+export sw1_name=tests-sw-acl-default1
+export sw2_name=tests-sw-acl-default2
+export vip_address=10.254.1.12
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.254.1.0/24 --gateway=172.254.1.1 >/dev/null
@@ -96,4 +102,11 @@ setup() {
   test_default_drop_and_accept
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

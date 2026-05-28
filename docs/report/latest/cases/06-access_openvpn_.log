@@ -1,0 +1,138 @@
+[26-05-28 07:14:47] START access_openvpn
+scenario: cases/access_openvpn.sh
+header  : add/remove OpenVPN and validate cipher negotiation
+topology: Docker mgmt network: 172.252.0.0/24
+topology: # Topology:
+topology: # - Docker mgmt network: 172.252.0.0/24
+topology: #   sw1=172.252.0.241, vpn containers join the same mgmt network.
+topology: # - OpenLAN service network "example": 192.41.0.0/24
+topology: #   sw1 gateway=192.41.0.1.
+topology: # - OpenVPN overlay:
+topology: #   tcp/1194 with subnet 10.99.0.0/24 for default cipher checks,
+topology: #   tcp/1194 with subnet 10.98.0.0/24 for SM4 cipher checks.
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw-openvpn-pause
+Started switch frr container: tests-sw-openvpn-frr
+Started switch ipsec container: tests-sw-openvpn-ipsec
+Started switch container: tests-sw-openvpn
+[26-05-28 07:14:48][ASSERT#0001][expect] at cases/access_openvpn.sh:49 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn" expect="Http.Start"
+2026/05/28 07:14:49 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:14:49 INFO|root|Wait: ...
+2026/05/28 07:14:49 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:14:49 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:14:49][ASSERT#0001][OK] cost=1.033s
+[26-05-28 07:14:49][ASSERT#0002][cmd] at cases/access_openvpn.sh:51 fn=setup_sw1 cmd="docker exec tests-sw-openvpn openlan network --name example add --address 192.41.0.1/24"
+[26-05-28 07:14:49][ASSERT#0002][OK] cost=0.236s
+[26-05-28 07:14:49][ASSERT#0003][cmd] at cases/access_openvpn.sh:52 fn=setup_sw1 cmd="docker exec tests-sw-openvpn openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-05-28T07  
+[26-05-28 07:14:49][ASSERT#0003][OK] cost=0.052s
+[26-05-28 07:14:49][ASSERT#0004][cmd] at cases/access_openvpn.sh:59 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.99.0.0/24 --dns 8.8.8.8 --cipher AES-128-GCM:AES-256-GCM"
+[26-05-28 07:14:49][ASSERT#0004][OK] cost=0.131s
+[26-05-28 07:14:49][ASSERT#0005][cmd] at cases/access_openvpn.sh:61 fn=setup_openvpn cmd="docker exec tests-sw-openvpn test -f /var/openlan/openvpn/example/tcp1194server.conf"
+[26-05-28 07:14:49][ASSERT#0005][OK] cost=0.053s
+[26-05-28 07:14:49][ASSERT#0006][cmd] at cases/access_openvpn.sh:62 fn=setup_openvpn cmd="docker exec tests-sw-openvpn test -f /var/openlan/openvpn/example/tcp1194client.ovpn"
+[26-05-28 07:14:50][ASSERT#0006][OK] cost=0.069s
+[26-05-28 07:14:50][ASSERT#0007][cmd] at cases/access_openvpn.sh:64 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example client add --user vpn1 --address 10.99.0.10"
+[26-05-28 07:14:50][ASSERT#0007][OK] cost=0.068s
+[26-05-28 07:14:50][ASSERT#0008][cmd] at cases/access_openvpn.sh:65 fn=setup_openvpn cmd="docker exec tests-sw-openvpn test -f /var/openlan/openvpn/example/ccd/vpn1@example"
+[26-05-28 07:14:50][ASSERT#0008][OK] cost=0.062s
+[26-05-28 07:14:50][ASSERT#0009][cmd] at cases/access_openvpn.sh:67 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example client remove --user vpn1"
+[26-05-28 07:14:50][ASSERT#0009][OK] cost=0.067s
+[26-05-28 07:14:50][ASSERT#0010][cmd] at cases/access_openvpn.sh:68 fn=setup_openvpn cmd="docker exec tests-sw-openvpn test ! -f /var/openlan/openvpn/example/ccd/vpn1@example"
+[26-05-28 07:14:50][ASSERT#0010][OK] cost=0.059s
+Started OpenVPN client container: tests-sw-openvpn.vpn1
+[26-05-28 07:14:50][ASSERT#0011][expect] at cases/access_openvpn.sh:78 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-openvpn.vpn1" expect="Initialization Sequence Completed"
+2026-05-28 07:14:50 net_addr_v4_add: 10.99.0.2/24 dev tun0
+2026-05-28 07:14:50 net_route_v4_add: 10.99.0.0/24 via 10.99.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:14:50 net_route_v4_add: 192.41.0.0/24 via 10.99.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:14:50 Initialization Sequence Completed
+[26-05-28 07:14:51][ASSERT#0011][OK] cost=1.032s
+[26-05-28 07:14:51][ASSERT#0012][expect] at cases/access_openvpn.sh:79 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-openvpn.vpn1" expect="Data Channel:"
+2026-05-28 07:14:50 OPTIONS IMPORT: peer-id set
+2026-05-28 07:14:50 OPTIONS IMPORT: adjusting link_mtu to 1626
+2026-05-28 07:14:50 OPTIONS IMPORT: data channel crypto options modified
+2026-05-28 07:14:50 Outgoing Data Channel: Cipher 'AES-128-GCM' initialized with 128 bit key
+2026-05-28 07:14:50 Incoming Data Channel: Cipher 'AES-128-GCM' initialized with 128 bit key
+2026-05-28 07:14:50 net_route_v4_best_gw query: dst 0.0.0.0
+2026-05-28 07:14:50 net_route_v4_best_gw result: via 172.252.0.1 dev eth0
+2026-05-28 07:14:50 ROUTE_GATEWAY 172.252.0.1/255.255.255.0 IFACE=eth0 HWADDR=02:08:11:f6:f6:2e
+[26-05-28 07:14:52][ASSERT#0012][OK] cost=1.033s
+2026-05-28 07:14:50 Outgoing Data Channel: Cipher 'AES-128-GCM' initialized with 128 bit key
+2026-05-28 07:14:50 Incoming Data Channel: Cipher 'AES-128-GCM' initialized with 128 bit key
+[26-05-28 07:14:52][ASSERT#0013][match] at cases/access_openvpn.sh:82 fn=setup_openvpn retry=5 cmd="docker exec tests-sw-openvpn.vpn1 ping -c 3 192.41.0.1" expect="bytes from"
+PING 192.41.0.1 (192.41.0.1) 56(84) bytes of data.
+64 bytes from 192.41.0.1: icmp_seq=1 ttl=64 time=0.266 ms
+64 bytes from 192.41.0.1: icmp_seq=2 ttl=64 time=0.777 ms
+64 bytes from 192.41.0.1: icmp_seq=3 ttl=64 time=0.841 ms
+
+--- 192.41.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2056ms
+[26-05-28 07:14:54][ASSERT#0013][OK] cost=2.143s
+[26-05-28 07:14:54][ASSERT#0014][cmd] at cases/access_openvpn.sh:84 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example openvpn remove"
+[26-05-28 07:14:54][ASSERT#0014][OK] cost=0.152s
+[26-05-28 07:14:54][ASSERT#0015][cmd_fail] at cases/access_openvpn.sh:85 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example client add --user vpn1 --address 10.99.0.10"
+2026/05/28 07:14:55 400 Bad Request VPN was disabled
+[26-05-28 07:14:55][ASSERT#0015][OK] cost=0.061s
+[26-05-28 07:14:55][ASSERT#0016][cmd_fail] at cases/access_openvpn.sh:88 fn=setup_openvpn cmd="docker exec tests-sw-openvpn openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.99.0.0/24 --cipher BAD-CIPHER"
+2026/05/28 07:14:55 400 Bad Request unsupported openvpn cipher: BAD-CIPHER
+[26-05-28 07:14:55][ASSERT#0016][OK] cost=0.059s
+[26-05-28 07:14:55][ASSERT#0017][cmd] at cases/access_openvpn.sh:93 fn=setup_openvpn_sm4 cmd="docker exec tests-sw-openvpn openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.98.0.0/24 --cipher SM4-CBC"
+[26-05-28 07:14:55][ASSERT#0017][OK] cost=0.107s
+Started OpenVPN client container: tests-sw-openvpn.vpn2
+[26-05-28 07:14:55][ASSERT#0018][expect] at cases/access_openvpn.sh:101 fn=setup_openvpn_sm4 retry=40 cmd="docker logs -f tests-sw-openvpn.vpn2" expect="Initialization Sequence Completed"
+2026-05-28 07:14:55 net_addr_v4_add: 10.98.0.2/24 dev tun0
+2026-05-28 07:14:55 net_route_v4_add: 10.98.0.0/24 via 10.98.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:14:55 net_route_v4_add: 192.41.0.0/24 via 10.98.0.1 dev [NULL] table 0 metric 300
+2026-05-28 07:14:55 Initialization Sequence Completed
+[26-05-28 07:14:56][ASSERT#0018][OK] cost=1.033s
+[26-05-28 07:14:56][ASSERT#0019][expect] at cases/access_openvpn.sh:102 fn=setup_openvpn_sm4 retry=40 cmd="docker logs -f tests-sw-openvpn.vpn2" expect="Data Channel:"
+2026-05-28 07:14:55 OPTIONS IMPORT: peer-id set
+2026-05-28 07:14:55 OPTIONS IMPORT: adjusting link_mtu to 1626
+2026-05-28 07:14:55 OPTIONS IMPORT: data channel crypto options modified
+2026-05-28 07:14:55 Data Channel: using negotiated cipher 'SM4-CBC'
+2026-05-28 07:14:55 Outgoing Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Outgoing Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 Incoming Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Incoming Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 net_route_v4_best_gw query: dst 0.0.0.0
+2026-05-28 07:14:55 net_route_v4_best_gw result: via 172.252.0.1 dev eth0
+2026-05-28 07:14:55 ROUTE_GATEWAY 172.252.0.1/255.255.255.0 IFACE=eth0 HWADDR=c6:fb:0e:d7:d7:c5
+[26-05-28 07:14:57][ASSERT#0019][OK] cost=1.032s
+[26-05-28 07:14:57][ASSERT#0020][fuzzy] at cases/access_openvpn.sh:103 fn=setup_openvpn_sm4 retry=15 cmd="docker logs tests-sw-openvpn.vpn2" pattern="Data Channel:.*SM4-CBC"
+2026-05-28 07:14:55 OPTIONS IMPORT: peer-id set
+2026-05-28 07:14:55 OPTIONS IMPORT: adjusting link_mtu to 1626
+2026-05-28 07:14:55 OPTIONS IMPORT: data channel crypto options modified
+2026-05-28 07:14:55 Data Channel: using negotiated cipher 'SM4-CBC'
+2026-05-28 07:14:55 Outgoing Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Outgoing Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 Incoming Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Incoming Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 net_route_v4_best_gw query: dst 0.0.0.0
+2026-05-28 07:14:55 net_route_v4_best_gw result: via 172.252.0.1 dev eth0
+[26-05-28 07:14:57][ASSERT#0020][OK] cost=0.026s
+[26-05-28 07:14:57][ASSERT#0021][fuzzy] at cases/access_openvpn.sh:104 fn=setup_openvpn_sm4 retry=15 cmd="docker logs tests-sw-openvpn.vpn2" pattern="Outgoing Data Channel:.*SM4-CBC.*initialized"
+2026-05-28 07:14:55 OPTIONS IMPORT: adjusting link_mtu to 1626
+2026-05-28 07:14:55 OPTIONS IMPORT: data channel crypto options modified
+2026-05-28 07:14:55 Data Channel: using negotiated cipher 'SM4-CBC'
+2026-05-28 07:14:55 Outgoing Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Outgoing Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 Incoming Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Incoming Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+[26-05-28 07:14:57][ASSERT#0021][OK] cost=0.027s
+[26-05-28 07:14:57][ASSERT#0022][fuzzy] at cases/access_openvpn.sh:105 fn=setup_openvpn_sm4 retry=15 cmd="docker logs tests-sw-openvpn.vpn2" pattern="Incoming Data Channel:.*SM4-CBC.*initialized"
+2026-05-28 07:14:55 Data Channel: using negotiated cipher 'SM4-CBC'
+2026-05-28 07:14:55 Outgoing Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Outgoing Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 Incoming Data Channel: Cipher 'SM4-CBC' initialized with 128 bit key
+2026-05-28 07:14:55 Incoming Data Channel: Using 160 bit message hash 'SHA1' for HMAC authentication
+2026-05-28 07:14:55 net_route_v4_best_gw query: dst 0.0.0.0
+2026-05-28 07:14:55 net_route_v4_best_gw result: via 172.252.0.1 dev eth0
+[26-05-28 07:14:57][ASSERT#0022][OK] cost=0.028s
+[26-05-28 07:14:57][ASSERT#0023][cmd] at cases/access_openvpn.sh:107 fn=setup_openvpn_sm4 cmd="docker exec tests-sw-openvpn openlan network --name example openvpn remove"
+[26-05-28 07:14:57][ASSERT#0023][OK] cost=0.154s
+SM4 cipher negotiation check passed.
+[26-05-28 07:14:58] END access_openvpn status=PASS cost=11.000s

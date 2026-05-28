@@ -1,12 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: BGP global/neighbor/prefix flow.
-
-export net_name=tests-net-bgp
-export sw1_name=tests-sw-bgp1
-export sw2_name=tests-sw-bgp2
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.244.0.0/24
 #   sw1=172.244.0.241, sw2=172.244.0.242.
@@ -16,9 +12,19 @@ export sw2_name=tests-sw-bgp2
 #   sw1 local-as 65101, router-id 172.244.0.241.
 #   sw2 local-as 65102, router-id 172.244.0.242.
 #   peers use mgmt addresses as neighbors.
-# - Validation path:
+# Validation:
 #   BGP reaches established state, prefix filters are present, and
 #   config persists after reload.
+
+EOF
+}
+
+# OpenLAN Switch UT: BGP global/neighbor/prefix flow.
+
+export net_name=tests-net-bgp
+export sw1_name=tests-sw-bgp1
+export sw2_name=tests-sw-bgp2
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.244.0.0/24 --gateway=172.244.0.1 >/dev/null
@@ -85,4 +91,11 @@ setup() {
   test_bgp
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

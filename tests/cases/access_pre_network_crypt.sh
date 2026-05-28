@@ -1,11 +1,28 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.251.0.0/24
+#   sw1=172.251.0.241, all access clients join the same mgmt network.
+# - OpenLAN service networks:
+#   network a: sw1=192.61.0.1/24, clients use 192.61.0.11-17/24.
+#   network b: sw1=192.62.0.1/24, clients use 192.62.0.11-13/24.
+# - Crypt design:
+#   switch global crypt secret=$global_secret;
+#   network a pre-network crypt secret=$network_secret (later update to $network_secret_v2);
+#   network b uses switch global crypt.
+# Validation:
+#   network a accepts level=network with correct secret and rejects wrong/default/global mismatches;
+#   network b accepts global/default crypt and rejects network-level crypt from network a;
+#   after updating network a secret, old secret fails and new secret succeeds.
+EOF
+}
+
 # OpenLAN Access scenario: mixed crypt modes on two networks.
 #
-# Validate:
-# 1) network a uses pre-network crypt.
-# 2) network b uses switch global crypt.
+
 
 export net_name=tests-net-pre-crypt
 export sw1_name=tests-sw-pre-crypt
@@ -259,4 +276,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

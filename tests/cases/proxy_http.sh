@@ -1,6 +1,19 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.252.0.0/24
+#   sw1=172.252.0.241 (ceci http proxy), sw2=172.252.0.242 (http target/client).
+# - OpenLAN service network "example": 192.52.0.0/24
+#   sw1=192.52.0.1, sw2=192.52.0.2, with sw2 output to sw1.
+# Validation:
+#   sw1 wget -> sw1 ceci(http proxy) -> sw2(192.52.0.2) local http server.
+
+EOF
+}
+
 # OpenLAN Proxy UT: Ceci HTTP forward proxy path.
 
 export net_name=tests-net-proxy-http
@@ -10,13 +23,6 @@ export proxy_listen=127.0.0.1:11082
 export target_listen=18081
 export target_body=proxy-http-ok
 
-# Topology:
-# - Docker mgmt network: 172.252.0.0/24
-#   sw1=172.252.0.241 (ceci http proxy), sw2=172.252.0.242 (http target/client).
-# - OpenLAN service network "example": 192.52.0.0/24
-#   sw1=192.52.0.1, sw2=192.52.0.2, with sw2 output to sw1.
-# - Validation path:
-#   sw1 wget -> sw1 ceci(http proxy) -> sw2(192.52.0.2) local http server.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1 >/dev/null
@@ -104,4 +110,11 @@ setup() {
   test_http_proxy
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

@@ -1,14 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN route test: 3-node forwarding (sw3 -> sw2 -> sw1).
-
-export net_name=tests-net-route3
-export sw1_name=tests-sw-route1
-export sw2_name=tests-sw-route2
-export sw3_name=tests-sw-route3
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.251.0.0/24
 #   sw1=172.251.0.241, sw2=172.251.0.242, sw3=172.251.0.243.
@@ -19,7 +13,20 @@ export sw3_name=tests-sw-route3
 # - Forwarding and route design:
 #   sw2 -> sw1 output, sw3 -> sw2 output;
 #   sw3 routes 10.251.0.11 via 192.51.0.1 and 10.251.0.12 via 192.51.0.2.
-# - Validation path: sw3 reaches sw1/sw2 service IPs and both VIPs.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
+
+# OpenLAN route test: 3-node forwarding (sw3 -> sw2 -> sw1).
+
+export net_name=tests-net-route3
+export sw1_name=tests-sw-route1
+export sw2_name=tests-sw-route2
+export sw3_name=tests-sw-route3
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
@@ -136,4 +143,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

@@ -1,12 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: ztrust enable/guest/knock flow.
-
-export net_name=tests-net-ztrust
-export sw1_name=tests-sw-ztrust
-export vpn1_name=tests-sw-ztrust.vpn1
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.245.0.0/24
 #   sw1=172.245.0.241.
@@ -14,9 +10,19 @@ export vpn1_name=tests-sw-ztrust.vpn1
 #   sw1=192.59.0.1.
 # - OpenVPN overlay on sw1:
 #   tcp/1194, subnet 10.93.0.0/24, vpn1@example fixed address 10.93.0.10.
-# - Validation path:
+# Validation:
 #   vpn1 -> sw1:8081 is reachable before ztrust; blocked after ztrust enable;
 #   allowed after guest+knock; blocked after knock remove; restored when disabled.
+
+EOF
+}
+
+# OpenLAN Switch UT: ztrust enable/guest/knock flow.
+
+export net_name=tests-net-ztrust
+export sw1_name=tests-sw-ztrust
+export vpn1_name=tests-sw-ztrust.vpn1
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.245.0.0/24 --gateway=172.245.0.1 >/dev/null
@@ -96,4 +102,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

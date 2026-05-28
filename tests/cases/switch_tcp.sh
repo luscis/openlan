@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Access UT.
-
-export net_name=tests-net1
-export sw1_name=tests-sw1
-export sw2_name=tests-sw2
-export sw3_name=tests-sw3
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.255.0.0/24
 #   sw1=172.255.0.241, sw2=172.255.0.242, sw3=172.255.0.243.
@@ -15,7 +10,19 @@ export sw3_name=tests-sw3
 #   sw1=192.41.0.1, sw2=192.41.0.2, sw3=192.41.0.3.
 # - Forwarding links:
 #   sw2 -> sw1 first, sw3 -> sw1 first, then sw3 -> sw2.
-# - Validation path: verify tcp forwarding reachability between switches.
+# Validation:
+#   (see scenario assertions in this case)
+
+EOF
+}
+
+# OpenLAN Access UT.
+
+export net_name=tests-net1
+export sw1_name=tests-sw1
+export sw2_name=tests-sw2
+export sw3_name=tests-sw3
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
@@ -142,4 +149,11 @@ setup() {
   test_ping
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

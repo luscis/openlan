@@ -1,14 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: findhop multi-nexthop active-backup with two relays.
-
-export net_name=tests-net-findhop
-export sw0_name=tests-sw-findhop0
-export sw10_name=tests-sw-findhop10
-export sw11_name=tests-sw-findhop11
-export sw2_name=tests-sw-findhop2
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.243.0.0/24
 #   sw0=172.243.0.240, sw1.0=172.243.0.241, sw1.1=172.243.0.242, sw2=172.243.0.243.
@@ -17,9 +11,21 @@ export sw2_name=tests-sw-findhop2
 #   network b: sw0=192.54.0.1, sw1.1=192.54.0.2, sw2=192.54.0.3.
 # - VIP:
 #   sw0 lo=10.243.0.10/32.
-# - Validation path:
+# Validation:
 #   sw2 -> sw1.0 -> sw0 uses network a, sw2 -> sw1.1 -> sw0 uses network b,
 #   then findhop on sw2 uses multi-nexthop in active-backup mode.
+
+EOF
+}
+
+# OpenLAN Switch UT: findhop multi-nexthop active-backup with two relays.
+
+export net_name=tests-net-findhop
+export sw0_name=tests-sw-findhop0
+export sw10_name=tests-sw-findhop10
+export sw11_name=tests-sw-findhop11
+export sw2_name=tests-sw-findhop2
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.243.0.0/24 --gateway=172.243.0.1 >/dev/null
@@ -188,4 +194,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

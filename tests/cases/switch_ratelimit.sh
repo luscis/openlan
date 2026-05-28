@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN RateLimit UT.
-
-export net_name=tests-net-ratelimit
-export sw1_name=tests-sw-ratelimit
-export bridge_device=hi-example
-export openvpn_device=tun1194
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.253.0.0/24
 #   sw1=172.253.0.241.
@@ -15,8 +10,19 @@ export openvpn_device=tun1194
 #   sw1=192.60.0.1.
 # - OpenVPN overlay:
 #   tcp/1194, subnet 10.60.0.0/24.
-# - Validation: add/update/remove ratelimit on the OpenLAN bridge and OpenVPN
+# Validation:
 #   devices, and verify Linux tc qdisc/filter state is updated.
+
+EOF
+}
+
+# OpenLAN RateLimit UT.
+
+export net_name=tests-net-ratelimit
+export sw1_name=tests-sw-ratelimit
+export bridge_device=hi-example
+export openvpn_device=tun1194
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
@@ -75,4 +81,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

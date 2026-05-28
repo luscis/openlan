@@ -14,11 +14,11 @@ English | [简体中文](./README.cn.md)
 
 ## 🌐 What is OpenLAN?
 
-OpenLAN is a solution for transmitting LAN packets over WAN, enabling you to create multiple virtual Ethernet networks in user space.
+OpenLAN is a multiple-tenant networking solution that carries LAN packets over WAN links, allowing you to build and operate multiple isolated virtual Ethernet networks across regions, clouds, and branch sites.
 
 ## 🤔 Why Choose OpenLAN?
 
-If you need a flexible VPN solution — such as accessing enterprise internal networks, or proxying and tunneling traffic through public cloud instances — OpenLAN makes deployment simpler and more efficient.
+If you need a flexible VPN solution for secure enterprise access, traffic proxying, or tunneling through public cloud instances, OpenLAN simplifies deployment and improves operational efficiency.
 
 ## ✨ Key Features
 
@@ -36,42 +36,42 @@ If you need a flexible VPN solution — such as accessing enterprise internal ne
 ### 🏢 Branch-to-Center Access
 
 ```text
-      Central Switch (Enterprise Center) - 10.16.1.10/24
-                            ^
-                            |
-                         Wifi(DNAT)
-                            |
-                            |
-      --------------------Internet--------------------
-      ^                      ^                       ^
-      |                      |                       |
-   Branch1                Branch2                 Branch3
-      |                      |                       |
-   OpenLAN                OpenLAN                 OpenLAN
-10.16.1.11/24          10.16.1.12/24           10.16.1.13/24
+         Central Switch (Enterprise Center) - 10.16.1.10/24
+                               ^
+                               |
+                            Wifi(DNAT)
+                               |
+                               |
+         --------------------Internet-------------------
+         ^                     ^                       ^
+         |                     |                       |
+      Branch1                Branch2                 Branch3
+         |                     |                       |
+      OpenLAN               OpenLAN                 OpenLAN
+   10.16.1.11/24          10.16.1.12/24           10.16.1.13/24
 ```
 
 ### 🌍 Multi-Region Interconnection
 
 ```text
-      192.168.1.20/24                                      192.168.1.21/24
-             |                                                    |
-        OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
-                                        |
-                                        |
-                                      Internet
-                                        |
-                                        |
-                        Central Switch(Shanghai) - 192.168.1.10/24
-                                        |
-                                        |
-      ---------------------------------------------------------
-      ^                      ^                               ^
-      |                      |                               |
-   Office Wifi            Home Wifi                      Hotel Wifi
-      |                      |                               |
-   OpenLAN                OpenLAN                         OpenLAN
-192.168.1.11/24        192.168.1.12/24                 192.168.1.13/24
+192.168.1.20/24                                      192.168.1.21/24
+     |                                                    |
+OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
+                                |
+                                |
+                              Internet
+                                |
+                                |
+                  Central Switch(Shanghai) - 192.168.1.10/24
+                                |
+                                |
+      --------------------------------------------------------
+      ^                         ^                            ^
+      |                         |                            |
+   Office Wifi               Home Wifi                    Hotel Wifi
+      |                         |                            |
+   OpenLAN                    OpenLAN                     OpenLAN
+192.168.1.11/24            192.168.1.12/24             192.168.1.13/24
 ```
 
 ### 🔐 Zero-Trust Access Control
@@ -83,12 +83,12 @@ If you need a flexible VPN solution — such as accessing enterprise internal ne
              \                        |                        /
               \                       |                       /
                ---------------------Internet-------------------
-                                  |
-                                  |
-                    Central Switch (Policy Hub)
-                    ZTrust + ACL + Knock + Auth
-                       /                        \
-                      /                          \
+                                      |
+                                      |
+                         Central Switch (Policy Hub)
+                        ZTrust + ACL + Knock + Auth
+                        /                         \
+                       /                           \
       Guest Network (restricted)      Trusted Network (policy access)
             172.16.100.0/24                 10.16.1.0/24
 ```
@@ -103,8 +103,8 @@ If you need a flexible VPN solution — such as accessing enterprise internal ne
 
 ## 🧪 Scenario Tests
 
-OpenLAN provides 30 executable scenario scripts under `tests/cases`,
-organized into 45 validation functions with 732 assertions in total.
+OpenLAN provides 33 executable scenario scripts under `tests/cases`,
+organized into 59 validation functions with 796 assertions in total.
 The unified entrypoint is `tests/start.sh`.
 
 Common commands:
@@ -119,26 +119,24 @@ bash tests/start.sh
 # Run selected scenarios
 bash tests/start.sh switch_tcp access_success
 
-# Generate test reports (txt/html/tar)
+# Generate test reports (md/html)
 bash tests/start.sh --report
 ```
 
+Report: [run.md](./docs/report/latest/run.md)
+
 Capability coverage:
 
-- `access_*`: validates auth path correctness for success/failure, multi-login, and same-user mutex;
-- `access_pre_network_crypt`: validates per-network pre-shared crypt for isolated network encryption;
-- `access_openvpn*`: validates OpenVPN lifecycle, route redirect, client reachability, TCP reset handling, and VIP access through SNAT;
-- `access_snat_scope_matrix`: validates SNAT scope behavior across OpenVPN and Access entry paths;
-- `proxy_*`: validates HTTP/TCP/DNS proxy forwarding and domain-based backend routing behavior;
-- `switch_tcp|switch_udp`: validates baseline inter-switch tunnel connectivity;
-- `switch_ipsec_*`: validates cross-site interconnection with IPSec + VxLAN/GRE overlays;
-- `switch_acl*`: validates ACL CRUD, default action switching, and reload consistency;
-- `switch_bgp`: validates External BGP peering, route filtering, and config persistence;
-- `switch_dnat`: validates DNAT updates and NAT table rule synchronization;
-- `switch_findhop`: validates FindHop binding, remove guard, and state recovery after reload;
-- `switch_namespace`: validates VRF binding and overlay reachability for namespace-backed networks;
-- `switch_namespace_snat`: validates namespace network SNAT source rewriting and confirms non-SNAT networks stay isolated even with VIP routes;
-- `switch_namespace_openvpn`: validates OpenVPN traffic in a VRF, OpenVPN-scoped SNAT to a remote VIP, and blocked access from a non-SNAT network even when a VIP route exists;
-- `switch_ztrust`: validates zero-trust toggling and Guest/Knock access controls;
-- `switch_ratelimit`: validates rate-limit CRUD and kernel tc state consistency;
-- `switch_route3`: validates L3 route reachability via an intermediate switch (sw2).
+- **Access authentication and sessions (core)**: `access_success`, `access_fail`, `access_admin_multi_login`, `access_same_user_mutex`;
+- **Access encryption and scope**: `access_pre_network_crypt`, `access_snat_scope_matrix`;
+- **OpenVPN functional flows**: `access_openvpn`, `access_openvpn_redirect`, `access_openvpn_client_ping`, `access_openvpn_tcp_reset`, `access_openvpn_snat_vip`;
+- **OpenVPN performance**: `access_openvpn_perf` (latency, throughput, and protocol-level comparison);
+- **Proxy capabilities**: `proxy_http`, `proxy_tcp`, `proxy_name`, `proxy_name_backends`;
+- **Switch baseline tunnels**: `switch_tcp`, `switch_udp`;
+- **Switch IPSec overlays**: `switch_ipsec_vxlan`, `switch_ipsec_gre`;
+- **Switch IPSec overlay performance**: `switch_ipsec_vxlan_perf`;
+- **Switch ACL and access control**: `switch_acl`, `switch_acl_default_action`, `switch_ztrust`;
+- **Switch routing and forwarding**: `switch_bgp`, `switch_route3`, `switch_findhop`;
+- **Switch NAT and traffic control**: `switch_dnat`, `switch_ratelimit`;
+- **Switch namespace/VRF and isolation**: `switch_namespace`, `switch_namespace_snat`, `switch_namespace_openvpn`;
+- **Switch output performance**: `switch_output_perf` (mixed TCP/UDP connectivity, latency, loss, and bandwidth).

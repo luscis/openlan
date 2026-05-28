@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: IPSec GRE output path.
-
-export net_name=tests-net-ipsec-gre-output
-export sw1_name=tests-sw-ipsec-gre1
-export sw2_name=tests-sw-ipsec-gre2
-export ipsec_secret=ea64d5b0c96c
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.247.0.0/24
 #   sw1=172.247.0.241, sw2=172.247.0.242.
@@ -17,8 +12,19 @@ export ipsec_secret=ea64d5b0c96c
 #   sw1 <-> sw2 over mgmt addresses with shared PSK.
 # - Output link:
 #   sw2 -> sw1 by gre output.
-# - Validation path:
+# Validation:
 #   sw2 can ping sw1 service address through ipsec-protected output path.
+
+EOF
+}
+
+# OpenLAN Switch UT: IPSec GRE output path.
+
+export net_name=tests-net-ipsec-gre-output
+export sw1_name=tests-sw-ipsec-gre1
+export sw2_name=tests-sw-ipsec-gre2
+export ipsec_secret=ea64d5b0c96c
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.247.0.0/24 --gateway=172.247.0.1 >/dev/null
@@ -100,4 +106,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

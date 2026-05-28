@@ -1,6 +1,25 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.249.0.0/24
+#   sw1=172.249.0.241, sw2=172.249.0.242, vpn1 joins the same mgmt network.
+# - OpenLAN service network "example": 192.53.0.0/24
+#   sw1=192.53.0.1, sw2=192.53.0.2.
+# - VIP services:
+#   sw1 VIP=10.253.0.11:8081, sw2 VIP=10.253.0.12:8081.
+# - Forwarding design:
+#   sw2 has output to sw1;
+#   sw2 adds return route for 10.97.0.0/24 via 192.53.0.1;
+#   sw1 hosts OpenVPN tcp/1194 with subnet 10.97.0.0/24, vpn1 fixed IP 10.97.0.10.
+# Validation:
+#   before redirect, vpn1 reaches sw1 VIP and cannot reach sw2 VIP;
+#   after redirecting source 10.97.0.10 to nexthop 192.53.0.2, vpn1 reaches sw2 VIP and cannot reach sw1 VIP.
+EOF
+}
+
 
 # OpenLAN OpenVPN redirect test:
 # before redirect, VPN reaches sw1 VIP; after redirect, only sw2 VIP is reachable.
@@ -103,4 +122,11 @@ setup() {
   setup_topology
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

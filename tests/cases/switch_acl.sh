@@ -1,13 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-# OpenLAN Switch UT: ACL add/list/save/reload/remove path.
-
-export net_name=tests-net-acl
-export sw1_name=tests-sw-acl1
-export sw2_name=tests-sw-acl2
-export vip_address=10.254.0.12
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.254.0.0/24
 #   sw1=172.254.0.241, sw2=172.254.0.242.
@@ -15,8 +10,19 @@ export vip_address=10.254.0.12
 #   sw1=192.61.0.1, sw2=192.61.0.2.
 # - sw2 VIP:
 #   lo=10.254.0.12/32, tcp/80 service.
-# - Validation: add/remove ACL rules on sw2, verify CLI list, raw table state,
+# Validation:
 #   persistence across reload, and sw1 -> sw2 VIP tcp/80 and ICMP behavior.
+
+EOF
+}
+
+# OpenLAN Switch UT: ACL add/list/save/reload/remove path.
+
+export net_name=tests-net-acl
+export sw1_name=tests-sw-acl1
+export sw2_name=tests-sw-acl2
+export vip_address=10.254.0.12
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1 >/dev/null
@@ -133,4 +139,11 @@ setup() {
   test_acl_flush
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

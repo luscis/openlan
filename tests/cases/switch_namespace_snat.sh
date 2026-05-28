@@ -1,19 +1,8 @@
 #!/bin/bash
 source tools/auto.sh
 
-
-# OpenLAN Switch UT: network namespace/VRF SNAT path.
-
-export net_name=tests-net-namespace-snat
-export sw1_name=tests-sw-namespace-snat1
-export sw2_name=tests-sw-namespace-snat2
-export ac1_name=tests-sw-namespace-snat.ac1
-export acb_name=tests-sw-namespace-snat.acb
-export vrf_name=vrf-snat
-export target_vip=10.242.2.11
-export access_ip=192.64.0.11
-export access_b_ip=192.66.0.11
-
+show_topology() {
+  cat <<'EOF'
 # Topology:
 # - Docker mgmt network: 172.241.0.0/24
 #   sw1=172.241.0.241, sw2=172.241.0.242.
@@ -29,11 +18,28 @@ export access_b_ip=192.66.0.11
 #   lo=10.242.2.11/32, HTTP service listens on 10.242.2.11:8081.
 # - Forwarding link:
 #   sw2 -> sw1 over UDP output.
-# - Validation:
+# Validation:
 #   when SNAT is disabled, the VIP HTTP service sees ac1 address 192.64.0.11.
 #   when SNAT is enabled, the VIP HTTP service sees sw2 overlay address 192.64.0.2.
 #   network b is not in the namespace, so acb cannot access the VIP HTTP service
 #   even when example SNAT is enabled.
+
+EOF
+}
+
+
+# OpenLAN Switch UT: network namespace/VRF SNAT path.
+
+export net_name=tests-net-namespace-snat
+export sw1_name=tests-sw-namespace-snat1
+export sw2_name=tests-sw-namespace-snat2
+export ac1_name=tests-sw-namespace-snat.ac1
+export acb_name=tests-sw-namespace-snat.acb
+export vrf_name=vrf-snat
+export target_vip=10.242.2.11
+export access_ip=192.64.0.11
+export access_b_ip=192.66.0.11
+
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.241.0.0/24 --gateway=172.241.0.1 >/dev/null
@@ -205,4 +211,11 @@ setup() {
   test_reload_persistence
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac

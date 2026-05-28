@@ -1,6 +1,22 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_topology() {
+  cat <<'EOF'
+# Topology:
+# - Docker mgmt network: 172.248.0.0/24
+#   sw1=172.248.0.241 (name proxy client),
+#   sw2=172.248.0.242 (upstream dns A),
+#   sw3=172.248.0.243 (upstream dns B).
+# - OpenLAN service network "example": 192.55.0.0/24
+#   sw1=192.55.0.1, sw2=192.55.0.2, sw3=192.55.0.3,
+#   with sw2/sw3 outputs to sw1.
+# Validation:
+#   sw1 nslookup domain_a/domain_b -> sw1 openceci(name) -> sw2/sw3 dnsmasq.
+
+EOF
+}
+
 # OpenLAN Proxy UT: Ceci NAME proxy with multiple backends by domain match.
 
 export net_name=tests-net-proxy-name-backends
@@ -15,16 +31,6 @@ export name_answer_b=192.55.0.3
 export upstream_dns_a=192.55.0.2:5353
 export upstream_dns_b=192.55.0.3:5353
 
-# Topology:
-# - Docker mgmt network: 172.248.0.0/24
-#   sw1=172.248.0.241 (name proxy client),
-#   sw2=172.248.0.242 (upstream dns A),
-#   sw3=172.248.0.243 (upstream dns B).
-# - OpenLAN service network "example": 192.55.0.0/24
-#   sw1=192.55.0.1, sw2=192.55.0.2, sw3=192.55.0.3,
-#   with sw2/sw3 outputs to sw1.
-# - Validation path:
-#   sw1 nslookup domain_a/domain_b -> sw1 openceci(name) -> sw2/sw3 dnsmasq.
 
 setup_net() {
   docker network create $net_name --driver=bridge --subnet=172.248.0.0/24 --gateway=172.248.0.1 >/dev/null
@@ -133,4 +139,11 @@ setup() {
   test_name_proxy_backends
 }
 
-main
+case "$1" in
+  --topology)
+    show_topology
+    ;;
+  *)
+    main
+    ;;
+esac
