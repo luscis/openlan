@@ -1,4 +1,4 @@
-[26-05-28 06:14:06] START access_same_user_mutex
+[26-05-28 07:17:11] START access_same_user_mutex
 scenario: cases/access_same_user_mutex.sh
 header  : same user multiple access logins are mutually exclusive
 topology: Docker mgmt network: 172.252.0.0/24
@@ -14,75 +14,75 @@ Started switch pause container: tests-sw-same-user-pause
 Started switch frr container: tests-sw-same-user-frr
 Started switch ipsec container: tests-sw-same-user-ipsec
 Started switch container: tests-sw-same-user
-[26-05-28 06:14:07][ASSERT#0001][expect] at cases/access_same_user_mutex.sh:46 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-same-user" expect="Http.Start"
-2026/05/28 06:14:08 INFO|root|Wait: ...
-2026/05/28 06:14:08 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/05/28 06:14:08 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/05/28 06:14:08 INFO|root|Http.Start 0.0.0.0:10000
-[26-05-28 06:14:08][ASSERT#0001][OK] cost=1.033s
-[26-05-28 06:14:08][ASSERT#0002][cmd] at cases/access_same_user_mutex.sh:48 fn=setup_sw1 cmd="docker exec tests-sw-same-user openlan network --name example add --address 192.41.0.1/24"
-[26-05-28 06:14:08][ASSERT#0002][OK] cost=0.240s
-[26-05-28 06:14:08][ASSERT#0003][cmd] at cases/access_same_user_mutex.sh:49 fn=setup_sw1 cmd="docker exec tests-sw-same-user openlan user add --name t1@example --password 123456"
+[26-05-28 07:17:12][ASSERT#0001][expect] at cases/access_same_user_mutex.sh:46 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-same-user" expect="Http.Start"
+2026/05/28 07:17:13 INFO|root|Wait: ...
+2026/05/28 07:17:13 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:17:13 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:17:13 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:17:13][ASSERT#0001][OK] cost=1.032s
+[26-05-28 07:17:13][ASSERT#0002][cmd] at cases/access_same_user_mutex.sh:48 fn=setup_sw1 cmd="docker exec tests-sw-same-user openlan network --name example add --address 192.41.0.1/24"
+[26-05-28 07:17:13][ASSERT#0002][OK] cost=0.238s
+[26-05-28 07:17:13][ASSERT#0003][cmd] at cases/access_same_user_mutex.sh:49 fn=setup_sw1 cmd="docker exec tests-sw-same-user openlan user add --name t1@example --password 123456"
 # total 1
 username                 password                 role   lease          
-t1@example               123456                   guest  2027-05-28T06  
-[26-05-28 06:14:08][ASSERT#0003][OK] cost=0.066s
+t1@example               123456                   guest  2027-05-28T07  
+[26-05-28 07:17:14][ASSERT#0003][OK] cost=0.061s
 Started access container: tests-sw-same-user.ac1
-[26-05-28 06:14:09][ASSERT#0004][expect] at cases/access_same_user_mutex.sh:94 fn=test_same_user_mutex retry=30 cmd="docker logs -f tests-sw-same-user.ac1" expect="Worker.OnSuccess"
-2026/05/28 06:14:09 INFO|root|SocketClientImpl.update: 172.252.0.2:45130 172.252.0.241:10002
-2026/05/28 06:14:09 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:14:09 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/05/28 06:14:09 INFO|172.252.0.241:10002|example|Worker.OnSuccess
-2026/05/28 06:14:09 INFO|172.252.0.241:10002|example|Access.AddAddr: 192.41.0.11/24 via 
-2026/05/28 06:14:09 INFO|tcp:172.252.0.241:10002|example|SocketWorker.onLogin: success
-2026/05/28 06:14:09 INFO|172.252.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.41.0.1 address:192.41.0.11 netmask:255.255.255.0 routes:[]
-[26-05-28 06:14:10][ASSERT#0004][OK] cost=1.033s
-[26-05-28 06:14:10][ASSERT#0005][match] at cases/access_same_user_mutex.sh:95 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac1.alias"
+[26-05-28 07:17:14][ASSERT#0004][expect] at cases/access_same_user_mutex.sh:94 fn=test_same_user_mutex retry=30 cmd="docker logs -f tests-sw-same-user.ac1" expect="Worker.OnSuccess"
+2026/05/28 07:17:14 INFO|root|SocketClientImpl.update: 172.252.0.2:45648 172.252.0.241:10002
+2026/05/28 07:17:14 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:17:14 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/05/28 07:17:14 INFO|172.252.0.241:10002|example|Worker.OnSuccess
+2026/05/28 07:17:14 INFO|172.252.0.241:10002|example|Access.AddAddr: 192.41.0.11/24 via 
+2026/05/28 07:17:14 INFO|tcp:172.252.0.241:10002|example|SocketWorker.onLogin: success
+2026/05/28 07:17:14 INFO|172.252.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.41.0.1 address:192.41.0.11 netmask:255.255.255.0 routes:[]
+[26-05-28 07:17:15][ASSERT#0004][OK] cost=1.032s
+[26-05-28 07:17:15][ASSERT#0005][match] at cases/access_same_user_mutex.sh:95 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac1.alias"
 # total 1
 uuid             alive    device   alias            user     remote                 network  state 
-ytsz9997bhiyd    0m1s     tap0     ac1.alias        t1       172.252.0.2:45130      example   authenticated
-[26-05-28 06:14:10][ASSERT#0005][OK] cost=0.069s
+z3xmuhaf7oorh    0m1s     tap0     ac1.alias        t1       172.252.0.2:45648      example   authenticated
+[26-05-28 07:17:15][ASSERT#0005][OK] cost=0.071s
 Started access container: tests-sw-same-user.ac2
-[26-05-28 06:14:10][ASSERT#0006][expect] at cases/access_same_user_mutex.sh:98 fn=test_same_user_mutex retry=30 cmd="docker logs -f tests-sw-same-user.ac2" expect="Worker.OnSuccess"
-2026/05/28 06:14:10 INFO|root|SocketClientImpl.update: 172.252.0.3:59231 172.252.0.241:10002
-2026/05/28 06:14:10 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:14:10 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/05/28 06:14:10 INFO|172.252.0.241:10002|example|Worker.OnSuccess
-2026/05/28 06:14:10 INFO|172.252.0.241:10002|example|Access.AddAddr: 192.41.0.12/24 via 
-2026/05/28 06:14:10 INFO|udp:172.252.0.241:10002|example|SocketWorker.onLogin: success
-2026/05/28 06:14:10 INFO|172.252.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.41.0.1 address:192.41.0.12 netmask:255.255.255.0 routes:[]
-[26-05-28 06:14:11][ASSERT#0006][OK] cost=1.029s
-[26-05-28 06:14:11][ASSERT#0007][match] at cases/access_same_user_mutex.sh:99 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac2.alias"
+[26-05-28 07:17:15][ASSERT#0006][expect] at cases/access_same_user_mutex.sh:98 fn=test_same_user_mutex retry=30 cmd="docker logs -f tests-sw-same-user.ac2" expect="Worker.OnSuccess"
+2026/05/28 07:17:15 INFO|root|SocketClientImpl.update: 172.252.0.3:45000 172.252.0.241:10002
+2026/05/28 07:17:15 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:17:15 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/05/28 07:17:15 INFO|172.252.0.241:10002|example|Worker.OnSuccess
+2026/05/28 07:17:15 INFO|172.252.0.241:10002|example|Access.AddAddr: 192.41.0.12/24 via 
+2026/05/28 07:17:15 INFO|udp:172.252.0.241:10002|example|SocketWorker.onLogin: success
+2026/05/28 07:17:15 INFO|172.252.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.41.0.1 address:192.41.0.12 netmask:255.255.255.0 routes:[]
+[26-05-28 07:17:16][ASSERT#0006][OK] cost=1.031s
+[26-05-28 07:17:16][ASSERT#0007][match] at cases/access_same_user_mutex.sh:99 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac2.alias"
 # total 1
 uuid             alive    device   alias            user     remote                 network  state 
-a9u5mkdygzujv    0m1s     tap1     ac2.alias        t1       172.252.0.3:59231      example   authenticated
-[26-05-28 06:14:11][ASSERT#0007][OK] cost=0.064s
-[26-05-28 06:14:11][ASSERT#0008][match] at cases/access_same_user_mutex.sh:100 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="total 1"
+rjrqi5hjqc2lo    0m1s     tap1     ac2.alias        t1       172.252.0.3:45000      example   authenticated
+[26-05-28 07:17:16][ASSERT#0007][OK] cost=0.067s
+[26-05-28 07:17:16][ASSERT#0008][match] at cases/access_same_user_mutex.sh:100 fn=test_same_user_mutex retry=3 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="total 1"
 # total 1
 uuid             alive    device   alias            user     remote                 network  state 
-a9u5mkdygzujv    0m1s     tap1     ac2.alias        t1       172.252.0.3:59231      example   authenticated
-[26-05-28 06:14:11][ASSERT#0008][OK] cost=0.068s
+rjrqi5hjqc2lo    0m1s     tap1     ac2.alias        t1       172.252.0.3:45000      example   authenticated
+[26-05-28 07:17:16][ASSERT#0008][OK] cost=0.076s
 tests-sw-same-user.ac2
-[26-05-28 06:14:11][ASSERT#0009][match] at cases/access_same_user_mutex.sh:104 fn=test_same_user_mutex retry=60 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac1.alias"
+[26-05-28 07:17:17][ASSERT#0009][match] at cases/access_same_user_mutex.sh:104 fn=test_same_user_mutex retry=60 cmd="docker exec tests-sw-same-user openlan network --name example access ls" expect="ac1.alias"
 # total 1
 uuid             alive    device   alias            user     remote                 network  state 
-ytsz9997bhiyd    0m1s     tap0     ac1.alias        t1       172.252.0.2:58194      example   authenticated
-[26-05-28 06:14:16][ASSERT#0009][OK] cost=4.353s
+z3xmuhaf7oorh    0m1s     tap0     ac1.alias        t1       172.252.0.2:45652      example   authenticated
+[26-05-28 07:17:21][ASSERT#0009][OK] cost=4.329s
 PING 192.41.0.1 (192.41.0.1) 56(84) bytes of data.
 From 192.41.0.11 icmp_seq=1 Destination Host Unreachable
 From 192.41.0.11 icmp_seq=2 Destination Host Unreachable
 From 192.41.0.11 icmp_seq=3 Destination Host Unreachable
 
 --- 192.41.0.1 ping statistics ---
-3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2070ms
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2081ms
 pipe 3
-[26-05-28 06:14:19][ASSERT#0010][match] at cases/access_same_user_mutex.sh:107 fn=test_same_user_mutex retry=5 cmd="docker exec tests-sw-same-user.ac1 ping -c 3 192.41.0.1" expect="bytes from"
+[26-05-28 07:17:24][ASSERT#0010][match] at cases/access_same_user_mutex.sh:107 fn=test_same_user_mutex retry=5 cmd="docker exec tests-sw-same-user.ac1 ping -c 3 192.41.0.1" expect="bytes from"
 PING 192.41.0.1 (192.41.0.1) 56(84) bytes of data.
-64 bytes from 192.41.0.1: icmp_seq=1 ttl=64 time=0.793 ms
-64 bytes from 192.41.0.1: icmp_seq=2 ttl=64 time=1.32 ms
-64 bytes from 192.41.0.1: icmp_seq=3 ttl=64 time=1.18 ms
+64 bytes from 192.41.0.1: icmp_seq=1 ttl=64 time=0.776 ms
+64 bytes from 192.41.0.1: icmp_seq=2 ttl=64 time=1.10 ms
+64 bytes from 192.41.0.1: icmp_seq=3 ttl=64 time=1.29 ms
 
 --- 192.41.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2017ms
-[26-05-28 06:14:21][ASSERT#0010][OK] cost=2.094s
-[26-05-28 06:14:21] END access_same_user_mutex status=PASS cost=15.399s
+3 packets transmitted, 3 received, 0% packet loss, time 2030ms
+[26-05-28 07:17:26][ASSERT#0010][OK] cost=2.094s
+[26-05-28 07:17:27] END access_same_user_mutex status=PASS cost=15.368s

@@ -1,4 +1,4 @@
-[26-05-28 06:28:38] START switch_ipsec_gre
+[26-05-28 07:31:29] START switch_ipsec_gre
 scenario: cases/switch_ipsec_gre.sh
 header  : build two switches and verify ipsec gre output connectivity
 topology: Docker mgmt network: 172.247.0.0/24
@@ -18,96 +18,96 @@ Started switch pause container: tests-sw-ipsec-gre1-pause
 Started switch frr container: tests-sw-ipsec-gre1-frr
 Started switch ipsec container: tests-sw-ipsec-gre1-ipsec
 Started switch container: tests-sw-ipsec-gre1
-[26-05-28 06:28:39][ASSERT#0001][expect] at cases/switch_ipsec_gre.sh:49 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ipsec-gre1" expect="Http.Start"
-2026/05/28 06:28:40 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/05/28 06:28:40 INFO|root|Wait: ...
-2026/05/28 06:28:40 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/05/28 06:28:40 INFO|root|Http.Start 0.0.0.0:10000
-[26-05-28 06:28:40][ASSERT#0001][OK] cost=1.027s
-[26-05-28 06:28:40][ASSERT#0002][cmd] at cases/switch_ipsec_gre.sh:51 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan network --name example add --address 192.57.0.1/24"
-[26-05-28 06:28:40][ASSERT#0002][OK] cost=0.244s
-[26-05-28 06:28:40][ASSERT#0003][cmd] at cases/switch_ipsec_gre.sh:52 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan user add --name edge@example --password 123456"
+[26-05-28 07:31:29][ASSERT#0001][expect] at cases/switch_ipsec_gre.sh:49 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ipsec-gre1" expect="Http.Start"
+2026/05/28 07:31:30 INFO|root|Wait: ...
+2026/05/28 07:31:30 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:31:30 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:31:30 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:31:31][ASSERT#0001][OK] cost=1.032s
+[26-05-28 07:31:31][ASSERT#0002][cmd] at cases/switch_ipsec_gre.sh:51 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan network --name example add --address 192.57.0.1/24"
+[26-05-28 07:31:31][ASSERT#0002][OK] cost=0.247s
+[26-05-28 07:31:31][ASSERT#0003][cmd] at cases/switch_ipsec_gre.sh:52 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan user add --name edge@example --password 123456"
 # total 1
 username                 password                 role   lease          
-edge@example             123456                   guest  2027-05-28T06  
-[26-05-28 06:28:40][ASSERT#0003][OK] cost=0.073s
-[26-05-28 06:28:40][ASSERT#0004][cmd] at cases/switch_ipsec_gre.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel add --remote 172.247.0.242 --protocol gre --secret ea64d5b0c96c --localid sw1.ipsec.gre.test --remoteid sw2.ipsec.gre.test"
-[26-05-28 06:28:40][ASSERT#0004][OK] cost=0.074s
+edge@example             123456                   guest  2027-05-28T07  
+[26-05-28 07:31:31][ASSERT#0003][OK] cost=0.070s
+[26-05-28 07:31:31][ASSERT#0004][cmd] at cases/switch_ipsec_gre.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel add --remote 172.247.0.242 --protocol gre --secret ea64d5b0c96c --localid sw1.ipsec.gre.test --remoteid sw2.ipsec.gre.test"
+[26-05-28 07:31:31][ASSERT#0004][OK] cost=0.073s
 Started switch pause container: tests-sw-ipsec-gre2-pause
 Started switch frr container: tests-sw-ipsec-gre2-frr
 Started switch ipsec container: tests-sw-ipsec-gre2-ipsec
 Started switch container: tests-sw-ipsec-gre2
-[26-05-28 06:28:41][ASSERT#0005][expect] at cases/switch_ipsec_gre.sh:72 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-ipsec-gre2" expect="Http.Start"
-2026/05/28 06:28:42 INFO|root|Wait: ...
-2026/05/28 06:28:42 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/05/28 06:28:42 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/05/28 06:28:42 INFO|root|Http.Start 0.0.0.0:10000
-[26-05-28 06:28:42][ASSERT#0005][OK] cost=1.030s
-[26-05-28 06:28:42][ASSERT#0006][cmd] at cases/switch_ipsec_gre.sh:74 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan network --name example add --address 192.57.0.2/24"
-[26-05-28 06:28:43][ASSERT#0006][OK] cost=0.248s
-[26-05-28 06:28:43][ASSERT#0007][cmd] at cases/switch_ipsec_gre.sh:75 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan user add --name edge@example --password 123456"
+[26-05-28 07:31:32][ASSERT#0005][expect] at cases/switch_ipsec_gre.sh:72 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-ipsec-gre2" expect="Http.Start"
+2026/05/28 07:31:32 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:31:32 INFO|root|Wait: ...
+2026/05/28 07:31:32 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:31:32 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:31:33][ASSERT#0005][OK] cost=1.030s
+[26-05-28 07:31:33][ASSERT#0006][cmd] at cases/switch_ipsec_gre.sh:74 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan network --name example add --address 192.57.0.2/24"
+[26-05-28 07:31:33][ASSERT#0006][OK] cost=0.243s
+[26-05-28 07:31:33][ASSERT#0007][cmd] at cases/switch_ipsec_gre.sh:75 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan user add --name edge@example --password 123456"
 # total 1
 username                 password                 role   lease          
-edge@example             123456                   guest  2027-05-28T06  
-[26-05-28 06:28:43][ASSERT#0007][OK] cost=0.067s
-[26-05-28 06:28:43][ASSERT#0008][cmd] at cases/switch_ipsec_gre.sh:76 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel add --remote 172.247.0.241 --protocol gre --secret ea64d5b0c96c --localid sw2.ipsec.gre.test --remoteid sw1.ipsec.gre.test"
-[26-05-28 06:28:43][ASSERT#0008][OK] cost=0.076s
-[26-05-28 06:28:43][ASSERT#0009][cmd] at cases/switch_ipsec_gre.sh:80 fn=setup_output cmd="docker exec tests-sw-ipsec-gre2 openlan network --name example output add --remote 172.247.0.241 --protocol gre --segment 1057"
-[26-05-28 06:28:43][ASSERT#0009][OK] cost=0.065s
-[26-05-28 06:28:43][ASSERT#0010][cmd] at cases/switch_ipsec_gre.sh:81 fn=setup_output cmd="docker exec tests-sw-ipsec-gre1 openlan network --name example output add --remote 172.247.0.242 --protocol gre --segment 1057"
-[26-05-28 06:28:43][ASSERT#0010][OK] cost=0.067s
-[26-05-28 06:28:43][ASSERT#0011][match] at cases/switch_ipsec_gre.sh:85 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
+edge@example             123456                   guest  2027-05-28T07  
+[26-05-28 07:31:33][ASSERT#0007][OK] cost=0.071s
+[26-05-28 07:31:33][ASSERT#0008][cmd] at cases/switch_ipsec_gre.sh:76 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel add --remote 172.247.0.241 --protocol gre --secret ea64d5b0c96c --localid sw2.ipsec.gre.test --remoteid sw1.ipsec.gre.test"
+[26-05-28 07:31:33][ASSERT#0008][OK] cost=0.070s
+[26-05-28 07:31:33][ASSERT#0009][cmd] at cases/switch_ipsec_gre.sh:80 fn=setup_output cmd="docker exec tests-sw-ipsec-gre2 openlan network --name example output add --remote 172.247.0.241 --protocol gre --segment 1057"
+[26-05-28 07:31:33][ASSERT#0009][OK] cost=0.063s
+[26-05-28 07:31:33][ASSERT#0010][cmd] at cases/switch_ipsec_gre.sh:81 fn=setup_output cmd="docker exec tests-sw-ipsec-gre1 openlan network --name example output add --remote 172.247.0.242 --protocol gre --segment 1057"
+[26-05-28 07:31:33][ASSERT#0010][OK] cost=0.065s
+[26-05-28 07:31:33][ASSERT#0011][match] at cases/switch_ipsec_gre.sh:85 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
 # total 1
 Remote          Protocol        Secret          Connection      state   
 172.247.0.242   gre             ea64d5b0c96c    [sw1.ipsec.gre.test]0 -> [sw2.ipsec.gre.test]0 erouted 
-[26-05-28 06:28:44][ASSERT#0011][OK] cost=1.145s
-[26-05-28 06:28:44][ASSERT#0012][match] at cases/switch_ipsec_gre.sh:86 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
+[26-05-28 07:31:34][ASSERT#0011][OK] cost=1.141s
+[26-05-28 07:31:34][ASSERT#0012][match] at cases/switch_ipsec_gre.sh:86 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
 # total 1
 Remote          Protocol        Secret          Connection      state   
 172.247.0.241   gre             ea64d5b0c96c    [sw2.ipsec.gre.test]0 -> [sw1.ipsec.gre.test]0 erouted 
-[26-05-28 06:28:44][ASSERT#0012][OK] cost=0.071s
-[26-05-28 06:28:44][ASSERT#0013][match] at cases/switch_ipsec_gre.sh:87 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 ping -c 3 192.57.0.1" expect="bytes from"
+[26-05-28 07:31:34][ASSERT#0012][OK] cost=0.069s
+[26-05-28 07:31:34][ASSERT#0013][match] at cases/switch_ipsec_gre.sh:87 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 ping -c 3 192.57.0.1" expect="bytes from"
 PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
-64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.361 ms
-64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.297 ms
-64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.471 ms
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.544 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.462 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.687 ms
 
 --- 192.57.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2066ms
-[26-05-28 06:28:50][ASSERT#0013][OK] cost=6.274s
-[26-05-28 06:28:50][ASSERT#0014][cmd] at cases/switch_ipsec_gre.sh:89 fn=test_ipsec_output_ping cmd="docker exec tests-sw-ipsec-gre1 openlan reload --save"
+3 packets transmitted, 3 received, 0% packet loss, time 2074ms
+[26-05-28 07:31:41][ASSERT#0013][OK] cost=6.309s
+[26-05-28 07:31:41][ASSERT#0014][cmd] at cases/switch_ipsec_gre.sh:89 fn=test_ipsec_output_ping cmd="docker exec tests-sw-ipsec-gre1 openlan reload --save"
 Save configuraion ...  success
 # reloading pid:42 ....
   PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
 # max wait 60s...
 # during 1s, new pid:493 ...
   PID   493   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
-[26-05-28 06:28:51][ASSERT#0014][OK] cost=1.072s
-[26-05-28 06:28:51][ASSERT#0015][cmd] at cases/switch_ipsec_gre.sh:90 fn=test_ipsec_output_ping cmd="docker exec tests-sw-ipsec-gre2 openlan reload --save"
+[26-05-28 07:31:42][ASSERT#0014][OK] cost=1.073s
+[26-05-28 07:31:42][ASSERT#0015][cmd] at cases/switch_ipsec_gre.sh:90 fn=test_ipsec_output_ping cmd="docker exec tests-sw-ipsec-gre2 openlan reload --save"
 Save configuraion ...  success
 # reloading pid:42 ....
   PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
 # max wait 60s...
-# during 1s, new pid:492 ...
-  PID   492   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
-[26-05-28 06:28:53][ASSERT#0015][OK] cost=1.061s
-[26-05-28 06:28:53][ASSERT#0016][match] at cases/switch_ipsec_gre.sh:92 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
+# during 1s, new pid:495 ...
+  PID   495   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 07:31:43][ASSERT#0015][OK] cost=1.076s
+[26-05-28 07:31:43][ASSERT#0016][match] at cases/switch_ipsec_gre.sh:92 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
 # total 1
 Remote          Protocol        Secret          Connection      state   
 172.247.0.242   gre             ea64d5b0c96c    [sw1.ipsec.gre.test]0 -> [sw2.ipsec.gre.test]0 erouted 
-[26-05-28 06:28:53][ASSERT#0016][OK] cost=0.068s
-[26-05-28 06:28:53][ASSERT#0017][match] at cases/switch_ipsec_gre.sh:93 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
+[26-05-28 07:31:43][ASSERT#0016][OK] cost=0.070s
+[26-05-28 07:31:43][ASSERT#0017][match] at cases/switch_ipsec_gre.sh:93 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
 # total 1
 Remote          Protocol        Secret          Connection      state   
 172.247.0.241   gre             ea64d5b0c96c    [sw2.ipsec.gre.test]0 -> [sw1.ipsec.gre.test]0 erouted 
-[26-05-28 06:28:53][ASSERT#0017][OK] cost=0.064s
-[26-05-28 06:28:53][ASSERT#0018][match] at cases/switch_ipsec_gre.sh:94 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 ping -c 3 192.57.0.1" expect="bytes from"
+[26-05-28 07:31:43][ASSERT#0017][OK] cost=0.068s
+[26-05-28 07:31:43][ASSERT#0018][match] at cases/switch_ipsec_gre.sh:94 fn=test_ipsec_output_ping retry=20 cmd="docker exec tests-sw-ipsec-gre2 ping -c 3 192.57.0.1" expect="bytes from"
 PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
-64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.252 ms
-64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.273 ms
-64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.499 ms
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.339 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.262 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.417 ms
 
 --- 192.57.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2060ms
-[26-05-28 06:28:55][ASSERT#0018][OK] cost=2.118s
-[26-05-28 06:28:55] END switch_ipsec_gre status=PASS cost=17.240s
+3 packets transmitted, 3 received, 0% packet loss, time 2032ms
+[26-05-28 07:31:45][ASSERT#0018][OK] cost=2.095s
+[26-05-28 07:31:46] END switch_ipsec_gre status=PASS cost=17.151s

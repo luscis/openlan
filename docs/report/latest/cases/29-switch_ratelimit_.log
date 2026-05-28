@@ -1,4 +1,4 @@
-[26-05-28 06:37:09] START switch_ratelimit
+[26-05-28 07:40:02] START switch_ratelimit
 scenario: cases/switch_ratelimit.sh
 header  : verify ratelimit add-update-remove and tc state
 topology: Docker mgmt network: 172.253.0.0/24
@@ -16,98 +16,98 @@ Started switch pause container: tests-sw-ratelimit-pause
 Started switch frr container: tests-sw-ratelimit-frr
 Started switch ipsec container: tests-sw-ratelimit-ipsec
 Started switch container: tests-sw-ratelimit
-[26-05-28 06:37:10][ASSERT#0001][expect] at cases/switch_ratelimit.sh:36 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ratelimit" expect="Http.Start"
-2026/05/28 06:37:11 INFO|root|Wait: ...
-2026/05/28 06:37:11 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/05/28 06:37:11 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/05/28 06:37:11 INFO|root|Http.Start 0.0.0.0:10000
-[26-05-28 06:37:11][ASSERT#0001][OK] cost=1.033s
-[26-05-28 06:37:11][ASSERT#0002][cmd] at cases/switch_ratelimit.sh:38 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit openlan network --name example add --address 192.60.0.1/24"
-[26-05-28 06:37:11][ASSERT#0002][OK] cost=0.235s
-[26-05-28 06:37:11][ASSERT#0003][cmd] at cases/switch_ratelimit.sh:39 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit ip link show hi-example"
+[26-05-28 07:40:03][ASSERT#0001][expect] at cases/switch_ratelimit.sh:36 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ratelimit" expect="Http.Start"
+2026/05/28 07:40:04 INFO|root|Wait: ...
+2026/05/28 07:40:04 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:40:04 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:40:04 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:40:04][ASSERT#0001][OK] cost=1.032s
+[26-05-28 07:40:04][ASSERT#0002][cmd] at cases/switch_ratelimit.sh:38 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit openlan network --name example add --address 192.60.0.1/24"
+[26-05-28 07:40:04][ASSERT#0002][OK] cost=0.239s
+[26-05-28 07:40:04][ASSERT#0003][cmd] at cases/switch_ratelimit.sh:39 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit ip link show hi-example"
 8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default 
-    link/ether c2:db:86:99:71:24 brd ff:ff:ff:ff:ff:ff
-[26-05-28 06:37:11][ASSERT#0003][OK] cost=0.048s
-[26-05-28 06:37:11][ASSERT#0004][cmd] at cases/switch_ratelimit.sh:41 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.60.0.0/24 --dns 8.8.8.8"
-[26-05-28 06:37:11][ASSERT#0004][OK] cost=0.137s
-[26-05-28 06:37:11][ASSERT#0005][match] at cases/switch_ratelimit.sh:42 fn=setup_sw1 retry=20 cmd="docker exec tests-sw-ratelimit ip link show tun1194" expect="tun1194"
+    link/ether fe:a3:74:49:ee:20 brd ff:ff:ff:ff:ff:ff
+[26-05-28 07:40:04][ASSERT#0003][OK] cost=0.047s
+[26-05-28 07:40:04][ASSERT#0004][cmd] at cases/switch_ratelimit.sh:41 fn=setup_sw1 cmd="docker exec tests-sw-ratelimit openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.60.0.0/24 --dns 8.8.8.8"
+[26-05-28 07:40:05][ASSERT#0004][OK] cost=0.112s
+[26-05-28 07:40:05][ASSERT#0005][match] at cases/switch_ratelimit.sh:42 fn=setup_sw1 retry=20 cmd="docker exec tests-sw-ratelimit ip link show tun1194" expect="tun1194"
 9: tun1194: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500
     link/none 
-[26-05-28 06:37:11][ASSERT#0005][OK] cost=0.060s
-[26-05-28 06:37:11][ASSERT#0006][cmd] at cases/switch_ratelimit.sh:48 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device hi-example --speed 1"
-[26-05-28 06:37:12][ASSERT#0006][OK] cost=0.070s
-[26-05-28 06:37:12][ASSERT#0007][match] at cases/switch_ratelimit.sh:50 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" expect="rate 1Mbit"
-qdisc tbf 802f: root refcnt 13 rate 1Mbit burst 64Kb lat 400ms 
+[26-05-28 07:40:05][ASSERT#0005][OK] cost=0.060s
+[26-05-28 07:40:05][ASSERT#0006][cmd] at cases/switch_ratelimit.sh:48 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device hi-example --speed 1"
+[26-05-28 07:40:05][ASSERT#0006][OK] cost=0.075s
+[26-05-28 07:40:05][ASSERT#0007][match] at cases/switch_ratelimit.sh:50 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" expect="rate 1Mbit"
+qdisc tbf 8033: root refcnt 13 rate 1Mbit burst 64Kb lat 400ms 
 qdisc ingress ffff: parent ffff:fff1 ---------------- 
-[26-05-28 06:37:12][ASSERT#0007][OK] cost=0.071s
-[26-05-28 06:37:12][ASSERT#0008][match] at cases/switch_ratelimit.sh:51 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" expect="rate 1Mbit"
+[26-05-28 07:40:05][ASSERT#0007][OK] cost=0.062s
+[26-05-28 07:40:05][ASSERT#0008][match] at cases/switch_ratelimit.sh:51 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" expect="rate 1Mbit"
 filter protocol ip pref 1 u32 chain 0 fh 800: ht divisor 1 
 filter protocol ip pref 1 u32 chain 0 fh 800::800 order 2048 key ht 800 bkt 0 flowid :1 not_in_hw 
   match 00000000/00000000 at 0
  police 0x1 rate 1Mbit burst 64Kb mtu 2Kb action drop overhead 0b 
 	ref 1 bind 1
 
-[26-05-28 06:37:12][ASSERT#0008][OK] cost=0.062s
-[26-05-28 06:37:12][ASSERT#0009][cmd] at cases/switch_ratelimit.sh:53 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device hi-example --speed 2"
-[26-05-28 06:37:12][ASSERT#0009][OK] cost=0.073s
-[26-05-28 06:37:12][ASSERT#0010][match] at cases/switch_ratelimit.sh:55 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" expect="rate 2Mbit"
-qdisc tbf 8030: root refcnt 13 rate 2Mbit burst 64Kb lat 400ms 
+[26-05-28 07:40:05][ASSERT#0008][OK] cost=0.066s
+[26-05-28 07:40:05][ASSERT#0009][cmd] at cases/switch_ratelimit.sh:53 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device hi-example --speed 2"
+[26-05-28 07:40:05][ASSERT#0009][OK] cost=0.077s
+[26-05-28 07:40:05][ASSERT#0010][match] at cases/switch_ratelimit.sh:55 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" expect="rate 2Mbit"
+qdisc tbf 8034: root refcnt 13 rate 2Mbit burst 64Kb lat 400ms 
 qdisc ingress ffff: parent ffff:fff1 ---------------- 
-[26-05-28 06:37:12][ASSERT#0010][OK] cost=0.062s
-[26-05-28 06:37:12][ASSERT#0011][match] at cases/switch_ratelimit.sh:56 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" expect="rate 2Mbit"
+[26-05-28 07:40:05][ASSERT#0010][OK] cost=0.058s
+[26-05-28 07:40:05][ASSERT#0011][match] at cases/switch_ratelimit.sh:56 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" expect="rate 2Mbit"
 filter protocol ip pref 1 u32 chain 0 fh 800: ht divisor 1 
 filter protocol ip pref 1 u32 chain 0 fh 800::800 order 2048 key ht 800 bkt 0 flowid :1 not_in_hw 
   match 00000000/00000000 at 0
  police 0x2 rate 2Mbit burst 64Kb mtu 2Kb action drop overhead 0b 
 	ref 1 bind 1
 
-[26-05-28 06:37:12][ASSERT#0011][OK] cost=0.060s
-[26-05-28 06:37:12][ASSERT#0012][unmatch] at cases/switch_ratelimit.sh:58 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="rate 1Mbit"
-[26-05-28 06:37:15][ASSERT#0012][OK] cost=3.191s
-[26-05-28 06:37:15][ASSERT#0013][unmatch] at cases/switch_ratelimit.sh:59 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" unexpected="rate 1Mbit"
-[26-05-28 06:37:18][ASSERT#0013][OK] cost=3.178s
-[26-05-28 06:37:18][ASSERT#0014][cmd] at cases/switch_ratelimit.sh:65 fn=test_ratelimit_remove cmd="docker exec tests-sw-ratelimit openlan ratelimit remove --device hi-example"
-[26-05-28 06:37:18][ASSERT#0014][OK] cost=0.068s
-[26-05-28 06:37:18][ASSERT#0015][unmatch] at cases/switch_ratelimit.sh:67 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="tbf"
-[26-05-28 06:37:22][ASSERT#0015][OK] cost=3.171s
-[26-05-28 06:37:22][ASSERT#0016][unmatch] at cases/switch_ratelimit.sh:68 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="ingress"
-[26-05-28 06:37:25][ASSERT#0016][OK] cost=3.192s
-[26-05-28 06:37:25][ASSERT#0017][cmd] at cases/switch_ratelimit.sh:48 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device tun1194 --speed 1"
-[26-05-28 06:37:25][ASSERT#0017][OK] cost=0.096s
-[26-05-28 06:37:25][ASSERT#0018][match] at cases/switch_ratelimit.sh:50 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" expect="rate 1Mbit"
-qdisc tbf 8031: root refcnt 2 rate 1Mbit burst 64Kb lat 400ms 
+[26-05-28 07:40:05][ASSERT#0011][OK] cost=0.058s
+[26-05-28 07:40:05][ASSERT#0012][unmatch] at cases/switch_ratelimit.sh:58 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="rate 1Mbit"
+[26-05-28 07:40:08][ASSERT#0012][OK] cost=3.193s
+[26-05-28 07:40:08][ASSERT#0013][unmatch] at cases/switch_ratelimit.sh:59 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc filter show dev hi-example parent ffff:" unexpected="rate 1Mbit"
+[26-05-28 07:40:11][ASSERT#0013][OK] cost=3.191s
+[26-05-28 07:40:11][ASSERT#0014][cmd] at cases/switch_ratelimit.sh:65 fn=test_ratelimit_remove cmd="docker exec tests-sw-ratelimit openlan ratelimit remove --device hi-example"
+[26-05-28 07:40:12][ASSERT#0014][OK] cost=0.079s
+[26-05-28 07:40:12][ASSERT#0015][unmatch] at cases/switch_ratelimit.sh:67 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="tbf"
+[26-05-28 07:40:15][ASSERT#0015][OK] cost=3.188s
+[26-05-28 07:40:15][ASSERT#0016][unmatch] at cases/switch_ratelimit.sh:68 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev hi-example" unexpected="ingress"
+[26-05-28 07:40:18][ASSERT#0016][OK] cost=3.194s
+[26-05-28 07:40:18][ASSERT#0017][cmd] at cases/switch_ratelimit.sh:48 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device tun1194 --speed 1"
+[26-05-28 07:40:18][ASSERT#0017][OK] cost=0.080s
+[26-05-28 07:40:18][ASSERT#0018][match] at cases/switch_ratelimit.sh:50 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" expect="rate 1Mbit"
+qdisc tbf 8035: root refcnt 2 rate 1Mbit burst 64Kb lat 400ms 
 qdisc ingress ffff: parent ffff:fff1 ---------------- 
-[26-05-28 06:37:25][ASSERT#0018][OK] cost=0.063s
-[26-05-28 06:37:25][ASSERT#0019][match] at cases/switch_ratelimit.sh:51 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" expect="rate 1Mbit"
+[26-05-28 07:40:18][ASSERT#0018][OK] cost=0.068s
+[26-05-28 07:40:18][ASSERT#0019][match] at cases/switch_ratelimit.sh:51 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" expect="rate 1Mbit"
 filter protocol ip pref 1 u32 chain 0 fh 800: ht divisor 1 
 filter protocol ip pref 1 u32 chain 0 fh 800::800 order 2048 key ht 800 bkt 0 flowid :1 not_in_hw 
   match 00000000/00000000 at 0
  police 0x1 rate 1Mbit burst 64Kb mtu 2Kb action drop overhead 0b 
 	ref 1 bind 1
 
-[26-05-28 06:37:25][ASSERT#0019][OK] cost=0.057s
-[26-05-28 06:37:25][ASSERT#0020][cmd] at cases/switch_ratelimit.sh:53 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device tun1194 --speed 2"
-[26-05-28 06:37:25][ASSERT#0020][OK] cost=0.072s
-[26-05-28 06:37:25][ASSERT#0021][match] at cases/switch_ratelimit.sh:55 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" expect="rate 2Mbit"
-qdisc tbf 8032: root refcnt 2 rate 2Mbit burst 64Kb lat 400ms 
+[26-05-28 07:40:18][ASSERT#0019][OK] cost=0.054s
+[26-05-28 07:40:18][ASSERT#0020][cmd] at cases/switch_ratelimit.sh:53 fn=test_ratelimit_add cmd="docker exec tests-sw-ratelimit openlan ratelimit add --device tun1194 --speed 2"
+[26-05-28 07:40:18][ASSERT#0020][OK] cost=0.066s
+[26-05-28 07:40:18][ASSERT#0021][match] at cases/switch_ratelimit.sh:55 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" expect="rate 2Mbit"
+qdisc tbf 8036: root refcnt 2 rate 2Mbit burst 64Kb lat 400ms 
 qdisc ingress ffff: parent ffff:fff1 ---------------- 
-[26-05-28 06:37:25][ASSERT#0021][OK] cost=0.059s
-[26-05-28 06:37:25][ASSERT#0022][match] at cases/switch_ratelimit.sh:56 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" expect="rate 2Mbit"
+[26-05-28 07:40:18][ASSERT#0021][OK] cost=0.056s
+[26-05-28 07:40:18][ASSERT#0022][match] at cases/switch_ratelimit.sh:56 fn=test_ratelimit_add retry=10 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" expect="rate 2Mbit"
 filter protocol ip pref 1 u32 chain 0 fh 800: ht divisor 1 
 filter protocol ip pref 1 u32 chain 0 fh 800::800 order 2048 key ht 800 bkt 0 flowid :1 not_in_hw 
   match 00000000/00000000 at 0
  police 0x2 rate 2Mbit burst 64Kb mtu 2Kb action drop overhead 0b 
 	ref 1 bind 1
 
-[26-05-28 06:37:25][ASSERT#0022][OK] cost=0.065s
-[26-05-28 06:37:25][ASSERT#0023][unmatch] at cases/switch_ratelimit.sh:58 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="rate 1Mbit"
-[26-05-28 06:37:28][ASSERT#0023][OK] cost=3.195s
-[26-05-28 06:37:28][ASSERT#0024][unmatch] at cases/switch_ratelimit.sh:59 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" unexpected="rate 1Mbit"
-[26-05-28 06:37:32][ASSERT#0024][OK] cost=3.189s
-[26-05-28 06:37:32][ASSERT#0025][cmd] at cases/switch_ratelimit.sh:65 fn=test_ratelimit_remove cmd="docker exec tests-sw-ratelimit openlan ratelimit remove --device tun1194"
-[26-05-28 06:37:32][ASSERT#0025][OK] cost=0.077s
-[26-05-28 06:37:32][ASSERT#0026][unmatch] at cases/switch_ratelimit.sh:67 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="tbf"
-[26-05-28 06:37:35][ASSERT#0026][OK] cost=3.194s
-[26-05-28 06:37:35][ASSERT#0027][unmatch] at cases/switch_ratelimit.sh:68 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="ingress"
-[26-05-28 06:37:38][ASSERT#0027][OK] cost=3.189s
-[26-05-28 06:37:39] END switch_ratelimit status=PASS cost=29.507s
+[26-05-28 07:40:18][ASSERT#0022][OK] cost=0.057s
+[26-05-28 07:40:18][ASSERT#0023][unmatch] at cases/switch_ratelimit.sh:58 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="rate 1Mbit"
+[26-05-28 07:40:22][ASSERT#0023][OK] cost=3.172s
+[26-05-28 07:40:22][ASSERT#0024][unmatch] at cases/switch_ratelimit.sh:59 fn=test_ratelimit_add retry=3 cmd="docker exec tests-sw-ratelimit tc filter show dev tun1194 parent ffff:" unexpected="rate 1Mbit"
+[26-05-28 07:40:25][ASSERT#0024][OK] cost=3.176s
+[26-05-28 07:40:25][ASSERT#0025][cmd] at cases/switch_ratelimit.sh:65 fn=test_ratelimit_remove cmd="docker exec tests-sw-ratelimit openlan ratelimit remove --device tun1194"
+[26-05-28 07:40:25][ASSERT#0025][OK] cost=0.070s
+[26-05-28 07:40:25][ASSERT#0026][unmatch] at cases/switch_ratelimit.sh:67 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="tbf"
+[26-05-28 07:40:28][ASSERT#0026][OK] cost=3.187s
+[26-05-28 07:40:28][ASSERT#0027][unmatch] at cases/switch_ratelimit.sh:68 fn=test_ratelimit_remove retry=3 cmd="docker exec tests-sw-ratelimit tc qdisc show dev tun1194" unexpected="ingress"
+[26-05-28 07:40:31][ASSERT#0027][OK] cost=3.191s
+[26-05-28 07:40:32] END switch_ratelimit status=PASS cost=29.448s

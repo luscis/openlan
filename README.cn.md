@@ -119,11 +119,11 @@ bash tests/start.sh
 # 运行指定场景
 bash tests/start.sh switch_tcp access_success
 
-# 生成测试报告（txt/html/tar）
+# 生成测试报告（md/html）
 bash tests/start.sh --report
 ```
 
-报告查看：[run.html](docs/report/latest/run.html)
+报告查看：[run.md](./docs/report/latest/run.md)
 
 功能覆盖（按能力分组）：
 

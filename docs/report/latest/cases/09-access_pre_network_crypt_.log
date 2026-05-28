@@ -1,4 +1,4 @@
-[26-05-28 06:12:37] START access_pre_network_crypt
+[26-05-28 07:15:43] START access_pre_network_crypt
 scenario: cases/access_pre_network_crypt.sh
 header  : verify access level=network uses per-network pre-shared crypt
 topology: Docker mgmt network: 172.251.0.0/24
@@ -21,95 +21,95 @@ Started switch pause container: tests-sw-pre-crypt-pause
 Started switch frr container: tests-sw-pre-crypt-frr
 Started switch ipsec container: tests-sw-pre-crypt-ipsec
 Started switch container: tests-sw-pre-crypt
-[26-05-28 06:12:38][ASSERT#0001][expect] at cases/access_pre_network_crypt.sh:63 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-pre-crypt" expect="Http.Start"
-2026/05/28 06:12:39 INFO|root|Wait: ...
-2026/05/28 06:12:39 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/05/28 06:12:39 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/05/28 06:12:39 INFO|root|Http.Start 0.0.0.0:10000
-[26-05-28 06:12:39][ASSERT#0001][OK] cost=1.033s
-[26-05-28 06:12:39][ASSERT#0002][cmd] at cases/access_pre_network_crypt.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name a add --address 192.61.0.1/24"
-[26-05-28 06:12:40][ASSERT#0002][OK] cost=0.229s
-[26-05-28 06:12:40][ASSERT#0003][cmd] at cases/access_pre_network_crypt.sh:66 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name b add --address 192.62.0.1/24"
-[26-05-28 06:12:40][ASSERT#0003][OK] cost=0.235s
-[26-05-28 06:12:40][ASSERT#0004][cmd] at cases/access_pre_network_crypt.sh:67 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name a crypt update --algorithm aes-128 --secret network-secret-7c1d"
-[26-05-28 06:12:40][ASSERT#0004][OK] cost=0.064s
+[26-05-28 07:15:44][ASSERT#0001][expect] at cases/access_pre_network_crypt.sh:63 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-pre-crypt" expect="Http.Start"
+2026/05/28 07:15:44 INFO|root|Wait: ...
+2026/05/28 07:15:44 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 07:15:44 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 07:15:44 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 07:15:45][ASSERT#0001][OK] cost=1.031s
+[26-05-28 07:15:45][ASSERT#0002][cmd] at cases/access_pre_network_crypt.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name a add --address 192.61.0.1/24"
+[26-05-28 07:15:45][ASSERT#0002][OK] cost=0.255s
+[26-05-28 07:15:45][ASSERT#0003][cmd] at cases/access_pre_network_crypt.sh:66 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name b add --address 192.62.0.1/24"
+[26-05-28 07:15:45][ASSERT#0003][OK] cost=0.229s
+[26-05-28 07:15:45][ASSERT#0004][cmd] at cases/access_pre_network_crypt.sh:67 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan network --name a crypt update --algorithm aes-128 --secret network-secret-7c1d"
+[26-05-28 07:15:45][ASSERT#0004][OK] cost=0.056s
 secret: network-secret-7c1d
-[26-05-28 06:12:40][ASSERT#0005][cmd] at cases/access_pre_network_crypt.sh:70 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan user add --name t1@a --password 123456"
+[26-05-28 07:15:45][ASSERT#0005][cmd] at cases/access_pre_network_crypt.sh:70 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan user add --name t1@a --password 123456"
 # total 1
 username                 password                 role   lease          
-t1@a                     123456                   guest  2027-05-28T06  
-[26-05-28 06:12:40][ASSERT#0005][OK] cost=0.072s
-[26-05-28 06:12:40][ASSERT#0006][cmd] at cases/access_pre_network_crypt.sh:71 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan user add --name t2@b --password 123457"
+t1@a                     123456                   guest  2027-05-28T07  
+[26-05-28 07:15:45][ASSERT#0005][OK] cost=0.062s
+[26-05-28 07:15:45][ASSERT#0006][cmd] at cases/access_pre_network_crypt.sh:71 fn=setup_sw1 cmd="docker exec tests-sw-pre-crypt openlan user add --name t2@b --password 123457"
 # total 1
 username                 password                 role   lease          
-t2@b                     123457                   guest  2027-05-28T06  
-[26-05-28 06:12:40][ASSERT#0006][OK] cost=0.062s
+t2@b                     123457                   guest  2027-05-28T07  
+[26-05-28 07:15:45][ASSERT#0006][OK] cost=0.066s
 Started access container: tests-sw-pre-crypt.ac-network
-[26-05-28 06:12:40][ASSERT#0007][expect] at cases/access_pre_network_crypt.sh:90 fn=setup_access_network_level retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-network" expect="Worker.OnSuccess"
-2026/05/28 06:12:40 INFO|root|SocketClientImpl.update: 172.251.0.2:34806 172.251.0.241:10002
-2026/05/28 06:12:40 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:12:40 INFO|root|SocketClientImpl.negotiate: send request magic=ff00 network=a
-2026/05/28 06:12:41 INFO|172.251.0.241:10002|a|Worker.OnSuccess
-2026/05/28 06:12:41 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.11/24 via 
-2026/05/28 06:12:41 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
-2026/05/28 06:12:41 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.11 netmask:255.255.255.0 routes:[]
-[26-05-28 06:12:42][ASSERT#0007][OK] cost=1.024s
+[26-05-28 07:15:46][ASSERT#0007][expect] at cases/access_pre_network_crypt.sh:90 fn=setup_access_network_level retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-network" expect="Worker.OnSuccess"
+2026/05/28 07:15:46 INFO|root|SocketClientImpl.update: 172.251.0.2:53738 172.251.0.241:10002
+2026/05/28 07:15:46 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:15:46 INFO|root|SocketClientImpl.negotiate: send request magic=ff00 network=a
+2026/05/28 07:15:46 INFO|172.251.0.241:10002|a|Worker.OnSuccess
+2026/05/28 07:15:46 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.11/24 via 
+2026/05/28 07:15:46 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
+2026/05/28 07:15:46 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.11 netmask:255.255.255.0 routes:[]
+[26-05-28 07:15:47][ASSERT#0007][OK] cost=1.032s
 Started access container: tests-sw-pre-crypt.ac-network-wrong
-[26-05-28 06:12:42][ASSERT#0008][unexpect] at cases/access_pre_network_crypt.sh:109 fn=setup_access_network_level_with_global_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-network-wrong" unexpected="Worker.OnSuccess"
-[26-05-28 06:12:57][ASSERT#0008][OK] cost=15.364s
+[26-05-28 07:15:47][ASSERT#0008][unexpect] at cases/access_pre_network_crypt.sh:109 fn=setup_access_network_level_with_global_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-network-wrong" unexpected="Worker.OnSuccess"
+[26-05-28 07:16:02][ASSERT#0008][OK] cost=15.361s
 Started access container: tests-sw-pre-crypt.ac-global
-[26-05-28 06:12:57][ASSERT#0009][unexpect] at cases/access_pre_network_crypt.sh:128 fn=setup_access_global_level_with_network_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-global" unexpected="Worker.OnSuccess"
-[26-05-28 06:13:13][ASSERT#0009][OK] cost=15.348s
+[26-05-28 07:16:03][ASSERT#0009][unexpect] at cases/access_pre_network_crypt.sh:128 fn=setup_access_global_level_with_network_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-global" unexpected="Worker.OnSuccess"
+[26-05-28 07:16:18][ASSERT#0009][OK] cost=15.370s
 Started access container: tests-sw-pre-crypt.ac-default
-[26-05-28 06:13:13][ASSERT#0010][expect] at cases/access_pre_network_crypt.sh:146 fn=setup_access_default_level_with_switch_secret retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-default" expect="Worker.OnSuccess"
-2026/05/28 06:13:13 INFO|root|SocketClientImpl.update: 172.251.0.5:55538 172.251.0.241:10002
-2026/05/28 06:13:13 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:13:13 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/05/28 06:13:13 INFO|172.251.0.241:10002|a|Worker.OnSuccess
-2026/05/28 06:13:13 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.14/24 via 
-2026/05/28 06:13:13 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
-2026/05/28 06:13:13 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.14 netmask:255.255.255.0 routes:[]
-[26-05-28 06:13:14][ASSERT#0010][OK] cost=1.035s
+[26-05-28 07:16:18][ASSERT#0010][expect] at cases/access_pre_network_crypt.sh:146 fn=setup_access_default_level_with_switch_secret retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-default" expect="Worker.OnSuccess"
+2026/05/28 07:16:18 INFO|root|SocketClientImpl.update: 172.251.0.5:41100 172.251.0.241:10002
+2026/05/28 07:16:18 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:16:18 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/05/28 07:16:18 INFO|172.251.0.241:10002|a|Worker.OnSuccess
+2026/05/28 07:16:18 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.14/24 via 
+2026/05/28 07:16:18 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
+2026/05/28 07:16:18 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.14 netmask:255.255.255.0 routes:[]
+[26-05-28 07:16:19][ASSERT#0010][OK] cost=1.038s
 Started access container: tests-sw-pre-crypt.ac-default-wrong
-[26-05-28 06:13:14][ASSERT#0011][unexpect] at cases/access_pre_network_crypt.sh:164 fn=setup_access_default_level_with_network_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-default-wrong" unexpected="Worker.OnSuccess"
-[26-05-28 06:13:30][ASSERT#0011][OK] cost=15.354s
+[26-05-28 07:16:20][ASSERT#0011][unexpect] at cases/access_pre_network_crypt.sh:164 fn=setup_access_default_level_with_network_secret_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-default-wrong" unexpected="Worker.OnSuccess"
+[26-05-28 07:16:35][ASSERT#0011][OK] cost=15.369s
 Started access container: tests-sw-pre-crypt.ac-b-global
-[26-05-28 06:13:30][ASSERT#0012][expect] at cases/access_pre_network_crypt.sh:182 fn=setup_access_network_b_default_level_with_switch_secret retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-b-global" expect="Worker.OnSuccess"
-2026/05/28 06:13:30 INFO|root|SocketClientImpl.update: 172.251.0.7:56172 172.251.0.241:10002
-2026/05/28 06:13:30 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:13:30 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/05/28 06:13:30 INFO|172.251.0.241:10002|b|Worker.OnSuccess
-2026/05/28 06:13:30 INFO|172.251.0.241:10002|b|Access.AddAddr: 192.62.0.11/24 via 
-2026/05/28 06:13:30 INFO|tcp:172.251.0.241:10002|b|SocketWorker.onLogin: success
-2026/05/28 06:13:30 INFO|172.251.0.241:10002|b|Worker.OnIpAddr: name:b gateway:192.62.0.1 address:192.62.0.11 netmask:255.255.255.0 routes:[]
-[26-05-28 06:13:31][ASSERT#0012][OK] cost=1.030s
+[26-05-28 07:16:35][ASSERT#0012][expect] at cases/access_pre_network_crypt.sh:182 fn=setup_access_network_b_default_level_with_switch_secret retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-b-global" expect="Worker.OnSuccess"
+2026/05/28 07:16:35 INFO|root|SocketClientImpl.update: 172.251.0.7:49928 172.251.0.241:10002
+2026/05/28 07:16:35 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:16:35 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/05/28 07:16:35 INFO|172.251.0.241:10002|b|Worker.OnSuccess
+2026/05/28 07:16:35 INFO|172.251.0.241:10002|b|Access.AddAddr: 192.62.0.11/24 via 
+2026/05/28 07:16:35 INFO|tcp:172.251.0.241:10002|b|SocketWorker.onLogin: success
+2026/05/28 07:16:35 INFO|172.251.0.241:10002|b|Worker.OnIpAddr: name:b gateway:192.62.0.1 address:192.62.0.11 netmask:255.255.255.0 routes:[]
+[26-05-28 07:16:36][ASSERT#0012][OK] cost=1.033s
 Started access container: tests-sw-pre-crypt.ac-b-network
-[26-05-28 06:13:31][ASSERT#0013][unexpect] at cases/access_pre_network_crypt.sh:201 fn=setup_access_network_b_level_network_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-b-network" unexpected="Worker.OnSuccess"
-[26-05-28 06:13:47][ASSERT#0013][OK] cost=15.355s
-[26-05-28 06:13:47][ASSERT#0014][cmd] at cases/access_pre_network_crypt.sh:205 fn=test_update_network_a_crypt cmd="docker exec tests-sw-pre-crypt openlan network --name a crypt update --algorithm aes-128 --secret network-secret-8d2e"
-[26-05-28 06:13:47][ASSERT#0014][OK] cost=0.069s
+[26-05-28 07:16:36][ASSERT#0013][unexpect] at cases/access_pre_network_crypt.sh:201 fn=setup_access_network_b_level_network_should_fail retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-b-network" unexpected="Worker.OnSuccess"
+[26-05-28 07:16:52][ASSERT#0013][OK] cost=15.347s
+[26-05-28 07:16:52][ASSERT#0014][cmd] at cases/access_pre_network_crypt.sh:205 fn=test_update_network_a_crypt cmd="docker exec tests-sw-pre-crypt openlan network --name a crypt update --algorithm aes-128 --secret network-secret-8d2e"
+[26-05-28 07:16:52][ASSERT#0014][OK] cost=0.064s
 secret: network-secret-8d2e
 Started access container: tests-sw-pre-crypt.ac-network-old-after-update
-[26-05-28 06:13:47][ASSERT#0015][unexpect] at cases/access_pre_network_crypt.sh:222 fn=test_update_network_a_crypt retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-network-old-after-update" unexpected="Worker.OnSuccess"
-[26-05-28 06:14:02][ASSERT#0015][OK] cost=15.351s
+[26-05-28 07:16:52][ASSERT#0015][unexpect] at cases/access_pre_network_crypt.sh:222 fn=test_update_network_a_crypt retry=15 cmd="docker logs -f tests-sw-pre-crypt.ac-network-old-after-update" unexpected="Worker.OnSuccess"
+[26-05-28 07:17:08][ASSERT#0015][OK] cost=15.342s
 Started access container: tests-sw-pre-crypt.ac-network-new-after-update
-[26-05-28 06:14:03][ASSERT#0016][expect] at cases/access_pre_network_crypt.sh:238 fn=test_update_network_a_crypt retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-network-new-after-update" expect="Worker.OnSuccess"
-2026/05/28 06:14:03 INFO|root|SocketClientImpl.update: 172.251.0.10:37008 172.251.0.241:10002
-2026/05/28 06:14:03 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:14:03 INFO|root|SocketClientImpl.negotiate: send request magic=ff00 network=a
-2026/05/28 06:14:03 INFO|172.251.0.241:10002|a|Worker.OnSuccess
-2026/05/28 06:14:03 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.17/24 via 
-2026/05/28 06:14:03 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
-2026/05/28 06:14:03 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.17 netmask:255.255.255.0 routes:[]
-[26-05-28 06:14:04][ASSERT#0016][OK] cost=1.030s
+[26-05-28 07:17:08][ASSERT#0016][expect] at cases/access_pre_network_crypt.sh:238 fn=test_update_network_a_crypt retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-network-new-after-update" expect="Worker.OnSuccess"
+2026/05/28 07:17:08 INFO|root|SocketClientImpl.update: 172.251.0.10:41646 172.251.0.241:10002
+2026/05/28 07:17:08 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:17:08 INFO|root|SocketClientImpl.negotiate: send request magic=ff00 network=a
+2026/05/28 07:17:08 INFO|172.251.0.241:10002|a|Worker.OnSuccess
+2026/05/28 07:17:08 INFO|172.251.0.241:10002|a|Access.AddAddr: 192.61.0.17/24 via 
+2026/05/28 07:17:08 INFO|tcp:172.251.0.241:10002|a|SocketWorker.onLogin: success
+2026/05/28 07:17:08 INFO|172.251.0.241:10002|a|Worker.OnIpAddr: name:a gateway:192.61.0.1 address:192.61.0.17 netmask:255.255.255.0 routes:[]
+[26-05-28 07:17:09][ASSERT#0016][OK] cost=1.033s
 Started access container: tests-sw-pre-crypt.ac-b-global-after-update
-[26-05-28 06:14:04][ASSERT#0017][expect] at cases/access_pre_network_crypt.sh:253 fn=test_update_network_a_crypt retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-b-global-after-update" expect="Worker.OnSuccess"
-2026/05/28 06:14:04 INFO|root|SocketClientImpl.update: 172.251.0.11:40350 172.251.0.241:10002
-2026/05/28 06:14:04 INFO|root|SocketClientImpl.Try: to connected
-2026/05/28 06:14:04 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/05/28 06:14:04 INFO|172.251.0.241:10002|b|Worker.OnSuccess
-2026/05/28 06:14:04 INFO|172.251.0.241:10002|b|Access.AddAddr: 192.62.0.13/24 via 
-2026/05/28 06:14:04 INFO|tcp:172.251.0.241:10002|b|SocketWorker.onLogin: success
-2026/05/28 06:14:04 INFO|172.251.0.241:10002|b|Worker.OnIpAddr: name:b gateway:192.62.0.1 address:192.62.0.13 netmask:255.255.255.0 routes:[]
-[26-05-28 06:14:05][ASSERT#0017][OK] cost=1.032s
-[26-05-28 06:14:06] END access_pre_network_crypt status=PASS cost=88.555s
+[26-05-28 07:17:09][ASSERT#0017][expect] at cases/access_pre_network_crypt.sh:253 fn=test_update_network_a_crypt retry=30 cmd="docker logs -f tests-sw-pre-crypt.ac-b-global-after-update" expect="Worker.OnSuccess"
+2026/05/28 07:17:09 INFO|root|SocketClientImpl.update: 172.251.0.11:46848 172.251.0.241:10002
+2026/05/28 07:17:09 INFO|root|SocketClientImpl.Try: to connected
+2026/05/28 07:17:09 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/05/28 07:17:09 INFO|172.251.0.241:10002|b|Worker.OnSuccess
+2026/05/28 07:17:09 INFO|172.251.0.241:10002|b|Access.AddAddr: 192.62.0.13/24 via 
+2026/05/28 07:17:09 INFO|tcp:172.251.0.241:10002|b|SocketWorker.onLogin: success
+2026/05/28 07:17:09 INFO|172.251.0.241:10002|b|Worker.OnIpAddr: name:b gateway:192.62.0.1 address:192.62.0.13 netmask:255.255.255.0 routes:[]
+[26-05-28 07:17:10][ASSERT#0017][OK] cost=1.033s
+[26-05-28 07:17:11] END access_pre_network_crypt status=PASS cost=88.580s

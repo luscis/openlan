@@ -1,10 +1,11 @@
 #!/bin/bash
 
 REPORT_DIR=""
-REPORT_FILE=""
 REPORT_HTML=""
+REPORT_MD=""
 REPORT_TITLE=""
 REPORT_ROWS_HTML=""
+REPORT_ROWS_MD=""
 REPORT_RUN_STAMP=""
 REPORT_RUN_DIR=""
 REPORT_CASE_DIR=""
@@ -24,11 +25,11 @@ init_report() {
   mkdir -p "$REPORT_DIR"
   mkdir -p "$REPORT_RUN_DIR"
   mkdir -p "$REPORT_CASE_DIR"
-  REPORT_FILE="$REPORT_RUN_DIR/run.log"
   REPORT_HTML="$REPORT_RUN_DIR/run.html"
+  REPORT_MD="$REPORT_RUN_DIR/run.md"
   REPORT_TAR="$REPORT_DIR/$REPORT_RUN_STAMP.tar"
   REPORT_ROWS_HTML=""
-  : > "$REPORT_FILE"
+  REPORT_ROWS_MD=""
 }
 
 pack_report_tar() {
@@ -44,19 +45,10 @@ report_case_log_file() {
   echo "$REPORT_CASE_DIR/$(printf "%02d" "$index")-${safe}.log"
 }
 
-report_line() {
-  local line="$1"
-  echo "$line" >> "$REPORT_FILE"
-}
 
 write_report_header() {
   local title="$1"
   REPORT_TITLE="$title"
-  report_line "OpenLAN Test Report"
-  report_line "Start: $(now_text)"
-  report_line "Title: $title"
-  report_line ""
-  report_line "Details:"
 }
 
 report_case_html() {
@@ -81,6 +73,31 @@ report_case_html() {
   fi
   REPORT_ROWS_HTML="${REPORT_ROWS_HTML}
 <tr><td>${ts}</td><td class=\"${cls}\">${status}</td><td>${name_html}</td><td>${topo}</td><td>${cost}</td></tr>"
+}
+
+report_case_md() {
+  local status="$1"
+  local name="$2"
+  local cost="$3"
+  local topo="$4"
+  local log_path="$5"
+  local ts
+  local name_md
+  local rel_log
+  local topo_md
+  ts=$(now_text)
+  name_md="\`$name\`"
+  if [[ -n "$log_path" ]]; then
+    rel_log="cases/$(basename "$log_path")"
+    name_md="[\`$name\`](${rel_log})"
+  fi
+  topo_md=${topo//|/\\|}
+  if [[ -n "$REPORT_ROWS_MD" ]]; then
+    REPORT_ROWS_MD="${REPORT_ROWS_MD}
+| ${ts} | ${status} | ${name_md} | ${topo_md} | ${cost} |"
+  else
+    REPORT_ROWS_MD="| ${ts} | ${status} | ${name_md} | ${topo_md} | ${cost} |"
+  fi
 }
 
 write_report_html() {
@@ -162,5 +179,26 @@ ${REPORT_ROWS_HTML}
   </table>
 </body>
 </html>
+EOF
+}
+
+write_report_md() {
+  local pass_count="$1"
+  local fail_count="$2"
+  local total="$3"
+  cat > "$REPORT_MD" <<EOF
+# OpenLAN Test Report
+
+- Title: ${REPORT_TITLE}
+- Generated: $(now_text)
+- Passed: ${pass_count}
+- Failed: ${fail_count}
+- Total: ${total}
+
+## Scenarios
+
+| Time | Status | Scenario | Topology | Cost |
+|---|---|---|---|---|
+${REPORT_ROWS_MD}
 EOF
 }

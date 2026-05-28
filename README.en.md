@@ -119,11 +119,11 @@ bash tests/start.sh
 # Run selected scenarios
 bash tests/start.sh switch_tcp access_success
 
-# Generate test reports (txt/html/tar)
+# Generate test reports (md/html)
 bash tests/start.sh --report
 ```
 
-Report: [run.html](docs/report/latest/run.html)
+Report: [run.md](./docs/report/latest/run.md)
 
 Capability coverage:
 

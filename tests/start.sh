@@ -170,10 +170,8 @@ run_batch() {
         fi
         if [[ "$REPORT_ENABLED" == "true" ]]; then
           echo "[$(now_text)] END $name status=$status cost=$cost" >> "$case_log"
-          report_line "[$status] $name cost=$cost"
-          report_line "  topology: $topo"
-          report_line "  log: $case_log"
           report_case_html "$status" "$name" "$cost" "$topo" "$case_log"
+          report_case_md "$status" "$name" "$cost" "$topo" "$case_log"
         fi
         break
       fi
@@ -193,10 +191,8 @@ run_batch() {
           echo "reason: unknown scenario"
           echo "topology: custom topology"
         } > "$case_log"
-        report_line "[FAIL] unknown scenario: $key"
-        report_line "  topo: custom topology"
-        report_line "  log: $case_log"
         report_case_html "FAIL" "$key (unknown)" "0.000s" "custom topology" "$case_log"
+        report_case_md "FAIL" "$key (unknown)" "0.000s" "custom topology" "$case_log"
       fi
       echo "Available scenarios:"
       for file in "${scenarios[@]}"; do
@@ -222,16 +218,10 @@ run_batch() {
   fi
   echo "========================================"
   if [[ "$REPORT_ENABLED" == "true" ]]; then
-    report_line ""
-    report_line "Summary:"
-    report_line "  Passed: $pass_count"
-    report_line "  Failed: $fail_count"
-    report_line "  Total:  $total"
-    report_line "End: $(now_text)"
-    report_line "Report: $REPORT_FILE"
     write_report_html "$pass_count" "$fail_count" "$total"
+    write_report_md "$pass_count" "$fail_count" "$total"
     pack_report_tar
-    printf "[%s] Report generated: %s\n" "$(now_text)" "$REPORT_FILE"
+    printf "[%s] Markdown report: %s\n" "$(now_text)" "$REPORT_MD"
     printf "[%s] HTML report: %s\n" "$(now_text)" "$REPORT_HTML"
     printf "[%s] TAR report: %s\n" "$(now_text)" "$REPORT_TAR"
   fi
