@@ -1,0 +1,180 @@
+[26-05-28 06:38:16] START switch_tcp
+scenario: cases/switch_tcp.sh
+header  : build two switches and verify tcp output connectivity
+topology: Docker mgmt network: 172.255.0.0/24
+topology: # Topology:
+topology: # - Docker mgmt network: 172.255.0.0/24
+topology: #   sw1=172.255.0.241, sw2=172.255.0.242, sw3=172.255.0.243.
+topology: # - OpenLAN service network "example": 192.41.0.0/24
+topology: #   sw1=192.41.0.1, sw2=192.41.0.2, sw3=192.41.0.3.
+topology: # - Forwarding links:
+topology: #   sw2 -> sw1 first, sw3 -> sw1 first, then sw3 -> sw2.
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw1-pause
+Started switch frr container: tests-sw1-frr
+Started switch ipsec container: tests-sw1-ipsec
+Started switch container: tests-sw1
+[26-05-28 06:38:17][ASSERT#0001][expect] at cases/switch_tcp.sh:48 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw1" expect="Http.Start"
+2026/05/28 06:38:17 INFO|root|Wait: ...
+2026/05/28 06:38:17 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:38:17 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:38:17 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:38:18][ASSERT#0001][OK] cost=1.032s
+[26-05-28 06:38:18][ASSERT#0002][cmd] at cases/switch_tcp.sh:51 fn=setup_sw1 cmd="docker exec tests-sw1 openlan network --name example add --address 192.41.0.1/24"
+[26-05-28 06:38:18][ASSERT#0002][OK] cost=0.243s
+[26-05-28 06:38:18][ASSERT#0003][match] at cases/switch_tcp.sh:52 fn=setup_sw1 retry=1 cmd="docker exec tests-sw1 openlan network ls" expect="name: example"
+    bridge:
+      address: 192.41.0.1/24
+      name: br-example
+    name: example
+    snat: enable
+    subnet:
+      netmask: 255.255.255.0
+  name: example
+  openvpnStatus: disabled
+- config:
+    name: ipsec
+[26-05-28 06:38:18][ASSERT#0003][OK] cost=0.069s
+[26-05-28 06:38:18][ASSERT#0004][cmd] at cases/switch_tcp.sh:54 fn=setup_sw1 cmd="docker exec tests-sw1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-05-28T06  
+[26-05-28 06:38:18][ASSERT#0004][OK] cost=0.061s
+Started switch pause container: tests-sw2-pause
+Started switch frr container: tests-sw2-frr
+Started switch ipsec container: tests-sw2-ipsec
+Started switch container: tests-sw2
+[26-05-28 06:38:19][ASSERT#0005][expect] at cases/switch_tcp.sh:74 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw2" expect="Http.Start"
+2026/05/28 06:38:20 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:38:20 INFO|root|Wait: ...
+2026/05/28 06:38:20 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:38:20 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:38:20][ASSERT#0005][OK] cost=1.034s
+[26-05-28 06:38:20][ASSERT#0006][cmd] at cases/switch_tcp.sh:77 fn=setup_sw2 cmd="docker exec tests-sw2 openlan network --name example add --address 192.41.0.2/24"
+[26-05-28 06:38:20][ASSERT#0006][OK] cost=0.236s
+[26-05-28 06:38:20][ASSERT#0007][cmd] at cases/switch_tcp.sh:79 fn=setup_sw2 cmd="docker exec tests-sw2 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-05-28T06  
+[26-05-28 06:38:20][ASSERT#0007][OK] cost=0.064s
+[26-05-28 06:38:20][ASSERT#0008][cmd] at cases/switch_tcp.sh:82 fn=setup_sw2 cmd="docker exec tests-sw2 openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:password"
+[26-05-28 06:38:20][ASSERT#0008][OK] cost=0.075s
+[26-05-28 06:38:20][ASSERT#0009][cmd] at cases/switch_tcp.sh:83 fn=setup_sw2 cmd="docker exec tests-sw2 openlan network --name example output ls"
+- aliveTime: 0
+  crypt: aes-128:password
+  device: ""
+  network: example
+  protocol: tcp
+  remote: 172.255.0.241
+  secret: t1:123456
+
+[26-05-28 06:38:20][ASSERT#0009][OK] cost=0.054s
+Started switch pause container: tests-sw3-pause
+Started switch frr container: tests-sw3-frr
+Started switch ipsec container: tests-sw3-ipsec
+Started switch container: tests-sw3
+[26-05-28 06:38:21][ASSERT#0010][expect] at cases/switch_tcp.sh:104 fn=setup_sw3 retry=30 cmd="docker logs -f tests-sw3" expect="Http.Start"
+2026/05/28 06:38:22 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:38:22 INFO|root|Wait: ...
+2026/05/28 06:38:22 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:38:22 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:38:22][ASSERT#0010][OK] cost=1.033s
+[26-05-28 06:38:22][ASSERT#0011][cmd] at cases/switch_tcp.sh:107 fn=setup_sw3 cmd="docker exec tests-sw3 openlan network --name example add --address 192.41.0.3/24"
+[26-05-28 06:38:22][ASSERT#0011][OK] cost=0.264s
+[26-05-28 06:38:22][ASSERT#0012][cmd] at cases/switch_tcp.sh:109 fn=setup_sw3 cmd="docker exec tests-sw3 openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-05-28 06:38:22][ASSERT#0012][OK] cost=0.073s
+[26-05-28 06:38:22][ASSERT#0013][cmd] at cases/switch_tcp.sh:110 fn=setup_sw3 cmd="docker exec tests-sw3 openlan network --name example output ls"
+- aliveTime: 0
+  crypt: aes-128:ea64d5b0c96c
+  device: ""
+  network: example
+  protocol: tcp
+  remote: 172.255.0.241
+  secret: t1:123456
+
+[26-05-28 06:38:22][ASSERT#0013][OK] cost=0.062s
+[26-05-28 06:38:22][ASSERT#0014][match] at cases/switch_tcp.sh:114 fn=test_ping_before_sw3_sw2_output retry=15 cmd="docker exec tests-sw2 ping -c 3 192.41.0.1" expect="bytes from"
+PING 192.41.0.1 (192.41.0.1) 56(84) bytes of data.
+64 bytes from 192.41.0.1: icmp_seq=1 ttl=64 time=2049 ms
+64 bytes from 192.41.0.1: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.41.0.1: icmp_seq=3 ttl=64 time=2.36 ms
+
+--- 192.41.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2046ms
+[26-05-28 06:38:25][ASSERT#0014][OK] cost=2.115s
+[26-05-28 06:38:25][ASSERT#0015][unmatch] at cases/switch_tcp.sh:115 fn=test_ping_before_sw3_sw2_output retry=3 cmd="docker exec tests-sw3 ping -c 3 192.41.0.1" unexpected="bytes from"
+[26-05-28 06:38:37][ASSERT#0015][OK] cost=12.454s
+[26-05-28 06:38:37][ASSERT#0016][cmd] at cases/switch_tcp.sh:128 fn=test_ping cmd="docker exec tests-sw3 openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-05-28 06:38:37][ASSERT#0016][OK] cost=0.077s
+[26-05-28 06:38:37][ASSERT#0017][match] at cases/switch_tcp.sh:129 fn=test_ping retry=15 cmd="docker exec tests-sw3 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 172.255.0.242
+  secret: t1:123456
+  state: authenticated
+
+[26-05-28 06:38:39][ASSERT#0017][OK] cost=2.195s
+[26-05-28 06:38:39][ASSERT#0018][match] at cases/switch_tcp.sh:119 fn=test_ping_after_sw3_sw2_output retry=15 cmd="docker exec tests-sw2 ping -c 3 192.41.0.2" expect="bytes from"
+PING 192.41.0.2 (192.41.0.2) 56(84) bytes of data.
+64 bytes from 192.41.0.2: icmp_seq=1 ttl=64 time=0.072 ms
+64 bytes from 192.41.0.2: icmp_seq=2 ttl=64 time=0.091 ms
+64 bytes from 192.41.0.2: icmp_seq=3 ttl=64 time=0.061 ms
+
+--- 192.41.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2072ms
+[26-05-28 06:38:41][ASSERT#0018][OK] cost=2.138s
+[26-05-28 06:38:41][ASSERT#0019][match] at cases/switch_tcp.sh:120 fn=test_ping_after_sw3_sw2_output retry=15 cmd="docker exec tests-sw2 ping -c 3 192.41.0.3" expect="bytes from"
+PING 192.41.0.3 (192.41.0.3) 56(84) bytes of data.
+64 bytes from 192.41.0.3: icmp_seq=1 ttl=64 time=0.943 ms
+64 bytes from 192.41.0.3: icmp_seq=2 ttl=64 time=1.21 ms
+64 bytes from 192.41.0.3: icmp_seq=3 ttl=64 time=1.32 ms
+
+--- 192.41.0.3 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2001ms
+[26-05-28 06:38:44][ASSERT#0019][OK] cost=2.073s
+[26-05-28 06:38:44][ASSERT#0020][cmd] at cases/switch_tcp.sh:132 fn=test_ping cmd="docker exec tests-sw1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:471 ...
+  PID   471   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:38:45][ASSERT#0020][OK] cost=1.072s
+[26-05-28 06:38:45][ASSERT#0021][cmd] at cases/switch_tcp.sh:133 fn=test_ping cmd="docker exec tests-sw2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:511 ...
+  PID   511   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:38:46][ASSERT#0021][OK] cost=1.078s
+[26-05-28 06:38:46][ASSERT#0022][cmd] at cases/switch_tcp.sh:134 fn=test_ping cmd="docker exec tests-sw3 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:557 ...
+  PID   557   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:38:47][ASSERT#0022][OK] cost=1.080s
+[26-05-28 06:38:47][ASSERT#0023][cmd] at cases/switch_tcp.sh:136 fn=test_ping cmd="docker exec tests-sw2 ip neigh flush dev hi-example"
+[26-05-28 06:38:47][ASSERT#0023][OK] cost=0.058s
+[26-05-28 06:38:47][ASSERT#0024][match] at cases/switch_tcp.sh:119 fn=test_ping_after_sw3_sw2_output retry=15 cmd="docker exec tests-sw2 ping -c 3 192.41.0.2" expect="bytes from"
+PING 192.41.0.2 (192.41.0.2) 56(84) bytes of data.
+64 bytes from 192.41.0.2: icmp_seq=1 ttl=64 time=0.093 ms
+64 bytes from 192.41.0.2: icmp_seq=2 ttl=64 time=0.115 ms
+64 bytes from 192.41.0.2: icmp_seq=3 ttl=64 time=0.113 ms
+
+--- 192.41.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2027ms
+[26-05-28 06:38:49][ASSERT#0024][OK] cost=2.090s
+[26-05-28 06:38:49][ASSERT#0025][match] at cases/switch_tcp.sh:120 fn=test_ping_after_sw3_sw2_output retry=15 cmd="docker exec tests-sw2 ping -c 3 192.41.0.3" expect="bytes from"
+PING 192.41.0.3 (192.41.0.3) 56(84) bytes of data.
+64 bytes from 192.41.0.3: icmp_seq=1 ttl=64 time=0.775 ms
+64 bytes from 192.41.0.3: icmp_seq=2 ttl=64 time=1.08 ms
+64 bytes from 192.41.0.3: icmp_seq=3 ttl=64 time=1.02 ms
+
+--- 192.41.0.3 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2039ms
+[26-05-28 06:38:59][ASSERT#0025][OK] cost=10.402s
+[26-05-28 06:39:00] END switch_tcp status=PASS cost=44.350s

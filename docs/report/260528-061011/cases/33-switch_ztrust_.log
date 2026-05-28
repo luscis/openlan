@@ -1,0 +1,129 @@
+[26-05-28 06:39:20] START switch_ztrust
+scenario: cases/switch_ztrust.sh
+header  : verify ztrust enable/disable with guest and knock controls
+topology: Docker mgmt network: 172.245.0.0/24
+topology: # Topology:
+topology: # - Docker mgmt network: 172.245.0.0/24
+topology: #   sw1=172.245.0.241.
+topology: # - OpenLAN service network "example": 192.59.0.0/24
+topology: #   sw1=192.59.0.1.
+topology: # - OpenVPN overlay on sw1:
+topology: #   tcp/1194, subnet 10.93.0.0/24, vpn1@example fixed address 10.93.0.10.
+topology: # Validation:
+topology: #   vpn1 -> sw1:8081 is reachable before ztrust; blocked after ztrust enable;
+topology: #   allowed after guest+knock; blocked after knock remove; restored when disabled.
+
+Started switch pause container: tests-sw-ztrust-pause
+Started switch frr container: tests-sw-ztrust-frr
+Started switch ipsec container: tests-sw-ztrust-ipsec
+Started switch container: tests-sw-ztrust
+[26-05-28 06:39:21][ASSERT#0001][expect] at cases/switch_ztrust.sh:37 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ztrust" expect="Http.Start"
+2026/05/28 06:39:22 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:39:22 INFO|root|Wait: ...
+2026/05/28 06:39:22 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:39:22 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:39:22][ASSERT#0001][OK] cost=1.031s
+[26-05-28 06:39:22][ASSERT#0002][cmd] at cases/switch_ztrust.sh:39 fn=setup_sw1 cmd="docker exec tests-sw-ztrust openlan network --name example add --address 192.59.0.1/24"
+[26-05-28 06:39:23][ASSERT#0002][OK] cost=0.245s
+[26-05-28 06:39:23][ASSERT#0003][match] at cases/switch_ztrust.sh:40 fn=setup_sw1 retry=1 cmd="docker exec tests-sw-ztrust openlan network ls" expect="name: example"
+    bridge:
+      address: 192.59.0.1/24
+      name: br-example
+    name: example
+    snat: enable
+    subnet:
+      netmask: 255.255.255.0
+  name: example
+  openvpnStatus: disabled
+- config:
+    name: ipsec
+[26-05-28 06:39:23][ASSERT#0003][OK] cost=0.073s
+[26-05-28 06:39:23][ASSERT#0004][cmd] at cases/switch_ztrust.sh:41 fn=setup_sw1 cmd="docker exec tests-sw-ztrust openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-05-28T06  
+[26-05-28 06:39:23][ASSERT#0004][OK] cost=0.062s
+[26-05-28 06:39:23][ASSERT#0005][cmd] at cases/switch_ztrust.sh:42 fn=setup_sw1 cmd="docker exec tests-sw-ztrust openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.93.0.0/24"
+[26-05-28 06:39:23][ASSERT#0005][OK] cost=0.113s
+[26-05-28 06:39:23][ASSERT#0006][cmd] at cases/switch_ztrust.sh:43 fn=setup_sw1 cmd="docker exec tests-sw-ztrust openlan network --name example client add --user vpn1@example --address 10.93.0.10"
+[26-05-28 06:39:23][ASSERT#0006][OK] cost=0.068s
+Started OpenVPN client container: tests-sw-ztrust.vpn1
+[26-05-28 06:39:23][ASSERT#0007][expect] at cases/switch_ztrust.sh:57 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-ztrust.vpn1" expect="Initialization Sequence Completed"
+2026-05-28 06:39:23 net_addr_v4_add: 10.93.0.10/24 dev tun0
+2026-05-28 06:39:23 net_route_v4_add: 10.93.0.0/24 via 10.93.0.1 dev [NULL] table 0 metric 300
+2026-05-28 06:39:23 net_route_v4_add: 192.59.0.0/24 via 10.93.0.1 dev [NULL] table 0 metric 300
+2026-05-28 06:39:23 Initialization Sequence Completed
+[26-05-28 06:39:24][ASSERT#0007][OK] cost=1.030s
+[26-05-28 06:39:24][ASSERT#0008][cmd] at cases/switch_ztrust.sh:61 fn=setup_local_service cmd="docker exec tests-sw-ztrust sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nztrust-8081" | socat - TCP-LISTEN:8081,reuseaddr; done' >/tmp/ztrust-8081.log 2>&1 &"
+[26-05-28 06:39:24][ASSERT#0008][OK] cost=0.058s
+[26-05-28 06:39:24][ASSERT#0009][match] at cases/switch_ztrust.sh:65 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" expect="ztrust-8081"
+ztrust-8081
+[26-05-28 06:39:24][ASSERT#0009][OK] cost=0.086s
+[26-05-28 06:39:24][ASSERT#0010][cmd] at cases/switch_ztrust.sh:67 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan ztrust --network example enable"
+[26-05-28 06:39:24][ASSERT#0010][OK] cost=0.071s
+[26-05-28 06:39:24][ASSERT#0011][match] at cases/switch_ztrust.sh:68 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust iptables -t mangle -S TT_pre-example" expect="Goto Zero Trust"
+-N TT_pre-example
+-A TT_pre-example -i tun1194 -m comment --comment "Goto Zero Trust" -j ZT_example
+[26-05-28 06:39:25][ASSERT#0011][OK] cost=0.064s
+[26-05-28 06:39:25][ASSERT#0012][match] at cases/switch_ztrust.sh:69 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust iptables -t mangle -S ZT_example" expect="ZTrust Deny All"
+-N ZT_example
+-A ZT_example -m conntrack --ctstate RELATED,ESTABLISHED -m comment --comment "Forwarding Accpted" -j ACCEPT
+-A ZT_example -m comment --comment "ZTrust Deny All" -j DROP
+[26-05-28 06:39:25][ASSERT#0012][OK] cost=0.064s
+[26-05-28 06:39:25][ASSERT#0013][unmatch] at cases/switch_ztrust.sh:70 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" unexpected="ztrust-8081"
+[26-05-28 06:39:37][ASSERT#0013][OK] cost=12.262s
+[26-05-28 06:39:37][ASSERT#0014][cmd] at cases/switch_ztrust.sh:72 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan reload --save"
+Save configuraion ...  success
+# reloading pid:43 ....
+  PID   43   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:547 ...
+  PID   547   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:39:38][ASSERT#0014][OK] cost=1.074s
+[26-05-28 06:39:38][ASSERT#0015][match] at cases/switch_ztrust.sh:74 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust iptables -t mangle -S TT_pre-example" expect="Goto Zero Trust"
+-N TT_pre-example
+-A TT_pre-example -i tun1194 -m comment --comment "Goto Zero Trust" -j ZT_example
+[26-05-28 06:39:38][ASSERT#0015][OK] cost=0.067s
+[26-05-28 06:39:38][ASSERT#0016][match] at cases/switch_ztrust.sh:75 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust iptables -t mangle -S ZT_example" expect="ZTrust Deny All"
+-N ZT_example
+-A ZT_example -m conntrack --ctstate RELATED,ESTABLISHED -m comment --comment "Forwarding Accpted" -j ACCEPT
+-A ZT_example -m comment --comment "ZTrust Deny All" -j DROP
+[26-05-28 06:39:38][ASSERT#0016][OK] cost=0.065s
+[26-05-28 06:39:38][ASSERT#0017][unmatch] at cases/switch_ztrust.sh:76 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" unexpected="ztrust-8081"
+[26-05-28 06:39:50][ASSERT#0017][OK] cost=12.267s
+[26-05-28 06:39:50][ASSERT#0018][cmd] at cases/switch_ztrust.sh:78 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan ztrust --network example guest add --user vpn1 --address 10.93.0.10"
+[26-05-28 06:39:50][ASSERT#0018][OK] cost=0.073s
+[26-05-28 06:39:50][ASSERT#0019][cmd] at cases/switch_ztrust.sh:79 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan ztrust --network example knock add --user vpn1 --protocol tcp --socket 192.59.0.1:8081 --age 120"
+[26-05-28 06:39:51][ASSERT#0019][OK] cost=0.066s
+[26-05-28 06:39:51][ASSERT#0020][match] at cases/switch_ztrust.sh:81 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust openlan ztrust --network example guest ls" expect="vpn1@example"
+# total 1
+username                 address                 
+vpn1@example             10.93.0.10              
+[26-05-28 06:39:51][ASSERT#0020][OK] cost=0.075s
+[26-05-28 06:39:51][ASSERT#0021][match] at cases/switch_ztrust.sh:82 fn=test_ztrust_flow retry=1 cmd="docker exec tests-sw-ztrust openlan ztrust --network example knock ls --user vpn1" expect="192.59.0.1:8081"
+# total 1
+username                 protocol socket                   age  createAt                
+vpn1@example             tcp      192.59.0.1:8081          120  2026-05-28 06:39:51 +0000 UTC
+[26-05-28 06:39:51][ASSERT#0021][OK] cost=0.073s
+[26-05-28 06:39:51][ASSERT#0022][match] at cases/switch_ztrust.sh:83 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" expect="ztrust-8081"
+ztrust-8081
+[26-05-28 06:39:51][ASSERT#0022][OK] cost=0.091s
+[26-05-28 06:39:51][ASSERT#0023][cmd] at cases/switch_ztrust.sh:85 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan ztrust --network example guest rm --user vpn1"
+[26-05-28 06:39:51][ASSERT#0023][OK] cost=0.122s
+[26-05-28 06:39:51][ASSERT#0024][cmd] at cases/switch_ztrust.sh:86 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan ztrust --network example disable"
+[26-05-28 06:39:51][ASSERT#0024][OK] cost=0.083s
+[26-05-28 06:39:51][ASSERT#0025][match] at cases/switch_ztrust.sh:87 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" expect="ztrust-8081"
+ztrust-8081
+[26-05-28 06:39:51][ASSERT#0025][OK] cost=0.076s
+[26-05-28 06:39:51][ASSERT#0026][cmd] at cases/switch_ztrust.sh:89 fn=test_ztrust_flow cmd="docker exec tests-sw-ztrust openlan reload --save"
+Save configuraion ...  success
+# reloading pid:547 ....
+  PID   547   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:833 ...
+  PID   833   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:39:52][ASSERT#0026][OK] cost=1.065s
+[26-05-28 06:39:52][ASSERT#0027][match] at cases/switch_ztrust.sh:90 fn=test_ztrust_flow retry=3 cmd="docker exec tests-sw-ztrust.vpn1 wget -qO- -T 3 -t 1 http://192.59.0.1:8081" expect="ztrust-8081"
+ztrust-8081
+[26-05-28 06:39:52][ASSERT#0027][OK] cost=0.090s
+[26-05-28 06:39:53] END switch_ztrust status=PASS cost=32.397s

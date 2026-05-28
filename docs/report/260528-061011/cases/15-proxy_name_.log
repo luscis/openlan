@@ -1,0 +1,154 @@
+[26-05-28 06:19:32] START proxy_name
+scenario: cases/proxy_name.sh
+header  : verify ceci name proxy forwarding to upstream dns
+topology: Docker mgmt network: 172.249.0.0/24
+topology: # Topology:
+topology: # - Docker mgmt network: 172.249.0.0/24
+topology: #   sw1=172.249.0.241 (name proxy client), sw2=172.249.0.242 (upstream dns server).
+topology: # - OpenLAN service network "example": 192.54.0.0/24
+topology: #   sw1=192.54.0.1, sw2=192.54.0.2, with sw2 output to sw1.
+topology: # Validation:
+topology: #   sw1 nslookup -> sw1 openceci(name) -> sw2 dnsmasq(upstream).
+
+Started switch pause container: tests-sw-proxy-name1-pause
+Started switch frr container: tests-sw-proxy-name1-frr
+Started switch ipsec container: tests-sw-proxy-name1-ipsec
+Started switch container: tests-sw-proxy-name1
+[26-05-28 06:19:33][ASSERT#0001][expect] at cases/proxy_name.sh:48 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-proxy-name1" expect="Http.Start"
+2026/05/28 06:19:34 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/05/28 06:19:34 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:19:34 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:19:34 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:19:34][ASSERT#0001][OK] cost=1.031s
+[26-05-28 06:19:34][ASSERT#0002][cmd] at cases/proxy_name.sh:50 fn=setup_sw1 cmd="docker exec tests-sw-proxy-name1 openlan network --name example add --address 192.54.0.1/24"
+[26-05-28 06:19:35][ASSERT#0002][OK] cost=0.246s
+[26-05-28 06:19:35][ASSERT#0003][cmd] at cases/proxy_name.sh:51 fn=setup_sw1 cmd="docker exec tests-sw-proxy-name1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-05-28T06  
+[26-05-28 06:19:35][ASSERT#0003][OK] cost=0.065s
+Started switch pause container: tests-sw-proxy-name2-pause
+Started switch frr container: tests-sw-proxy-name2-frr
+Started switch ipsec container: tests-sw-proxy-name2-ipsec
+Started switch container: tests-sw-proxy-name2
+[26-05-28 06:19:35][ASSERT#0004][expect] at cases/proxy_name.sh:70 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-proxy-name2" expect="Http.Start"
+2026/05/28 06:19:36 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/05/28 06:19:36 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/05/28 06:19:36 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/05/28 06:19:36 INFO|root|Http.Start 0.0.0.0:10000
+[26-05-28 06:19:37][ASSERT#0004][OK] cost=1.036s
+[26-05-28 06:19:37][ASSERT#0005][cmd] at cases/proxy_name.sh:72 fn=setup_sw2 cmd="docker exec tests-sw-proxy-name2 openlan network --name example add --address 192.54.0.2/24"
+[26-05-28 06:19:37][ASSERT#0005][OK] cost=0.244s
+[26-05-28 06:19:37][ASSERT#0006][cmd] at cases/proxy_name.sh:73 fn=setup_sw2 cmd="docker exec tests-sw-proxy-name2 openlan network --name example output add --remote 172.249.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-05-28 06:19:37][ASSERT#0006][OK] cost=0.061s
+[26-05-28 06:19:37][ASSERT#0007][match] at cases/proxy_name.sh:74 fn=setup_sw2 retry=20 cmd="docker exec tests-sw-proxy-name2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 172.249.0.241
+  secret: t1@example:123456
+  state: authenticated
+
+[26-05-28 06:19:39][ASSERT#0007][OK] cost=2.197s
+[26-05-28 06:19:39][ASSERT#0008][cmd] at cases/proxy_name.sh:78 fn=setup_upstream_dns cmd="docker exec tests-sw-proxy-name2 sh -c nohup dnsmasq --no-daemon --port=5300 --listen-address=192.54.0.2 --bind-interfaces --address=/proxy-name.test/192.54.0.2 >/tmp/proxy-name-dnsmasq.log 2>&1 &"
+[26-05-28 06:19:39][ASSERT#0008][OK] cost=0.058s
+[26-05-28 06:19:39][ASSERT#0009][match] at cases/proxy_name.sh:79 fn=setup_upstream_dns retry=20 cmd="docker exec tests-sw-proxy-name1 ping -c 3 192.54.0.2" expect="bytes from"
+PING 192.54.0.2 (192.54.0.2) 56(84) bytes of data.
+64 bytes from 192.54.0.2: icmp_seq=1 ttl=64 time=2086 ms
+64 bytes from 192.54.0.2: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.54.0.2: icmp_seq=3 ttl=64 time=2.44 ms
+
+--- 192.54.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2084ms
+[26-05-28 06:19:41][ASSERT#0009][OK] cost=2.148s
+[26-05-28 06:19:41][ASSERT#0010][cmd] at cases/proxy_name.sh:83 fn=setup_name_proxy cmd="docker exec tests-sw-proxy-name1 sh -c cat > /var/openlan/ceci/127.0.0.1:1053.yaml <<EOF
+listen: 127.0.0.1:1053
+nameto: 192.54.0.2:5300
+EOF"
+[26-05-28 06:19:41][ASSERT#0010][OK] cost=0.068s
+[26-05-28 06:19:41][ASSERT#0011][cmd] at cases/proxy_name.sh:91 fn=start_name_proxy cmd="docker exec tests-sw-proxy-name1 sh -c nohup /usr/bin/openceci -mode name -conf /var/openlan/ceci/127.0.0.1:1053.yaml -log:file /var/openlan/ceci/127.0.0.1:1053.log -write-pid /var/openlan/ceci/127.0.0.1:1053.pid >/tmp/proxy-name.log 2>&1 &"
+[26-05-28 06:19:41][ASSERT#0011][OK] cost=0.056s
+[26-05-28 06:19:41][ASSERT#0012][match] at cases/proxy_name.sh:92 fn=start_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 cat /var/openlan/ceci/127.0.0.1:1053.log" expect="NameProxy.StartDNS on 127.0.0.1:1053"
+2026/05/28 06:19:41 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:41 INFO|root|Wait: ...
+[26-05-28 06:19:41][ASSERT#0012][OK] cost=0.059s
+[26-05-28 06:19:41][ASSERT#0013][fuzzy] at cases/proxy_name.sh:96 fn=test_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 nslookup -port=1053 proxy-name.test 127.0.0.1" pattern="Address: 192.54.0.2"
+Address:	127.0.0.1#1053
+
+Name:	proxy-name.test
+Address: 192.54.0.2
+
+[26-05-28 06:19:42][ASSERT#0013][OK] cost=0.071s
+[26-05-28 06:19:42][ASSERT#0014][fuzzy] at cases/proxy_name.sh:97 fn=test_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 cat /var/openlan/ceci/127.0.0.1:1053.log" pattern="NameProxy.handleDNS 192.54.0.2:5300 <-"
+2026/05/28 06:19:41 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:41 INFO|root|Wait: ...
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 1 1}] via 127.0.0.1:38928
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 28 1}] via 127.0.0.1:47042
+[26-05-28 06:19:42][ASSERT#0014][OK] cost=0.059s
+[26-05-28 06:19:42][ASSERT#0015][cmd] at cases/proxy_name.sh:101 fn=restart_name_proxy cmd="docker exec tests-sw-proxy-name1 pkill -f /usr/bin/openceci"
+[26-05-28 06:19:42][ASSERT#0015][OK] cost=0.058s
+[26-05-28 06:19:42][ASSERT#0016][cmd] at cases/proxy_name.sh:102 fn=restart_name_proxy cmd="docker exec tests-sw-proxy-name1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:43 ....
+  PID   43   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:483 ...
+  PID   483   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-05-28 06:19:43][ASSERT#0016][OK] cost=1.068s
+[26-05-28 06:19:43][ASSERT#0017][cmd] at cases/proxy_name.sh:91 fn=start_name_proxy cmd="docker exec tests-sw-proxy-name1 sh -c nohup /usr/bin/openceci -mode name -conf /var/openlan/ceci/127.0.0.1:1053.yaml -log:file /var/openlan/ceci/127.0.0.1:1053.log -write-pid /var/openlan/ceci/127.0.0.1:1053.pid >/tmp/proxy-name.log 2>&1 &"
+[26-05-28 06:19:43][ASSERT#0017][OK] cost=0.059s
+[26-05-28 06:19:43][ASSERT#0018][match] at cases/proxy_name.sh:92 fn=start_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 cat /var/openlan/ceci/127.0.0.1:1053.log" expect="NameProxy.StartDNS on 127.0.0.1:1053"
+2026/05/28 06:19:41 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:41 INFO|root|Wait: ...
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 1 1}] via 127.0.0.1:38928
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 28 1}] via 127.0.0.1:47042
+2026/05/28 06:19:42 WARN|root|Wait: ... Signal 15 received ...
+2026/05/28 06:19:42 INFO|127.0.0.1:1053|NameProxy.Stop
+2026/05/28 06:19:43 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:43 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:43 INFO|root|Wait: ...
+[26-05-28 06:19:43][ASSERT#0018][OK] cost=0.059s
+[26-05-28 06:19:43][ASSERT#0019][match] at cases/proxy_name.sh:104 fn=restart_name_proxy retry=30 cmd="docker exec tests-sw-proxy-name1 ping -c 3 192.54.0.2" expect="bytes from"
+PING 192.54.0.2 (192.54.0.2) 56(84) bytes of data.
+64 bytes from 192.54.0.2: icmp_seq=1 ttl=64 time=1.02 ms
+64 bytes from 192.54.0.2: icmp_seq=2 ttl=64 time=1.22 ms
+64 bytes from 192.54.0.2: icmp_seq=3 ttl=64 time=1.31 ms
+
+--- 192.54.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+[26-05-28 06:19:58][ASSERT#0019][OK] cost=15.162s
+[26-05-28 06:19:58][ASSERT#0020][match] at cases/proxy_name.sh:105 fn=restart_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 cat /var/openlan/ceci/127.0.0.1:1053.log" expect="NameProxy.StartDNS on 127.0.0.1:1053"
+2026/05/28 06:19:41 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:41 INFO|root|Wait: ...
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 1 1}] via 127.0.0.1:38928
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 28 1}] via 127.0.0.1:47042
+2026/05/28 06:19:42 WARN|root|Wait: ... Signal 15 received ...
+2026/05/28 06:19:42 INFO|127.0.0.1:1053|NameProxy.Stop
+2026/05/28 06:19:43 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:43 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:43 INFO|root|Wait: ...
+[26-05-28 06:19:58][ASSERT#0020][OK] cost=0.062s
+[26-05-28 06:19:58][ASSERT#0021][fuzzy] at cases/proxy_name.sh:96 fn=test_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 nslookup -port=1053 proxy-name.test 127.0.0.1" pattern="Address: 192.54.0.2"
+Address:	127.0.0.1#1053
+
+Name:	proxy-name.test
+Address: 192.54.0.2
+
+[26-05-28 06:19:58][ASSERT#0021][OK] cost=0.092s
+[26-05-28 06:19:58][ASSERT#0022][fuzzy] at cases/proxy_name.sh:97 fn=test_name_proxy retry=20 cmd="docker exec tests-sw-proxy-name1 cat /var/openlan/ceci/127.0.0.1:1053.log" pattern="NameProxy.handleDNS 192.54.0.2:5300 <-"
+2026/05/28 06:19:41 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:41 INFO|root|Wait: ...
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 1 1}] via 127.0.0.1:38928
+2026/05/28 06:19:41 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 28 1}] via 127.0.0.1:47042
+2026/05/28 06:19:42 WARN|root|Wait: ... Signal 15 received ...
+2026/05/28 06:19:42 INFO|127.0.0.1:1053|NameProxy.Stop
+2026/05/28 06:19:43 INFO|root|NameProxy.Initialize /var/openlan/ceci/127.0.0.1:1053.yaml
+2026/05/28 06:19:43 INFO|127.0.0.1:1053|NameProxy.StartDNS on 127.0.0.1:1053
+2026/05/28 06:19:43 INFO|root|Wait: ...
+2026/05/28 06:19:58 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 1 1}] via 127.0.0.1:36435
+2026/05/28 06:19:58 INFO|127.0.0.1:1053|NameProxy.handleDNS 192.54.0.2:5300 <- [{proxy-name.test. 28 1}] via 127.0.0.1:51351
+[26-05-28 06:19:58][ASSERT#0022][OK] cost=0.070s
+[26-05-28 06:19:59] END proxy_name status=PASS cost=26.404s
