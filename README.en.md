@@ -127,16 +127,16 @@ Report: [run.html](docs/report/latest/run.html)
 
 Capability coverage:
 
-- `Access authentication and sessions`: [`access_success`](tests/cases/access_success.sh), [`access_fail`](tests/cases/access_fail.sh), [`access_admin_multi_login`](tests/cases/access_admin_multi_login.sh), [`access_same_user_mutex`](tests/cases/access_same_user_mutex.sh);
-- `Access encryption and scope`: [`access_pre_network_crypt`](tests/cases/access_pre_network_crypt.sh), [`access_snat_scope_matrix`](tests/cases/access_snat_scope_matrix.sh);
-- `OpenVPN functional flows`: [`access_openvpn`](tests/cases/access_openvpn.sh), [`access_openvpn_redirect`](tests/cases/access_openvpn_redirect.sh), [`access_openvpn_client_ping`](tests/cases/access_openvpn_client_ping.sh), [`access_openvpn_tcp_reset`](tests/cases/access_openvpn_tcp_reset.sh), [`access_openvpn_snat_vip`](tests/cases/access_openvpn_snat_vip.sh);
-- `OpenVPN performance`: [`access_openvpn_perf`](tests/cases/access_openvpn_perf.sh) (latency, throughput, and protocol-level comparison);
-- `Proxy capabilities`: [`proxy_http`](tests/cases/proxy_http.sh), [`proxy_tcp`](tests/cases/proxy_tcp.sh), [`proxy_name`](tests/cases/proxy_name.sh), [`proxy_name_backends`](tests/cases/proxy_name_backends.sh);
-- `Switch baseline tunnels`: [`switch_tcp`](tests/cases/switch_tcp.sh), [`switch_udp`](tests/cases/switch_udp.sh);
-- `Switch IPSec overlays`: [`switch_ipsec_vxlan`](tests/cases/switch_ipsec_vxlan.sh), [`switch_ipsec_gre`](tests/cases/switch_ipsec_gre.sh);
-- `Switch IPSec overlay performance`: [`switch_ipsec_vxlan_perf`](tests/cases/switch_ipsec_vxlan_perf.sh);
-- `Switch ACL and access control`: [`switch_acl`](tests/cases/switch_acl.sh), [`switch_acl_default_action`](tests/cases/switch_acl_default_action.sh), [`switch_ztrust`](tests/cases/switch_ztrust.sh);
-- `Switch routing and forwarding`: [`switch_bgp`](tests/cases/switch_bgp.sh), [`switch_route3`](tests/cases/switch_route3.sh), [`switch_findhop`](tests/cases/switch_findhop.sh);
-- `Switch NAT and traffic control`: [`switch_dnat`](tests/cases/switch_dnat.sh), [`switch_ratelimit`](tests/cases/switch_ratelimit.sh);
-- `Switch namespace/VRF and isolation`: [`switch_namespace`](tests/cases/switch_namespace.sh), [`switch_namespace_snat`](tests/cases/switch_namespace_snat.sh), [`switch_namespace_openvpn`](tests/cases/switch_namespace_openvpn.sh);
-- `Switch output performance`: [`switch_output_perf`](tests/cases/switch_output_perf.sh) (mixed TCP/UDP connectivity, latency, loss, and bandwidth).
+- **Access authentication and sessions (core)**: `access_success`, `access_fail`, `access_admin_multi_login`, `access_same_user_mutex`;
+- **Access encryption and scope**: `access_pre_network_crypt`, `access_snat_scope_matrix`;
+- **OpenVPN functional flows**: `access_openvpn`, `access_openvpn_redirect`, `access_openvpn_client_ping`, `access_openvpn_tcp_reset`, `access_openvpn_snat_vip`;
+- **OpenVPN performance**: `access_openvpn_perf` (latency, throughput, and protocol-level comparison);
+- **Proxy capabilities**: `proxy_http`, `proxy_tcp`, `proxy_name`, `proxy_name_backends`;
+- **Switch baseline tunnels**: `switch_tcp`, `switch_udp`;
+- **Switch IPSec overlays**: `switch_ipsec_vxlan`, `switch_ipsec_gre`;
+- **Switch IPSec overlay performance**: `switch_ipsec_vxlan_perf`;
+- **Switch ACL and access control**: `switch_acl`, `switch_acl_default_action`, `switch_ztrust`;
+- **Switch routing and forwarding**: `switch_bgp`, `switch_route3`, `switch_findhop`;
+- **Switch NAT and traffic control**: `switch_dnat`, `switch_ratelimit`;
+- **Switch namespace/VRF and isolation**: `switch_namespace`, `switch_namespace_snat`, `switch_namespace_openvpn`;
+- **Switch output performance**: `switch_output_perf` (mixed TCP/UDP connectivity, latency, loss, and bandwidth).

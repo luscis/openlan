@@ -127,16 +127,16 @@ bash tests/start.sh --report
 
 功能覆盖（按能力分组）：
 
-- `Access 认证与会话`：[`access_success`](tests/cases/access_success.sh)、[`access_fail`](tests/cases/access_fail.sh)、[`access_admin_multi_login`](tests/cases/access_admin_multi_login.sh)、[`access_same_user_mutex`](tests/cases/access_same_user_mutex.sh)；
-- `Access 加密与策略作用域`：[`access_pre_network_crypt`](tests/cases/access_pre_network_crypt.sh)、[`access_snat_scope_matrix`](tests/cases/access_snat_scope_matrix.sh)；
-- `OpenVPN 功能`：[`access_openvpn`](tests/cases/access_openvpn.sh)、[`access_openvpn_redirect`](tests/cases/access_openvpn_redirect.sh)、[`access_openvpn_client_ping`](tests/cases/access_openvpn_client_ping.sh)、[`access_openvpn_tcp_reset`](tests/cases/access_openvpn_tcp_reset.sh)、[`access_openvpn_snat_vip`](tests/cases/access_openvpn_snat_vip.sh)；
-- `OpenVPN 性能`：[`access_openvpn_perf`](tests/cases/access_openvpn_perf.sh)（时延/吞吐/协议维度对比）；
-- `Proxy 能力`：[`proxy_http`](tests/cases/proxy_http.sh)、[`proxy_tcp`](tests/cases/proxy_tcp.sh)、[`proxy_name`](tests/cases/proxy_name.sh)、[`proxy_name_backends`](tests/cases/proxy_name_backends.sh)；
-- `Switch 基础隧道`：[`switch_tcp`](tests/cases/switch_tcp.sh)、[`switch_udp`](tests/cases/switch_udp.sh)；
-- `Switch IPSec 叠加互联`：[`switch_ipsec_vxlan`](tests/cases/switch_ipsec_vxlan.sh)、[`switch_ipsec_gre`](tests/cases/switch_ipsec_gre.sh)；
-- `Switch IPSec 叠加性能`：[`switch_ipsec_vxlan_perf`](tests/cases/switch_ipsec_vxlan_perf.sh)；
-- `Switch ACL 与访问控制`：[`switch_acl`](tests/cases/switch_acl.sh)、[`switch_acl_default_action`](tests/cases/switch_acl_default_action.sh)、[`switch_ztrust`](tests/cases/switch_ztrust.sh)；
-- `Switch 路由与转发`：[`switch_bgp`](tests/cases/switch_bgp.sh)、[`switch_route3`](tests/cases/switch_route3.sh)、[`switch_findhop`](tests/cases/switch_findhop.sh)；
-- `Switch NAT 与流控`：[`switch_dnat`](tests/cases/switch_dnat.sh)、[`switch_ratelimit`](tests/cases/switch_ratelimit.sh)；
-- `Switch Namespace/VRF 与隔离`：[`switch_namespace`](tests/cases/switch_namespace.sh)、[`switch_namespace_snat`](tests/cases/switch_namespace_snat.sh)、[`switch_namespace_openvpn`](tests/cases/switch_namespace_openvpn.sh)；
-- `Switch Output 综合性能`：[`switch_output_perf`](tests/cases/switch_output_perf.sh)（混合 TCP/UDP 的连通、时延、丢包、带宽）。
+- **Access 认证与会话（核心）**：`access_success`、`access_fail`、`access_admin_multi_login`、`access_same_user_mutex`；
+- **Access 加密与策略作用域**：`access_pre_network_crypt`、`access_snat_scope_matrix`；
+- **OpenVPN 功能**：`access_openvpn`、`access_openvpn_redirect`、`access_openvpn_client_ping`、`access_openvpn_tcp_reset`、`access_openvpn_snat_vip`；
+- **OpenVPN 性能**：`access_openvpn_perf`（时延/吞吐/协议维度对比）；
+- **Proxy 能力**：`proxy_http`、`proxy_tcp`、`proxy_name`、`proxy_name_backends`；
+- **Switch 基础隧道**：`switch_tcp`、`switch_udp`；
+- **Switch IPSec 叠加互联**：`switch_ipsec_vxlan`、`switch_ipsec_gre`；
+- **Switch IPSec 叠加性能**：`switch_ipsec_vxlan_perf`；
+- **Switch ACL 与访问控制**：`switch_acl`、`switch_acl_default_action`、`switch_ztrust`；
+- **Switch 路由与转发**：`switch_bgp`、`switch_route3`、`switch_findhop`；
+- **Switch NAT 与流控**：`switch_dnat`、`switch_ratelimit`；
+- **Switch Namespace/VRF 与隔离**：`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn`；
+- **Switch Output 综合性能**：`switch_output_perf`（混合 TCP/UDP 的连通、时延、丢包、带宽）。
