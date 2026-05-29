@@ -25,7 +25,11 @@ const LeaseTime = "2006-01-02T15"
 const SimpleTime = "2006-01-02 15:04:05"
 const MacBase = 0x00
 
-var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz")
+var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz~_+.^ABCDEFGHIGKLMNOPQRSTUVWXYZ")
+
+func newRand() *rand.Rand {
+	return rand.New(rand.NewSource(time.Now().UnixNano()))
+}
 
 func IsYaml(file string) bool {
 	return strings.HasSuffix(file, ".yaml")
@@ -37,21 +41,21 @@ func IsJson(file string) bool {
 
 func GenString(n int) string {
 	buffer := make([]byte, n)
-	rand.Seed(time.Now().UnixNano())
+	r := newRand()
 	for i := range buffer {
-		buffer[i] = Letters[rand.Int63()%int64(len(Letters))]
+		buffer[i] = Letters[r.Int63()%int64(len(Letters))]
 	}
-	buffer[0] = Letters[rand.Int63()%26+10]
+	buffer[0] = Letters[r.Int63()%26+10]
 	return string(buffer)
 }
 
 func GenLetters(n int) []byte {
 	buffer := make([]byte, n)
-	rand.Seed(time.Now().UnixNano())
+	r := newRand()
 	for i := range buffer {
-		buffer[i] = Letters[rand.Int63()%int64(len(Letters))]
+		buffer[i] = Letters[r.Int63()%int64(len(Letters))]
 	}
-	buffer[0] = Letters[rand.Int63()%26+10]
+	buffer[0] = Letters[r.Int63()%26+10]
 	return buffer
 }
 
@@ -60,22 +64,20 @@ func GenEthAddr(n int) []byte {
 		n = 6
 	}
 	data := make([]byte, n)
-	rand.Seed(time.Now().UnixNano())
+	r := newRand()
 	for i := range data {
-		data[i] = byte(rand.Uint32() & 0xFF)
+		data[i] = byte(r.Uint32() & 0xFF)
 	}
 	data[0] = MacBase
 	return data
 }
 
 func GenUint32() uint32 {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Uint32()
+	return newRand().Uint32()
 }
 
 func GenInt32() int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Int()
+	return newRand().Int()
 }
 
 func Marshal(v any, pretty bool) ([]byte, error) {

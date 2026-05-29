@@ -1322,6 +1322,37 @@ select option {
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="dlg-network-crypt">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="modal-title">Configure Pre-shared Crypt</span>
+      <button class="modal-close" onclick="closeAddDialog('network-crypt')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group"><label>Algorithm <span style="color:var(--text-muted);font-weight:400;">(optional, default xor)</span></label>
+        <select class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-crypt-algorithm">
+          <option value="xor">xor</option>
+          <option value="aes-128">aes-128</option>
+          <option value="aes-256">aes-256</option>
+          <option value="sm4">sm4</option>
+          <option value="salsa20">salsa20</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Secret</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="modal-input" style="width:100%;background:#21262d;border-color:var(--border);color:var(--text);" id="network-crypt-secret" type="text" placeholder="e.g. ea64d5b0c96c">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="generateNetworkCryptSecret()">Generate</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="closeAddDialog('network-crypt')">Cancel</button>
+        <button class="btn btn-dark btn-sm" onclick="saveNetworkCrypt()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Login Page -->
 
 <!-- Dashboard App -->
@@ -2176,6 +2207,29 @@ function gen_password() {
   let p = '';
   for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
   return p;
+}
+
+function gen_hex_secret(bytes) {
+  const size = Number.isFinite(bytes) && bytes > 0 ? bytes : 16;
+  const arr = new Uint8Array(size);
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    window.crypto.getRandomValues(arr);
+  } else {
+    for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(arr).map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function generateNetworkCryptSecret() {
+  const el = document.getElementById('network-crypt-secret');
+  if (!el) return;
+  const algo = String((document.getElementById('network-crypt-algorithm') || {}).value || '').toLowerCase();
+  let size = 16;
+  if (algo === 'aes-256' || algo === 'salsa20') size = 32;
+  el.value = gen_hex_secret(size);
+  el.focus();
+  el.select();
+  show_toast('Secret generated', 'success');
 }
 
 // =====================
@@ -3952,6 +4006,7 @@ function openNetModal(i) {
   const bridge = cfg.bridge || {};
   const subnet = cfg.subnet || {};
   const ovpn = cfg.openvpn || null;
+  const crypt = cfg.crypt || null;
   const derivedSubnetNetmask = bridgeNetmask(bridge);
   const subnetEditable = !!(bridge && bridge.address && derivedSubnetNetmask);
 
@@ -4053,9 +4108,41 @@ function openNetModal(i) {
       '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">OpenVPN is disabled for this virtual network.</div>' +
     '</div>';
   }
-  document.getElementById('modal-ovpn-section').innerHTML = ovpnHtml
-    ? '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' + ovpnHtml + '</div>'
-    : '';
+  let cryptHtml = '';
+  if (crypt && (crypt.algorithm || crypt.secret)) {
+    const cryptItems = [
+      ['Algorithm', crypt.algorithm || 'xor'],
+      ['Secret', crypt.secret || '']
+    ].filter(([, v]) => v != null && v !== '');
+    cryptHtml = '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div class="detail-section-title" style="margin:0;padding:0;border:none;">Pre-shared Crypt</div>' +
+        '<div class="table-actions-toolbar openvpn-actions" style="overflow:visible;">' +
+          '<button class="action-btn btn-detail" onclick="openEnableNetworkCrypt()" type="button">Edit</button>' +
+          '<button class="action-btn action-delete" onclick="disableNetworkCrypt()" type="button">Disable</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:10px;"><div class="detail-grid">' +
+      cryptItems.map(([k, v]) =>
+        '<div class="detail-item"><span class="detail-key">' + k + '</span><span class="detail-val">' + esc(v) + '</span></div>'
+      ).join('') +
+      '</div></div>' +
+    '</div>';
+  } else {
+    cryptHtml = '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+        '<div class="detail-section-title" style="margin:0;padding:0;border:none;">Pre-shared Crypt</div>' +
+        '<div class="table-actions-toolbar openvpn-actions" style="overflow:visible;">' +
+          '<button class="action-btn action-dark" onclick="openEnableNetworkCrypt()" type="button">Enable</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:10px;font-size:13px;color:var(--text-muted);">Pre-shared crypt is disabled for this virtual network.</div>' +
+    '</div>';
+  }
+
+  document.getElementById('modal-ovpn-section').innerHTML =
+    (ovpnHtml ? '<div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--border);">' + ovpnHtml + '</div>' : '') +
+    cryptHtml;
 
   document.getElementById('modal-json').textContent = JSON.stringify(n, null, 2);
   document.getElementById('modal-yaml').textContent = 'Loading...';
@@ -4081,6 +4168,24 @@ function openEnableNetworkOpenVPN() {
   setOpenVPNCipherSelection(ovpn.cipher || '');
   openAddDialog('network-openvpn');
   setTimeout(() => document.getElementById('network-ovpn-listen').focus(), 50);
+}
+
+function openEnableNetworkCrypt() {
+  const n = _networksData[_modalNetIndex] || {};
+  const cfg = n.config || {};
+  const crypt = cfg.crypt || {};
+  const algo = String(crypt.algorithm || '').toLowerCase();
+  const algoEl = document.getElementById('network-crypt-algorithm');
+  if (algoEl) {
+    if (algo === 'xor' || algo === 'aes-128' || algo === 'aes-256' || algo === 'sm4' || algo === 'salsa20') {
+      algoEl.value = algo;
+    } else {
+      algoEl.value = 'xor';
+    }
+  }
+  document.getElementById('network-crypt-secret').value = crypt.secret || '';
+  openAddDialog('network-crypt');
+  setTimeout(() => document.getElementById('network-crypt-secret').focus(), 50);
 }
 
 const OPENVPN_CIPHER_OPTIONS = ['AES-128-GCM', 'AES-128-CBC', 'AES-256-CBC', 'AES-256-GCM', 'SM4-CBC', 'SM4-GCM'];
@@ -4238,6 +4343,41 @@ async function restartNetworkOpenVPN() {
     show_toast('OpenVPN restarting', 'success');
   } catch(e) {
     show_toast('Failed to restart OpenVPN: ' + e.message, 'error');
+  }
+}
+
+async function saveNetworkCrypt() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  const algorithm = document.getElementById('network-crypt-algorithm').value.trim();
+  const secret = document.getElementById('network-crypt-secret').value.trim();
+  if (!secret) { show_toast('Secret is required', 'error'); return; }
+  try {
+    const body = { secret };
+    if (algorithm) body.algorithm = algorithm;
+    await api_post('/api/network/' + encodeURIComponent(n.name) + '/crypt', body);
+    closeAddDialog('network-crypt');
+    show_toast('Pre-shared crypt updated', 'success');
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+  } catch(e) {
+    show_toast('Failed to update pre-shared crypt: ' + e.message, 'error');
+  }
+}
+
+async function disableNetworkCrypt() {
+  const n = _networksData[_modalNetIndex];
+  if (!n) return;
+  if (!await showConfirm('Disable pre-shared crypt for network "' + n.name + '"?', 'Disable Pre-shared Crypt')) return;
+  try {
+    await api_delete('/api/network/' + encodeURIComponent(n.name) + '/crypt');
+    show_toast('Pre-shared crypt disabled', 'success');
+    const updated = await api_get('/api/network/' + encodeURIComponent(n.name));
+    if (updated) _networksData[_modalNetIndex] = updated;
+    openNetModal(_modalNetIndex);
+  } catch(e) {
+    show_toast('Failed to disable pre-shared crypt: ' + e.message, 'error');
   }
 }
 
@@ -4941,6 +5081,8 @@ function openAddDialog(type) {
   } else if (type === 'network-output') {
     modalResetOutputForm();
     setTimeout(() => document.getElementById('network-out-remote').focus(), 50);
+  } else if (type === 'network-crypt') {
+    setTimeout(() => document.getElementById('network-crypt-secret').focus(), 50);
   } else if (type === 'ceci-entry') {
     ceciResetForm();
     document.getElementById('ceci-entry-http-wrap').classList.remove('hidden');

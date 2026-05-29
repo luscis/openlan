@@ -180,9 +180,10 @@ func (t *Terminal) CmdHelp(args []string) {
 }
 
 func (t *Terminal) signal() {
-	x := make(chan os.Signal)
-	signal.Notify(x, os.Interrupt, syscall.SIGQUIT) //CTL+/
-	signal.Notify(x, os.Interrupt, syscall.SIGINT)  //CTL+C
+	// use a buffered channel to avoid blocking signal delivery
+	x := make(chan os.Signal, 1)
+	// notify for interrupt, quit and sigint
+	signal.Notify(x, os.Interrupt, syscall.SIGQUIT, syscall.SIGINT)
 }
 
 func (t *Terminal) loop() {
@@ -198,22 +199,23 @@ func (t *Terminal) loop() {
 			continue
 		}
 		cmd := args[0]
-		switch {
-		case cmd == "":
-			break
-		case cmd == "?":
+		switch cmd {
+		case "":
+			// empty command: skip to next prompt
+			continue
+		case "?":
 			t.CmdHelp(args)
-		case cmd == "cd":
+		case "cd":
 			t.CmdCd(args)
-		case cmd == "pwd":
+		case "pwd":
 			t.CmdPwd(args)
-		case cmd == "mode":
+		case "mode":
 			t.CmdMode(args)
-		case cmd == "show":
+		case "show":
 			t.CmdShow(args)
-		case cmd == "edit":
+		case "edit":
 			t.CmdEdit(args)
-		case cmd == "exit" || cmd == "quit":
+		case "exit", "quit":
 			t.CmdBye(args)
 			goto quit
 		default:

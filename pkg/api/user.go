@@ -122,6 +122,9 @@ func (h User) Access(w http.ResponseWriter, r *http.Request) {
 
 	if cfg := h.cs.Config(); cfg != nil {
 		yaml.Crypt = cfg.Crypt
+		if netCfg := cfg.GetNetwork(user.Network); netCfg != nil && netCfg.Crypt != nil && !netCfg.Crypt.IsZero() {
+			yaml.Crypt = netCfg.Crypt
+		}
 		yaml.Protocol = cfg.Protocol
 	}
 	connection := fmt.Sprintf("%s:10002", GetServer(r))

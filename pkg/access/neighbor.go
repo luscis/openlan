@@ -2,9 +2,10 @@ package access
 
 import (
 	"encoding/binary"
-	"github.com/luscis/openlan/pkg/libol"
 	"sync"
 	"time"
+
+	"github.com/luscis/openlan/pkg/libol"
 )
 
 type NeighborListener struct {
@@ -132,9 +133,7 @@ func (n *Neighbors) Clear() {
 	}
 	//execute delete.
 	for _, d := range deletes {
-		if _, ok := n.neighbors[d]; ok {
-			delete(n.neighbors, d)
-		}
+		delete(n.neighbors, d)
 	}
 }
 
