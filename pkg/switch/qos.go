@@ -26,7 +26,6 @@ type QosUser struct {
 }
 
 func (qr *QosUser) RuleName(dir string) string {
-
 	return "Qos_" + qr.QosChainName + "-" + dir + "-" + qr.uniqueName
 }
 
@@ -57,7 +56,6 @@ func (qr *QosUser) BuildChainIn(chain *cn.FireWallChain) {
 			Jump:    "DROP",
 		})
 		qr.qosChainIn.Install()
-
 		qr.BuildChainInJump(chain)
 	}
 }
@@ -103,7 +101,6 @@ func (qr *QosUser) ClearChainIn(chain *cn.FireWallChain) {
 			qr.ClearChainInJump(chain)
 		}
 		qr.qosChainIn.Cancel()
-
 		qr.qosChainIn = nil
 	}
 }
@@ -158,11 +155,9 @@ func (q *QosCtrl) ChainIn() string {
 }
 
 func (q *QosCtrl) Initialize() {
-	//q.Start()
 	q.chainIn = cn.NewFireWallChain(q.ChainIn(), cn.TMangle, "")
 
 	qosCfg := config.GetQos(q.Name)
-
 	if qosCfg != nil && len(qosCfg.Config) > 0 {
 		for name, limit := range qosCfg.Config {
 			qr := &QosUser{
@@ -175,20 +170,17 @@ func (q *QosCtrl) Initialize() {
 			}
 			q.Rules[name] = qr
 		}
-
 	}
+	q.chainIn.Install()
 }
 
 func (q *QosCtrl) Start() {
 	q.out.Info("Qos.Start")
-	q.chainIn.Install()
-
 	if len(q.Rules) > 0 {
 		for _, rule := range q.Rules {
 			rule.Start(q.chainIn)
 		}
 	}
-
 	libol.Go(q.Update)
 }
 
@@ -199,7 +191,6 @@ func (q *QosCtrl) Stop() {
 			rule.Clear(q.chainIn)
 		}
 	}
-
 	q.chainIn.Cancel()
 }
 

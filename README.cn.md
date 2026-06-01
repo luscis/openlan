@@ -22,14 +22,14 @@ OpenLAN 是一套多租户网络解决方案，可在广域网链路上传输局
 
 ## ✨ 核心功能
 
-- 🔒 **多网络空间隔离**：支持划分多个独立的网络空间，为不同业务提供逻辑网络隔离；
-- 🔗 **Central Switch 互联与路由转发**：支持跨站点互联、三层转发与 SNAT/DNAT，覆盖分支到中心的访问与跨网络发布场景；
-- 🖥️ **OpenVPN 接入能力**：支持 OpenVPN 接入、路由重定向、客户端互通，以及通过 SNAT 访问远端 VIP；
-- 🛡️ **隧道与叠加网络**：支持 TCP/UDP 传输与 IPSec+VxLAN/GRE 叠加隧道，满足跨地域组网与租户隔离需求；
-- 🔑 **认证与分级加密**：支持用户名/密码认证、同账号互斥控制、多管理员并发登录，以及网络级预共享密钥加密；
-- 🧭 **策略控制面**：内置 ACL、零信任控制（Guest/Knock）、FindHop 路由绑定、External BGP 邻居与前缀过滤策略；
-- ⚙️ **可运维流量治理**：支持限速规则动态调整、规则重载一致性、NAT/路由状态可观测；
-- 🔄 **灵活代理转发**：支持 HTTP/TCP/DNS 代理与按域名匹配后端，便于按业务策略分流流量。
+- 🔒 **多网络与命名空间隔离**：支持多网络空间、VRF/Namespace 绑定、跨网络隔离、按作用域启用 SNAT，以及网络内 DHCP 地址分配；
+- 🔗 **Central Switch 互联与路由转发**：支持 TCP/UDP output、三节点转发、静态路由、FindHop 主备/负载均衡和 External BGP 前缀过滤；
+- 🖥️ **OpenVPN 接入能力**：支持 OpenVPN 接入、静态客户端地址、客户端互通、路由重定向、TCP reset 处理，以及经 SNAT 访问远端 VIP；
+- 🛡️ **隧道与叠加网络**：支持 TCP/UDP 传输、VxLAN/GRE output 与 IPSec 隧道，并覆盖无 IPSec/启用 IPSec 的连通和性能采样；
+- 🔑 **认证与分级加密**：支持用户名/密码认证、同账号互斥、多管理员并发登录、全局与网络级预共享密钥，以及 AES/SM4 OpenVPN cipher 协商；
+- 🧭 **策略控制面**：内置 ACL 默认动作、精细规则保存/重载、零信任 Guest/Knock 控制、DNAT 端口发布和客户端 QoS 规则；
+- ⚙️ **可运维流量治理**：支持限速规则动态调整、Linux tc/iptables 状态观测、reload 持久性，以及 ping/RTT/iperf3 性能采样；
+- 🔄 **Ceci 代理与服务转发**：支持 HTTP/TCP/DNS Proxy、按域名匹配多后端，以及 TCP/HTTP Service 的路由后端、全局后端和重启恢复。
 
 ## 🗺️ 典型应用场景
 
@@ -103,8 +103,8 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
 
 ## 🧪 场景测试
 
-OpenLAN 提供了 33 个可直接执行的场景测试脚本，位于 `tests/cases`，
-共组织为 59 个验证函数，累计包含 796 条断言。
+OpenLAN 提供了 37 个可直接执行的场景测试脚本，位于 `tests/cases`，
+共组织为 69 个验证函数，累计包含 939 条断言。
 统一入口为 `tests/start.sh`。
 
 常用命令：
@@ -125,18 +125,16 @@ bash tests/start.sh --report
 
 报告查看：[run.md](./docs/report/latest/run.md)
 
-功能覆盖（按能力分组）：
+功能覆盖（按测试场景分组）：
 
-- **Access 认证与会话（核心）**：`access_success`、`access_fail`、`access_admin_multi_login`、`access_same_user_mutex`；
-- **Access 加密与策略作用域**：`access_pre_network_crypt`、`access_snat_scope_matrix`；
-- **OpenVPN 功能**：`access_openvpn`、`access_openvpn_redirect`、`access_openvpn_client_ping`、`access_openvpn_tcp_reset`、`access_openvpn_snat_vip`；
-- **OpenVPN 性能**：`access_openvpn_perf`（时延/吞吐/协议维度对比）；
-- **Proxy 能力**：`proxy_http`、`proxy_tcp`、`proxy_name`、`proxy_name_backends`；
-- **Switch 基础隧道**：`switch_tcp`、`switch_udp`；
-- **Switch IPSec 叠加互联**：`switch_ipsec_vxlan`、`switch_ipsec_gre`；
-- **Switch IPSec 叠加性能**：`switch_ipsec_vxlan_perf`；
-- **Switch ACL 与访问控制**：`switch_acl`、`switch_acl_default_action`、`switch_ztrust`；
-- **Switch 路由与转发**：`switch_bgp`、`switch_route3`、`switch_findhop`；
-- **Switch NAT 与流控**：`switch_dnat`、`switch_ratelimit`；
-- **Switch Namespace/VRF 与隔离**：`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn`；
-- **Switch Output 综合性能**：`switch_output_perf`（混合 TCP/UDP 的连通、时延、丢包、带宽）。
+- **Access 认证与会话**：`access_success` 验证双客户端登录与互通，并覆盖全局加密更新后的重连；`access_fail` 验证错误密码拒绝；`access_admin_multi_login` 验证管理员多端并发；`access_same_user_mutex` 验证普通用户同账号互斥登录；
+- **Access 加密、SNAT 与 QoS**：`access_pre_network_crypt` 验证网络级预共享密钥与更新后新旧客户端行为；`access_snat_scope_matrix` 覆盖 OpenVPN、Network A 与 Network B 的 SNAT 作用域矩阵；`access_client_qos` 验证客户端 QoS 规则的新增、更新、列表、保存和删除；
+- **OpenVPN 接入链路**：`access_openvpn` 覆盖 OpenVPN 添加/删除、客户端 CCD 文件、非法 cipher 拒绝以及 AES/SM4 数据通道协商；`access_openvpn_client_ping` 验证静态地址客户端互 ping；`access_openvpn_redirect` 验证源路由重定向到二级 Switch 后的 VIP 访问；`access_openvpn_tcp_reset` 验证服务端 TCP reset 场景；`access_openvpn_snat_vip` 验证 OpenVPN 客户端经 SNAT 访问远端 VIP；
+- **OpenVPN 性能采样**：`access_openvpn_perf` 覆盖 TCP/UDP OpenVPN 的连通性、0% 丢包 RTT 摘要、iperf3 带宽采样和 reload 持久性；
+- **Ceci Proxy 与 Service**：`proxy_http`、`proxy_tcp`、`proxy_name`、`proxy_name_backends` 覆盖 HTTP/TCP/DNS 代理、域名匹配多后端路由和 reload 后恢复；`service_tcp`、`service_http` 覆盖 Ceci Service 的 TCP/HTTP 转发、后端路由/全局后端和重启恢复；
+- **Switch 基础输出链路**：`switch_tcp`、`switch_udp` 覆盖 TCP/UDP output 的认证、连通、reload 和 output 删除后的隔离；
+- **Switch IPSec 与叠加隧道**：`switch_ipsec_vxlan`、`switch_ipsec_gre` 覆盖 VxLAN/GRE output 与 IPSec 隧道建立、reload 和删除；`switch_ipsec_vxlan_perf` 对比无 IPSec 与启用 IPSec 后的 ping、RTT 和 TCP/UDP iperf3 采样；
+- **Switch ACL 与零信任**：`switch_acl` 验证 VIP TCP/80 与 ICMP 的 ACL 新增、保存、reload 和清空；`switch_acl_default_action` 验证默认 drop/accept 切换；`switch_ztrust` 验证 ZTrust 启停、admin 指定地址添加 Guest、用户 token 自动地址添加 Guest、Knock add/list 从 token 推导用户与网络、其他用户 knock 失败和 reload 持久性；
+- **Switch 路由与转发控制**：`switch_bgp` 验证 BGP 邻居建立、前缀接收/发布和 reload；`switch_route3` 验证三节点转发与静态路由可达；`switch_findhop` 验证 FindHop 路由绑定、删除保护、主备和负载均衡；
+- **Switch NAT、DHCP、限速与命名空间隔离**：`switch_dnat` 验证 DNAT 新增、访问、reload 和删除；`switch_dhcp` 验证 DHCP enable/disable API、独立 dhcpConfig 地址池/Gateway/DNS 配置、dnsmasq 启停、命名空间客户端获取租约和 reload 持久性；`switch_ratelimit` 验证桥接与 OpenVPN 设备限速规则更新和 tc 状态；`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn` 覆盖 VRF 绑定、SNAT 源地址改写、OpenVPN 设备入 VRF、跨网络隔离和 reload 持久性；
+- **Switch Output 综合性能**：`switch_output_perf` 覆盖中心 Switch 同时接入 UDP/TCP output 的认证、连通性、0% 丢包 RTT 摘要、带宽采样和 reload 恢复。

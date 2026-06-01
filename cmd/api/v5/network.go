@@ -1,6 +1,8 @@
 package v5
 
 import (
+	"strings"
+
 	"github.com/luscis/openlan/cmd/api"
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
@@ -600,9 +602,14 @@ func (qr QosRule) Url(prefix, name string) string {
 func (qr QosRule) Add(c *cli.Context) error {
 	name := c.String("name")
 	url := qr.Url(c.String("url"), name)
+	client := c.String("client")
 
+	fullname := client
+	if !strings.Contains(client, "@") {
+		fullname = client + "@" + name
+	}
 	rule := &schema.Qos{
-		Name:    c.String("client"),
+		Name:    fullname,
 		InSpeed: c.Float64("inspeed"),
 	}
 
@@ -617,11 +624,14 @@ func (qr QosRule) Add(c *cli.Context) error {
 func (qr QosRule) Remove(c *cli.Context) error {
 	name := c.String("name")
 	url := qr.Url(c.String("url"), name)
-
-	rule := &schema.Qos{
-		Name: c.String("client"),
+	client := c.String("client")
+	fullname := client
+	if !strings.Contains(client, "@") {
+		fullname = client + "@" + name
 	}
-
+	rule := &schema.Qos{
+		Name: fullname,
+	}
 	clt := qr.NewHttp(c.String("token"))
 	if err := clt.DeleteJSON(url, rule, nil); err != nil {
 		return err

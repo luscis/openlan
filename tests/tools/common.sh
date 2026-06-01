@@ -68,7 +68,7 @@ _check() {
 
   if [ $code -ne 0 ]; then
     echo "Last output:"
-    cat $out
+    tail -n 20 $out
   fi
   return $code
 }
@@ -93,7 +93,7 @@ _check_fuzzy() {
   done
   if [ $code -ne 0 ]; then
     echo "Last output:"
-    cat $out
+    tail -n 20 $out
   fi
   return $code
 }

@@ -455,6 +455,54 @@ func (h SNAT) Delete(w http.ResponseWriter, r *http.Request) {
 	ResponseJson(w, "success")
 }
 
+type DHCP struct {
+	cs SwitchApi
+}
+
+func (h DHCP) Router(router *mux.Router) {
+	router.HandleFunc("/api/network/{id}/dhcp", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/dhcp", h.Delete).Methods("DELETE")
+	router.HandleFunc("/api/network/{id}/dhcp/enable", h.Post).Methods("POST")
+	router.HandleFunc("/api/network/{id}/dhcp/disable", h.Disable).Methods("POST")
+}
+
+func (h DHCP) Post(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		value := schema.DHCP{}
+		if r.Body != nil && r.ContentLength != 0 {
+			if err := GetData(r, &value); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+		obj.SetDHCP(value)
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
+func (h DHCP) Delete(w http.ResponseWriter, r *http.Request) {
+	h.Disable(w, r)
+}
+
+func (h DHCP) Disable(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["id"]
+
+	if obj := Call.GetWorker(name); obj != nil {
+		obj.SetDHCP(schema.DHCP{Disable: true})
+	} else {
+		http.Error(w, name+" not found", http.StatusBadRequest)
+		return
+	}
+	ResponseJson(w, "success")
+}
+
 type Subnet struct {
 	cs SwitchApi
 }

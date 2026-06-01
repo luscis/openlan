@@ -22,14 +22,14 @@ If you need a flexible VPN solution for secure enterprise access, traffic proxyi
 
 ## ✨ Key Features
 
-- 🔒 **Network Segmentation**: Divide the network into multiple isolated spaces, providing logical network isolation for different services.
-- 🔗 **Inter-Switch Routing & NAT**: Build cross-site interconnection with L3 forwarding, SNAT, and DNAT for branch-to-center and service publishing scenarios.
-- 🖥️ **OpenVPN Access**: Support OpenVPN onboarding, route redirect, client-to-client reachability, and remote VIP access through SNAT paths.
-- 🛡️ **Tunnels & Overlays**: Support TCP/UDP transports plus IPSec with VxLAN/GRE overlays for multi-region networking and tenant separation.
-- 🔑 **Authentication & Layered Crypt**: Support username/password auth, same-user mutex, concurrent admin logins, and per-network pre-shared crypt.
-- 🧭 **Policy Control Plane**: Built-in ACLs, zero-trust controls (Guest/Knock), FindHop route binding, and External BGP peering with prefix filtering.
-- ⚙️ **Operational Traffic Governance**: Dynamic rate-limit updates, reload consistency, and observable NAT/route state for day-2 operations.
-- 🔄 **Flexible Proxy Forwarding**: HTTP/TCP/DNS proxy with domain-based backend routing for policy-driven traffic splitting.
+- 🔒 **Multi-Network and Namespace Isolation**: Support multiple network spaces, VRF/Namespace binding, cross-network isolation, scope-based SNAT, and in-network DHCP address allocation.
+- 🔗 **Central Switch Interconnect and Routing**: Support TCP/UDP outputs, three-node forwarding, static routes, FindHop active-backup/load balancing, and External BGP prefix filters.
+- 🖥️ **OpenVPN Access**: Support OpenVPN onboarding, static client addresses, client-to-client reachability, route redirect, TCP reset handling, and remote VIP access through SNAT.
+- 🛡️ **Tunnels and Overlays**: Support TCP/UDP transports, VxLAN/GRE outputs, and IPSec tunnels, with connectivity and performance sampling before and after IPSec is enabled.
+- 🔑 **Authentication and Layered Crypt**: Support username/password auth, same-user mutex, concurrent admin logins, global and per-network pre-shared crypt, plus AES/SM4 OpenVPN cipher negotiation.
+- 🧭 **Policy Control Plane**: Built-in ACL default actions, persisted fine-grained rules, zero-trust Guest/Knock controls, DNAT service publishing, and client QoS rules.
+- ⚙️ **Operational Traffic Governance**: Dynamic rate-limit updates, observable Linux tc/iptables state, reload persistence, and ping/RTT/iperf3 performance sampling.
+- 🔄 **Ceci Proxy and Service Forwarding**: HTTP/TCP/DNS Proxy, domain-matched multi-backend routing, and TCP/HTTP Service forwarding with route/global backends and restart recovery.
 
 ## 🗺️ Use Cases
 
@@ -103,8 +103,8 @@ OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
 
 ## 🧪 Scenario Tests
 
-OpenLAN provides 33 executable scenario scripts under `tests/cases`,
-organized into 59 validation functions with 796 assertions in total.
+OpenLAN provides 37 executable scenario scripts under `tests/cases`,
+organized into 69 validation functions with 939 assertions in total.
 The unified entrypoint is `tests/start.sh`.
 
 Common commands:
@@ -125,18 +125,16 @@ bash tests/start.sh --report
 
 Report: [run.md](./docs/report/latest/run.md)
 
-Capability coverage:
+Capability coverage by test scenario:
 
-- **Access authentication and sessions (core)**: `access_success`, `access_fail`, `access_admin_multi_login`, `access_same_user_mutex`;
-- **Access encryption and scope**: `access_pre_network_crypt`, `access_snat_scope_matrix`;
-- **OpenVPN functional flows**: `access_openvpn`, `access_openvpn_redirect`, `access_openvpn_client_ping`, `access_openvpn_tcp_reset`, `access_openvpn_snat_vip`;
-- **OpenVPN performance**: `access_openvpn_perf` (latency, throughput, and protocol-level comparison);
-- **Proxy capabilities**: `proxy_http`, `proxy_tcp`, `proxy_name`, `proxy_name_backends`;
-- **Switch baseline tunnels**: `switch_tcp`, `switch_udp`;
-- **Switch IPSec overlays**: `switch_ipsec_vxlan`, `switch_ipsec_gre`;
-- **Switch IPSec overlay performance**: `switch_ipsec_vxlan_perf`;
-- **Switch ACL and access control**: `switch_acl`, `switch_acl_default_action`, `switch_ztrust`;
-- **Switch routing and forwarding**: `switch_bgp`, `switch_route3`, `switch_findhop`;
-- **Switch NAT and traffic control**: `switch_dnat`, `switch_ratelimit`;
-- **Switch namespace/VRF and isolation**: `switch_namespace`, `switch_namespace_snat`, `switch_namespace_openvpn`;
-- **Switch output performance**: `switch_output_perf` (mixed TCP/UDP connectivity, latency, loss, and bandwidth).
+- **Access authentication and sessions**: `access_success` verifies two-client login, reachability, and reconnect after global crypt update; `access_fail` verifies wrong-password rejection; `access_admin_multi_login` verifies concurrent admin logins; `access_same_user_mutex` verifies same-user mutex for regular users.
+- **Access crypt, SNAT, and QoS**: `access_pre_network_crypt` verifies per-network pre-shared crypt and client behavior after key updates; `access_snat_scope_matrix` covers the SNAT scope matrix for OpenVPN, Network A, and Network B; `access_client_qos` verifies client QoS rule add, update, list, save, and remove flows.
+- **OpenVPN access paths**: `access_openvpn` covers OpenVPN add/remove, CCD files, invalid cipher rejection, and AES/SM4 data-channel negotiation; `access_openvpn_client_ping` verifies static-address client-to-client ping; `access_openvpn_redirect` verifies source-route redirect to a second switch for VIP access; `access_openvpn_tcp_reset` verifies server-side TCP reset handling; `access_openvpn_snat_vip` verifies OpenVPN client access to a remote VIP through SNAT.
+- **OpenVPN performance sampling**: `access_openvpn_perf` covers TCP/UDP OpenVPN connectivity, 0% packet-loss RTT summaries, iperf3 bandwidth sampling, and reload persistence.
+- **Ceci Proxy and Service**: `proxy_http`, `proxy_tcp`, `proxy_name`, and `proxy_name_backends` cover HTTP/TCP/DNS proxying, domain-matched multi-backend routing, and reload recovery; `service_tcp` and `service_http` cover Ceci Service TCP/HTTP forwarding, route/global backends, and restart recovery.
+- **Switch baseline output links**: `switch_tcp` and `switch_udp` cover TCP/UDP output authentication, reachability, reload behavior, and isolation after output removal.
+- **Switch IPSec and overlays**: `switch_ipsec_vxlan` and `switch_ipsec_gre` cover VxLAN/GRE outputs with IPSec tunnel establishment, reload, and removal; `switch_ipsec_vxlan_perf` compares ping, RTT, and TCP/UDP iperf3 samples before and after IPSec is enabled.
+- **Switch ACL and zero trust**: `switch_acl` verifies ACL add, save, reload, and flush for VIP TCP/80 and ICMP; `switch_acl_default_action` verifies default drop/accept switching; `switch_ztrust` verifies ZTrust enable/disable, admin Guest add with explicit address, user-token Guest add with auto address lookup, Guest/Knock add/list user and network derivation from token, other-user knock rejection, and reload persistence.
+- **Switch routing and forwarding control**: `switch_bgp` verifies BGP peering, prefix advertise/receive filters, and reload; `switch_route3` verifies three-node forwarding and static-route reachability; `switch_findhop` verifies FindHop route binding, remove guards, active-backup, and load balancing.
+- **Switch NAT, DHCP, rate limit, and namespace isolation**: `switch_dnat` verifies DNAT add, reachability, reload, and remove; `switch_dhcp` verifies DHCP enable/disable APIs, independent dhcpConfig address pool/Gateway/DNS config, dnsmasq start/stop, lease allocation for a namespace client, and reload persistence; `switch_ratelimit` verifies bridge/OpenVPN device rate-limit updates and Linux tc state; `switch_namespace`, `switch_namespace_snat`, and `switch_namespace_openvpn` cover VRF binding, SNAT source rewriting, OpenVPN device VRF membership, cross-network isolation, and reload persistence.
+- **Switch output performance**: `switch_output_perf` covers one center switch with mixed UDP/TCP outputs, authentication, connectivity, 0% packet-loss RTT summaries, bandwidth sampling, and reload recovery.
