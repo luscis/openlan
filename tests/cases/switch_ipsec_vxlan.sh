@@ -116,6 +116,13 @@ test_vxlan_output_perf() {
   assert_cmd docker exec $sw1_name pkill -f "iperf3 -s -D -p 5207" || true
 }
 
+test_vxlan_output_remove() {
+  # vxlan link name uses "xei<segment>".
+  local dev="xei1056"
+  assert_cmd docker exec $sw2_name openlan network --name example output rm --device "$dev"
+  assert_unmatch 20 "docker exec $sw2_name ping -c 3 192.56.0.1" "bytes from"
+}
+
 setup_topology() {
   setup_net
   setup_sw1
@@ -125,6 +132,7 @@ setup_topology() {
   test_vxlan_output_perf
   test_vxlan_output_ping_with_ipsec
   test_vxlan_output_perf
+  test_vxlan_output_remove
 }
 
 setup() {

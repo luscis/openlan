@@ -24,7 +24,7 @@ _wait() {
   local code=1
   local out=/tmp/_wait.1
 
-  $cmd 2>&1 | _flush $out & disown
+  eval "$cmd" 2>&1 | _flush $out & disown
   local pid=$!
 
   for i in $(seq 1 $count); do
@@ -54,9 +54,9 @@ _check() {
   local code=1
   local out=/tmp/_check.1
 
+  rm -f $out
   for i in $(seq 1 $count); do
-    rm -f $out
-    if $cmd > $out 2>&1; then
+    if eval "$cmd" > $out 2>&1; then
       :
     fi
     if cat $out | grep "$match" -C 3 --color; then
@@ -66,8 +66,10 @@ _check() {
     sleep 1
   done
 
-  rm -f $out
-  
+  if [ $code -ne 0 ]; then
+    echo "Last output:"
+    cat $out
+  fi
   return $code
 }
 
@@ -77,9 +79,10 @@ _check_fuzzy() {
   local code=1
   local out=/tmp/_check_fuzzy.1
 
+  rm -f $out
   for i in $(seq 1 $count); do
-    rm -f $out
-    if $cmd > $out 2>&1; then
+    echo "" > $out
+    if eval "$cmd" > $out 2>&1; then
       :
     fi
     if cat $out | grep -Ei "$pattern" -C 3 --color; then
@@ -88,8 +91,10 @@ _check_fuzzy() {
     fi
     sleep 1
   done
-
-  rm -f $out
+  if [ $code -ne 0 ]; then
+    echo "Last output:"
+    cat $out
+  fi
   return $code
 }
 

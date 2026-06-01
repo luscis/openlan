@@ -127,21 +127,24 @@ function requires() {
         run_cmd yum install -y epel-release
         run_cmd yum install -y openssl net-tools iptables iputils iperf3 tcpdump
         run_cmd yum install -y openvpn dnsmasq bridge-utils ipset procps wget socat
+        run_cmd yum install -y dnsutils haproxy
     elif [ "$sys"x == "debian"x ]; then
         run_cmd apt-get update -y
         run_cmd apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat
         run_cmd apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
+        run_cmd apt-get install -y dnsutils haproxy
     fi
     ## Install libreswan from github.
     if [ "$sys"x == "redhat"x ]; then
-        run_cmd wget -O /tmp/libreswan-4.10-1.el7.x86_64.rpm https://github.com/luscis/packages/raw/main/redhat/centos7/libreswan-4.10-1.el7.x86_64.rpm
-        if ! run_cmd yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm; then
-            warn "Install local libreswan rpm failed, fallback to repo package."
-            run_cmd yum install -y libreswan
-        fi
-        run_cmd wget -O /tmp/frr-stable-repo.el7.noarch.rpm https://rpm.frrouting.org/repo/frr-stable-repo.el7.noarch.rpm
-        run_cmd yum install -y /tmp/frr-stable-repo.el7.noarch.rpm
-        run_cmd yum install -y frr frr-pythontools
+        run_cmd yum install -y libreswan || {
+            run_cmd wget -O /tmp/libreswan-4.10-1.el7.x86_64.rpm https://github.com/luscis/packages/raw/main/redhat/centos7/libreswan-4.10-1.el7.x86_64.rpm
+            run_cmd yum install -y /tmp/libreswan-4.10-1.el7.x86_64.rpm
+        }
+        run_cmd yum install -y frr frr-pythontools || {
+            run_cmd wget -O /tmp/frr-stable-repo.el7.noarch.rpm https://rpm.frrouting.org/repo/frr-stable-repo.el7.noarch.rpm
+            run_cmd yum install -y /tmp/frr-stable-repo.el7.noarch.rpm
+            run_cmd yum install -y frr frr-pythontools
+        }
     elif [ "$sys"x == "debian"x ]; then
         run_cmd apt-get install -y libreswan
     fi

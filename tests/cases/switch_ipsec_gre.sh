@@ -94,12 +94,20 @@ test_ipsec_output_ping() {
   assert_match 20 "docker exec $sw2_name ping -c 3 192.57.0.1" "bytes from"
 }
 
+test_ipsec_output_remove() {
+  # gre link name uses "xgi<segment>".
+  local dev="xgi1057"
+  assert_cmd docker exec $sw2_name openlan network --name example output rm --device "$dev"
+  assert_unmatch 20 "docker exec $sw2_name ping -c 3 192.57.0.1" "bytes from"
+}
+
 setup_topology() {
   setup_net
   setup_sw1
   setup_sw2
   setup_output
   test_ipsec_output_ping
+  test_ipsec_output_remove
 }
 
 setup() {

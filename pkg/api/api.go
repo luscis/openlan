@@ -164,9 +164,15 @@ type BgpApi interface {
 }
 
 type CeciApi interface {
+	ListProxy(call func(obj schema.CeciProxy))
+	ListService(call func(obj schema.CeciProxy))
 	AddProxy(data schema.CeciProxy) error
 	DelProxy(data schema.CeciProxy)
 	RestartProxy(data schema.CeciProxy) error
+	AddService(data schema.CeciProxy) error
+	DelService(data schema.CeciProxy)
+	RestartService(data schema.CeciProxy) error
+	AddServiceBackend(data schema.CeciServiceBackendAdd) error
 }
 
 type RouterApi interface {

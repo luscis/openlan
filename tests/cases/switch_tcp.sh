@@ -135,6 +135,12 @@ test_ping() {
 
   assert_cmd docker exec $sw2_name ip neigh flush dev hi-example
   test_ping_after_sw3_sw2_output
+
+  # Remove sw3->sw2 output and verify sw2 cannot reach sw3 anymore.
+  # Output link naming for udp/tcp is "<protocol>:<remote>:<user>".
+  local dev="tcp:172.255.0.242:t1"
+  assert_cmd docker exec $sw3_name openlan network --name example output rm --device "$dev"
+  assert_unmatch 20 "docker exec $sw2_name ping -c 3 192.41.0.3" "bytes from"
 }
 
 setup_topology() {

@@ -82,6 +82,11 @@ test_ping() {
   assert_cmd docker exec $sw2_name ip neigh flush dev hi-example
   assert_match 15 "docker exec $sw2_name openlan network --name example output ls" "state: authenticated"
   assert_match 20 "docker exec $sw2_name ping -c 3 192.51.0.1" "bytes from"
+
+  # Output link naming for udp/tcp is "<protocol>:<remote>:<user>".
+  local dev="udp:172.254.0.241:t1"
+  assert_cmd docker exec $sw2_name openlan network --name example output rm --device "$dev"
+  assert_unmatch 15 "docker exec $sw2_name ping -c 3 192.51.0.1" "bytes from"
 }
 
 setup_topology() {

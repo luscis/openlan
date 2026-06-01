@@ -63,3 +63,26 @@ func TestCertLoadDataFromFiles(t *testing.T) {
 		t.Fatalf("unexpected loaded cert content: %+v", cert)
 	}
 }
+
+func TestCeciServiceAddBackend(t *testing.T) {
+	svc := &CeciService{}
+	if ok := svc.AddBackend("", []string{"10.0.0.1:80|10.0.0.2:80"}); !ok {
+		t.Fatalf("expected global backends to be added")
+	}
+	if len(svc.Backends) != 2 {
+		t.Fatalf("unexpected global backends: %#v", svc.Backends)
+	}
+
+	if ok := svc.AddBackend("api.test", []string{"10.0.0.3:80"}); !ok {
+		t.Fatalf("expected hostname backend to be added")
+	}
+	if len(svc.Routes) != 1 || len(svc.Routes[0].Backends) != 1 {
+		t.Fatalf("unexpected routes: %#v", svc.Routes)
+	}
+	if ok := svc.AddBackend("api.test", []string{"10.0.0.4:80"}); !ok {
+		t.Fatalf("expected hostname backend merge")
+	}
+	if len(svc.Routes[0].Backends) != 2 {
+		t.Fatalf("expected merged hostname backends: %#v", svc.Routes[0].Backends)
+	}
+}

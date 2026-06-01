@@ -1173,6 +1173,28 @@ select option {
         Each backend needs `protocol`, `server`, and `secret`.
       </div>
       </div>
+      <div id="ceci-entry-service-wrap" class="hidden" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="form-group">
+          <label>Service Protocol</label>
+          <select class="modal-input" style="width:100%;" id="ceci-service-protocol">
+            <option value="tcp">TCP</option>
+            <option value="http">HTTP</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Load Balance</label>
+          <select class="modal-input" style="width:100%;" id="ceci-service-balance">
+            <option value="roundrobin">roundrobin</option>
+            <option value="leastconn">leastconn</option>
+            <option value="source">source</option>
+            <option value="first">first</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Service Backends <span style="color:var(--text-muted);font-weight:400;">(one per line, support hostname=server1|server2)</span></label>
+          <textarea class="modal-input" style="width:100%;min-height:120px;resize:vertical;" id="ceci-service-backends" placeholder="e.g. api.example.com=10.0.0.2:10002|10.0.0.3:10002"></textarea>
+        </div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">
         <button class="btn btn-ghost btn-sm" onclick="ceciCancelEdit()">Cancel</button>
         <button class="btn btn-dark btn-sm btn-add" id="ceci-entry-submit" onclick="ceciAddEntry()">Add</button>
@@ -1874,6 +1896,14 @@ select option {
                   <div class="dropdown-item" onclick="ceciAddHttpDirect()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
                     HTTP
+                  </div>
+                  <div class="dropdown-item" onclick="ceciAddServiceTcpDirect()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
+                    TCP Service
+                  </div>
+                  <div class="dropdown-item" onclick="ceciAddServiceHttpDirect()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg>
+                    HTTP Service
                   </div>
                 </div>
               </div>
@@ -3496,8 +3526,11 @@ let _ceciTcpEntries = [];
 async function load_ceci() {
   const tbody = document.getElementById('ceci-tcp-tbody');
   try {
-    const entries = await api_get('/api/network/ceci/proxy');
-    _ceciTcpEntries = Array.isArray(entries) ? entries : [];
+    const [entries, services] = await Promise.all([
+      api_get('/api/network/ceci/proxy'),
+      api_get('/api/network/ceci/service')
+    ]);
+    _ceciTcpEntries = (Array.isArray(entries) ? entries : []).concat(Array.isArray(services) ? services : []);
     document.getElementById('ceci-tcp-count').textContent = _ceciTcpEntries.length;
     if (_ceciTcpEntries.length === 0) {
       tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No Ceci entries</td></tr>';
@@ -3608,6 +3641,23 @@ function ceciParseTargets(raw) {
   return raw.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
 }
 
+function ceciParseServiceRoutes(raw) {
+  const lines = ceciParseTargets(raw);
+  const routes = [];
+  const backends = [];
+  for (const line of lines) {
+    const idx = line.indexOf('=');
+    if (idx > 0) {
+      const host = line.slice(0, idx).trim();
+      const servers = line.slice(idx + 1).split(/[|;]/).map(v => v.trim()).filter(Boolean);
+      if (host && servers.length > 0) routes.push({ backends: servers, match: [host] });
+      continue;
+    }
+    backends.push(line);
+  }
+  return { routes, backends };
+}
+
 function ceciBackendRowHtml(index, backend) {
   const item = backend || {};
   return '' +
@@ -3660,8 +3710,12 @@ function ceciResetForm() {
   document.getElementById('ceci-entry-listen').placeholder = 'e.g. 127.0.0.1:1080';
   document.getElementById('ceci-entry-network').value = '';
   document.getElementById('ceci-entry-target').value = '';
+  document.getElementById('ceci-service-backends').value = '';
+  document.getElementById('ceci-service-protocol').value = 'tcp';
+  document.getElementById('ceci-service-balance').value = 'roundrobin';
   document.getElementById('ceci-entry-tcp-wrap').classList.add('hidden');
   document.getElementById('ceci-entry-http-wrap').classList.add('hidden');
+  document.getElementById('ceci-entry-service-wrap').classList.add('hidden');
   document.getElementById('ceci-http-protocol').value = 'http';
   document.getElementById('ceci-http-cert').value = '';
   document.getElementById('ceci-http-key').value = '';
@@ -3674,14 +3728,16 @@ function ceciResetForm() {
 function ceciConfigureForm(mode, item) {
   const isEdit = !!item;
   const isHttp = mode === 'http';
-  document.getElementById('ceci-entry-modal-title').textContent = isEdit ? 'Edit Ceci Entry' : (isHttp ? 'Add HTTP Entry' : 'Add TCP Entry');
+  const isService = mode === 'service';
+  document.getElementById('ceci-entry-modal-title').textContent = isEdit ? 'Edit Ceci Entry' : (isService ? 'Add Service Entry' : (isHttp ? 'Add HTTP Entry' : 'Add TCP Entry'));
   document.getElementById('ceci-entry-submit').textContent = isEdit ? 'Save' : 'Add';
   document.getElementById('ceci-entry-edit-orig').value = isEdit ? JSON.stringify(item) : '';
   document.getElementById('ceci-entry-listen').value = item && item.listen ? item.listen : '';
   document.getElementById('ceci-entry-listen').placeholder = isHttp ? 'e.g. 127.0.0.1:1080' : 'e.g.:2222';
   document.getElementById('ceci-entry-network').value = item && item.network ? item.network : '';
-  document.getElementById('ceci-entry-tcp-wrap').classList.toggle('hidden', isHttp);
+  document.getElementById('ceci-entry-tcp-wrap').classList.toggle('hidden', isHttp || isService);
   document.getElementById('ceci-entry-http-wrap').classList.toggle('hidden', !isHttp);
+  document.getElementById('ceci-entry-service-wrap').classList.toggle('hidden', !isService);
   if (isHttp) {
     document.getElementById('ceci-http-protocol').value = item && item.cert ? 'https' : 'http';
     ceciRenderBackendRows(item && item.backends ? item.backends : []);
@@ -3691,6 +3747,25 @@ function ceciConfigureForm(mode, item) {
     document.getElementById('ceci-http-rootca').value = cert.rootCaData || '';
     document.getElementById('ceci-http-insecure').checked = !!cert.insecure;
     onCeciHttpProtocolChange();
+  } else if (isService) {
+    const service = item && item.service ? item.service : {};
+    document.getElementById('ceci-service-protocol').value = service.protocol || 'tcp';
+    document.getElementById('ceci-service-balance').value = service.balance || 'roundrobin';
+    const rows = [];
+    if (Array.isArray(service.routes)) {
+      for (const route of service.routes) {
+        if (!route) continue;
+        const bs = Array.isArray(route.backends) ? route.backends.filter(Boolean) : [];
+        if (bs.length === 0) continue;
+        if (Array.isArray(route.match) && route.match.length > 0) {
+          rows.push(route.match[0] + '=' + bs.join('|'));
+        } else {
+          rows.push(bs.join('|'));
+        }
+      }
+    }
+    if (Array.isArray(service.backends)) rows.push(...service.backends);
+    document.getElementById('ceci-service-backends').value = rows.join('\n');
   } else {
     document.getElementById('ceci-entry-target').value = item && Array.isArray(item.target) ? item.target.join('\n') : '';
   }
@@ -3730,18 +3805,23 @@ async function ceciSaveEntry() {
   const origRaw = document.getElementById('ceci-entry-edit-orig').value;
   const isEdit = !!origRaw;
   const isTcpMode = !document.getElementById('ceci-entry-tcp-wrap').classList.contains('hidden');
-  const mode = isTcpMode ? 'tcp' : 'http';
+  const isHttpMode = !document.getElementById('ceci-entry-http-wrap').classList.contains('hidden');
+  const mode = isTcpMode ? 'tcp' : (isHttpMode ? 'http' : 'service');
   if (!listen) { show_toast('Listen is required', 'error'); return; }
   try {
     if (isEdit) {
       const orig = JSON.parse(origRaw);
       if ((orig.listen || '') !== listen) {
-        await api_delete('/api/network/ceci/proxy', { listen: orig.listen });
+        if ((orig.mode || '').toLowerCase() === 'service') {
+          await api_delete('/api/network/ceci/service', { listen: orig.listen });
+        } else {
+          await api_delete('/api/network/ceci/proxy', { listen: orig.listen });
+        }
       }
     }
-    if (isTcpMode) {
+    if (mode === 'tcp') {
       await api_post('/api/network/ceci/proxy', { mode: 'tcp', listen, network, target });
-    } else {
+    } else if (mode === 'http') {
       const protocol = document.getElementById('ceci-http-protocol').value;
       const backends = ceciCollectBackends();
       const cert = document.getElementById('ceci-http-cert').value.trim();
@@ -3767,11 +3847,20 @@ async function ceciSaveEntry() {
         body.cert = { certData: cert || '', keyData: key || '', rootCaData: rootCa || '', insecure };
       }
       await api_post('/api/network/ceci/proxy', body);
+    } else {
+      const serviceProtocol = document.getElementById('ceci-service-protocol').value.trim() || 'tcp';
+      const serviceBalance = document.getElementById('ceci-service-balance').value.trim() || 'roundrobin';
+      const parsedService = ceciParseServiceRoutes(document.getElementById('ceci-service-backends').value);
+      if (parsedService.backends.length === 0 && parsedService.routes.length === 0) {
+        show_toast('At least one service backend is required', 'error');
+        return;
+      }
+      await api_post('/api/network/ceci/service', { mode: 'service', listen, network, target: [], service: { protocol: serviceProtocol, balance: serviceBalance, backends: parsedService.backends, routes: parsedService.routes } });
     }
     ceciResetForm();
     closeAddDialog('ceci-entry');
     await load_ceci();
-    show_toast(isEdit ? 'Ceci entry updated' : (mode === 'tcp' ? 'Ceci TCP entry added' : 'Ceci HTTP proxy added'), 'success');
+    show_toast(isEdit ? 'Ceci entry updated' : (mode === 'tcp' ? 'Ceci TCP entry added' : (mode === 'http' ? 'Ceci HTTP proxy added' : 'Ceci service added')), 'success');
   } catch(e) {
     show_toast('Failed to save ceci entry: ' + e.message, 'error');
   }
@@ -3812,6 +3901,14 @@ function ceciAddHttpDirect() {
   ceciOpenAddHttp();
 }
 
+function ceciAddServiceTcpDirect() {
+  ceciOpenEntry('service', { mode: 'service', service: { protocol: 'tcp', balance: 'roundrobin', backends: [] } });
+}
+
+function ceciAddServiceHttpDirect() {
+  ceciOpenEntry('service', { mode: 'service', service: { protocol: 'http', balance: 'roundrobin', backends: [] } });
+}
+
 async function ceciDelTcp(index) {
   const item = _ceciTcpEntries[index];
   if (!item) return;
@@ -3819,7 +3916,11 @@ async function ceciDelTcp(index) {
   const ok = await showConfirm('Remove ceci ' + label.toLowerCase() + ' entry ' + (item.listen || '-') + '?', 'Remove Ceci ' + label);
   if (!ok) return;
   try {
-    await api_delete('/api/network/ceci/proxy', { mode: item.mode || 'tcp', listen: item.listen, target: item.target || [] });
+    if ((item.mode || '').toLowerCase() === 'service') {
+      await api_delete('/api/network/ceci/service', { listen: item.listen });
+    } else {
+      await api_delete('/api/network/ceci/proxy', { mode: item.mode || 'tcp', listen: item.listen, target: item.target || [] });
+    }
     await load_ceci();
     show_toast('Ceci entry removed', 'success');
   } catch(e) {
@@ -3832,7 +3933,11 @@ async function ceciRestartEntry(index) {
   if (!item) return;
   if (!await showConfirm('Restart ceci entry ' + (item.listen || '-') + '?', 'Restart Ceci')) return;
   try {
-    await api_put('/api/network/ceci/proxy/restart', { listen: item.listen });
+    if ((item.mode || '').toLowerCase() === 'service') {
+      await api_put('/api/network/ceci/service/restart', { listen: item.listen });
+    } else {
+      await api_put('/api/network/ceci/proxy/restart', { listen: item.listen });
+    }
     show_toast('Ceci entry restarting', 'success');
     await load_ceci();
   } catch(e) {

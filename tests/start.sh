@@ -30,6 +30,8 @@ scenario_description() {
     proxy_name.sh) echo "verify ceci name proxy forwarding to upstream dns" ;;
     proxy_name_backends.sh) echo "verify ceci name proxy routes domains to matched backends" ;;
     proxy_tcp.sh) echo "verify ceci tcp proxy forwarding to tcp target" ;;
+    service_tcp.sh) echo "verify ceci service tcp forwarding and restart" ;;
+    service_http.sh) echo "verify ceci service http forwarding and restart" ;;
     switch_acl.sh) echo "verify acl add-list-save-reload-remove with vip tcp/80 and icmp" ;;
     switch_acl_default_action.sh) echo "verify acl default action switch between drop and accept" ;;
     switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;

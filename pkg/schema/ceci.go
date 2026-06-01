@@ -6,14 +6,33 @@ type Ceci struct {
 }
 
 type CeciProxy struct {
-	Mode     string      `json:"mode"`
-	Listen   string      `json:"listen"`
-	Network  string      `json:"network,omitempty"`
-	Target   []string    `json:"target,omitempty"`
-	Backends []ForwardTo `json:"backends,omitempty"`
-	Cert     *Cert       `json:"cert,omitempty"`
-	Stats    *CeciStats  `json:"stats,omitempty"`
-	Status   string      `json:"status,omitempty"`
+	Mode     string       `json:"mode"`
+	Listen   string       `json:"listen"`
+	Network  string       `json:"network,omitempty"`
+	Target   []string     `json:"target,omitempty"`
+	Backends []ForwardTo  `json:"backends,omitempty"`
+	Service  *CeciService `json:"service,omitempty"`
+	Cert     *Cert        `json:"cert,omitempty"`
+	Stats    *CeciStats   `json:"stats,omitempty"`
+	Status   string       `json:"status,omitempty"`
+}
+
+type CeciService struct {
+	Protocol string               `json:"protocol,omitempty"`
+	Balance  string               `json:"balance,omitempty"`
+	Backends []string             `json:"backends,omitempty"`
+	Routes   []CeciServiceBackend `json:"routes,omitempty"`
+}
+
+type CeciServiceBackend struct {
+	Backends []string `json:"backends,omitempty"`
+	Match    []string `json:"match,omitempty"`
+}
+
+type CeciServiceBackendAdd struct {
+	Listen   string   `json:"listen"`
+	Hostname string   `json:"hostname,omitempty"`
+	Backends []string `json:"backends,omitempty"`
 }
 
 type CeciStats struct {

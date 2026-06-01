@@ -1042,90 +1042,34 @@ func (h Ceci) Router(router *mux.Router) {
 	router.HandleFunc("/api/network/ceci/proxy", h.Post).Methods("POST")
 	router.HandleFunc("/api/network/ceci/proxy", h.Remove).Methods("DELETE")
 	router.HandleFunc("/api/network/ceci/proxy/restart", h.Restart).Methods("PUT")
-}
-
-func loadCeciStats(listen string) *schema.CeciStats {
-	file := filepath.Join("/var/openlan/ceci", listen+".stats")
-	stats := &schema.CeciStats{}
-	if err := libol.UnmarshalLoad(stats, file); err != nil {
-		return nil
-	}
-	if stats.StartAt == "" && stats.Total == 0 && stats.Bytes == 0 {
-		return nil
-	}
-	return stats
+	router.HandleFunc("/api/network/ceci/service", h.GetService).Methods("GET")
+	router.HandleFunc("/api/network/ceci/service", h.PostService).Methods("POST")
+	router.HandleFunc("/api/network/ceci/service/backend", h.PostServiceBackend).Methods("POST")
+	router.HandleFunc("/api/network/ceci/service", h.RemoveService).Methods("DELETE")
+	router.HandleFunc("/api/network/ceci/service/restart", h.RestartService).Methods("PUT")
 }
 
 func (h Ceci) Get(w http.ResponseWriter, r *http.Request) {
 	items := make([]schema.CeciProxy, 0, 16)
-	if h.cs == nil || h.cs.Config() == nil {
+	if Call.ceciApi == nil {
 		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	network := h.cs.Config().GetNetwork("ceci")
-	if network == nil {
-		ResponseJson(w, items)
+	Call.ceciApi.ListProxy(func(obj schema.CeciProxy) {
+		items = append(items, obj)
+	})
+	ResponseJson(w, items)
+}
+
+func (h Ceci) GetService(w http.ResponseWriter, r *http.Request) {
+	items := make([]schema.CeciProxy, 0, 16)
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
 		return
 	}
-	if spec, ok := network.Specifies.(*cf.CeciSpecifies); ok && spec != nil {
-		for _, value := range spec.Proxy {
-			if value == nil {
-				continue
-			}
-			items = append(items, schema.CeciProxy{
-				Mode:    value.Mode,
-				Listen:  value.Listen,
-				Network: value.Network,
-				Target:  value.Target,
-				Backends: func() []schema.ForwardTo {
-					out := make([]schema.ForwardTo, 0, len(value.Backends))
-					for _, backend := range value.Backends {
-						if backend == nil {
-							continue
-						}
-						out = append(out, schema.ForwardTo{
-							Server:   backend.Server,
-							Match:    backend.Match,
-							Protocol: backend.Protocol,
-							Insecure: backend.Insecure,
-							Secret:   backend.Secret,
-							Nameto:   backend.Nameto,
-						})
-					}
-					return out
-				}(),
-				Cert: func() *schema.Cert {
-					if value.Cert == nil {
-						return nil
-					}
-					out := &schema.Cert{
-						Insecure: value.Cert.Insecure,
-						CrtData:  value.Cert.CrtData,
-						KeyData:  value.Cert.KeyData,
-						CaData:   value.Cert.CaData,
-					}
-					if out.CrtData == "" && value.Cert.CrtFile != "" {
-						if data, err := os.ReadFile(value.Cert.CrtFile); err == nil {
-							out.CrtData = string(data)
-						}
-					}
-					if out.KeyData == "" && value.Cert.KeyFile != "" {
-						if data, err := os.ReadFile(value.Cert.KeyFile); err == nil {
-							out.KeyData = string(data)
-						}
-					}
-					if out.CaData == "" && value.Cert.CaFile != "" {
-						if data, err := os.ReadFile(value.Cert.CaFile); err == nil {
-							out.CaData = string(data)
-						}
-					}
-					return out
-				}(),
-				Stats:  loadCeciStats(value.Listen),
-				Status: processStatusByPidFile(filepath.Join("/var/openlan/ceci", value.Id()+".pid")),
-			})
-		}
-	}
+	Call.ceciApi.ListService(func(obj schema.CeciProxy) {
+		items = append(items, obj)
+	})
 	ResponseJson(w, items)
 }
 
@@ -1146,6 +1090,40 @@ func (h Ceci) Post(w http.ResponseWriter, r *http.Request) {
 	ResponseMsg(w, 0, "")
 }
 
+func (h Ceci) PostService(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciProxy{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	if err := Call.ceciApi.AddService(data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseMsg(w, 0, "")
+}
+
+func (h Ceci) PostServiceBackend(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciServiceBackendAdd{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	if err := Call.ceciApi.AddServiceBackend(data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseMsg(w, 0, "")
+}
+
 func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
 	data := schema.CeciProxy{}
 	if err := GetData(r, &data); err != nil {
@@ -1160,6 +1138,20 @@ func (h Ceci) Remove(w http.ResponseWriter, r *http.Request) {
 	ResponseMsg(w, 0, "")
 }
 
+func (h Ceci) RemoveService(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciProxy{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	Call.ceciApi.DelService(data)
+	ResponseMsg(w, 0, "")
+}
+
 func (h Ceci) Restart(w http.ResponseWriter, r *http.Request) {
 	data := schema.CeciProxy{}
 	if err := GetData(r, &data); err != nil {
@@ -1171,6 +1163,23 @@ func (h Ceci) Restart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := Call.ceciApi.RestartProxy(data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ResponseMsg(w, 0, "")
+}
+
+func (h Ceci) RestartService(w http.ResponseWriter, r *http.Request) {
+	data := schema.CeciProxy{}
+	if err := GetData(r, &data); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if Call.ceciApi == nil {
+		http.Error(w, "network is nil", http.StatusBadRequest)
+		return
+	}
+	if err := Call.ceciApi.RestartService(data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
