@@ -25,6 +25,7 @@ scenario_description() {
     access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
     access_openvpn_tcp_reset.sh) echo "verify OpenVPN tcp reset handling during client reconnect" ;;
     access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
+    access_client_qos.sh) echo "verify network client qos rule add-list-save-remove flow" ;;
     access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
     proxy_http.sh) echo "verify ceci http proxy forwarding to http target" ;;
     proxy_name.sh) echo "verify ceci name proxy forwarding to upstream dns" ;;

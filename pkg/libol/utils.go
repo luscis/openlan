@@ -25,7 +25,7 @@ const LeaseTime = "2006-01-02T15"
 const SimpleTime = "2006-01-02 15:04:05"
 const MacBase = 0x00
 
-var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyz~_+.^ABCDEFGHIGKLMNOPQRSTUVWXYZ")
+var Letters = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZ")
 
 func newRand() *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UnixNano()))
