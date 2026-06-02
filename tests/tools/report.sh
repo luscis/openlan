@@ -45,6 +45,14 @@ report_case_log_file() {
   echo "$REPORT_CASE_DIR/$(printf "%02d" "$index")-${safe}.log"
 }
 
+report_escape_html() {
+  local value="$1"
+  value=${value//&/&amp;}
+  value=${value//</&lt;}
+  value=${value//>/&gt;}
+  value=${value//\"/&quot;}
+  printf "%s" "$value"
+}
 
 write_report_header() {
   local title="$1"
@@ -61,18 +69,20 @@ report_case_html() {
   local cls
   local name_html
   local rel_log
+  local topo_html
   ts=$(now_text)
   cls="fail"
   if [[ "$status" == "PASS" ]]; then
     cls="pass"
   fi
+  topo_html=$(report_escape_html "$topo")
   name_html="$name"
   if [[ -n "$log_path" ]]; then
     rel_log="cases/$(basename "$log_path")"
     name_html="<a href=\"${rel_log}\">${name}</a>"
   fi
   REPORT_ROWS_HTML="${REPORT_ROWS_HTML}
-<tr><td>${ts}</td><td class=\"${cls}\">${status}</td><td>${name_html}</td><td>${topo}</td><td>${cost}</td></tr>"
+<tr><td>${ts}</td><td class=\"${cls}\">${status}</td><td>${name_html}</td><td>${topo_html}</td><td>${cost}</td></tr>"
 }
 
 report_case_md() {

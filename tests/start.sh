@@ -70,7 +70,64 @@ EOF
 scenario_topology_summary() {
   local detail="$1"
   local summary
-  summary=$(printf "%s\n" "$detail" | sed -n 's/^# -[[:space:]]*//p' | head -n 1)
+  summary=$(printf "%s\n" "$detail" | awk '
+    function trim(s) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+      return s
+    }
+    function useful(s) {
+      return s != "" && s !~ /^[|^v<>\-+[:space:]]+$/
+    }
+    BEGIN {
+      in_diagram = 0
+      diagram = ""
+      fallback = ""
+    }
+    /^# -[[:space:]]*/ {
+      line = $0
+      sub(/^# -[[:space:]]*/, "", line)
+      line = trim(line)
+      if (line == "Diagram:") {
+        in_diagram = 1
+        next
+      }
+      if (fallback == "") {
+        fallback = line
+      }
+      in_diagram = 0
+    }
+    /^#/ {
+      if (!in_diagram) {
+        next
+      }
+      line = $0
+      sub(/^#[[:space:]]*/, "", line)
+      line = trim(line)
+      if (!useful(line)) {
+        next
+      }
+      if (diagram == "") {
+        diagram = line
+      } else {
+        diagram = diagram "; " line
+      }
+      if (length(diagram) >= 90) {
+        print diagram
+        found = 1
+        exit
+      }
+    }
+    END {
+      if (found) {
+        exit
+      }
+      if (diagram != "") {
+        print diagram
+      } else if (fallback != "") {
+        print fallback
+      }
+    }
+  ')
   if [[ -z "$summary" ]]; then
     summary="custom topology"
   fi

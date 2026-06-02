@@ -1,0 +1,261 @@
+[26-06-02 09:24:40] START service_http
+scenario: cases/service_http.sh
+header  : verify ceci service http forwarding and restart
+topology: client wget with Host header on sw1; sw1 Ceci HTTP service; ^ route groups          ^ global backend
+topology: # Topology:
+topology: # - Diagram:
+topology: #       client wget with Host header on sw1
+topology: #              |
+topology: #       sw1 Ceci HTTP service
+topology: #          ^ route groups          ^ global backend
+topology: #          |                       |
+topology: #       sw2 backends            sw3 backend
+topology: #       192.56.0.2              192.56.0.3
+topology: # - Docker mgmt network: 172.246.0.0/24
+topology: #   sw1=172.246.0.241 (ceci service),
+topology: #   sw2=172.246.0.242 (hostname-route backends),
+topology: #   sw3=172.246.0.243 (global backend).
+topology: # - OpenLAN service network "example": 192.56.0.0/24
+topology: #   sw1=192.56.0.1, sw2=192.56.0.2, sw3=192.56.0.3,
+topology: #   with sw2/sw3 outputs to sw1.
+topology: # Validation:
+topology: #   sw1 wget(host header) -> sw1 ceci(service http) -> sw2 route groups or sw3 global backend.
+
+Started switch pause container: tests-sw-service-http1-pause
+Started switch frr container: tests-sw-service-http1-frr
+Started switch ipsec container: tests-sw-service-http1-ipsec
+Started switch container: tests-sw-service-http1
+[26-06-02 09:24:41][ASSERT#0001][expect] at cases/service_http.sh:67 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-service-http1" expect="Http.Start"
+2026/06/02 09:24:42 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:24:42 INFO|root|Wait: ...
+2026/06/02 09:24:42 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:24:42 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:24:42][ASSERT#0001][OK] cost=1.031s
+[26-06-02 09:24:42][ASSERT#0002][cmd] at cases/service_http.sh:69 fn=setup_sw1 cmd="docker exec tests-sw-service-http1 openlan network --name example add --address 192.56.0.1/24"
+[26-06-02 09:24:42][ASSERT#0002][OK] cost=0.255s
+[26-06-02 09:24:42][ASSERT#0003][cmd] at cases/service_http.sh:70 fn=setup_sw1 cmd="docker exec tests-sw-service-http1 openlan user add --name t1@example --password 123456 --role admin"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   admin  2027-06-02T09  
+[26-06-02 09:24:42][ASSERT#0003][OK] cost=0.070s
+Started switch pause container: tests-sw-service-http2-pause
+Started switch frr container: tests-sw-service-http2-frr
+Started switch ipsec container: tests-sw-service-http2-ipsec
+Started switch container: tests-sw-service-http2
+[26-06-02 09:24:43][ASSERT#0004][expect] at cases/service_http.sh:89 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-service-http2" expect="Http.Start"
+2026/06/02 09:24:44 INFO|root|Wait: ...
+2026/06/02 09:24:44 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:24:44 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:24:44 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:24:44][ASSERT#0004][OK] cost=1.033s
+[26-06-02 09:24:44][ASSERT#0005][cmd] at cases/service_http.sh:91 fn=setup_sw2 cmd="docker exec tests-sw-service-http2 openlan network --name example add --address 192.56.0.2/24"
+[26-06-02 09:24:45][ASSERT#0005][OK] cost=0.235s
+[26-06-02 09:24:45][ASSERT#0006][cmd] at cases/service_http.sh:92 fn=setup_sw2 cmd="docker exec tests-sw-service-http2 openlan network --name example output add --remote 172.246.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-02 09:24:45][ASSERT#0006][OK] cost=0.073s
+[26-06-02 09:24:45][ASSERT#0007][match] at cases/service_http.sh:93 fn=setup_sw2 retry=20 cmd="docker exec tests-sw-service-http2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 172.246.0.241
+  secret: t1@example:123456
+  state: authenticated
+
+[26-06-02 09:24:47][ASSERT#0007][OK] cost=2.193s
+Started switch pause container: tests-sw-service-http3-pause
+Started switch frr container: tests-sw-service-http3-frr
+Started switch ipsec container: tests-sw-service-http3-ipsec
+Started switch container: tests-sw-service-http3
+[26-06-02 09:24:48][ASSERT#0008][expect] at cases/service_http.sh:112 fn=setup_sw3 retry=30 cmd="docker logs -f tests-sw-service-http3" expect="Http.Start"
+2026/06/02 09:24:48 INFO|root|Wait: ...
+2026/06/02 09:24:48 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:24:48 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:24:48 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:24:49][ASSERT#0008][OK] cost=1.032s
+[26-06-02 09:24:49][ASSERT#0009][cmd] at cases/service_http.sh:114 fn=setup_sw3 cmd="docker exec tests-sw-service-http3 openlan network --name example add --address 192.56.0.3/24"
+[26-06-02 09:24:49][ASSERT#0009][OK] cost=0.250s
+[26-06-02 09:24:49][ASSERT#0010][cmd] at cases/service_http.sh:115 fn=setup_sw3 cmd="docker exec tests-sw-service-http3 openlan network --name example output add --remote 172.246.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-02 09:24:49][ASSERT#0010][OK] cost=0.072s
+[26-06-02 09:24:49][ASSERT#0011][match] at cases/service_http.sh:116 fn=setup_sw3 retry=20 cmd="docker exec tests-sw-service-http3 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 172.246.0.241
+  secret: t1@example:123456
+  state: authenticated
+
+[26-06-02 09:24:51][ASSERT#0011][OK] cost=2.185s
+[26-06-02 09:24:51][ASSERT#0012][cmd] at cases/service_http.sh:120 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c mkdir -p /tmp/ceci-service-http-a /tmp/ceci-service-http-b /tmp/ceci-service-http-single"
+[26-06-02 09:24:51][ASSERT#0012][OK] cost=0.059s
+[26-06-02 09:24:51][ASSERT#0013][cmd] at cases/service_http.sh:121 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c mkdir -p /tmp/ceci-service-http-c"
+[26-06-02 09:24:51][ASSERT#0013][OK] cost=0.054s
+[26-06-02 09:24:51][ASSERT#0014][cmd] at cases/service_http.sh:122 fn=setup_target_http cmd="docker exec tests-sw-service-http3 sh -c mkdir -p /tmp/ceci-service-http-global"
+[26-06-02 09:24:51][ASSERT#0014][OK] cost=0.052s
+[26-06-02 09:24:51][ASSERT#0015][cmd] at cases/service_http.sh:123 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c echo 'ceci-service-http-a' > /tmp/ceci-service-http-a/index.html"
+[26-06-02 09:24:51][ASSERT#0015][OK] cost=0.053s
+[26-06-02 09:24:51][ASSERT#0016][cmd] at cases/service_http.sh:124 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c echo 'ceci-service-http-b' > /tmp/ceci-service-http-b/index.html"
+[26-06-02 09:24:51][ASSERT#0016][OK] cost=0.046s
+[26-06-02 09:24:51][ASSERT#0017][cmd] at cases/service_http.sh:125 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c echo 'ceci-service-http-single' > /tmp/ceci-service-http-single/index.html"
+[26-06-02 09:24:52][ASSERT#0017][OK] cost=0.050s
+[26-06-02 09:24:52][ASSERT#0018][cmd] at cases/service_http.sh:126 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c echo 'ceci-service-http-c' > /tmp/ceci-service-http-c/index.html"
+[26-06-02 09:24:52][ASSERT#0018][OK] cost=0.062s
+[26-06-02 09:24:52][ASSERT#0019][cmd] at cases/service_http.sh:127 fn=setup_target_http cmd="docker exec tests-sw-service-http3 sh -c echo 'ceci-service-http-global' > /tmp/ceci-service-http-global/index.html"
+[26-06-02 09:24:52][ASSERT#0019][OK] cost=0.056s
+[26-06-02 09:24:52][ASSERT#0020][cmd] at cases/service_http.sh:128 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c nohup python3 -m http.server 18084 --bind 0.0.0.0 --directory /tmp/ceci-service-http-a >/tmp/ceci-service-http-a.log 2>&1 &"
+[26-06-02 09:24:52][ASSERT#0020][OK] cost=0.047s
+[26-06-02 09:24:52][ASSERT#0021][cmd] at cases/service_http.sh:129 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c nohup python3 -m http.server 18085 --bind 0.0.0.0 --directory /tmp/ceci-service-http-b >/tmp/ceci-service-http-b.log 2>&1 &"
+[26-06-02 09:24:52][ASSERT#0021][OK] cost=0.047s
+[26-06-02 09:24:52][ASSERT#0022][cmd] at cases/service_http.sh:130 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c nohup python3 -m http.server 18086 --bind 0.0.0.0 --directory /tmp/ceci-service-http-single >/tmp/ceci-service-http-single.log 2>&1 &"
+[26-06-02 09:24:52][ASSERT#0022][OK] cost=0.046s
+[26-06-02 09:24:52][ASSERT#0023][cmd] at cases/service_http.sh:131 fn=setup_target_http cmd="docker exec tests-sw-service-http2 sh -c nohup python3 -m http.server 18087 --bind 0.0.0.0 --directory /tmp/ceci-service-http-c >/tmp/ceci-service-http-c.log 2>&1 &"
+[26-06-02 09:24:52][ASSERT#0023][OK] cost=0.044s
+[26-06-02 09:24:52][ASSERT#0024][cmd] at cases/service_http.sh:132 fn=setup_target_http cmd="docker exec tests-sw-service-http3 sh -c nohup python3 -m http.server 18088 --bind 0.0.0.0 --directory /tmp/ceci-service-http-global >/tmp/ceci-service-http-global.log 2>&1 &"
+[26-06-02 09:24:52][ASSERT#0024][OK] cost=0.062s
+[26-06-02 09:24:52][ASSERT#0025][match] at cases/service_http.sh:154 fn=test_ping retry=20 cmd="docker exec tests-sw-service-http1 ping -c 3 192.56.0.2" expect="bytes from"
+PING 192.56.0.2 (192.56.0.2) 56(84) bytes of data.
+64 bytes from 192.56.0.2: icmp_seq=1 ttl=64 time=0.579 ms
+64 bytes from 192.56.0.2: icmp_seq=2 ttl=64 time=1.34 ms
+64 bytes from 192.56.0.2: icmp_seq=3 ttl=64 time=1.53 ms
+
+--- 192.56.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2007ms
+[26-06-02 09:24:54][ASSERT#0025][OK] cost=2.065s
+[26-06-02 09:24:54][ASSERT#0026][match] at cases/service_http.sh:155 fn=test_ping retry=20 cmd="docker exec tests-sw-service-http1 ping -c 3 192.56.0.3" expect="bytes from"
+PING 192.56.0.3 (192.56.0.3) 56(84) bytes of data.
+64 bytes from 192.56.0.3: icmp_seq=1 ttl=64 time=0.930 ms
+64 bytes from 192.56.0.3: icmp_seq=2 ttl=64 time=1.29 ms
+64 bytes from 192.56.0.3: icmp_seq=3 ttl=64 time=1.43 ms
+
+--- 192.56.0.3 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-02 09:24:56][ASSERT#0026][OK] cost=2.066s
+[26-06-02 09:24:56][ASSERT#0027][match] at cases/service_http.sh:156 fn=test_ping retry=10 cmd="docker exec tests-sw-service-http1 wget -q -O- http://192.56.0.2:18084/" expect="ceci-service-http-a"
+ceci-service-http-a
+[26-06-02 09:24:56][ASSERT#0027][OK] cost=0.072s
+[26-06-02 09:24:56][ASSERT#0028][match] at cases/service_http.sh:157 fn=test_ping retry=10 cmd="docker exec tests-sw-service-http1 wget -q -O- http://192.56.0.2:18085/" expect="ceci-service-http-b"
+ceci-service-http-b
+[26-06-02 09:24:56][ASSERT#0028][OK] cost=0.072s
+[26-06-02 09:24:56][ASSERT#0029][match] at cases/service_http.sh:158 fn=test_ping retry=10 cmd="docker exec tests-sw-service-http1 wget -q -O- http://192.56.0.2:18086/" expect="ceci-service-http-single"
+ceci-service-http-single
+[26-06-02 09:24:56][ASSERT#0029][OK] cost=0.069s
+[26-06-02 09:24:56][ASSERT#0030][match] at cases/service_http.sh:159 fn=test_ping retry=10 cmd="docker exec tests-sw-service-http1 wget -q -O- http://192.56.0.2:18087/" expect="ceci-service-http-c"
+ceci-service-http-c
+[26-06-02 09:24:56][ASSERT#0030][OK] cost=0.071s
+[26-06-02 09:24:56][ASSERT#0031][match] at cases/service_http.sh:160 fn=test_ping retry=10 cmd="docker exec tests-sw-service-http1 wget -q -O- http://192.56.0.3:18088/" expect="ceci-service-http-global"
+ceci-service-http-global
+[26-06-02 09:24:56][ASSERT#0031][OK] cost=0.066s
+[26-06-02 09:24:56][ASSERT#0032][cmd] at cases/service_http.sh:137 fn=setup_service cmd="docker exec tests-sw-service-http1 openlan ceci service add --listen 127.0.0.1:13083 --protocol http --balance roundrobin"
+[26-06-02 09:24:57][ASSERT#0032][OK] cost=0.055s
+[26-06-02 09:24:57][ASSERT#0033][cmd] at cases/service_http.sh:139 fn=setup_service cmd="docker exec tests-sw-service-http1 openlan ceci service backend add --listen 127.0.0.1:13083 --hostname group.test --backend 192.56.0.2:18084|192.56.0.2:18085"
+[26-06-02 09:24:57][ASSERT#0033][OK] cost=0.064s
+[26-06-02 09:24:57][ASSERT#0034][cmd] at cases/service_http.sh:140 fn=setup_service cmd="docker exec tests-sw-service-http1 openlan ceci service backend add --listen 127.0.0.1:13083 --hostname single.test --backend 192.56.0.2:18086"
+[26-06-02 09:24:57][ASSERT#0034][OK] cost=0.061s
+[26-06-02 09:24:57][ASSERT#0035][match] at cases/service_http.sh:141 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="listen: 127.0.0.1:13083"
+- listen: 127.0.0.1:13083
+  mode: service
+  service:
+    balance: roundrobin
+[26-06-02 09:24:57][ASSERT#0035][OK] cost=0.070s
+[26-06-02 09:24:57][ASSERT#0036][match] at cases/service_http.sh:142 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="protocol: http"
+  mode: service
+  service:
+    balance: roundrobin
+    protocol: http
+    routes:
+    - backends:
+      - 192.56.0.2:18084
+[26-06-02 09:24:57][ASSERT#0036][OK] cost=0.060s
+[26-06-02 09:24:57][ASSERT#0037][match] at cases/service_http.sh:143 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="balance: roundrobin"
+- listen: 127.0.0.1:13083
+  mode: service
+  service:
+    balance: roundrobin
+    protocol: http
+    routes:
+    - backends:
+[26-06-02 09:24:57][ASSERT#0037][OK] cost=0.080s
+[26-06-02 09:24:57][ASSERT#0038][match] at cases/service_http.sh:144 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="group.test"
+      - 192.56.0.2:18084
+      - 192.56.0.2:18085
+      match:
+      - group.test
+    - backends:
+      - 192.56.0.2:18086
+      match:
+[26-06-02 09:24:57][ASSERT#0038][OK] cost=0.070s
+[26-06-02 09:24:57][ASSERT#0039][match] at cases/service_http.sh:145 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="single.test"
+    - backends:
+      - 192.56.0.2:18086
+      match:
+      - single.test
+  status: running
+
+[26-06-02 09:24:57][ASSERT#0039][OK] cost=0.067s
+[26-06-02 09:24:57][ASSERT#0040][cmd] at cases/service_http.sh:146 fn=setup_service cmd="docker exec tests-sw-service-http1 openlan ceci service backend add --listen 127.0.0.1:13083 --hostname group.test --backend 192.56.0.2:18087"
+[26-06-02 09:24:57][ASSERT#0040][OK] cost=0.060s
+[26-06-02 09:24:57][ASSERT#0041][cmd] at cases/service_http.sh:147 fn=setup_service cmd="docker exec tests-sw-service-http1 openlan ceci service backend add --listen 127.0.0.1:13083 --backend 192.56.0.3:18088"
+[26-06-02 09:24:57][ASSERT#0041][OK] cost=0.069s
+[26-06-02 09:24:57][ASSERT#0042][match] at cases/service_http.sh:148 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="18087"
+    - backends:
+      - 192.56.0.2:18084
+      - 192.56.0.2:18085
+      - 192.56.0.2:18087
+      match:
+      - group.test
+    - backends:
+[26-06-02 09:24:57][ASSERT#0042][OK] cost=0.078s
+[26-06-02 09:24:57][ASSERT#0043][match] at cases/service_http.sh:149 fn=setup_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="192.56.0.3:18088"
+  mode: service
+  service:
+    backends:
+    - 192.56.0.3:18088
+    balance: roundrobin
+    protocol: http
+    routes:
+[26-06-02 09:24:57][ASSERT#0043][OK] cost=0.072s
+[26-06-02 09:24:57][ASSERT#0044][cmd] at cases/service_http.sh:150 fn=setup_service cmd="docker exec tests-sw-service-http1 sh -c echo '127.0.0.1 single.test group.test unknown.test' >> /etc/hosts"
+[26-06-02 09:24:57][ASSERT#0044][OK] cost=0.054s
+[26-06-02 09:24:57][ASSERT#0045][match] at cases/service_http.sh:164 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://single.test:13083/" expect="ceci-service-http-single"
+ceci-service-http-single
+[26-06-02 09:24:57][ASSERT#0045][OK] cost=0.065s
+[26-06-02 09:24:57][ASSERT#0046][match] at cases/service_http.sh:165 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-a"
+ceci-service-http-a
+[26-06-02 09:24:58][ASSERT#0046][OK] cost=0.059s
+[26-06-02 09:24:58][ASSERT#0047][match] at cases/service_http.sh:166 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-b"
+ceci-service-http-b
+[26-06-02 09:24:58][ASSERT#0047][OK] cost=0.060s
+[26-06-02 09:24:58][ASSERT#0048][match] at cases/service_http.sh:167 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-c"
+ceci-service-http-c
+[26-06-02 09:24:58][ASSERT#0048][OK] cost=0.072s
+[26-06-02 09:24:58][ASSERT#0049][match] at cases/service_http.sh:168 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://unknown.test:13083/" expect="ceci-service-http-global"
+ceci-service-http-global
+[26-06-02 09:24:58][ASSERT#0049][OK] cost=0.062s
+[26-06-02 09:24:58][ASSERT#0050][cmd] at cases/service_http.sh:172 fn=restart_ceci_service cmd="docker exec tests-sw-service-http1 openlan ceci service restart --listen 127.0.0.1:13083"
+[26-06-02 09:24:58][ASSERT#0050][OK] cost=0.067s
+[26-06-02 09:24:58][ASSERT#0051][match] at cases/service_http.sh:173 fn=restart_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" expect="listen: 127.0.0.1:13083"
+- listen: 127.0.0.1:13083
+  mode: service
+  service:
+    backends:
+[26-06-02 09:24:58][ASSERT#0051][OK] cost=0.075s
+[26-06-02 09:24:58][ASSERT#0052][match] at cases/service_http.sh:164 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://single.test:13083/" expect="ceci-service-http-single"
+ceci-service-http-single
+[26-06-02 09:24:58][ASSERT#0052][OK] cost=0.067s
+[26-06-02 09:24:58][ASSERT#0053][match] at cases/service_http.sh:165 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-a"
+ceci-service-http-a
+[26-06-02 09:24:58][ASSERT#0053][OK] cost=0.072s
+[26-06-02 09:24:58][ASSERT#0054][match] at cases/service_http.sh:166 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-b"
+ceci-service-http-b
+[26-06-02 09:24:58][ASSERT#0054][OK] cost=0.064s
+[26-06-02 09:24:58][ASSERT#0055][match] at cases/service_http.sh:167 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" expect="ceci-service-http-c"
+ceci-service-http-c
+[26-06-02 09:24:58][ASSERT#0055][OK] cost=0.063s
+[26-06-02 09:24:58][ASSERT#0056][match] at cases/service_http.sh:168 fn=test_ceci_service retry=20 cmd="docker exec tests-sw-service-http1 wget -q -O- http://unknown.test:13083/" expect="ceci-service-http-global"
+ceci-service-http-global
+[26-06-02 09:24:58][ASSERT#0056][OK] cost=0.067s
+[26-06-02 09:24:58][ASSERT#0057][cmd] at cases/service_http.sh:177 fn=remove_ceci_service cmd="docker exec tests-sw-service-http1 openlan ceci service rm --listen 127.0.0.1:13083"
+[26-06-02 09:24:58][ASSERT#0057][OK] cost=0.074s
+[26-06-02 09:24:58][ASSERT#0058][unmatch] at cases/service_http.sh:178 fn=remove_ceci_service retry=10 cmd="docker exec tests-sw-service-http1 openlan ceci service ls" unexpected="127.0.0.1:13083"
+Last output:
+[]
+
+[26-06-02 09:25:09][ASSERT#0058][OK] cost=10.682s
+[26-06-02 09:25:09][ASSERT#0059][unmatch] at cases/service_http.sh:179 fn=remove_ceci_service retry=15 cmd="docker exec tests-sw-service-http1 wget -q -O- http://group.test:13083/" unexpected="ceci-service-http-a"
+Last output:
+[26-06-02 09:25:25][ASSERT#0059][OK] cost=15.965s
+[26-06-02 09:25:26] END service_http status=PASS cost=45.509s

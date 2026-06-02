@@ -1,0 +1,71 @@
+[26-06-02 09:15:12] START access_openvpn_tcp_reset
+scenario: cases/access_openvpn_tcp_reset.sh
+header  : verify OpenVPN tcp reset handling during client reconnect
+topology: sw1(center) 192.54.0.1:8082; | OpenVPN tcp/1194, 10.92.0.0/24; vpn1 10.92.0.10; | INPUT tcp-reset rule toggles HTTP reachability
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1(center) 192.54.0.1:8082
+topology: #                 ^
+topology: #                 | OpenVPN tcp/1194, 10.92.0.0/24
+topology: #              vpn1 10.92.0.10
+topology: #                 | INPUT tcp-reset rule toggles HTTP reachability
+topology: # - Docker mgmt network: 172.248.0.0/24
+topology: #   sw1=172.248.0.241, vpn1 client joins the same mgmt network.
+topology: # - OpenLAN service network "example": 192.54.0.0/24
+topology: #   sw1 overlay IP=192.54.0.1/24.
+topology: # - OpenVPN overlay:
+topology: #   tcp/1194, subnet 10.92.0.0/24, vpn1@example fixed address 10.92.0.10.
+topology: # - Test service:
+topology: #   sw1 serves HTTP on 192.54.0.1:8082.
+topology: # Validation:
+topology: #   before INPUT reject-with tcp-reset, vpn1 can access http://192.54.0.1:8082;
+topology: #   after adding reject-with tcp-reset, vpn1 request is reset and becomes unreachable.
+
+Started switch pause container: tests-sw-openvpn-rst.sw1-pause
+Started switch frr container: tests-sw-openvpn-rst.sw1-frr
+Started switch ipsec container: tests-sw-openvpn-rst.sw1-ipsec
+Started switch container: tests-sw-openvpn-rst.sw1
+[26-06-02 09:15:13][ASSERT#0001][expect] at cases/access_openvpn_tcp_reset.sh:50 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-rst.sw1" expect="Http.Start"
+2026/06/02 09:15:13 INFO|root|Wait: ...
+2026/06/02 09:15:13 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:15:13 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:15:13 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:15:14][ASSERT#0001][OK] cost=1.031s
+[26-06-02 09:15:14][ASSERT#0002][cmd] at cases/access_openvpn_tcp_reset.sh:52 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-rst.sw1 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96c"
+[26-06-02 09:15:14][ASSERT#0002][OK] cost=0.064s
+[26-06-02 09:15:14][ASSERT#0003][cmd] at cases/access_openvpn_tcp_reset.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-rst.sw1 openlan network --name example add --address 192.54.0.1/24"
+[26-06-02 09:15:14][ASSERT#0003][OK] cost=0.251s
+[26-06-02 09:15:14][ASSERT#0004][cmd] at cases/access_openvpn_tcp_reset.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-rst.sw1 openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-06-02T09  
+[26-06-02 09:15:14][ASSERT#0004][OK] cost=0.071s
+[26-06-02 09:15:14][ASSERT#0005][cmd] at cases/access_openvpn_tcp_reset.sh:60 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-rst.sw1 openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.92.0.0/24 --dns 8.8.8.8"
+[26-06-02 09:15:14][ASSERT#0005][OK] cost=0.111s
+[26-06-02 09:15:14][ASSERT#0006][cmd] at cases/access_openvpn_tcp_reset.sh:62 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-rst.sw1 openlan network --name example client add --user vpn1 --address 10.92.0.10"
+[26-06-02 09:15:14][ASSERT#0006][OK] cost=0.066s
+Started OpenVPN client container: tests-sw-openvpn-rst.vpn1
+[26-06-02 09:15:15][ASSERT#0007][expect] at cases/access_openvpn_tcp_reset.sh:72 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-openvpn-rst.vpn1" expect="Initialization Sequence Completed"
+2026-06-02 09:15:15 net_addr_v4_add: 10.92.0.10/24 dev tun0
+2026-06-02 09:15:15 net_route_v4_add: 10.92.0.0/24 via 10.92.0.1 dev [NULL] table 0 metric 300
+2026-06-02 09:15:15 net_route_v4_add: 192.54.0.0/24 via 10.92.0.1 dev [NULL] table 0 metric 300
+2026-06-02 09:15:15 Initialization Sequence Completed
+[26-06-02 09:15:16][ASSERT#0007][OK] cost=1.034s
+[26-06-02 09:15:16][ASSERT#0008][cmd] at cases/access_openvpn_tcp_reset.sh:76 fn=setup_service cmd="docker exec tests-sw-openvpn-rst.sw1 sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 7\r\n\r\nrst-ok1" | socat - TCP-LISTEN:8082,bind=192.54.0.1,reuseaddr; done' >/tmp/rst-8082.log 2>&1 &"
+[26-06-02 09:15:16][ASSERT#0008][OK] cost=0.066s
+[26-06-02 09:15:16][ASSERT#0009][match] at cases/access_openvpn_tcp_reset.sh:82 fn=test_tcp_reset retry=5 cmd="docker exec tests-sw-openvpn-rst.vpn1 wget -qO- -T 3 -t 1 http://192.54.0.1:8082" expect="rst-ok1"
+rst-ok1
+[26-06-02 09:15:16][ASSERT#0009][OK] cost=0.081s
+[26-06-02 09:15:16][ASSERT#0010][cmd] at cases/access_openvpn_tcp_reset.sh:85 fn=test_tcp_reset cmd="docker exec tests-sw-openvpn-rst.sw1 iptables -A INPUT -p tcp -d 192.54.0.1 --dport 8082 -j REJECT --reject-with tcp-reset"
+[26-06-02 09:15:16][ASSERT#0010][OK] cost=0.056s
+[26-06-02 09:15:16][ASSERT#0011][match] at cases/access_openvpn_tcp_reset.sh:86 fn=test_tcp_reset retry=3 cmd="docker exec tests-sw-openvpn-rst.sw1 iptables -L INPUT -v -n" expect="tcp-reset"
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+  108 36445 TT_in      all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+    0     0 REJECT     tcp  --  *      *       0.0.0.0/0            192.54.0.1           tcp dpt:8082 reject-with tcp-reset
+[26-06-02 09:15:16][ASSERT#0011][OK] cost=0.062s
+[26-06-02 09:15:16][ASSERT#0012][fuzzy] at cases/access_openvpn_tcp_reset.sh:89 fn=test_tcp_reset retry=5 cmd="docker exec tests-sw-openvpn-rst.vpn1 wget -O- -T 3 -t 1 http://192.54.0.1:8082" pattern="Connection refused|Connection reset"
+--2026-06-02 09:15:16--  http://192.54.0.1:8082/
+Connecting to 192.54.0.1:8082... failed: Connection refused.
+[26-06-02 09:15:16][ASSERT#0012][OK] cost=0.083s
+[26-06-02 09:15:17] END access_openvpn_tcp_reset status=PASS cost=4.785s

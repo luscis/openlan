@@ -1,0 +1,242 @@
+[26-06-02 09:37:02] START switch_ipsec_vxlan_perf
+scenario: cases/switch_ipsec_vxlan_perf.sh
+header  : custom scenario
+topology: sw1 172.247.0.241  <==== optional IPSec ====>  sw2 172.247.0.242; svc 192.57.0.1       <---- VxLAN output ------ svc 192.57.0.2
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 172.247.0.241  <==== optional IPSec ====>  sw2 172.247.0.242
+topology: #       svc 192.57.0.1       <---- VxLAN output ------ svc 192.57.0.2
+topology: #       compare ping/iperf3 before and after IPSec enable
+topology: # - Docker mgmt network: 172.247.0.0/24
+topology: #   sw1=172.247.0.241, sw2=172.247.0.242.
+topology: # - OpenLAN service network "example": 192.57.0.0/24
+topology: #   sw1=192.57.0.1, sw2=192.57.0.2.
+topology: # - Output link:
+topology: #   sw2 -> sw1 by vxlan output.
+topology: # Validation:
+topology: # - Phase1: no ipsec tunnel, run ping + iperf3 TCP/UDP.
+topology: # - Phase2: enable ipsec tunnel, run ping + iperf3 TCP/UDP again.
+
+Started switch pause container: tests-sw-ipsec-vxlan-perf1-pause
+Started switch frr container: tests-sw-ipsec-vxlan-perf1-frr
+Started switch ipsec container: tests-sw-ipsec-vxlan-perf1-ipsec
+Started switch container: tests-sw-ipsec-vxlan-perf1
+[26-06-02 09:37:03][ASSERT#0001][expect] at cases/switch_ipsec_vxlan_perf.sh:47 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-ipsec-vxlan-perf1" expect="Http.Start"
+2026/06/02 09:37:04 INFO|root|Wait: ...
+2026/06/02 09:37:04 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:37:04 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:37:04 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:37:04][ASSERT#0001][OK] cost=1.030s
+[26-06-02 09:37:04][ASSERT#0002][cmd] at cases/switch_ipsec_vxlan_perf.sh:48 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan network --name example add --address 192.57.0.1/24"
+[26-06-02 09:37:04][ASSERT#0002][OK] cost=0.235s
+[26-06-02 09:37:04][ASSERT#0003][cmd] at cases/switch_ipsec_vxlan_perf.sh:49 fn=setup_sw1 cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan user add --name edge@example --password 123456"
+# total 1
+username                 password                 role   lease          
+edge@example             123456                   guest  2027-06-02T09  
+[26-06-02 09:37:04][ASSERT#0003][OK] cost=0.058s
+Started switch pause container: tests-sw-ipsec-vxlan-perf2-pause
+Started switch frr container: tests-sw-ipsec-vxlan-perf2-frr
+Started switch ipsec container: tests-sw-ipsec-vxlan-perf2-ipsec
+Started switch container: tests-sw-ipsec-vxlan-perf2
+[26-06-02 09:37:05][ASSERT#0004][expect] at cases/switch_ipsec_vxlan_perf.sh:66 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-ipsec-vxlan-perf2" expect="Http.Start"
+2026/06/02 09:37:06 INFO|root|Wait: ...
+2026/06/02 09:37:06 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/02 09:37:06 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/02 09:37:06 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-02 09:37:06][ASSERT#0004][OK] cost=1.033s
+[26-06-02 09:37:06][ASSERT#0005][cmd] at cases/switch_ipsec_vxlan_perf.sh:67 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan network --name example add --address 192.57.0.2/24"
+[26-06-02 09:37:06][ASSERT#0005][OK] cost=0.247s
+[26-06-02 09:37:06][ASSERT#0006][cmd] at cases/switch_ipsec_vxlan_perf.sh:68 fn=setup_sw2 cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan user add --name edge@example --password 123456"
+# total 1
+username                 password                 role   lease          
+edge@example             123456                   guest  2027-06-02T09  
+[26-06-02 09:37:06][ASSERT#0006][OK] cost=0.068s
+[26-06-02 09:37:06][ASSERT#0007][cmd] at cases/switch_ipsec_vxlan_perf.sh:72 fn=setup_output cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan network --name example output add --remote 172.247.0.242 --protocol vxlan --segment 1057"
+[26-06-02 09:37:06][ASSERT#0007][OK] cost=0.074s
+[26-06-02 09:37:06][ASSERT#0008][cmd] at cases/switch_ipsec_vxlan_perf.sh:73 fn=setup_output cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan network --name example output add --remote 172.247.0.241 --protocol vxlan --segment 1057"
+[26-06-02 09:37:06][ASSERT#0008][OK] cost=0.069s
+[26-06-02 09:37:06][ASSERT#0009][match] at cases/switch_ipsec_vxlan_perf.sh:84 fn=test_ping retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -c 3 192.57.0.1" expect="bytes from"
+PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.311 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.326 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.313 ms
+
+--- 192.57.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2082ms
+[26-06-02 09:37:13][ASSERT#0009][OK] cost=6.308s
+[26-06-02 09:37:13][ASSERT#0010][match] at cases/switch_ipsec_vxlan_perf.sh:85 fn=test_ping retry=30 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="0% packet loss"
+PING 192.57.0.1 (192.57.0.1) 1200(1228) bytes of data.
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 972ms
+rtt min/avg/max/mdev = 0.134/0.258/0.384/0.080 ms
+[26-06-02 09:37:14][ASSERT#0010][OK] cost=1.039s
+[26-06-02 09:37:14][ASSERT#0011][match] at cases/switch_ipsec_vxlan_perf.sh:86 fn=test_ping retry=5 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="rtt min/avg/max"
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 970ms
+rtt min/avg/max/mdev = 0.113/0.240/0.342/0.060 ms
+[26-06-02 09:37:15][ASSERT#0011][OK] cost=1.031s
+[26-06-02 09:37:15][ASSERT#0012][cmd] at cases/switch_ipsec_vxlan_perf.sh:90 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 iperf3 -s -D -p 5210"
+[26-06-02 09:37:15][ASSERT#0012][OK] cost=0.060s
+[26-06-02 09:37:15][ASSERT#0013][match] at cases/switch_ipsec_vxlan_perf.sh:91 fn=test_bandwidth retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 iperf3 -c 192.57.0.1 -p 5210 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec  15.6 GBytes  26.8 Gbits/sec    0             sender
+[  5]   0.00-5.03   sec  15.6 GBytes  26.6 Gbits/sec                  receiver
+
+iperf Done.
+[26-06-02 09:37:20][ASSERT#0013][OK] cost=5.226s
+[26-06-02 09:37:20][ASSERT#0014][cmd] at cases/switch_ipsec_vxlan_perf.sh:92 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 pkill -f iperf3"
+[26-06-02 09:37:20][ASSERT#0014][OK] cost=0.058s
+[26-06-02 09:37:20][ASSERT#0015][cmd] at cases/switch_ipsec_vxlan_perf.sh:93 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 iperf3 -s -D -p 5211"
+[26-06-02 09:37:20][ASSERT#0015][OK] cost=0.053s
+[26-06-02 09:37:20][ASSERT#0016][match] at cases/switch_ipsec_vxlan_perf.sh:94 fn=test_bandwidth retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 iperf3 -u -c 192.57.0.1 -p 5211 -b 500M -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-5.00   sec   298 MBytes   500 Mbits/sec  0.000 ms  0/223513 (0%)  sender
+[  5]   0.00-5.04   sec   298 MBytes   496 Mbits/sec  0.002 ms  0/223513 (0%)  receiver
+
+iperf Done.
+[26-06-02 09:37:26][ASSERT#0016][OK] cost=5.224s
+[26-06-02 09:37:26][ASSERT#0017][cmd] at cases/switch_ipsec_vxlan_perf.sh:95 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 pkill -f iperf3"
+[26-06-02 09:37:26][ASSERT#0017][OK] cost=0.061s
+[26-06-02 09:37:26][ASSERT#0018][cmd] at cases/switch_ipsec_vxlan_perf.sh:101 fn=test_phase_without_ipsec cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:500 ...
+  PID   500   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-02 09:37:27][ASSERT#0018][OK] cost=1.082s
+[26-06-02 09:37:27][ASSERT#0019][cmd] at cases/switch_ipsec_vxlan_perf.sh:102 fn=test_phase_without_ipsec cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:42 ....
+  PID   42   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:507 ...
+  PID   507   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-02 09:37:28][ASSERT#0019][OK] cost=1.076s
+[26-06-02 09:37:28][ASSERT#0020][match] at cases/switch_ipsec_vxlan_perf.sh:84 fn=test_ping retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -c 3 192.57.0.1" expect="bytes from"
+PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.197 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.320 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.330 ms
+
+--- 192.57.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2038ms
+[26-06-02 09:37:30][ASSERT#0020][OK] cost=2.105s
+[26-06-02 09:37:30][ASSERT#0021][match] at cases/switch_ipsec_vxlan_perf.sh:85 fn=test_ping retry=30 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="0% packet loss"
+PING 192.57.0.1 (192.57.0.1) 1200(1228) bytes of data.
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 971ms
+rtt min/avg/max/mdev = 0.151/0.243/0.322/0.041 ms
+[26-06-02 09:37:31][ASSERT#0021][OK] cost=1.036s
+[26-06-02 09:37:31][ASSERT#0022][match] at cases/switch_ipsec_vxlan_perf.sh:86 fn=test_ping retry=5 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="rtt min/avg/max"
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 972ms
+rtt min/avg/max/mdev = 0.056/0.205/0.285/0.056 ms
+[26-06-02 09:37:32][ASSERT#0022][OK] cost=1.035s
+[26-06-02 09:37:32][ASSERT#0023][cmd] at cases/switch_ipsec_vxlan_perf.sh:77 fn=setup_ipsec_tunnel cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan ipsec tunnel add --remote 172.247.0.242 --protocol vxlan --secret ea64d5b0c96c --localid sw1.ipsec.perf --remoteid sw2.ipsec.perf"
+[26-06-02 09:37:32][ASSERT#0023][OK] cost=0.076s
+[26-06-02 09:37:32][ASSERT#0024][cmd] at cases/switch_ipsec_vxlan_perf.sh:78 fn=setup_ipsec_tunnel cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan ipsec tunnel add --remote 172.247.0.241 --protocol vxlan --secret ea64d5b0c96c --localid sw2.ipsec.perf --remoteid sw1.ipsec.perf"
+[26-06-02 09:37:32][ASSERT#0024][OK] cost=0.069s
+[26-06-02 09:37:32][ASSERT#0025][match] at cases/switch_ipsec_vxlan_perf.sh:79 fn=setup_ipsec_tunnel retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
+172.247.0.242   vxlan           ea64d5b0c96c    [sw1.ipsec.perf]0 -> [sw2.ipsec.perf]0 erouted 
+[26-06-02 09:37:32][ASSERT#0025][OK] cost=0.084s
+[26-06-02 09:37:32][ASSERT#0026][match] at cases/switch_ipsec_vxlan_perf.sh:80 fn=setup_ipsec_tunnel retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
+172.247.0.241   vxlan           ea64d5b0c96c    [sw2.ipsec.perf]0 -> [sw1.ipsec.perf]0 erouted 
+[26-06-02 09:37:33][ASSERT#0026][OK] cost=1.133s
+[26-06-02 09:37:33][ASSERT#0027][match] at cases/switch_ipsec_vxlan_perf.sh:84 fn=test_ping retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -c 3 192.57.0.1" expect="bytes from"
+PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.285 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.522 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.258 ms
+
+--- 192.57.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2085ms
+[26-06-02 09:37:35][ASSERT#0027][OK] cost=2.149s
+[26-06-02 09:37:35][ASSERT#0028][match] at cases/switch_ipsec_vxlan_perf.sh:85 fn=test_ping retry=30 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="0% packet loss"
+PING 192.57.0.1 (192.57.0.1) 1200(1228) bytes of data.
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 972ms
+rtt min/avg/max/mdev = 0.244/0.484/0.611/0.082 ms
+[26-06-02 09:37:37][ASSERT#0028][OK] cost=1.036s
+[26-06-02 09:37:37][ASSERT#0029][match] at cases/switch_ipsec_vxlan_perf.sh:86 fn=test_ping retry=5 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="rtt min/avg/max"
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 971ms
+rtt min/avg/max/mdev = 0.237/0.490/0.577/0.081 ms
+[26-06-02 09:37:38][ASSERT#0029][OK] cost=1.046s
+[26-06-02 09:37:38][ASSERT#0030][cmd] at cases/switch_ipsec_vxlan_perf.sh:90 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 iperf3 -s -D -p 5210"
+[26-06-02 09:37:38][ASSERT#0030][OK] cost=0.060s
+[26-06-02 09:37:38][ASSERT#0031][match] at cases/switch_ipsec_vxlan_perf.sh:91 fn=test_bandwidth retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 iperf3 -c 192.57.0.1 -p 5210 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec   418 MBytes   700 Mbits/sec  3755             sender
+[  5]   0.00-5.04   sec   409 MBytes   682 Mbits/sec                  receiver
+
+iperf Done.
+[26-06-02 09:37:43][ASSERT#0031][OK] cost=5.240s
+[26-06-02 09:37:43][ASSERT#0032][cmd] at cases/switch_ipsec_vxlan_perf.sh:92 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 pkill -f iperf3"
+[26-06-02 09:37:43][ASSERT#0032][OK] cost=0.062s
+[26-06-02 09:37:43][ASSERT#0033][cmd] at cases/switch_ipsec_vxlan_perf.sh:93 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 iperf3 -s -D -p 5211"
+[26-06-02 09:37:43][ASSERT#0033][OK] cost=0.060s
+[26-06-02 09:37:43][ASSERT#0034][match] at cases/switch_ipsec_vxlan_perf.sh:94 fn=test_bandwidth retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 iperf3 -u -c 192.57.0.1 -p 5211 -b 500M -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-5.00   sec   298 MBytes   500 Mbits/sec  0.000 ms  0/230428 (0%)  sender
+[  5]   0.00-5.04   sec   284 MBytes   472 Mbits/sec  0.011 ms  11105/230428 (4.8%)  receiver
+
+iperf Done.
+[26-06-02 09:37:48][ASSERT#0034][OK] cost=5.226s
+[26-06-02 09:37:48][ASSERT#0035][cmd] at cases/switch_ipsec_vxlan_perf.sh:95 fn=test_bandwidth cmd="docker exec tests-sw-ipsec-vxlan-perf1 pkill -f iperf3"
+[26-06-02 09:37:48][ASSERT#0035][OK] cost=0.060s
+[26-06-02 09:37:48][ASSERT#0036][cmd] at cases/switch_ipsec_vxlan_perf.sh:110 fn=test_phase_with_ipsec cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:500 ....
+  PID   500   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:744 ...
+  PID   744   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-02 09:37:49][ASSERT#0036][OK] cost=1.074s
+[26-06-02 09:37:49][ASSERT#0037][cmd] at cases/switch_ipsec_vxlan_perf.sh:111 fn=test_phase_with_ipsec cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:507 ....
+  PID   507   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:782 ...
+  PID   782   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-02 09:37:50][ASSERT#0037][OK] cost=1.067s
+[26-06-02 09:37:50][ASSERT#0038][match] at cases/switch_ipsec_vxlan_perf.sh:112 fn=test_phase_with_ipsec retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf1 openlan ipsec tunnel ls | grep 172.247.0.242" expect="erouted"
+172.247.0.242   vxlan           ea64d5b0c96c    [sw1.ipsec.perf]0 -> [sw2.ipsec.perf]0 erouted 
+[26-06-02 09:37:51][ASSERT#0038][OK] cost=0.069s
+[26-06-02 09:37:51][ASSERT#0039][match] at cases/switch_ipsec_vxlan_perf.sh:113 fn=test_phase_with_ipsec retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 openlan ipsec tunnel ls | grep 172.247.0.241" expect="erouted"
+172.247.0.241   vxlan           ea64d5b0c96c    [sw2.ipsec.perf]0 -> [sw1.ipsec.perf]0 erouted 
+[26-06-02 09:37:51][ASSERT#0039][OK] cost=0.078s
+[26-06-02 09:37:51][ASSERT#0040][match] at cases/switch_ipsec_vxlan_perf.sh:84 fn=test_ping retry=20 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -c 3 192.57.0.1" expect="bytes from"
+PING 192.57.0.1 (192.57.0.1) 56(84) bytes of data.
+64 bytes from 192.57.0.1: icmp_seq=1 ttl=64 time=0.310 ms
+64 bytes from 192.57.0.1: icmp_seq=2 ttl=64 time=0.486 ms
+64 bytes from 192.57.0.1: icmp_seq=3 ttl=64 time=0.452 ms
+
+--- 192.57.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2052ms
+[26-06-02 09:37:53][ASSERT#0040][OK] cost=2.122s
+[26-06-02 09:37:53][ASSERT#0041][match] at cases/switch_ipsec_vxlan_perf.sh:85 fn=test_ping retry=30 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="0% packet loss"
+PING 192.57.0.1 (192.57.0.1) 1200(1228) bytes of data.
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 972ms
+rtt min/avg/max/mdev = 0.206/0.494/0.920/0.148 ms
+[26-06-02 09:37:54][ASSERT#0041][OK] cost=1.041s
+[26-06-02 09:37:54][ASSERT#0042][match] at cases/switch_ipsec_vxlan_perf.sh:86 fn=test_ping retry=5 cmd="docker exec tests-sw-ipsec-vxlan-perf2 ping -q -c 20 -i 0.05 -s 1200 192.57.0.1" expect="rtt min/avg/max"
+
+--- 192.57.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 972ms
+rtt min/avg/max/mdev = 0.287/0.458/0.530/0.066 ms
+[26-06-02 09:37:55][ASSERT#0042][OK] cost=1.040s
+[26-06-02 09:37:55] END switch_ipsec_vxlan_perf status=PASS cost=53.520s

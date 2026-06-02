@@ -112,13 +112,18 @@ test_crypt_update() {
   assert_cmd docker exec $sw1_name openlan crypt update --algorithm aes-128 --secret "$crypt_secret_v2"
   assert_match 1 "docker exec $sw1_name openlan crypt ls" "secret: $crypt_secret_v2"
 
-  docker stop $ac1_name
-  docker stop $ac2_name
+  assert_cmd docker stop $ac1_name
+  assert_cmd docker stop $ac2_name
+
+  assert_unmatch 30 "docker ps" "$ac1_name"
+  assert_unmatch 30 "docker ps" "$ac2_name"
 
   setup_ac1 "$crypt_secret_v1"
   assert_expect 30 "docker logs -f $ac1_name" "SocketClientImpl.Try"
 
-  docker stop $ac1_name
+  assert_cmd docker stop $ac1_name
+  assert_unmatch 30 "docker ps" "$ac1_name"
+
   setup_ac1 "$crypt_secret_v2"
   assert_expect 30 "docker logs -f $ac1_name" "Worker.OnSuccess"
 
