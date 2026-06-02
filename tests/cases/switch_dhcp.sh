@@ -4,12 +4,18 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1 DHCP server 192.67.0.1
+#              ^                         ^
+#              | physical output          | tcp access tunnel
+#       veth-dhcp <-> ns client      ac1 tap bridge
+#       dhclient lease path          dhclient lease path
 # - Docker mgmt network: 172.245.0.0/24
 #   sw1=172.245.0.241.
 # - OpenLAN service network "example": 192.67.0.0/24
 #   sw1=192.67.0.1, DHCP range 192.67.0.100-192.67.0.120.
 # - In-container DHCP client namespace:
-#   veth-dhcp is attached to Linux bridge br-example, while dnsmasq listens on hi-example.
+#   veth-dhcp is added as a physical output, while dnsmasq listens on hi-example.
 # - Access point DHCP client:
 #   tests-sw-dhcp.ac1 joins the mgmt network, bridges its tunnel to br-access-dhcp,
 #   then uses dhclient on that bridge after access login succeeds.
@@ -87,9 +93,9 @@ test_dhcp_service() {
 setup_dhcp_client_ns() {
   assert_cmd docker exec $sw1_name ip netns add $dhcp_ns
   assert_cmd docker exec $sw1_name ip link add $dhcp_bridge type veth peer name $dhcp_client
-  assert_cmd docker exec $sw1_name ip link show $bridge_master
-  assert_cmd docker exec $sw1_name ip link set $dhcp_bridge master $bridge_master
-  assert_cmd docker exec $sw1_name ip link set $dhcp_bridge up
+  assert_cmd docker exec $sw1_name openlan network --name example output add --remote $dhcp_bridge --protocol ""
+  assert_match 10 "docker exec $sw1_name openlan network --name example output ls" "device: $dhcp_bridge"
+  assert_match 10 "docker exec $sw1_name ip link show $dhcp_bridge" "master $bridge_master"
   assert_cmd docker exec $sw1_name ip link set $dhcp_client netns $dhcp_ns
   assert_cmd docker exec $sw1_name ip netns exec $dhcp_ns ip link set lo up
   assert_cmd docker exec $sw1_name ip netns exec $dhcp_ns ip link set $dhcp_client up

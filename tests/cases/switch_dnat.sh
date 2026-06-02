@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 192.58.0.1  -- UDP output -->  sw2 192.58.0.2
+#              |                              |
+#              +----------- DNAT example:80 -> 127.0.0.1:8080
 # - Docker mgmt network: 172.246.0.0/24
 #   sw1=172.246.0.241, sw2=172.246.0.242.
 # - OpenLAN service network "example": 192.58.0.0/24

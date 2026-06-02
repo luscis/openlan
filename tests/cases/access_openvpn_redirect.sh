@@ -4,6 +4,13 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       vpn1 10.97.0.10
+#             |
+#             v OpenVPN tcp/1194
+#       sw1 192.53.0.1  -- output/route -->  sw2 192.53.0.2
+#       VIP 10.253.0.11                   VIP 10.253.0.12
+#             redirect moves vpn1 traffic from sw1 VIP to sw2 VIP
 # - Docker mgmt network: 172.249.0.0/24
 #   sw1=172.249.0.241, sw2=172.249.0.242, vpn1 joins the same mgmt network.
 # - OpenLAN service network "example": 192.53.0.0/24

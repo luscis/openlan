@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 192.41.0.1
+#              ^                         ^
+#              | OpenVPN AES tcp/1194     | OpenVPN SM4 tcp/1194
+#            vpn1                      vpn2
+#              10.99.0.0/24 and 10.98.0.0/24 cipher paths
 # - Docker mgmt network: 172.252.0.0/24
 #   sw1=172.252.0.241, vpn containers join the same mgmt network.
 # - OpenLAN service network "example": 192.41.0.0/24

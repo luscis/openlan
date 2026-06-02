@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       client wget on sw1
+#              |
+#       sw1 Ceci TCP service -- output --> sw2 backend 192.56.0.2:18083
 # - Docker mgmt network: 172.246.0.0/24
 #   sw1=172.246.0.241 (ceci service), sw2=172.246.0.242 (service backends).
 # - OpenLAN service network "example": 192.56.0.0/24

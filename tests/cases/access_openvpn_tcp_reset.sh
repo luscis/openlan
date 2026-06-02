@@ -8,6 +8,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 192.54.0.1:8082
+#                 ^
+#                 | OpenVPN tcp/1194, 10.92.0.0/24
+#              vpn1 10.92.0.10
+#                 | INPUT tcp-reset rule toggles HTTP reachability
 # - Docker mgmt network: 172.248.0.0/24
 #   sw1=172.248.0.241, vpn1 client joins the same mgmt network.
 # - OpenLAN service network "example": 192.54.0.0/24

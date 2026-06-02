@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 172.251.0.241
+#              ^                         ^
+#              | network a crypt          | network b global crypt
+#        ac clients 192.61.0.11-17   ac clients 192.62.0.11-13
+#              wrong/default/global secret combinations are rejected
 # - Docker mgmt network: 172.251.0.0/24
 #   sw1=172.251.0.241, all access clients join the same mgmt network.
 # - OpenLAN service networks:

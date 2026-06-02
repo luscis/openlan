@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       vpn1 10.93.0.10
+#             |
+#             v OpenVPN tcp/1194
+#       sw1 192.59.0.1:8081
+#             ZTrust guest + knock gates service access
 # - Docker mgmt network: 172.245.0.0/24
 #   sw1=172.245.0.241.
 # - OpenLAN service network "example": 192.59.0.0/24

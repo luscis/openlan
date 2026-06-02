@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 172.253.0.241 / 192.31.0.1
+#                 ^
+#                 | tcp access with bad credentials
+#              acbad asks for 192.31.0.11
+#                 x authentication rejected
 # - Docker mgmt network: 172.253.0.0/24
 #   sw1=172.253.0.241, bad access client joins the same mgmt network.
 # - OpenLAN service network "example": 192.31.0.0/24

@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#                         sw1 center 192.53.0.1
+#                           ^                 ^
+#                           | UDP output       | TCP output
+#                    sw2 192.53.0.2     sw3 192.53.0.3
+#                         mixed output auth, ping RTT, and bandwidth samples
 # - One center switch sw1 accepts mixed output dial-ins.
 # - sw2 -> sw1 over UDP output.
 # - sw3 -> sw1 over TCP output.

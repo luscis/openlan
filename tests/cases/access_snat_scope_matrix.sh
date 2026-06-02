@@ -4,6 +4,13 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       vpn/access on sw1 network a,b
+#                 |
+#       sw1: a=192.53.0.1 b=192.54.0.1 int=192.55.0.1
+#                 | int output uplink
+#       sw2: int=192.55.0.2, target VIP 10.253.0.12
+#                 SNAT scopes: disabled, openvpn, local, enable
 # - Docker mgmt network: 172.249.0.0/24
 #   sw1=172.249.0.241, sw2=172.249.0.242.
 # - sw1 virtual networks:

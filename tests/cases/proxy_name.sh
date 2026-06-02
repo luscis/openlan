@@ -4,6 +4,11 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 name client 192.54.0.1
+#              | nslookup via local Ceci name proxy
+#              v
+#       sw1 openceci(name) -- output --> sw2 dnsmasq 192.54.0.2:5300
 # - Docker mgmt network: 172.249.0.0/24
 #   sw1=172.249.0.241 (name proxy client), sw2=172.249.0.242 (upstream dns server).
 # - OpenLAN service network "example": 192.54.0.0/24

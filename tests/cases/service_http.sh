@@ -4,6 +4,14 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       client wget with Host header on sw1
+#              |
+#       sw1 Ceci HTTP service
+#          ^ route groups          ^ global backend
+#          |                       |
+#       sw2 backends            sw3 backend
+#       192.56.0.2              192.56.0.3
 # - Docker mgmt network: 172.246.0.0/24
 #   sw1=172.246.0.241 (ceci service),
 #   sw2=172.246.0.242 (hostname-route backends),

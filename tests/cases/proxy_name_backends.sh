@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 openceci(name)
+#          ^                 ^
+#          | domain A         | domain B
+#       sw2 dnsmasq        sw3 dnsmasq
+#       192.55.0.2         192.55.0.3
 # - Docker mgmt network: 172.248.0.0/24
 #   sw1=172.248.0.241 (name proxy client),
 #   sw2=172.248.0.242 (upstream dns A),

@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 172.244.0.241 / AS65101  <---- BGP ---->  sw2 172.244.0.242 / AS65102
+#       svc 192.54.0.1                              svc 192.54.0.2
+#       peers use Docker mgmt addresses; filters validate prefix flow
 # - Docker mgmt network: 172.244.0.0/24
 #   sw1=172.244.0.241, sw2=172.244.0.242.
 # - OpenLAN service network "example": 192.54.0.0/24

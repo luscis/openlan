@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 172.248.0.241  <==== IPSec ====>  sw2 172.248.0.242
+#       svc 192.56.0.1    <---- VxLAN output - svc 192.56.0.2
+#       plain VxLAN phase, then IPSec-protected phase
 # - Docker mgmt network: 172.248.0.0/24
 #   sw1=172.248.0.241, sw2=172.248.0.242.
 # - OpenLAN service network "example": 192.56.0.0/24

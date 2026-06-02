@@ -4,6 +4,13 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 192.91.0.1
+#                 ^
+#                 | OpenVPN tcp/1194, 10.91.0.0/24
+#              vpn1 10.91.0.10
+#                 |
+#              QoS rule add/update/remove on vpn1@example
 # - Docker mgmt network: 172.250.0.0/24
 #   sw1=172.250.0.241, vpn1 client joins the same mgmt network.
 # - OpenLAN service network "example": 192.91.0.0/24

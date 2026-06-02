@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#                         sw1 192.41.0.1
+#                           ^              ^
+#                           | TCP output    | TCP output
+#                    sw2 192.41.0.2   sw3 192.41.0.3
+#                           then sw3 output is moved from sw1 to sw2
 # - Docker mgmt network: 172.255.0.0/24
 #   sw1=172.255.0.241, sw2=172.255.0.242, sw3=172.255.0.243.
 # - OpenLAN service network "example": 192.41.0.0/24

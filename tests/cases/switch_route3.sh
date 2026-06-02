@@ -4,6 +4,14 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 VIP 10.251.0.11
+#          ^
+#          | output
+#       sw2 VIP 10.251.0.12
+#          ^
+#          | output + static routes
+#       sw3 reaches sw1/sw2 loopback VIPs through nexthops
 # - Docker mgmt network: 172.251.0.0/24
 #   sw1=172.251.0.241, sw2=172.251.0.242, sw3=172.251.0.243.
 # - OpenLAN service network "example": 192.51.0.0/24

@@ -4,6 +4,14 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#                    sw0 VIP 10.243.0.10
+#                  ^                       ^
+#                  | network a             | network b
+#              sw1.0 ------------------- sw1.1
+#                  ^                       ^
+#                  +--------- sw2 ---------+
+#                findhop active-backup chooses nexthop path
 # - Docker mgmt network: 172.243.0.0/24
 #   sw0=172.243.0.240, sw1.0=172.243.0.241, sw1.1=172.243.0.242, sw2=172.243.0.243.
 # - Service networks:

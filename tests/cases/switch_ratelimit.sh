@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1 192.60.0.1
+#              | bridge device hi-example
+#              ^
+#              | OpenVPN tcp/1194, tun1194, 10.60.0.0/24
+#            rate limits are applied to bridge and OpenVPN devices
 # - Docker mgmt network: 172.253.0.0/24
 #   sw1=172.253.0.241.
 # - OpenLAN service network "example": 192.60.0.0/24

@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       vpn1 10.241.0.10
+#             |
+#       sw1 example [vrf-vpn]  -- TCP output -->  sw2 example VIP 10.240.2.12
+#       sw1 network b 192.66.0.1 -- acb 192.66.0.11
+#             VRF + OpenVPN SNAT path is isolated from network b
 # - Docker mgmt network: 172.240.0.0/24
 #   sw1=172.240.0.241, sw2=172.240.0.242, vpn1 joins the same mgmt network.
 # - OpenLAN service network "example": 192.65.0.0/24

@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 192.42.0.1
+#              ^                         ^
+#              | OpenVPN tcp/1194         | OpenVPN tcp/1194
+#       vpn1 10.97.0.10 <----------> vpn2 10.97.0.11
+#              client-to-client ping over OpenVPN overlay
 # - Docker mgmt network: 172.253.0.0/24
 # - OpenLAN service network "example": 192.42.0.0/24
 # - OpenVPN overlay: tcp/1194, subnet 10.97.0.0/24

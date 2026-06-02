@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       vpn1 10.96.0.10
+#             |
+#             v OpenVPN tcp/1194
+#       sw1 192.52.0.1  -- output + SNAT -->  sw2 192.52.0.2
+#                                             VIP 10.252.0.12
 # - Docker mgmt network: 172.250.0.0/24
 #   sw1=172.250.0.241, sw2=172.250.0.242.
 # - OpenLAN service network "example": 192.52.0.0/24

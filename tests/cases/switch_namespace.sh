@@ -4,6 +4,9 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 192.63.0.1 [vrf-example]  <-- UDP output --  sw2 192.63.0.2 [vrf-example]
+#              both service L3 devices are enslaved to the same VRF name
 # - Docker mgmt network: 172.242.0.0/24
 #   sw1=172.242.0.241, sw2=172.242.0.242.
 # - OpenLAN service network "example": 192.63.0.0/24

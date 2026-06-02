@@ -4,6 +4,12 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#            sw1(center) 172.255.0.241 / 192.11.0.1
+#                 ^                    ^
+#                 | tcp access          | tcp access
+#         ac1 192.11.0.11       ac2 192.11.0.12
+#                 both access clients join example network
 # - Docker mgmt network: 172.255.0.0/24
 #   sw1=172.255.0.241, ac1/ac2 join the same mgmt network.
 # - OpenLAN service network "example": 192.11.0.0/24

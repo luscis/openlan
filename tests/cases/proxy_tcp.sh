@@ -4,6 +4,11 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 proxy client 192.53.0.1
+#              | wget via local Ceci TCP proxy
+#              v
+#       sw1 openceci(tcp) -- output --> sw2 192.53.0.2:18082
 # - Docker mgmt network: 172.250.0.0/24
 #   sw1=172.250.0.241 (ceci tcp proxy), sw2=172.250.0.242 (tcp target).
 # - OpenLAN service network "example": 192.53.0.0/24

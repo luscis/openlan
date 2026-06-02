@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       ac1 -> sw2 example [vrf-snat] -- UDP output --> sw1 VIP 10.242.2.11
+#       acb -> sw2 network b (no VRF) ----------------x same VIP
+#       SNAT changes source from ac1 address to sw2 overlay address
 # - Docker mgmt network: 172.241.0.0/24
 #   sw1=172.241.0.241, sw2=172.241.0.242.
 # - OpenLAN service network "example": 192.64.0.0/24

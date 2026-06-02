@@ -4,6 +4,10 @@ source tools/auto.sh
 show_topology() {
   cat <<'EOF'
 # Topology:
+# - Diagram:
+#       sw1 192.62.0.1  -- UDP output -->  sw2 192.62.0.2
+#              |                              |
+#              +-- default drop/accept ----> VIP 10.254.1.12:80/ICMP
 # - Docker mgmt network: 172.254.1.0/24
 #   sw1=172.254.1.241, sw2=172.254.1.242.
 # - OpenLAN service network "example": 192.62.0.0/24
