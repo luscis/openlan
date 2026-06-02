@@ -98,6 +98,14 @@ type SNAT struct {
 	Scope string `json:"scope"`
 }
 
+type DHCP struct {
+	IpStart string   `json:"startAt,omitempty"`
+	IpEnd   string   `json:"endAt,omitempty"`
+	Gateway string   `json:"gateway,omitempty"`
+	DNS     []string `json:"dns,omitempty"`
+	Disable bool     `json:"-"`
+}
+
 type MSS struct {
 	Value int `json:"mss"`
 }

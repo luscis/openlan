@@ -109,6 +109,7 @@ type NATApi interface {
 	DelDNAT(data schema.DNAT) error
 	ListDNAT(call func(obj schema.DNAT))
 	SetSNAT(string)
+	SetDHCP(schema.DHCP)
 	SetCrypt(value *co.Crypt)
 }
 

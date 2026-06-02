@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	co "github.com/luscis/openlan/pkg/config"
 	"github.com/luscis/openlan/pkg/libol"
@@ -69,40 +71,41 @@ bind-interfaces
 interface=%s
 dhcp-range=%s,%s,12h
 dhcp-leasefile=%s
-## disable default gateway
-# dhcp-option=3
-## disable dns
-# dhcp-option=6
+%s%s
 `
 }
 
 func (d *Dhcp) SaveConf() {
 	cfg := d.cfg
+	gateway := "## disable default gateway\n# dhcp-option=3\n"
+	if cfg.Gateway != "" {
+		gateway = fmt.Sprintf("dhcp-option=3,%s\n", cfg.Gateway)
+	}
+	dns := "## disable dns\n# dhcp-option=6\n"
+	if len(cfg.DNS) > 0 {
+		dns = fmt.Sprintf("dhcp-option=6,%s\n", strings.Join(cfg.DNS, ","))
+	}
 	data := fmt.Sprintf(d.Tmpl(),
 		cfg.Interface,
 		cfg.Subnet.Start,
 		cfg.Subnet.End,
 		d.LeaseFile(),
+		gateway,
+		dns,
 	)
 	_ = os.WriteFile(d.ConfFile(), []byte(data), 0600)
 }
 
 func (d *Dhcp) Start() {
-	log, err := libol.CreateFile(d.LogFile())
-	if err != nil {
-		d.out.Warn("Dhcp.Start %s", err)
-		return
-	}
 	d.SaveConf()
 	libol.Go(func() {
 		args := []string{
 			"--conf-file=" + d.ConfFile(),
 			"--pid-file=" + d.PidFile(),
+			"--log-facility=" + d.LogFile(),
 		}
 		d.out.Info("Dhcp.Start %s %v", d.Path(), args)
 		cmd := exec.Command(d.Path(), args...)
-		cmd.Stdout = log
-		cmd.Stderr = log
 		if err := cmd.Run(); err != nil {
 			d.out.Error("Dhcp.Start %s: %s", d.uuid, err)
 		}
@@ -127,9 +130,17 @@ func (d *Dhcp) Stop() {
 		d.out.Info("Dhcp.Stop %s", err)
 	} else {
 		pid := strings.TrimSpace(string(data))
-		cmd := exec.Command("/usr/bin/kill", pid)
-		if err := cmd.Run(); err != nil {
+		if pidNum, err := strconv.Atoi(pid); err != nil {
 			d.out.Warn("Dhcp.Stop %s: %s", pid, err)
+		} else if _, err := libol.Kill(pidNum); err != nil {
+			d.out.Warn("Dhcp.Stop %s: %s", pid, err)
+		} else {
+			for i := 0; i < 20; i++ {
+				if !libol.HasProcess(pidNum) {
+					break
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
 		}
 	}
 	d.Clean()

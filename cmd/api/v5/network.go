@@ -54,7 +54,7 @@ func (u Network) Add(c *cli.Context) error {
 		return libol.NewErr("invalid network")
 	}
 	if file != "" {
-		if err := libol.UnmarshalLoad(&network.Config, file); err != nil {
+		if err := libol.UnmarshalLoad(config, file); err != nil {
 			return err
 		}
 	}
@@ -177,6 +177,7 @@ func (u Network) Commands(app *api.App) {
 			PrefixRoute{}.Commands(),
 			FindHop{}.Commands(),
 			SNAT{}.Commands(),
+			DHCP{}.Commands(),
 			DNAT{}.Commands(),
 		},
 	})
@@ -360,6 +361,74 @@ func (s SNAT) Commands() *cli.Command {
 			{
 				Name:    "disable",
 				Usage:   "Disable snat",
+				Aliases: []string{"dis"},
+				Action:  s.Disable,
+			},
+		},
+	}
+}
+
+type DHCP struct {
+	Cmd
+}
+
+func (s DHCP) Url(prefix, name string) string {
+	return prefix + "/api/network/" + name + "/dhcp"
+}
+
+func (s DHCP) Enable(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+	value := schema.DHCP{
+		IpStart: c.String("start"),
+		IpEnd:   c.String("end"),
+		Gateway: c.String("gateway"),
+	}
+	for _, item := range strings.Split(c.String("dns"), ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			value.DNS = append(value.DNS, item)
+		}
+	}
+
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.PostJSON(url, &value, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s DHCP) Disable(c *cli.Context) error {
+	network := c.String("name")
+	url := s.Url(c.String("url"), network)
+
+	clt := s.NewHttp(c.String("token"))
+	if err := clt.DeleteJSON(url, nil, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s DHCP) Commands() *cli.Command {
+	return &cli.Command{
+		Name:  "dhcp",
+		Usage: "Configure DHCP",
+		Subcommands: []*cli.Command{
+			{
+				Name:    "enable",
+				Usage:   "Enable dhcp",
+				Aliases: []string{"en"},
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "start"},
+					&cli.StringFlag{Name: "end"},
+					&cli.StringFlag{Name: "gateway"},
+					&cli.StringFlag{Name: "dns"},
+				},
+				Action: s.Enable,
+			},
+			{
+				Name:    "disable",
+				Usage:   "Disable dhcp",
 				Aliases: []string{"dis"},
 				Action:  s.Disable,
 			},

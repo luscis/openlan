@@ -104,7 +104,7 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
 ## 🧪 场景测试
 
 OpenLAN 提供了 37 个可直接执行的场景测试脚本，位于 `tests/cases`，
-共组织为 69 个验证函数，累计包含 939 条断言。
+共组织为 69 个验证函数，累计包含 954 条断言。
 统一入口为 `tests/start.sh`。
 
 常用命令：
@@ -134,7 +134,7 @@ bash tests/start.sh --report
 - **Ceci Proxy 与 Service**：`proxy_http`、`proxy_tcp`、`proxy_name`、`proxy_name_backends` 覆盖 HTTP/TCP/DNS 代理、域名匹配多后端路由和 reload 后恢复；`service_tcp`、`service_http` 覆盖 Ceci Service 的 TCP/HTTP 转发、后端路由/全局后端和重启恢复；
 - **Switch 基础输出链路**：`switch_tcp`、`switch_udp` 覆盖 TCP/UDP output 的认证、连通、reload 和 output 删除后的隔离；
 - **Switch IPSec 与叠加隧道**：`switch_ipsec_vxlan`、`switch_ipsec_gre` 覆盖 VxLAN/GRE output 与 IPSec 隧道建立、reload 和删除；`switch_ipsec_vxlan_perf` 对比无 IPSec 与启用 IPSec 后的 ping、RTT 和 TCP/UDP iperf3 采样；
-- **Switch ACL 与零信任**：`switch_acl` 验证 VIP TCP/80 与 ICMP 的 ACL 新增、保存、reload 和清空；`switch_acl_default_action` 验证默认 drop/accept 切换；`switch_ztrust` 验证 ZTrust 启停、admin 指定地址添加 Guest、用户 token 自动地址添加 Guest、Knock add/list 从 token 推导用户与网络、其他用户 knock 失败和 reload 持久性；
+- **Switch ACL 与零信任**：`switch_acl` 验证 VIP TCP/80 与 ICMP 的 ACL 新增、保存、reload 和清空；`switch_acl_default_action` 验证默认 drop/accept 切换；`switch_ztrust` 验证 ZTrust 启停、admin 指定地址添加 Guest、用户 token 添加 Guest、无地址 client 错误输出、Knock add/list 从 token 推导用户与网络、其他用户 knock 失败和 reload 持久性；
 - **Switch 路由与转发控制**：`switch_bgp` 验证 BGP 邻居建立、前缀接收/发布和 reload；`switch_route3` 验证三节点转发与静态路由可达；`switch_findhop` 验证 FindHop 路由绑定、删除保护、主备和负载均衡；
-- **Switch NAT、DHCP、限速与命名空间隔离**：`switch_dnat` 验证 DNAT 新增、访问、reload 和删除；`switch_dhcp` 验证 DHCP enable/disable API、独立 dhcpConfig 地址池/Gateway/DNS 配置、dnsmasq 启停、命名空间客户端获取租约和 reload 持久性；`switch_ratelimit` 验证桥接与 OpenVPN 设备限速规则更新和 tc 状态；`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn` 覆盖 VRF 绑定、SNAT 源地址改写、OpenVPN 设备入 VRF、跨网络隔离和 reload 持久性；
+- **Switch NAT、DHCP、限速与命名空间隔离**：`switch_dnat` 验证 DNAT 新增、访问、reload 和删除；`switch_dhcp` 验证 DHCP enable/disable API、独立 dhcpConfig 地址池/Gateway/DNS 配置、dnsmasq 启停、命名空间客户端 dhclient 获取租约、Access 接入成功后在 tap 上 dhclient 获取租约、与 veth 客户端互 ping，以及 reload 持久性；`switch_ratelimit` 验证桥接与 OpenVPN 设备限速规则更新和 tc 状态；`switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn` 覆盖 VRF 绑定、SNAT 源地址改写、OpenVPN 设备入 VRF、跨网络隔离和 reload 持久性；
 - **Switch Output 综合性能**：`switch_output_perf` 覆盖中心 Switch 同时接入 UDP/TCP output 的认证、连通性、0% 丢包 RTT 摘要、带宽采样和 reload 恢复。

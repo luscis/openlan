@@ -9,7 +9,7 @@ RUN sed -ie 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.l
 RUN apt-get update -y
 RUN apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat
 RUN apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
-RUN apt-get install -y libreswan dnsutils haproxy
+RUN apt-get install -y libreswan dnsutils haproxy isc-dhcp-client
 
 ADD ${linux_bin} /tmp
 RUN /tmp/${linux_bin} --nosysm --verbose

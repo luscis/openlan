@@ -28,29 +28,30 @@ func (d *DNAT) Correct() {
 }
 
 type Network struct {
-	ConfDir   string              `json:"-" yaml:"-"`
-	File      string              `json:"-" yaml:"-"`
-	Alias     string              `json:"-" yaml:"-"`
-	Name      string              `json:"name" yaml:"name"`
-	Provider  string              `json:"provider,omitempty" yaml:"provider,omitempty"`
-	Bridge    *Bridge             `json:"bridge,omitempty" yaml:"bridge,omitempty"`
-	Crypt     *Crypt              `json:"crypt,omitempty" yaml:"crypt,omitempty"`
-	Subnet    *Subnet             `json:"subnet,omitempty" yaml:"subnet,omitempty"`
-	OpenVPN   *OpenVPN            `json:"openvpn,omitempty" yaml:"openvpn,omitempty"`
-	Links     []Access            `json:"links,omitempty" yaml:"links,omitempty"`
-	Hosts     []HostLease         `json:"hosts,omitempty" yaml:"hosts,omitempty"`
-	Routes    []PrefixRoute       `json:"routes,omitempty" yaml:"routes,omitempty"`
-	Acl       string              `json:"acl,omitempty" yaml:"acl,omitempty"`
-	Specifies interface{}         `json:"specifies,omitempty" yaml:"specifies,omitempty"`
-	Dhcp      string              `json:"dhcp,omitempty" yaml:"dhcp,omitempty"`
-	Outputs   []*Output           `json:"outputs,omitempty" yaml:"outputs,omitempty"`
-	ZTrust    string              `json:"ztrust,omitempty" yaml:"ztrust,omitempty"`
-	Qos       string              `json:"qos,omitempty" yaml:"qos,omitempty"`
-	Snat      string              `json:"snat,omitempty" yaml:"snat,omitempty"`
-	Namespace string              `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	FindHop   map[string]*FindHop `json:"findhop,omitempty" yaml:"findhop,omitempty"`
-	Dnat      []*DNAT             `json:"dnat,omitempty" yaml:"dnat,omitempty"`
-	AddrPool  string              `json:"-" yaml:"-"`
+	ConfDir    string              `json:"-" yaml:"-"`
+	File       string              `json:"-" yaml:"-"`
+	Alias      string              `json:"-" yaml:"-"`
+	Name       string              `json:"name" yaml:"name"`
+	Provider   string              `json:"provider,omitempty" yaml:"provider,omitempty"`
+	Bridge     *Bridge             `json:"bridge,omitempty" yaml:"bridge,omitempty"`
+	Crypt      *Crypt              `json:"crypt,omitempty" yaml:"crypt,omitempty"`
+	Subnet     *Subnet             `json:"subnet,omitempty" yaml:"subnet,omitempty"`
+	OpenVPN    *OpenVPN            `json:"openvpn,omitempty" yaml:"openvpn,omitempty"`
+	Links      []Access            `json:"links,omitempty" yaml:"links,omitempty"`
+	Hosts      []HostLease         `json:"hosts,omitempty" yaml:"hosts,omitempty"`
+	Routes     []PrefixRoute       `json:"routes,omitempty" yaml:"routes,omitempty"`
+	Acl        string              `json:"acl,omitempty" yaml:"acl,omitempty"`
+	Specifies  interface{}         `json:"specifies,omitempty" yaml:"specifies,omitempty"`
+	Dhcp       string              `json:"dhcp,omitempty" yaml:"dhcp,omitempty"`
+	DhcpConfig *Dhcp               `json:"dhcpConfig,omitempty" yaml:"dhcpConfig,omitempty"`
+	Outputs    []*Output           `json:"outputs,omitempty" yaml:"outputs,omitempty"`
+	ZTrust     string              `json:"ztrust,omitempty" yaml:"ztrust,omitempty"`
+	Qos        string              `json:"qos,omitempty" yaml:"qos,omitempty"`
+	Snat       string              `json:"snat,omitempty" yaml:"snat,omitempty"`
+	Namespace  string              `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	FindHop    map[string]*FindHop `json:"findhop,omitempty" yaml:"findhop,omitempty"`
+	Dnat       []*DNAT             `json:"dnat,omitempty" yaml:"dnat,omitempty"`
+	AddrPool   string              `json:"-" yaml:"-"`
 }
 
 func (n *Network) NewSpecifies() any {

@@ -36,12 +36,13 @@ scenario_description() {
     switch_acl.sh) echo "verify acl add-list-save-reload-remove with vip tcp/80 and icmp" ;;
     switch_acl_default_action.sh) echo "verify acl default action switch between drop and accept" ;;
     switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;
+    switch_dhcp.sh) echo "verify dhcp enable/disable with pool/gateway/dns, lease allocation, and reload persistence" ;;
     switch_dnat.sh) echo "verify dnat add-list-remove and nat table rule updates" ;;
     switch_findhop.sh) echo "verify findhop route binding, remove guard, and reload state" ;;
     switch_namespace.sh) echo "verify network namespace vrf binding and overlay reachability" ;;
     switch_namespace_snat.sh) echo "verify namespace snat source rewriting and non-snat isolation" ;;
     switch_namespace_openvpn.sh) echo "verify namespace openvpn snat and non-snat network isolation" ;;
-    switch_ztrust.sh) echo "verify ztrust enable/disable with guest and knock controls" ;;
+    switch_ztrust.sh) echo "verify ztrust enable/disable with guest and token-derived knock controls" ;;
     switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
     switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;
     switch_ipsec_vxlan.sh) echo "build two switches and verify ipsec vxlan output connectivity" ;;

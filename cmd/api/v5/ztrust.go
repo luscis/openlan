@@ -2,6 +2,7 @@ package v5
 
 import (
 	"github.com/luscis/openlan/cmd/api"
+	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 	"github.com/urfave/cli/v2"
 )
@@ -72,10 +73,15 @@ func (u Guest) Url(prefix, network, name string) string {
 }
 
 func (u Guest) Add(c *cli.Context) error {
+	user := c.String("user")
+	network := c.String("network")
+	if authUser := api.GetUser(c.String("token")); authUser != "" {
+		user, network = api.SplitName(authUser)
+	}
 	guest := &schema.ZGuest{
 		Address: c.String("address"),
-		Name:    c.String("user"),
-		Network: c.String("network"),
+		Name:    user,
+		Network: network,
 	}
 	url := u.Url(c.String("url"), guest.Network, guest.Name)
 	clt := u.NewHttp(c.String("token"))
@@ -164,36 +170,33 @@ func (u Knock) Url(prefix, network, name string) string {
 	return prefix + "/api/network/" + network + "/guest/" + name + "/knock"
 }
 
+func (u Knock) userNetwork(c *cli.Context) (string, string) {
+	user := c.String("user")
+	network := c.String("network")
+	authUser := api.GetUser(c.String("token"))
+	if authUser != "" {
+		user, network = api.SplitName(authUser)
+	}
+	return user, network
+}
+
 func (u Knock) Add(c *cli.Context) error {
 	socket := c.String("socket")
+	user, network := u.userNetwork(c)
+	if user == "" || network == "" {
+		return libol.NewErr("invalid token user")
+	}
 	knock := &schema.KnockRule{
 		Protocol: c.String("protocol"),
 		Age:      c.Int("age"),
-		Name:     c.String("user"),
-		Network:  c.String("network"),
+		Name:     user,
+		Network:  network,
 	}
 	knock.Dest, knock.Port = api.SplitSocket(socket)
 
 	url := u.Url(c.String("url"), knock.Network, knock.Name)
 	clt := u.NewHttp(c.String("token"))
 	if err := clt.PostJSON(url, knock, nil); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (u Knock) Remove(c *cli.Context) error {
-	socket := c.String("socket")
-	knock := &schema.KnockRule{
-		Protocol: c.String("protocol"),
-		Name:     c.String("user"),
-		Network:  c.String("network"),
-	}
-	knock.Dest, knock.Port = api.SplitSocket(socket)
-
-	url := u.Url(c.String("url"), knock.Network, knock.Name)
-	clt := u.NewHttp(c.String("token"))
-	if err := clt.DeleteJSON(url, knock, nil); err != nil {
 		return err
 	}
 	return nil
@@ -209,8 +212,7 @@ func (u Knock) Tmpl() string {
 }
 
 func (u Knock) List(c *cli.Context) error {
-	network := c.String("network")
-	user := c.String("user")
+	user, network := u.userNetwork(c)
 
 	url := u.Url(c.String("url"), network, user)
 	clt := u.NewHttp(c.String("token"))
@@ -232,23 +234,11 @@ func (u Knock) Commands(user string) *cli.Command {
 				Name:  "add",
 				Usage: "Add a knock",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "user", Value: user},
 					&cli.StringFlag{Name: "protocol", Required: true},
 					&cli.StringFlag{Name: "socket", Required: true},
 					&cli.IntFlag{Name: "age", Value: 60},
 				},
 				Action: u.Add,
-			},
-			{
-				Name:    "remove",
-				Usage:   "Remove an existing knock",
-				Aliases: []string{"rm"},
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "user", Value: user},
-					&cli.StringFlag{Name: "protocol", Required: true},
-					&cli.StringFlag{Name: "socket", Required: true},
-				},
-				Action: u.Remove,
 			},
 			{
 				Name:    "list",

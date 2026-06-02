@@ -42,6 +42,27 @@ func ListClients() []schema.VPNClient {
 	return clients
 }
 
+func MergedVPNClients(name string, worker NetworkApi) map[string]schema.VPNClient {
+	clients := make(map[string]schema.VPNClient, 1024)
+	for client := range cache.VPNClient.List(name) {
+		if client == nil {
+			break
+		}
+		clients[client.Name] = *client
+	}
+	if worker != nil {
+		worker.ListClients(func(name, address string) {
+			if _, ok := clients[name]; !ok {
+				clients[name] = schema.VPNClient{
+					Name:    name,
+					Address: address,
+				}
+			}
+		})
+	}
+	return clients
+}
+
 func CountClients() int {
 	total := 0
 	for n := range cache.Network.List() {
@@ -64,27 +85,12 @@ func (h VPNClient) List(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]schema.VPNClient, 0)
 	if name != "" {
-		clients := make(map[string]schema.VPNClient, 1024)
 		worker := Call.GetWorker(name)
 		if worker == nil {
 			http.Error(w, "Network not found", http.StatusBadRequest)
 			return
 		}
-		for client := range cache.VPNClient.List(name) {
-			if client == nil {
-				break
-			}
-			clients[client.Name] = *client
-		}
-		worker.ListClients(func(name, address string) {
-			if _, ok := clients[name]; !ok {
-				clients[name] = schema.VPNClient{
-					Name:    name,
-					Address: address,
-				}
-			}
-		})
-		for _, client := range clients {
+		for _, client := range MergedVPNClients(name, worker) {
 			value := schema.Speed{
 				Name: client.Name,
 				Recv: client.RxBytes,

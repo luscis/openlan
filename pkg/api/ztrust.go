@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/luscis/openlan/pkg/cache"
 	"github.com/luscis/openlan/pkg/libol"
 	"github.com/luscis/openlan/pkg/schema"
 )
@@ -141,8 +140,12 @@ func (h ZTrust) AddGuest(w http.ResponseWriter, r *http.Request) {
 
 	guest.Name = user
 	if guest.Address == "" {
-		client := cache.VPNClient.Get(id, guest.Name)
-		if client != nil {
+		clientName := guest.Name
+		if !strings.Contains(clientName, "@") {
+			clientName = clientName + "@" + id
+		}
+		clients := MergedVPNClients(id, worker)
+		if client, ok := clients[clientName]; ok {
 			guest.Address = client.Address
 			guest.Device = client.Device
 		}

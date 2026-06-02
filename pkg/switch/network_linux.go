@@ -137,12 +137,7 @@ func (w *WorkerImpl) Initialize() {
 	w.qos.Initialize()
 
 	if cfg.Dhcp == "enable" && cfg.Bridge != nil {
-		name := w.L3Name()
-		w.dhcp = NewDhcp(&co.Dhcp{
-			Name:      cfg.Name,
-			Subnet:    cfg.Subnet,
-			Interface: name,
-		})
+		w.dhcp = w.newDHCP()
 	}
 
 	w.toSubnet()
@@ -468,6 +463,74 @@ func (w *WorkerImpl) SetSNAT(value string) {
 	case "enable", "disable", "openvpn", "local":
 		cfg.Snat = value
 		w.doSNAT()
+	}
+}
+
+func (w *WorkerImpl) newDHCP() *Dhcp {
+	cfg, _ := w.GetCfgs()
+	if cfg.Bridge == nil {
+		return nil
+	}
+	name := w.L3Name()
+	if name == "" {
+		return nil
+	}
+	dhcp := &co.Dhcp{}
+	if cfg.DhcpConfig != nil {
+		*dhcp = *cfg.DhcpConfig
+	}
+	if dhcp.Subnet == nil {
+		return nil
+	}
+	if dhcp.Subnet.Start == "" || dhcp.Subnet.End == "" {
+		return nil
+	}
+	dhcp.Name = cfg.Name
+	dhcp.Interface = name
+	cfg.DhcpConfig = dhcp
+	return NewDhcp(dhcp)
+}
+
+func (w *WorkerImpl) setDHCPConfig(value schema.DHCP) {
+	cfg, _ := w.GetCfgs()
+	if cfg.DhcpConfig == nil {
+		cfg.DhcpConfig = &co.Dhcp{}
+	}
+	if cfg.DhcpConfig.Subnet == nil {
+		cfg.DhcpConfig.Subnet = &co.Subnet{Network: cfg.Name}
+	}
+	if value.IpStart != "" {
+		cfg.DhcpConfig.Subnet.Start = value.IpStart
+	}
+	if value.IpEnd != "" {
+		cfg.DhcpConfig.Subnet.End = value.IpEnd
+	}
+	if value.Gateway != "" {
+		cfg.DhcpConfig.Gateway = value.Gateway
+	}
+	if len(value.DNS) > 0 {
+		cfg.DhcpConfig.DNS = value.DNS
+	}
+}
+
+func (w *WorkerImpl) SetDHCP(value schema.DHCP) {
+	cfg, _ := w.GetCfgs()
+	if value.Disable {
+		cfg.Dhcp = "disable"
+		if w.dhcp != nil {
+			w.dhcp.Stop()
+			w.dhcp = nil
+		}
+		return
+	}
+	cfg.Dhcp = "enable"
+	w.setDHCPConfig(value)
+	if w.dhcp != nil {
+		w.dhcp.Stop()
+	}
+	w.dhcp = w.newDHCP()
+	if w.dhcp != nil {
+		w.dhcp.Start()
 	}
 }
 

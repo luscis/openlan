@@ -30,6 +30,7 @@ func Add(router *mux.Router, cs SwitchApi) {
 	PrefixRoute{cs: cs}.Router(router)
 	FindHop{}.Router(router)
 	SNAT{}.Router(router)
+	DHCP{}.Router(router)
 	Subnet{cs: cs}.Router(router)
 	MSS{cs: cs}.Router(router)
 	DNAT{}.Router(router)

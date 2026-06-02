@@ -32,11 +32,12 @@ func newRand() *rand.Rand {
 }
 
 func IsYaml(file string) bool {
-	return strings.HasSuffix(file, ".yaml")
+	file = strings.ToLower(file)
+	return strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml")
 }
 
 func IsJson(file string) bool {
-	return strings.HasSuffix(file, ".json")
+	return strings.HasSuffix(strings.ToLower(file), ".json")
 }
 
 func GenString(n int) string {
@@ -147,14 +148,14 @@ func LoadFile(file string) ([]byte, error) {
 
 func Unmarshal(v any, contents []byte) error {
 	if err := json.Unmarshal(contents, v); err != nil {
-		return NewErr("%s", err)
+		return NewErr("JSON: %s", err)
 	}
 	return nil
 }
 
 func UnmarshalYaml(v any, contents []byte) error {
 	if err := yaml.Unmarshal(contents, v); err != nil {
-		return NewErr("%s", err)
+		return NewErr("YAML: %s", err)
 	}
 	return nil
 }
@@ -165,7 +166,7 @@ func UnmarshalLoad(v any, file string) error {
 	}
 	contents, err := LoadFile(file)
 	if err != nil {
-		return NewErr("%s %s", file, err)
+		return NewErr("LoadFile: %s %s", file, err)
 	}
 
 	if IsYaml(file) {

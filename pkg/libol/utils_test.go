@@ -6,6 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFileFormatDetection(t *testing.T) {
+	assert.True(t, IsYaml("hi.yaml"), "yaml suffix should be detected")
+	assert.True(t, IsYaml("hi.yml"), "yml suffix should be detected")
+	assert.True(t, IsYaml("HI.YML"), "yaml detection should be case-insensitive")
+	assert.True(t, IsJson("hi.json"), "json suffix should be detected")
+	assert.True(t, IsJson("HI.JSON"), "json detection should be case-insensitive")
+	assert.False(t, IsYaml("hi.json"), "json file should not be treated as yaml")
+}
+
 func TestPrettyTime(t *testing.T) {
 	var s string
 
