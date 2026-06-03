@@ -883,7 +883,7 @@ select option {
       <div class="confirm-msg" id="confirm-msg"></div>
       <div class="confirm-actions">
         <button class="btn btn-ghost btn-sm" onclick="confirmResolve(false)">Cancel</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmResolve(true)">Delete</button>
+        <button class="btn btn-danger btn-sm" id="confirm-ok" onclick="confirmResolve(true)">Delete</button>
       </div>
     </div>
   </div>
@@ -2781,7 +2781,7 @@ async function load_special_nav() {
 }
 
 async function restartIpsecTunnel(local, remote, protocol) {
-  if (!await showConfirm('Restart tunnel ' + local + ' ↔ ' + remote + '?', 'Restart Tunnel')) return;
+  if (!await showConfirm('Restart tunnel ' + local + ' ↔ ' + remote + '?', 'Restart Tunnel', 'Restart', 'btn-dark')) return;
   try {
     await api_put('/api/network/ipsec/tunnel/restart', { local, remote, protocol });
     show_toast('Tunnel restarting', 'success');
@@ -3974,7 +3974,7 @@ async function ceciDelTcp(index) {
 async function ceciRestartEntry(index) {
   const item = _ceciTcpEntries[index];
   if (!item) return;
-  if (!await showConfirm('Restart ceci entry ' + (item.listen || '-') + '?', 'Restart Ceci')) return;
+  if (!await showConfirm('Restart ceci entry ' + (item.listen || '-') + '?', 'Restart Ceci', 'Restart', 'btn-dark')) return;
   try {
     if ((item.mode || '').toLowerCase() === 'service') {
       await api_put('/api/network/ceci/service/restart', { listen: item.listen });
@@ -4574,7 +4574,7 @@ async function disableNetworkOpenVPN() {
 async function restartNetworkOpenVPN() {
   const n = _networksData[_modalNetIndex];
   if (!n) return;
-  if (!await showConfirm('Restart OpenVPN for network "' + n.name + '"?', 'Restart OpenVPN')) return;
+  if (!await showConfirm('Restart OpenVPN for network "' + n.name + '"?', 'Restart OpenVPN', 'Restart', 'btn-dark')) return;
   try {
     await api_post('/api/network/' + encodeURIComponent(n.name) + '/openvpn/restart', {});
     show_toast('OpenVPN restarting', 'success');
@@ -5363,9 +5363,12 @@ function onNetworkOutputProtocolChange() {
 }
 
 let _confirmResolve = null;
-function showConfirm(msg, title) {
+function showConfirm(msg, title, okText, okClass) {
   document.getElementById('confirm-title').textContent = title || 'Confirm Delete';
   document.getElementById('confirm-msg').textContent = msg;
+  const okButton = document.getElementById('confirm-ok');
+  okButton.textContent = okText || 'Delete';
+  okButton.className = 'btn ' + (okClass || 'btn-danger') + ' btn-sm';
   document.getElementById('confirm-dialog').classList.remove('hidden');
   return new Promise(resolve => { _confirmResolve = resolve; });
 }
