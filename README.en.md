@@ -103,8 +103,8 @@ OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
 
 ## 🧪 Scenario Tests
 
-OpenLAN provides 39 executable scenario scripts under `tests/cases`,
-organized into 72 validation functions with 1000 assertions in total.
+OpenLAN provides 42 executable scenario scripts under `tests/cases`,
+organized into 75+ validation functions with 1000+ assertions in total.
 The unified entrypoint is `tests/start.sh`.
 
 Common commands:
@@ -143,6 +143,8 @@ Capability coverage by test scenario:
   - `access_openvpn_redirect`: verifies source-route redirect to a second switch for VIP access.
   - `access_openvpn_tcp_reset`: verifies server-side TCP reset handling.
   - `access_openvpn_snat_vip`: verifies OpenVPN client access to a remote VIP through SNAT.
+  - `access_openvpn_multi_route`: verifies a sw1 network-a OpenVPN client cannot reach sw2 network a/b before sw2 return routing is added, then can reach both after the route is added.
+  - `access_openvpn_multi_snat`: verifies a sw1 network-a OpenVPN client can reach sw2 network a/b through OpenVPN-scoped SNAT without a sw2 return route.
 - **OpenVPN performance sampling**
   - `access_openvpn_perf`: covers TCP/UDP OpenVPN connectivity, 0% packet-loss RTT summaries, iperf3 bandwidth sampling, and reload persistence.
 - **Ceci Proxy and Service**
@@ -166,6 +168,7 @@ Capability coverage by test scenario:
   - `switch_dnat`: verifies DNAT add, reachability, reload, and remove.
   - `switch_dhcp`: verifies DHCP enable/disable APIs, independent dhcpConfig, dnsmasq start/stop, namespace and access client lease allocation, ping reachability, and reload persistence.
   - `switch_ratelimit`: verifies bridge/OpenVPN device rate-limit updates and Linux tc state.
+  - `switch_setaddress`: verifies bridge address updates refresh address assignment, SNAT source ranges, and OpenVPN pushed routes.
   - `switch_namespace`, `switch_namespace_snat`, and `switch_namespace_openvpn`: cover VRF binding, SNAT source rewriting, OpenVPN device VRF membership, cross-network isolation, and reload persistence.
 - **Switch output performance**
   - `switch_output_perf`: covers one center switch with mixed UDP/TCP outputs, authentication, connectivity, 0% packet-loss RTT summaries, bandwidth sampling, and reload recovery.

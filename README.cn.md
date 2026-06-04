@@ -103,8 +103,8 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
 
 ## 🧪 场景测试
 
-OpenLAN 提供了 39 个可直接执行的场景测试脚本，位于 `tests/cases`，
-共组织为 72 个验证函数，累计包含 1000 条断言。
+OpenLAN 提供了 42 个可直接执行的场景测试脚本，位于 `tests/cases`，
+共组织为 75+ 个验证函数，累计包含 1000+ 条断言。
 统一入口为 `tests/start.sh`。
 
 常用命令：
@@ -143,6 +143,8 @@ bash tests/start.sh --report
   - `access_openvpn_redirect`：验证源路由重定向到二级 Switch 后的 VIP 访问。
   - `access_openvpn_tcp_reset`：验证服务端 TCP reset 场景。
   - `access_openvpn_snat_vip`：验证 OpenVPN 客户端经 SNAT 访问远端 VIP。
+  - `access_openvpn_multi_route`：验证 sw1 network a 的 OpenVPN 客户端在 sw2 补充回程路由前不可达、补充后可访问 sw2 network a 与 b。
+  - `access_openvpn_multi_snat`：验证 sw1 network a 的 OpenVPN 客户端在无 sw2 回程路由时，启用 OpenVPN SNAT 后可访问 sw2 network a 与 b。
 - **OpenVPN 性能采样**
   - `access_openvpn_perf`：覆盖 TCP/UDP OpenVPN 的连通性、0% 丢包 RTT 摘要、iperf3 带宽采样和 reload 持久性。
 - **Ceci Proxy 与 Service**
@@ -166,6 +168,7 @@ bash tests/start.sh --report
   - `switch_dnat`：验证 DNAT 新增、访问、reload 和删除。
   - `switch_dhcp`：验证 DHCP enable/disable API、独立 dhcpConfig、dnsmasq 启停、命名空间和 Access 客户端获取租约、互 ping 以及 reload 持久性。
   - `switch_ratelimit`：验证桥接与 OpenVPN 设备限速规则更新和 tc 状态。
+  - `switch_setaddress`：验证修改网桥地址后，地址下发、SNAT 源网段和 OpenVPN push route 随新地址范围刷新。
   - `switch_namespace`、`switch_namespace_snat`、`switch_namespace_openvpn`：覆盖 VRF 绑定、SNAT 源地址改写、OpenVPN 设备入 VRF、跨网络隔离和 reload 持久性。
 - **Switch Output 综合性能**
   - `switch_output_perf`：覆盖中心 Switch 同时接入 UDP/TCP output 的认证、连通性、0% 丢包 RTT 摘要、带宽采样和 reload 恢复。

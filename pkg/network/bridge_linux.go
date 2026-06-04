@@ -175,29 +175,35 @@ func (b *LinuxBridge) CallIptables(value int) error {
 }
 
 func (b *LinuxBridge) Plugin(addr *nl.Addr) error {
-	if link, _ := nl.LinkByName(b.l2if); link != nil {
-		return nil
-	}
-
-	link := &nl.Veth{
+	var link nl.Link = &nl.Veth{
 		LinkAttrs: nl.LinkAttrs{Name: b.l3if},
 		PeerName:  b.l2if,
 	}
-	if err := nl.LinkAdd(link); err != nil {
-		return err
+	if current, _ := nl.LinkByName(b.l3if); current != nil {
+		link = current
+	} else {
+		if err := nl.LinkAdd(link); err != nil {
+			return err
+		}
+		if err := b.AddSlave(b.l2if); err != nil {
+			return err
+		}
 	}
 	if err := nl.LinkSetUp(link); err != nil {
 		return err
 	}
 
-	if err := b.AddSlave(b.l2if); err != nil {
-		return err
-	}
-	if err := nl.AddrAdd(link, addr); err != nil {
-		return err
+	addresses, _ := nl.AddrList(link, nl.FAMILY_V4)
+	for _, current := range addresses {
+		if current.IPNet.String() == addr.IPNet.String() {
+			continue
+		}
+		if err := nl.AddrDel(link, &current); err != nil {
+			return err
+		}
 	}
 
-	return nil
+	return nl.AddrReplace(link, addr)
 }
 
 func (b *LinuxBridge) Unplugin() error {

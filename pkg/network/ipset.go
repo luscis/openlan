@@ -31,7 +31,7 @@ func (i *IPSet) exec(args ...string) (string, error) {
 }
 
 func (i *IPSet) Create() (string, error) {
-	args := append([]string{"create", i.Name, i.Type, "-!"})
+	args := []string{"create", i.Name, i.Type, "-!"}
 	return i.exec(args...)
 }
 
@@ -46,21 +46,21 @@ func (i *IPSet) Clear() (string, error) {
 }
 
 func (i *IPSet) Destroy() (string, error) {
-	args := append([]string{"destroy", i.Name})
+	args := []string{"destroy", i.Name}
 	return i.exec(args...)
 }
 
 func (i *IPSet) Add(value string) (string, error) {
-	args := append([]string{"add", i.Name, value})
+	args := []string{"add", i.Name, value}
 	return i.exec(args...)
 }
 
 func (i *IPSet) Del(value string) (string, error) {
-	args := append([]string{"del", i.Name, value})
+	args := []string{"del", i.Name, value}
 	return i.exec(args...)
 }
 
 func (i *IPSet) Flush() (string, error) {
-	args := append([]string{"flush", i.Name})
+	args := []string{"flush", i.Name}
 	return i.exec(args...)
 }

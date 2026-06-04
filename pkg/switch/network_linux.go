@@ -889,6 +889,7 @@ func (w *WorkerImpl) StartVPN() {
 
 	w.vpn.Stop(true)
 	w.vpn.CheckWait()
+	w.setVPN()
 	w.vpn.Initialize()
 	w.vpn.Start()
 	if !(w.vrf == nil) {
@@ -990,8 +991,11 @@ func (w *WorkerImpl) Subnet() *net.IPNet {
 	}
 
 	ipAddr := cfg.Bridge.Address
-	ipMask := cfg.Subnet.Netmask
-	if ipAddr == "" {
+	ipMask := ""
+	if cfg.Subnet != nil {
+		ipMask = cfg.Subnet.Netmask
+	}
+	if ipAddr == "" && cfg.Subnet != nil {
 		ipAddr = cfg.Subnet.Start
 	}
 	if ipAddr == "" {
@@ -1205,7 +1209,7 @@ func (w *WorkerImpl) setVPN() {
 		return
 	}
 
-	routes := vpn.Routes
+	routes := []string{}
 	routes = append(routes, vpn.Subnet) // add subnet of VPN self.
 	if addr := w.Subnet(); addr != nil {
 		w.out.Info("WorkerImpl.updateVPN subnet %s", addr)
@@ -1337,19 +1341,24 @@ func (w *WorkerImpl) delIPSet(rt co.PrefixRoute) {
 }
 
 func (w *WorkerImpl) toSubnet() {
-	cfg, _ := w.GetCfgs()
-
 	input := w.L3Name()
 	if input != "" {
 		w.toZone(input)
 	}
-	for _, rt := range cfg.Routes {
-		w.addIPSet(rt)
-	}
+	w.doIPSet()
 	if w.vrf != nil {
 		w.toForward_i(w.vrf.Name(), w.ipser.Name, "To route")
 	} else {
 		w.toForward_i("", w.ipser.Name, "To route")
+	}
+}
+
+func (w *WorkerImpl) doIPSet() {
+	cfg, _ := w.GetCfgs()
+
+	w.ipser.Clear()
+	for _, rt := range cfg.Routes {
+		w.addIPSet(rt)
 	}
 }
 
@@ -1516,10 +1525,28 @@ func (w *WorkerImpl) FindHoper() api.FindHopApi {
 func (w *WorkerImpl) AddAddress(value string) {
 	if w.br != nil {
 		w.br.Open(value)
-		w.cfg.Bridge.Address = value
+		w.cfg.SetAddress(value)
+		w.doSubnet("", "")
 		return
 	}
 	w.out.Info("WorkerImpl.AddAddress notSupport")
+}
+
+func (w *WorkerImpl) doSubnet(ipstart, ipend string) {
+	cfg, _ := w.GetCfgs()
+
+	if ipstart != "" {
+		cfg.Subnet = &co.Subnet{}
+		cfg.Subnet.Network = cfg.Name
+		cfg.Subnet.Start = ipstart
+		cfg.Subnet.End = ipend
+	} else {
+		cfg.Subnet = nil
+	}
+
+	w.doIPSet()
+	w.doSNAT()
+	w.addCache()
 }
 
 func (w *WorkerImpl) SetSubnet(value schema.Subnet) error {
@@ -1531,12 +1558,7 @@ func (w *WorkerImpl) SetSubnet(value schema.Subnet) error {
 		return libol.NewErr("bridge address is required before setting subnet")
 	}
 
-	cfg.Subnet = &co.Subnet{}
-	cfg.Subnet.Network = cfg.Name
-	cfg.Subnet.Start = value.IpStart
-	cfg.Subnet.End = value.IpEnd
-
-	w.addCache()
+	w.doSubnet(value.IpStart, value.IpEnd)
 
 	return nil
 }
@@ -1547,8 +1569,7 @@ func (w *WorkerImpl) DelSubnet() error {
 		return libol.NewErr("subnet not supported on this network")
 	}
 
-	cfg.Subnet = nil
-	w.addCache()
+	w.doSubnet("", "")
 
 	return nil
 }
@@ -1556,7 +1577,8 @@ func (w *WorkerImpl) DelSubnet() error {
 func (w *WorkerImpl) DelAddress() {
 	if w.br != nil {
 		w.br.Close()
-		w.cfg.Bridge.Address = ""
+		w.cfg.SetAddress("")
+		w.doSubnet("", "")
 		return
 	}
 	w.out.Info("WorkerImpl.AddAddress notSupport")

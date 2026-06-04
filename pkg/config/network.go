@@ -301,6 +301,47 @@ func (n *Network) AddRoute(value PrefixRoute) bool {
 	return index == -1
 }
 
+func (n *Network) SetAddress(value string) int {
+	oldAddress := ""
+	if n.Bridge != nil {
+		oldAddress = parseAddress(n.Bridge.Address)
+		n.Bridge.Address = value
+	}
+
+	return n.UpdateNextHop(oldAddress, parseAddress(value))
+}
+
+func (n *Network) UpdateNextHop(oldNextHop, newNextHop string) int {
+	if oldNextHop == "" || newNextHop == "" || oldNextHop == newNextHop {
+		return 0
+	}
+
+	updated := 0
+	for routeIndex := range n.Routes {
+		if n.Routes[routeIndex].NextHop == oldNextHop {
+			n.Routes[routeIndex].NextHop = newNextHop
+			updated++
+		}
+		for hopIndex := range n.Routes[routeIndex].MultiPath {
+			if n.Routes[routeIndex].MultiPath[hopIndex].NextHop == oldNextHop {
+				n.Routes[routeIndex].MultiPath[hopIndex].NextHop = newNextHop
+				updated++
+			}
+		}
+	}
+	return updated
+}
+
+func parseAddress(value string) string {
+	if value == "" {
+		return ""
+	}
+	if address := libol.ParseAddr(value); address != nil {
+		return address.String()
+	}
+	return ""
+}
+
 func (n *Network) DelRoute(value PrefixRoute) (PrefixRoute, bool) {
 	obj, index := n.FindRoute(value)
 	if index != -1 {
