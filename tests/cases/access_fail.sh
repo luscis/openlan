@@ -1,17 +1,27 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "reject client authentication with wrong password"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 100.100.0.241 / 192.31.0.1 | tcp access with bad credentials | acbad asks for 192.31.0.11
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
-#            sw1(center) 172.253.0.241 / 192.31.0.1
+#            sw1(center) 100.100.0.241 / 192.31.0.1
 #                 ^
 #                 | tcp access with bad credentials
 #              acbad asks for 192.31.0.11
 #                 x authentication rejected
-# - Docker mgmt network: 172.253.0.0/24
-#   sw1=172.253.0.241, bad access client joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, bad access client joins the same mgmt network.
 # - OpenLAN service network "example": 192.31.0.0/24
 #   sw1 gateway=192.31.0.1, client config asks for 192.31.0.11.
 # Validation:
@@ -29,12 +39,12 @@ export ac1_badpass_name=tests-sw-authfail.acbad
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.253.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -63,7 +73,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.253.0.241
+connection: 100.100.0.241
 username: t1@example
 password: wrong-password
 interface:
@@ -85,6 +95,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

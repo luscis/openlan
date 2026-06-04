@@ -103,8 +103,8 @@ OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
 
 ## 🧪 Scenario Tests
 
-OpenLAN provides 37 executable scenario scripts under `tests/cases`,
-organized into 69 validation functions with 954 assertions in total.
+OpenLAN provides 39 executable scenario scripts under `tests/cases`,
+organized into 72 validation functions with 1000 assertions in total.
 The unified entrypoint is `tests/start.sh`.
 
 Common commands:
@@ -138,6 +138,7 @@ Capability coverage by test scenario:
   - `access_client_qos`: verifies client QoS rule add, update, list, save, and remove flows.
 - **OpenVPN access paths**
   - `access_openvpn`: covers OpenVPN add/remove, CCD files, invalid cipher rejection, and AES/SM4 data-channel negotiation.
+  - `access_openvpn_acl`: verifies OpenVPN ACL uses iptables while bridge ACL uses ebtables.
   - `access_openvpn_client_ping`: verifies static-address client-to-client ping.
   - `access_openvpn_redirect`: verifies source-route redirect to a second switch for VIP access.
   - `access_openvpn_tcp_reset`: verifies server-side TCP reset handling.
@@ -153,8 +154,9 @@ Capability coverage by test scenario:
   - `switch_ipsec_vxlan` and `switch_ipsec_gre`: cover VxLAN/GRE outputs with IPSec tunnel establishment, reload, and removal.
   - `switch_ipsec_vxlan_perf`: compares ping, RTT, and TCP/UDP iperf3 samples before and after IPSec is enabled.
 - **Switch ACL and zero trust**
-  - `switch_acl`: verifies ACL add, save, reload, and flush for VIP TCP/80 and ICMP.
-  - `switch_acl_default_action`: verifies default drop/accept switching.
+  - `switch_acl`: verifies ACL add/list/save/reload/remove with VIP TCP/80 and ICMP.
+  - `switch_acl_default`: verifies ACL default action switching between drop and accept.
+  - `switch_acl_network`: verifies ACL ebtables hook is bridge ingress only.
   - `switch_ztrust`: verifies ZTrust enable/disable, Guest add, no-address client error output, token-derived Guest/Knock add/list, other-user knock rejection, and reload persistence.
 - **Switch routing and forwarding control**
   - `switch_bgp`: verifies BGP peering, prefix advertise/receive filters, and reload.

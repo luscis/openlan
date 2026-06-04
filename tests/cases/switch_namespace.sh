@@ -1,14 +1,24 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify network namespace vrf binding and overlay reachability"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 192.63.0.1 [vrf-example] <-- UDP output -- sw2 192.63.0.2 [vrf-example] | both service L3 devices are enslaved to the same VRF name
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
 #       sw1 192.63.0.1 [vrf-example]  <-- UDP output --  sw2 192.63.0.2 [vrf-example]
 #              both service L3 devices are enslaved to the same VRF name
-# - Docker mgmt network: 172.242.0.0/24
-#   sw1=172.242.0.241, sw2=172.242.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.63.0.0/24
 #   sw1=192.63.0.1, sw2=192.63.0.2.
 # - Both service network L3 devices are enslaved to VRF "vrf-example".
@@ -30,7 +40,7 @@ export vrf_name=vrf-example
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.242.0.0/24 --gateway=172.242.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_switch_config() {
@@ -50,7 +60,7 @@ EOF
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.242.0.241
+  local address=100.100.0.241
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -65,7 +75,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.242.0.242
+  local address=100.100.0.242
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -75,7 +85,7 @@ setup_sw2() {
   assert_match 1 "docker exec $name openlan network --name example" "namespace: $vrf_name"
   assert_cmd docker exec $name ip link show $vrf_name
   assert_match 5 "docker exec $name ip link show hi-example" "master $vrf_name"
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.242.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 test_vrf_ping() {
@@ -107,6 +117,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

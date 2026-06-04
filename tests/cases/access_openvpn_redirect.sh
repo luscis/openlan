@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "redirect openvpn source route to sw2 and switch vip reachability"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+vpn1 10.97.0.10 | v OpenVPN tcp/1194 | sw1 192.53.0.1 -- output/route --> sw2 192.53.0.2 | VIP 10.253.0.11 VIP 10.253.0.12
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -11,8 +21,8 @@ show_topology() {
 #       sw1 192.53.0.1  -- output/route -->  sw2 192.53.0.2
 #       VIP 10.253.0.11                   VIP 10.253.0.12
 #             redirect moves vpn1 traffic from sw1 VIP to sw2 VIP
-# - Docker mgmt network: 172.249.0.0/24
-#   sw1=172.249.0.241, sw2=172.249.0.242, vpn1 joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242, vpn1 joins the same mgmt network.
 # - OpenLAN service network "example": 192.53.0.0/24
 #   sw1=192.53.0.1, sw2=192.53.0.2.
 # - VIP services:
@@ -40,12 +50,12 @@ export sw1_vip=10.253.0.11
 export sw2_vip=10.253.0.12
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.249.0.241
+  local address=100.100.0.241
   local crypt_secret="ea64d5b0c96c"
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
@@ -61,7 +71,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.249.0.242
+  local address=100.100.0.242
   local crypt_secret="ea64d5b0c96c"
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
@@ -74,7 +84,7 @@ setup_sw2() {
   assert_cmd docker exec $name openlan user add --name uplink@example --password 123456
 
   # Build forwarding path sw2 -> sw1.
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.249.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
 
   # Return path for VPN subnet when redirected through sw2.
   assert_cmd docker exec $name openlan network --name example route add --prefix 10.97.0.0/24 --nexthop 192.53.0.1
@@ -130,6 +140,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

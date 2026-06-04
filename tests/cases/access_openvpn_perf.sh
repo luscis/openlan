@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "sample OpenVPN tcp/udp latency and bandwidth performance"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 192.55.0.1 | OpenVPN tcp/1194 + udp/1195 | vpn1 10.95.0.0/24 | ping RTT and iperf3 TCP/UDP samples
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #                 | OpenVPN tcp/1194 + udp/1195
 #              vpn1 10.95.0.0/24
 #                 | ping RTT and iperf3 TCP/UDP samples
-# - Docker mgmt network: 172.251.0.0/24
-#   sw1=172.251.0.241, vpn1 joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, vpn1 joins the same mgmt network.
 # - OpenLAN service network "example": 192.55.0.0/24
 #   sw1 gateway=192.55.0.1.
 # - OpenVPN overlay on sw1:
@@ -27,13 +37,13 @@ EOF
 export net_name="tests-net-openvpn-perf"
 export sw1_name="tests-sw-openvpn-perf.sw1"
 export vpn1_name="tests-sw-openvpn-perf.vpn1"
-export sw1_ip="172.251.0.241"
+export sw1_ip="100.100.0.241"
 export sw1_svc="192.55.0.1"
 export crypt_secret="ea64d5b0c96c"
 
 setup_net() {
   docker network rm "$net_name" >/dev/null 2>&1 || true
-  assert_cmd docker network create "$net_name" --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1
+  assert_cmd docker network create "$net_name" --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1
 }
 
 setup_sw1() {
@@ -104,6 +114,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

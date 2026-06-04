@@ -49,8 +49,8 @@ func (u ACLRule) Add(c *cli.Context) error {
 
 	rule := &schema.ACLRule{
 		Proto:   c.String("protocol"),
-		SrcIp:   c.String("source"),
-		DstIp:   c.String("destination"),
+		SrcIp:   c.String("srcip"),
+		DstIp:   c.String("dstip"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
 		Action:  action,
@@ -74,8 +74,8 @@ func (u ACLRule) Remove(c *cli.Context) error {
 
 	rule := &schema.ACLRule{
 		Proto:   c.String("protocol"),
-		SrcIp:   c.String("source"),
-		DstIp:   c.String("destination"),
+		SrcIp:   c.String("srcip"),
+		DstIp:   c.String("dstip"),
 		SrcPort: c.Int("sport"),
 		DstPort: c.Int("dport"),
 		Action:  action,
@@ -102,7 +102,7 @@ func (u ACLRule) Action(c *cli.Context) (string, error) {
 
 func (u ACLRule) Tmpl() string {
 	return `# total {{ len . }}
-{{ps -15 "source"}} {{ps -15 "destination"}} {{ps -8 "protocol"}} {{ps -5 "dport"}} {{ps -5 "sport"}} {{ps -8 "action"}}
+{{ps -15 "srcip"}} {{ps -15 "dstip"}} {{ps -8 "protocol"}} {{ps -5 "dport"}} {{ps -5 "sport"}} {{ps -8 "action"}}
 {{- range . }}
 {{ps -15 .SrcIp}} {{ps -15 .DstIp}} {{ps -8 .Proto}} {{pi -5 .DstPort}} {{pi -5 .SrcPort}} {{ps -8 .Action}}
 {{- end }}
@@ -157,8 +157,8 @@ func (u ACLRule) Commands() *cli.Command {
 				Name:  "add",
 				Usage: "Add a new acl rule",
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "source", Aliases: []string{"s"}},
-					&cli.StringFlag{Name: "destination", Aliases: []string{"d"}},
+					&cli.StringFlag{Name: "srcip", Aliases: []string{"s"}},
+					&cli.StringFlag{Name: "dstip", Aliases: []string{"d"}},
 					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
 					&cli.IntFlag{Name: "sport", Aliases: []string{"sp"}},
 					&cli.IntFlag{Name: "dport", Aliases: []string{"dp"}},
@@ -171,8 +171,8 @@ func (u ACLRule) Commands() *cli.Command {
 				Usage:   "remove a new acl rule",
 				Aliases: []string{"rm"},
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "source", Aliases: []string{"s"}},
-					&cli.StringFlag{Name: "destination", Aliases: []string{"d"}},
+					&cli.StringFlag{Name: "srcip", Aliases: []string{"s"}},
+					&cli.StringFlag{Name: "dstip", Aliases: []string{"d"}},
 					&cli.StringFlag{Name: "protocol", Aliases: []string{"p"}},
 					&cli.IntFlag{Name: "sport", Aliases: []string{"sp"}},
 					&cli.IntFlag{Name: "dport", Aliases: []string{"dp"}},

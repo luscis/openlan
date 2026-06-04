@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "validate forwarding and route reachability via sw2"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 VIP 10.251.0.11 | output | sw2 VIP 10.251.0.12 | output + static routes | sw3 reaches sw1/sw2 loopback VIPs through nexthops
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -12,8 +22,8 @@ show_topology() {
 #          ^
 #          | output + static routes
 #       sw3 reaches sw1/sw2 loopback VIPs through nexthops
-# - Docker mgmt network: 172.251.0.0/24
-#   sw1=172.251.0.241, sw2=172.251.0.242, sw3=172.251.0.243.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242, sw3=100.100.0.243.
 # - OpenLAN service network "example": 192.51.0.0/24
 #   sw1=192.51.0.1, sw2=192.51.0.2, sw3=192.51.0.3.
 # - Loopback VIPs:
@@ -37,12 +47,12 @@ export sw3_name=tests-sw-route3
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.251.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -64,7 +74,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.251.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -83,12 +93,12 @@ EOF
   assert_cmd docker exec $name openlan router address add --device lo --address 10.251.0.12/32
   assert_cmd docker exec $name openlan user add --name edge2@example --password 123457
   # Add a output to sw1 for 3-node forwarding validation.
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.251.0.241 --protocol tcp --secret edge1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret edge1@example:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 setup_sw3() {
   local name="$sw3_name"
-  local address=172.251.0.243
+  local address=100.100.0.243
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -105,7 +115,7 @@ EOF
   
   assert_cmd docker exec $name openlan network --name example add --address 192.51.0.3/24
   # Add outputs to sw2 for 3-node forwarding validation.
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.251.0.242 --protocol tcp --secret edge2@example:123457 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.242 --protocol tcp --secret edge2@example:123457 --crypt aes-128:ea64d5b0c96c
 
   # Route VIP traffic via sw2 (192.51.0.2) for 3-node forwarding validation.
   assert_cmd docker exec $name openlan network --name example route add --prefix 10.251.0.11/32 --nexthop 192.51.0.1
@@ -152,6 +162,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

@@ -1,111 +1,87 @@
-# 🌐 Multiple Area Example
+# 🌐 Multi-Hop Route Example
+
+This example follows the `tests/cases/switch_route3.sh` scenario.
+
+It demonstrates three switches connected in a chain. `sw3` reaches loopback VIPs on `sw1` and `sw2` through OpenLAN outputs and static routes.
 
 ## 🗺️ Topology
 
 ```text
-              192.168.1.20/24                                 192.168.1.21/24
-                     |                                                 |
-               Access1 -- Hotel Wifi --> Switch(NJ) <--- Other Wifi --- Access2
-                                            |
-                                            |
-                                         Internet
-                                            |
-                                            |
-                                         Switch(SH) - 192.168.1.10/24
-                                            |
-                                            |
-                   +------------------------+---------------------------+
-                   ^                        ^                           ^
-                   |                        |                           |
-              Office Wifi               Home Wifi                  Hotel Wifi
-                   |                        |                           |
-                Access3                 Access4                       Access5
-            192.168.1.11/24           192.168.1.12/24             192.168.1.13/24
+sw1 VIP 10.251.0.11
+   ^
+   | output
+sw2 VIP 10.251.0.12
+   ^
+   | output + static routes
+sw3 reaches sw1/sw2 loopback VIPs through nexthops
 ```
 
-## ⚙️ Configure Central Switch for Nanjing
+- Docker management network: `100.100.0.0/24`
+- `sw1=100.100.0.241`, `sw2=100.100.0.242`, `sw3=100.100.0.243`
+- OpenLAN network: `example=192.51.0.0/24`
+- Service addresses: `sw1=192.51.0.1`, `sw2=192.51.0.2`, `sw3=192.51.0.3`
+- Loopback VIPs: `sw1=10.251.0.11/32`, `sw2=10.251.0.12/32`
+- Crypt: `aes-128:ea64d5b0c96c`
 
-Global configure:
+## ⚙️ Configure `sw1`
 
 ```bash
-[root@switch-nj ~]# cd /etc/openlan/switch
-[root@switch-nj ~]# cat > switch.yaml <<EOF
-crypt:
-  secret: f367aa429ed2
-EOF
+openlan network --name example add --address 192.51.0.1/24
+openlan router address add --device lo --address 10.251.0.11/32
+openlan user add --name edge1@example --password 123456
 ```
 
-Network configure:
+## ⚙️ Configure `sw2`
 
 ```bash
-[root@switch-nj ~]# cd network
-[root@switch-nj ~]# cat > private.yaml <<EOF
-name: private
-bridge:
-  name: br-em2
-  address: 192.168.1.66/24
-subnet:
-  endAt: 192.168.1.99
-  startAt: 192.168.1.80
-openvpn:
-  listen: 0.0.0.0:1166
-  subnet: 172.32.66.0/24
-EOF
-[root@switch-nj ~]# openlan cfg co
-[root@switch-nj ~]# systemctl restart openlan-switch
+openlan network --name example add --address 192.51.0.2/24
+openlan router address add --device lo --address 10.251.0.12/32
+openlan user add --name edge2@example --password 123457
+
+openlan network --name example output add \
+  --remote 100.100.0.241 \
+  --protocol tcp \
+  --secret edge1@example:123456 \
+  --crypt aes-128:ea64d5b0c96c
 ```
 
-Add two access users on private network:
+## ⚙️ Configure `sw3`
 
 ```bash
-[root@switch-nj ~]# openlan us add --name admin@private --role admin
-[root@switch-nj ~]# openlan us add --name access1@private
-[root@switch-nj ~]# openlan us add --name access2@private
+openlan network --name example add --address 192.51.0.3/24
+
+openlan network --name example output add \
+  --remote 100.100.0.242 \
+  --protocol tcp \
+  --secret edge2@example:123457 \
+  --crypt aes-128:ea64d5b0c96c
+
+openlan network --name example route add \
+  --prefix 10.251.0.11/32 \
+  --nexthop 192.51.0.1
+
+openlan network --name example route add \
+  --prefix 10.251.0.12/32 \
+  --nexthop 192.51.0.2
 ```
 
-## ⚙️ Configure Central Switch for ShangHai
+## ✅ Validate Routes
 
-Global configure:
+`sw3` should have routes for both VIPs:
 
 ```bash
-[root@switch-sh ~]# cd /etc/openlan/switch
-[root@switch-sh ~]# cat > switch.yaml <<EOF
-crypt:
-  secret: 7519e54d12c5
-EOF
+ip route show
+# 10.251.0.11 ...
+# 10.251.0.12 ...
 ```
 
-Network configure:
+Reachability checks from `sw3`:
 
 ```bash
-[root@switch-sh ~]# cd network
-[root@switch-sh ~]# cat > private.yaml <<EOF
-name: private
-bridge:
-  name: br-em2
-  address: 192.168.1.88/24
-subnet:
-  endAt: 192.168.1.150
-  startAt: 192.168.1.100
-openvpn:
-  listen: 0.0.0.0:1188
-  subnet: 172.32.88.0/24
-links:
-- connection: address-of-switch-nj
-  password: get-it-from-switch-nj
-  username: admin
-  crypt:
-    secret: f367aa429ed2
-EOF
-[root@switch-sh ~]# openlan cfg co
-[root@switch-sh ~]# systemctl restart openlan-switch
+ping -c 3 192.51.0.1
+ping -c 3 192.51.0.2
+ping -c 3 10.251.0.11
+ping -c 3 10.251.0.12
 ```
 
-Add three access users on private network:
-
-```bash
-[root@switch-sh ~]# openlan user add --name admin@private --role admin
-[root@switch-sh ~]# openlan user add --name access3@private
-[root@switch-sh ~]# openlan user add --name access4@private
-[root@switch-sh ~]# openlan user add --name access5@private
-```
+The case also runs `openlan reload --save` on all three switches and verifies that output authentication and route reachability survive reload.

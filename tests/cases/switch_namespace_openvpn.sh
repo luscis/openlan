@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify namespace openvpn snat and non-snat network isolation"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+vpn1 10.241.0.10 | sw1 example [vrf-vpn] -- TCP output --> sw2 example VIP 10.240.2.12 | sw1 network b 192.66.0.1 -- acb 192.66.0.11
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #       sw1 example [vrf-vpn]  -- TCP output -->  sw2 example VIP 10.240.2.12
 #       sw1 network b 192.66.0.1 -- acb 192.66.0.11
 #             VRF + OpenVPN SNAT path is isolated from network b
-# - Docker mgmt network: 172.240.0.0/24
-#   sw1=172.240.0.241, sw2=172.240.0.242, vpn1 joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242, vpn1 joins the same mgmt network.
 # - OpenLAN service network "example": 192.65.0.0/24
 #   sw1=192.65.0.1, sw2=192.65.0.2.
 # - sw1 service network L3 device and OpenVPN device are enslaved to VRF
@@ -52,7 +62,7 @@ export access_b_ip=192.66.0.11
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.240.0.0/24 --gateway=172.240.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_switch_config() {
@@ -72,7 +82,7 @@ EOF
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.240.0.241
+  local address=100.100.0.241
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -89,12 +99,12 @@ setup_sw1() {
   assert_cmd docker exec $name openlan network --name example route add --prefix $target_vip/32 --nexthop 192.65.0.2
   assert_cmd docker exec $name openlan user add --name vpn1@example --password 123456
   assert_cmd docker exec $name openlan user add --name acb@b --password 123456
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.240.0.242 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.242 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.240.0.242
+  local address=100.100.0.242
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -135,7 +145,7 @@ protocol: udp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.240.0.241
+connection: 100.100.0.241
 username: acb@b
 password: 123456
 interface:
@@ -224,6 +234,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

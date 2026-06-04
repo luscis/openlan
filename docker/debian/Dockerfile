@@ -7,7 +7,7 @@ WORKDIR /root
 RUN sed -ie 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
 RUN apt-get update -y
-RUN apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat
+RUN apt-get install -y net-tools iptables ebtables iproute2 tcpdump ca-certificates iperf3 socat
 RUN apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
 RUN apt-get install -y libreswan dnsutils haproxy isc-dhcp-client
 

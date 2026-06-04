@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify ceci service http forwarding and restart"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+client wget with Host header on sw1 | sw1 Ceci HTTP service | ^ route groups ^ global backend
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -12,10 +22,10 @@ show_topology() {
 #          |                       |
 #       sw2 backends            sw3 backend
 #       192.56.0.2              192.56.0.3
-# - Docker mgmt network: 172.246.0.0/24
-#   sw1=172.246.0.241 (ceci service),
-#   sw2=172.246.0.242 (hostname-route backends),
-#   sw3=172.246.0.243 (global backend).
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241 (ceci service),
+#   sw2=100.100.0.242 (hostname-route backends),
+#   sw3=100.100.0.243 (global backend).
 # - OpenLAN service network "example": 192.56.0.0/24
 #   sw1=192.56.0.1, sw2=192.56.0.2, sw3=192.56.0.3,
 #   with sw2/sw3 outputs to sw1.
@@ -45,12 +55,12 @@ export http_target_body_global=ceci-service-http-global
 export http_global_backend=192.56.0.3:18088
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.246.0.0/24 --gateway=172.246.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.246.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -72,7 +82,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.246.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -89,13 +99,13 @@ EOF
   assert_expect 30 "docker logs -f $name" "Http.Start"
 
   assert_cmd docker exec $name openlan network --name example add --address 192.56.0.2/24
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.246.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 20 "docker exec $name openlan network --name example output ls" "state: authenticated"
 }
 
 setup_sw3() {
   local name="$sw3_name"
-  local address=172.246.0.243
+  local address=100.100.0.243
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -112,7 +122,7 @@ EOF
   assert_expect 30 "docker logs -f $name" "Http.Start"
 
   assert_cmd docker exec $name openlan network --name example add --address 192.56.0.3/24
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.246.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 20 "docker exec $name openlan network --name example output ls" "state: authenticated"
 }
 
@@ -198,6 +208,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

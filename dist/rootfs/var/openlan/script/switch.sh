@@ -22,6 +22,15 @@ function prepare() {
         done
     done
 
+    chains="$(ebtables -t filter -L 2>/dev/null | awk '/^Bridge chain: (AT_)/ {gsub(/,$/, "", $3); print $3}')"
+    for c in $chains; do
+        ebtables -t filter -L FORWARD --Lx 2>/dev/null | awk -v c="$c" '$0 ~ "-j " c "$" {sub(/^-A /, "-D "); print}' | while read -r rule; do
+            ebtables -t filter $rule || true
+        done
+        ebtables -t filter -F "$c" || true
+        ebtables -t filter -X "$c" || true
+    done
+
     # new directory.
     mkdir -p /var/openlan/{cert,openvpn,access,dhcp,ceci}
 

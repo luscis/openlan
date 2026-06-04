@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify ceci name proxy forwarding to upstream dns"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 name client 192.54.0.1 | nslookup via local Ceci name proxy | sw1 openceci(name) -- output --> sw2 dnsmasq 192.54.0.2:5300
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -9,8 +19,8 @@ show_topology() {
 #              | nslookup via local Ceci name proxy
 #              v
 #       sw1 openceci(name) -- output --> sw2 dnsmasq 192.54.0.2:5300
-# - Docker mgmt network: 172.249.0.0/24
-#   sw1=172.249.0.241 (name proxy client), sw2=172.249.0.242 (upstream dns server).
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241 (name proxy client), sw2=100.100.0.242 (upstream dns server).
 # - OpenLAN service network "example": 192.54.0.0/24
 #   sw1=192.54.0.1, sw2=192.54.0.2, with sw2 output to sw1.
 # Validation:
@@ -31,12 +41,12 @@ export upstream_dns=192.54.0.2:5300
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.249.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -58,7 +68,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.249.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -75,7 +85,7 @@ EOF
   assert_expect 30 "docker logs -f $name" "Http.Start"
 
   assert_cmd docker exec $name openlan network --name example add --address 192.54.0.2/24
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.249.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 20 "docker exec $name openlan network --name example output ls" "state: authenticated"
 }
 
@@ -126,6 +136,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

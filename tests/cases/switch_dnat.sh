@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify dnat add-list-remove and nat table rule updates"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 192.58.0.1 -- UDP output --> sw2 192.58.0.2 | +----------- DNAT example:80 -> 127.0.0.1:8080
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -8,8 +18,8 @@ show_topology() {
 #       sw1 192.58.0.1  -- UDP output -->  sw2 192.58.0.2
 #              |                              |
 #              +----------- DNAT example:80 -> 127.0.0.1:8080
-# - Docker mgmt network: 172.246.0.0/24
-#   sw1=172.246.0.241, sw2=172.246.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.58.0.0/24
 #   sw1=192.58.0.1, sw2=192.58.0.2.
 # Validation:
@@ -27,12 +37,12 @@ export sw2_name=tests-sw-dnat2
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.246.0.0/24 --gateway=172.246.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.246.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -45,7 +55,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.246.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -54,7 +64,7 @@ setup_sw2() {
   assert_cmd docker exec $name openlan crypt update --algorithm aes-128 --secret cb2ff088a34d
   assert_cmd docker exec $name openlan network --name example add --address 192.58.0.2/24
   assert_cmd docker exec $name openlan user add --name t1@example --password 123456
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.246.0.241 --protocol udp --secret t1:123456 --crypt aes-128:cb2ff088a34d
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:cb2ff088a34d
 }
 
 setup_http() {
@@ -63,7 +73,7 @@ setup_http() {
 
 test_dnat_add_and_reachability() {
   assert_cmd docker exec $sw2_name sysctl -w net.ipv4.conf.all.route_localnet=1
-  assert_match 15 "docker exec $sw1_name openlan network --name example access ls" "172.246.0.242"
+  assert_match 15 "docker exec $sw1_name openlan network --name example access ls" "100.100.0.242"
   assert_match 5 "docker exec $sw1_name ping -c 3 192.58.0.2" "bytes from"
 
   # verify dnat is required for access and the rule is added after dnat add
@@ -109,6 +119,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

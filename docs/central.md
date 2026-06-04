@@ -1,96 +1,99 @@
 # 🌿 Central Branch Example
 
+This example follows the `tests/cases/access_success.sh` scenario.
+
+It demonstrates a central switch with two access clients. Both clients authenticate into the same OpenLAN network and can reach the switch and each other.
+
 ## 🗺️ Topology
 
 ```text
-                                     Switch(Central) - 10.16.1.10/24
-                                            ^
-                                            |
-                                         Wifi(DNAT)
-                                            |
-                                            |
-                   +---------------------Internet-----------------------+
-                   ^                        ^                           ^
-                   |                        |                           |
-                 Branch1                  Branch2                     Branch3
-                   |                        |                           |
-               Access Point            Access Point                 Access Point
-             10.16.1.11/24             10.16.1.12/24                10.16.1.13/24
+           sw1(center) 100.100.0.241 / 192.11.0.1
+                ^                    ^
+                | tcp access          | udp access
+        ac1 192.11.0.11       ac2 192.11.0.12
+                both access clients join example network
 ```
 
-## ⚙️ Configure Central Switch
+- Docker management network: `100.100.0.0/24`
+- Central switch: `sw1=100.100.0.241`
+- OpenLAN network: `example=192.11.0.0/24`
+- Gateway: `sw1=192.11.0.1`
+- Access clients: `ac1=192.11.0.11`, `ac2=192.11.0.12`
+- Crypt: `aes-128:ea64d5b0c96c`
 
-Generate a pre-shared key:
+## ⚙️ Configure the Central Switch
+
+Create the switch configuration:
 
 ```bash
-[root@switch ~]# uuidgen
-e108fe36-a2cd-43bc-82e2-f367aa429ed2
-[root@switch ~]#
+mkdir -p /opt/openlan/tests-sw1/etc/openlan/switch
+
+cat > /opt/openlan/tests-sw1/etc/openlan/switch/switch.json <<'EOF'
+{
+  "protocol": "tcp",
+  "crypt": {
+    "algorithm": "aes-128",
+    "secret": "ea64d5b0c96c"
+  }
+}
+EOF
 ```
 
-Global configure with pre-share key:
+Start the switch, then add the network and users:
 
 ```bash
-[root@switch ~]# cd /etc/openlan/switch
-[root@switch ~]# cat > switch.yaml <<EOF
+openlan network --name example add --address 192.11.0.1/24
+
+openlan user add --name t1@example --password 123456
+openlan user add --name t2@example --password 123457
+```
+
+## 📡 Configure Access Client 1
+
+`ac1` uses TCP access:
+
+```yaml
+protocol: tcp
 crypt:
-  secret: f367aa429ed2
-EOF
+  algorithm: aes-128
+  secret: ea64d5b0c96c
+connection: 100.100.0.241
+username: t1@example
+password: 123456
+interface:
+  address: 192.11.0.11/24
 ```
 
-Add a user network configuration:
+## 📡 Configure Access Client 2
 
-```bash
-[root@switch ~]# cd network
-[root@switch ~]# cat > central.yaml <<EOF
-name: central
-bridge:
-  name: br-em1
-  address: 10.16.1.10/24
-subnet:
-  endAt: 10.16.1.100
-  startAt: 10.16.1.44
-hosts:
-- hostname: access1.hostname
-  address: 10.16.1.11
-openvpn:
-  listen: 0.0.0.0:1194
-  subnet: 172.32.194.0/24
-EOF
-```
+`ac2` uses UDP access:
 
-Add three access users on central network:
-
-```bash
-[root@switch ~]# openlan user add --name admin@central --role admin
-[root@switch ~]# openlan user add --name access1@central
-[root@switch ~]# openlan user add --name access2@central
-[root@switch ~]# openlan user add --name access3@central
-```
-
-## 📡 Configure Access Point
-
-Add a user network configuration:
-
-```bash
-[root@access1 ~]# cd /etc/openlan
-[root@access1 ~]# cat > central.yaml <<EOF
+```yaml
+protocol: udp
 crypt:
-  secret: f367aa429ed2
-connection: public-ip-of-switch
-username: access1@central
-password: get-password-of-switch-administrator
-EOF
+  algorithm: aes-128
+  secret: ea64d5b0c96c
+connection: 100.100.0.241
+username: t2@example
+password: 123457
+interface:
+  address: 192.11.0.12/24
 ```
 
-Enable Access Point for central network:
+## ✅ Validate Access
+
+The case validates successful authentication and reachability:
 
 ```bash
-systemctl enable --now openlan-access@central
+ping -c 3 192.11.0.1
+ping -c 3 192.11.0.12
 ```
 
-Check journal log:
+It also verifies crypt update behavior:
 
 ```bash
-journalctl -u openlan-access@central
+openlan crypt update --algorithm aes-128 --secret ea64d5b0c96d
+openlan crypt ls
 ```
+
+Clients using the old secret fail to reconnect, while clients updated to `ea64d5b0c96d` authenticate successfully.

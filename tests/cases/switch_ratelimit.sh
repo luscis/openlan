@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify ratelimit add-update-remove and tc state"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 192.60.0.1 | bridge device hi-example | OpenVPN tcp/1194, tun1194, 10.60.0.0/24 | rate limits are applied to bridge and OpenVPN devices
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #              ^
 #              | OpenVPN tcp/1194, tun1194, 10.60.0.0/24
 #            rate limits are applied to bridge and OpenVPN devices
-# - Docker mgmt network: 172.253.0.0/24
-#   sw1=172.253.0.241.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241.
 # - OpenLAN service network "example": 192.60.0.0/24
 #   sw1=192.60.0.1.
 # - OpenVPN overlay:
@@ -31,12 +41,12 @@ export openvpn_device=tun1194
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.253.0.241
+  local address=100.100.0.241
 
   start_switch $name $net_name $address
   assert_expect 30 "docker logs -f $name" "Http.Start"
@@ -88,6 +98,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

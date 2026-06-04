@@ -1,14 +1,24 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "build two switches and verify udp output connectivity"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 192.51.0.1 <----- UDP output ----- sw2 192.51.0.2 | center switch accepts branch output over Docker mgmt network
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
 #       sw1 192.51.0.1  <----- UDP output -----  sw2 192.51.0.2
 #       center switch accepts branch output over Docker mgmt network
-# - Docker mgmt network: 172.254.0.0/24
-#   sw1=172.254.0.241, sw2=172.254.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.51.0.0/24
 #   sw1=192.51.0.1, sw2=192.51.0.2.
 # - Forwarding link:
@@ -28,12 +38,12 @@ export sw2_name=tests-sw-udp2
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.254.0.0/24 --gateway=172.254.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.254.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -55,7 +65,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.254.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -72,7 +82,7 @@ EOF
 
   assert_cmd docker exec $name openlan network --name example add --address 192.51.0.2/24
   # add a output to sw1
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.254.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 test_ping() {
@@ -87,7 +97,7 @@ test_ping() {
   assert_match 20 "docker exec $sw2_name ping -c 3 192.51.0.1" "bytes from"
 
   # Output link naming for udp/tcp is "<protocol>:<remote>:<user>".
-  local dev="udp:172.254.0.241:t1"
+  local dev="udp:100.100.0.241:t1"
   assert_cmd docker exec $sw2_name openlan network --name example output rm --device "$dev"
   assert_unmatch 15 "docker exec $sw2_name ping -c 3 192.51.0.1" "bytes from"
 }
@@ -104,6 +114,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

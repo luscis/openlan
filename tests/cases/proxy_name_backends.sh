@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify ceci name proxy routes domains to matched backends"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 openceci(name) | domain A | domain B | sw2 dnsmasq sw3 dnsmasq | 192.55.0.2 192.55.0.3
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,10 +20,10 @@ show_topology() {
 #          | domain A         | domain B
 #       sw2 dnsmasq        sw3 dnsmasq
 #       192.55.0.2         192.55.0.3
-# - Docker mgmt network: 172.248.0.0/24
-#   sw1=172.248.0.241 (name proxy client),
-#   sw2=172.248.0.242 (upstream dns A),
-#   sw3=172.248.0.243 (upstream dns B).
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241 (name proxy client),
+#   sw2=100.100.0.242 (upstream dns A),
+#   sw3=100.100.0.243 (upstream dns B).
 # - OpenLAN service network "example": 192.55.0.0/24
 #   sw1=192.55.0.1, sw2=192.55.0.2, sw3=192.55.0.3,
 #   with sw2/sw3 outputs to sw1.
@@ -39,7 +49,7 @@ export upstream_dns_b=192.55.0.3:5353
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.248.0.0/24 --gateway=172.248.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_switch() {
@@ -65,20 +75,20 @@ EOS
 }
 
 setup_sw1() {
-  setup_switch "$sw1_name" "$net_name" "172.248.0.241" "192.55.0.1"
+  setup_switch "$sw1_name" "$net_name" "100.100.0.241" "192.55.0.1"
   assert_cmd docker exec $sw1_name openlan user add --name t1@example --password 123456
   assert_cmd docker exec $sw1_name openlan user add --name t2@example --password 123456
 }
 
 setup_sw2() {
-  setup_switch "$sw2_name" "$net_name" "172.248.0.242" "192.55.0.2"
-  assert_cmd docker exec $sw2_name openlan network --name example output add --remote 172.248.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
+  setup_switch "$sw2_name" "$net_name" "100.100.0.242" "192.55.0.2"
+  assert_cmd docker exec $sw2_name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 20 "docker exec $sw2_name openlan network --name example output ls" "state: authenticated"
 }
 
 setup_sw3() {
-  setup_switch "$sw3_name" "$net_name" "172.248.0.243" "192.55.0.3"
-  assert_cmd docker exec $sw3_name openlan network --name example output add --remote 172.248.0.241 --protocol tcp --secret t2@example:123456 --crypt aes-128:ea64d5b0c96c
+  setup_switch "$sw3_name" "$net_name" "100.100.0.243" "192.55.0.3"
+  assert_cmd docker exec $sw3_name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t2@example:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 20 "docker exec $sw3_name openlan network --name example output ls" "state: authenticated"
 }
 
@@ -146,6 +156,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "build two switches and verify tcp output connectivity"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 192.41.0.1 | TCP output | TCP output | sw2 192.41.0.2 sw3 192.41.0.3 | then sw3 output is moved from sw1 to sw2
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #                           | TCP output    | TCP output
 #                    sw2 192.41.0.2   sw3 192.41.0.3
 #                           then sw3 output is moved from sw1 to sw2
-# - Docker mgmt network: 172.255.0.0/24
-#   sw1=172.255.0.241, sw2=172.255.0.242, sw3=172.255.0.243.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242, sw3=100.100.0.243.
 # - OpenLAN service network "example": 192.41.0.0/24
 #   sw1=192.41.0.1, sw2=192.41.0.2, sw3=192.41.0.3.
 # - Forwarding links:
@@ -31,12 +41,12 @@ export sw3_name=tests-sw3
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.255.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -62,7 +72,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.255.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -85,14 +95,14 @@ EOF
   assert_cmd docker exec $name openlan user add --name t1@example --password 123456
 
   # Add a output to sw1
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:password
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:password
   assert_cmd docker exec $name openlan network --name example output ls
 }
 
 
 setup_sw3() {
   local name="$sw3_name"
-  local address=172.255.0.243
+  local address=100.100.0.243
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -112,7 +122,7 @@ EOF
   # Add a network.
   assert_cmd docker exec $name openlan network --name example add --address 192.41.0.3/24
   # Add a output to sw1
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
   assert_cmd docker exec $name openlan network --name example output ls
 }
 
@@ -131,7 +141,7 @@ test_ping() {
 
   # Add a output on sw3 to sw2
   local name="$sw3_name"
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.255.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.242 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
   assert_match 15 "docker exec $name openlan network --name example output ls" "state: authenticated"
   test_ping_after_sw3_sw2_output
 
@@ -144,7 +154,7 @@ test_ping() {
 
   # Remove sw3->sw2 output and verify sw2 cannot reach sw3 anymore.
   # Output link naming for udp/tcp is "<protocol>:<remote>:<user>".
-  local dev="tcp:172.255.0.242:t1"
+  local dev="tcp:100.100.0.242:t1"
   assert_cmd docker exec $sw3_name openlan network --name example output rm --device "$dev"
   assert_unmatch 20 "docker exec $sw2_name ping -c 3 192.41.0.3" "bytes from"
 }
@@ -162,6 +172,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

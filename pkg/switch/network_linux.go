@@ -734,7 +734,8 @@ func (w *WorkerImpl) Start(v api.SwitchApi) {
 	w.acl.Start()
 
 	if w.br != nil {
-		w.toACL(w.br.Name(), w.br.L3Name())
+		w.toACL(w.br.L3Name())
+		w.toBridgeACL(w.br.Name())
 		for _, output := range cfg.Outputs {
 			w.addOutput(cfg.Bridge.Name, output)
 		}
@@ -1025,6 +1026,18 @@ func (w *WorkerImpl) leftACL(input ...string) {
 			Input: port,
 			Jump:  w.acl.Chain(),
 		})
+	}
+}
+
+func (w *WorkerImpl) toBridgeACL(input ...string) {
+	for _, port := range input {
+		w.acl.AddInput(port)
+	}
+}
+
+func (w *WorkerImpl) leftBridgeACL(input ...string) {
+	for _, port := range input {
+		w.acl.DelInput(port)
 	}
 }
 

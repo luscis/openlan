@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify namespace snat source rewriting and non-snat isolation"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+ac1 -> sw2 example [vrf-snat] -- UDP output --> sw1 VIP 10.242.2.11 | acb -> sw2 network b (no VRF) ----------------x same VIP
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -8,8 +18,8 @@ show_topology() {
 #       ac1 -> sw2 example [vrf-snat] -- UDP output --> sw1 VIP 10.242.2.11
 #       acb -> sw2 network b (no VRF) ----------------x same VIP
 #       SNAT changes source from ac1 address to sw2 overlay address
-# - Docker mgmt network: 172.241.0.0/24
-#   sw1=172.241.0.241, sw2=172.241.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.64.0.0/24
 #   sw1=192.64.0.1, sw2=192.64.0.2.
 # - sw2 service network L3 device is enslaved to VRF "vrf-snat"; sw1 is not.
@@ -46,7 +56,7 @@ export access_b_ip=192.66.0.11
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.241.0.0/24 --gateway=172.241.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_switch_config() {
@@ -66,7 +76,7 @@ EOF
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.241.0.241
+  local address=100.100.0.241
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -79,7 +89,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.241.0.242
+  local address=100.100.0.242
 
   setup_switch_config $name
   start_switch $name $net_name $address
@@ -94,7 +104,7 @@ setup_sw2() {
   assert_cmd docker exec $name openlan network --name example route add --prefix $target_vip/32 --nexthop 192.64.0.1
   assert_cmd docker exec $name openlan user add --name ac1@example --password 123456
   assert_cmd docker exec $name openlan user add --name acb@b --password 123456
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.241.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c
 }
 
 setup_ac1() {
@@ -106,7 +116,7 @@ protocol: udp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.241.0.242
+connection: 100.100.0.242
 username: ac1@example
 password: 123456
 interface:
@@ -127,7 +137,7 @@ protocol: udp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.241.0.242
+connection: 100.100.0.242
 username: acb@b
 password: 123456
 interface:
@@ -216,6 +226,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

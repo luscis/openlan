@@ -103,8 +103,8 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
 
 ## 🧪 场景测试
 
-OpenLAN 提供了 37 个可直接执行的场景测试脚本，位于 `tests/cases`，
-共组织为 69 个验证函数，累计包含 954 条断言。
+OpenLAN 提供了 39 个可直接执行的场景测试脚本，位于 `tests/cases`，
+共组织为 72 个验证函数，累计包含 1000 条断言。
 统一入口为 `tests/start.sh`。
 
 常用命令：
@@ -138,6 +138,7 @@ bash tests/start.sh --report
   - `access_client_qos`：验证客户端 QoS 规则的新增、更新、列表、保存和删除。
 - **OpenVPN 接入链路**
   - `access_openvpn`：覆盖 OpenVPN 添加/删除、客户端 CCD 文件、非法 cipher 拒绝以及 AES/SM4 数据通道协商。
+  - `access_openvpn_acl`：验证 OpenVPN ACL 走 iptables，bridge ACL 走 ebtables。
   - `access_openvpn_client_ping`：验证静态地址客户端互 ping。
   - `access_openvpn_redirect`：验证源路由重定向到二级 Switch 后的 VIP 访问。
   - `access_openvpn_tcp_reset`：验证服务端 TCP reset 场景。
@@ -153,8 +154,9 @@ bash tests/start.sh --report
   - `switch_ipsec_vxlan`、`switch_ipsec_gre`：覆盖 VxLAN/GRE output 与 IPSec 隧道建立、reload 和删除。
   - `switch_ipsec_vxlan_perf`：对比无 IPSec 与启用 IPSec 后的 ping、RTT 和 TCP/UDP iperf3 采样。
 - **Switch ACL 与零信任**
-  - `switch_acl`：验证 VIP TCP/80 与 ICMP 的 ACL 新增、保存、reload 和清空。
-  - `switch_acl_default_action`：验证默认 drop/accept 切换。
+  - `switch_acl`：验证 VIP TCP/80 与 ICMP 的 ACL 新增、列表、保存、reload 和删除。
+  - `switch_acl_default`：验证 ACL 默认动作在 drop 和 accept 之间切换。
+  - `switch_acl_network`：验证 ACL ebtables hook 只作用于 bridge ingress。
   - `switch_ztrust`：验证 ZTrust 启停、Guest 添加、无地址 client 错误输出、Knock add/list token 推导、其他用户 knock 失败和 reload 持久性。
 - **Switch 路由与转发控制**
   - `switch_bgp`：验证 BGP 邻居建立、前缀接收/发布和 reload。

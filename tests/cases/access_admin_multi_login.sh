@@ -1,17 +1,27 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "admin user can login concurrently from multiple access clients"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 100.100.0.241 / example | tcp access | tcp access | ac1(admin) ac2(admin)
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
-#            sw1(center) 172.251.0.241 / example
+#            sw1(center) 100.100.0.241 / example
 #                 ^                    ^
 #                 | tcp access          | tcp access
 #            ac1(admin)            ac2(admin)
 #              same admin user, concurrent login allowed
-# - Docker mgmt network: 172.251.0.0/24
-#   sw1=172.251.0.241, ac1/ac2 join the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, ac1/ac2 join the same mgmt network.
 # - OpenLAN service network "example": 192.51.0.0/24
 #   same admin user logs in from ac1 and ac2.
 # Validation:
@@ -30,12 +40,12 @@ export ac2_name=tests-sw-admin-multi.ac2
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.251.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<JSON
@@ -64,7 +74,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: admin1@example
 password: 123456
 interface:
@@ -83,7 +93,7 @@ protocol: udp
 crypt:
   algorithm: aes-128
   secret: ea64d5b0c96c
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: admin1@example
 password: 123456
 interface:
@@ -118,6 +128,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

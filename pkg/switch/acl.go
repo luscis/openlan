@@ -17,16 +17,17 @@ type ACLRule struct {
 	SrcPort int
 	DstPort int
 	Action  string // DROP or ACCEPT
-	rule    *cn.IPRule
+	ipRule  *cn.IPRule
+	ebRule  *cn.EBRule
 }
 
 func (r *ACLRule) Id() string {
-	return fmt.Sprintf("%s:%s:%s:%d:%d", r.SrcIp, r.DstIp, r.Proto, r.DstPort, r.SrcPort)
+	return fmt.Sprintf("%s %s:%s:%s:%d:%d", r.Action, r.SrcIp, r.DstIp, r.Proto, r.DstPort, r.SrcPort)
 }
 
-func (r *ACLRule) Rule() cn.IPRule {
-	if r.rule == nil {
-		r.rule = &cn.IPRule{
+func (r *ACLRule) ToIPRule() cn.IPRule {
+	if r.ipRule == nil {
+		r.ipRule = &cn.IPRule{
 			Dest:   r.DstIp,
 			Source: r.SrcIp,
 			Proto:  r.Proto,
@@ -34,20 +35,40 @@ func (r *ACLRule) Rule() cn.IPRule {
 			Order:  "-I",
 		}
 		if r.DstPort > 0 {
-			r.rule.DstPort = strconv.Itoa(r.DstPort)
+			r.ipRule.DstPort = strconv.Itoa(r.DstPort)
 		}
 		if r.SrcPort > 0 {
-			r.rule.SrcPort = strconv.Itoa(r.SrcPort)
+			r.ipRule.SrcPort = strconv.Itoa(r.SrcPort)
 		}
 	}
-	return *r.rule
+	return *r.ipRule
+}
+
+func (r *ACLRule) ToEBRule() cn.EBRule {
+	if r.ebRule == nil {
+		r.ebRule = &cn.EBRule{
+			Dest:   r.DstIp,
+			Source: r.SrcIp,
+			Proto:  r.Proto,
+			Jump:   r.Action,
+			Order:  "-I",
+		}
+		if r.DstPort > 0 {
+			r.ebRule.DstPort = strconv.Itoa(r.DstPort)
+		}
+		if r.SrcPort > 0 {
+			r.ebRule.SrcPort = strconv.Itoa(r.SrcPort)
+		}
+	}
+	return *r.ebRule
 }
 
 type ACL struct {
-	Name  string
-	Rules map[string]*ACLRule
-	chain *cn.FireWallChain
-	out   *libol.SubLogger
+	Name    string
+	Rules   map[string]*ACLRule
+	ipchain *cn.FireWallChain
+	ebchain *cn.EBFireWallChain
+	out     *libol.SubLogger
 }
 
 func NewACL(name string) *ACL {
@@ -63,7 +84,8 @@ func (a *ACL) Chain() string {
 }
 
 func (a *ACL) Initialize() {
-	a.chain = cn.NewFireWallChain(a.Chain(), cn.TRaw, "")
+	a.ipchain = cn.NewFireWallChain(a.Chain(), cn.TRaw, "")
+	a.ebchain = cn.NewEBFireWallChain(a.Chain(), cn.TEbFilter)
 }
 
 func (a *ACL) Start() {
@@ -71,33 +93,85 @@ func (a *ACL) Start() {
 	cfg := co.GetAcl(a.Name)
 	if cfg != nil {
 		for _, rule := range cfg.Rules {
-			a.addRule(rule)
+			ar := &ACLRule{
+				Proto:   rule.Proto,
+				DstIp:   rule.DstIp,
+				SrcIp:   rule.SrcIp,
+				DstPort: rule.DstPort,
+				SrcPort: rule.SrcPort,
+				Action:  rule.Action,
+			}
+			a.addRule(ar)
 		}
 	}
-	a.chain.Install()
+	a.ipchain.Install()
+	a.ebchain.Install()
 }
 
 func (a *ACL) Stop() {
 	a.out.Info("ACL.Stop")
-	a.chain.Cancel()
+	a.ipchain.Cancel()
+	a.ebchain.Cancel()
 }
 
-func (a *ACL) addRule(rule *co.ACLRule) {
-	ar := &ACLRule{
-		Proto:   rule.Proto,
-		DstIp:   rule.DstIp,
-		SrcIp:   rule.SrcIp,
-		DstPort: rule.DstPort,
-		SrcPort: rule.SrcPort,
-		Action:  rule.Action,
+func (a *ACL) AddInput(input string) {
+	a.out.Info("ACL.AddInput %s", input)
+	chain := a.ebchain.Chain()
+	hooks := []cn.EBRule{
+		{
+			Table:     chain.Table,
+			Chain:     cn.CEbInput,
+			LogicalIn: input,
+			Jump:      chain.Name,
+		},
+		{
+			Table:     chain.Table,
+			Chain:     cn.CEbForward,
+			LogicalIn: input,
+			Jump:      chain.Name,
+		},
 	}
+	for _, hook := range hooks {
+		if err := a.ebchain.AddHook(hook); err != nil {
+			a.out.Warn("ACL.AddInput %s %s", input, err)
+		}
+	}
+}
 
+func (a *ACL) DelInput(input string) {
+	a.out.Info("ACL.DelInput %s", input)
+	chain := a.ebchain.Chain()
+	hooks := []cn.EBRule{
+		{
+			Table:     chain.Table,
+			Chain:     cn.CEbInput,
+			LogicalIn: input,
+			Jump:      chain.Name,
+		},
+		{
+			Table:     chain.Table,
+			Chain:     cn.CEbForward,
+			LogicalIn: input,
+			Jump:      chain.Name,
+		},
+	}
+	for _, hook := range hooks {
+		if err := a.ebchain.DelHook(hook); err != nil {
+			a.out.Warn("ACL.DelInput %s %s", input, err)
+		}
+	}
+}
+
+func (a *ACL) addRule(ar *ACLRule) {
 	a.out.Info("ACL.addRule %s", ar.Id())
 
-	if _, ok := a.Rules[ar.Id()]; !ok {
-		a.chain.AddRule(ar.Rule())
-		a.Rules[ar.Id()] = ar
+	if _, ok := a.Rules[ar.Id()]; ok {
+		return
 	}
+
+	a.ipchain.AddRuleX(ar.ToIPRule())
+	a.ebchain.AddRuleX(ar.ToEBRule())
+	a.Rules[ar.Id()] = ar
 }
 
 func (a *ACL) AddRule(rule *schema.ACLRule) error {
@@ -109,20 +183,27 @@ func (a *ACL) AddRule(rule *schema.ACLRule) error {
 		SrcPort: rule.SrcPort,
 		Action:  rule.Action,
 	}
-
-	a.out.Info("ACL.AddRule %s", ar.Id())
-
 	if _, ok := a.Rules[ar.Id()]; ok {
 		return libol.NewErr("AddRule: already existed")
 	}
 
-	if err := a.chain.AddRuleX(ar.Rule()); err == nil {
-		a.Rules[ar.Id()] = ar
-	} else {
-		a.out.Warn("ACL.AddRule %s", err)
-	}
+	a.addRule(ar)
 
 	return nil
+}
+
+func (a *ACL) delRule(ar *ACLRule) {
+	if _, ok := a.Rules[ar.Id()]; !ok {
+		return
+	}
+
+	if err := a.ipchain.DelRuleX(ar.ToIPRule()); err != nil {
+		a.out.Warn("ACL.DelRule %s", err)
+	}
+	if err := a.ebchain.DelRuleX(ar.ToEBRule()); err != nil {
+		a.out.Warn("ACL.DelRule.eb %s", err)
+	}
+	delete(a.Rules, ar.Id())
 }
 
 func (a *ACL) DelRule(rule *schema.ACLRule) error {
@@ -135,24 +216,19 @@ func (a *ACL) DelRule(rule *schema.ACLRule) error {
 		Action:  rule.Action,
 	}
 
-	a.out.Info("ACL.DelRule %s", ar.Id())
-
 	if _, ok := a.Rules[ar.Id()]; !ok {
 		return nil
 	}
 
-	if err := a.chain.DelRuleX(ar.Rule()); err == nil {
-		delete(a.Rules, ar.Id())
-	} else {
-		a.out.Warn("ACL.DelRule %s", err)
-	}
+	a.delRule(ar)
 
 	return nil
 }
 
 func (a *ACL) FlushRules() {
 	a.out.Info("ACL.FlushRules")
-	a.chain.Flush()
+	a.ipchain.Flush()
+	a.ebchain.Flush()
 	a.Rules = make(map[string]*ACLRule, 32)
 }
 

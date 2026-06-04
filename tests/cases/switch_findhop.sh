@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify findhop route binding, remove guard, and reload state"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw0 VIP 10.243.0.10 | network a | network b | sw1.0 ------------------- sw1.1 | +--------- sw2 ---------+
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -12,8 +22,8 @@ show_topology() {
 #                  ^                       ^
 #                  +--------- sw2 ---------+
 #                findhop active-backup chooses nexthop path
-# - Docker mgmt network: 172.243.0.0/24
-#   sw0=172.243.0.240, sw1.0=172.243.0.241, sw1.1=172.243.0.242, sw2=172.243.0.243.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw0=100.100.0.240, sw1.0=100.100.0.241, sw1.1=100.100.0.242, sw2=100.100.0.243.
 # - Service networks:
 #   network a: sw0=192.53.0.1, sw1.0=192.53.0.2, sw1.1=192.53.0.4, sw2=192.53.0.3.
 #   network b: sw0=192.54.0.1, sw1.1=192.54.0.2, sw2=192.54.0.3.
@@ -36,12 +46,12 @@ export sw2_name=tests-sw-findhop2
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.243.0.0/24 --gateway=172.243.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw0() {
   local name="$sw0_name"
-  local address=172.243.0.240
+  local address=100.100.0.240
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -57,7 +67,7 @@ setup_sw0() {
 
 setup_sw10() {
   local name="$sw10_name"
-  local address=172.243.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -66,12 +76,12 @@ setup_sw10() {
   assert_cmd docker exec $name openlan crypt update --algorithm aes-128 --secret cb2ff088a34d
   assert_cmd docker exec $name openlan network --name a add --address 192.53.0.2/24
   assert_cmd docker exec $name openlan user add --name edgea@a --password 123456
-  assert_cmd docker exec $name openlan network --name a output add --remote 172.243.0.240 --protocol tcp --secret edgea:123456 --crypt aes-128:cb2ff088a34d
+  assert_cmd docker exec $name openlan network --name a output add --remote 100.100.0.240 --protocol tcp --secret edgea:123456 --crypt aes-128:cb2ff088a34d
 }
 
 setup_sw11() {
   local name="$sw11_name"
-  local address=172.243.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -82,12 +92,12 @@ setup_sw11() {
   assert_cmd docker exec $name openlan network --name b add --address 192.54.0.2/24
   assert_cmd docker exec $name openlan user add --name edgea@a --password 123456
   assert_cmd docker exec $name openlan user add --name edgeb@b --password 123457
-  assert_cmd docker exec $name openlan network --name b output add --remote 172.243.0.240 --protocol tcp --secret edgeb:123457 --crypt aes-128:cb2ff088a34d
+  assert_cmd docker exec $name openlan network --name b output add --remote 100.100.0.240 --protocol tcp --secret edgeb:123457 --crypt aes-128:cb2ff088a34d
 }
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.243.0.243
+  local address=100.100.0.243
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -99,18 +109,18 @@ setup_sw2() {
   assert_cmd docker exec $name openlan user add --name edgea@a --password 123456
   assert_cmd docker exec $name openlan user add --name edgeb@b --password 123457
 
-  assert_cmd docker exec $name openlan network --name a output add --remote 172.243.0.241 --protocol tcp --secret edgea:123456 --crypt aes-128:cb2ff088a34d
-  assert_cmd docker exec $name openlan network --name b output add --remote 172.243.0.242 --protocol tcp --secret edgeb:123457 --crypt aes-128:cb2ff088a34d
+  assert_cmd docker exec $name openlan network --name a output add --remote 100.100.0.241 --protocol tcp --secret edgea:123456 --crypt aes-128:cb2ff088a34d
+  assert_cmd docker exec $name openlan network --name b output add --remote 100.100.0.242 --protocol tcp --secret edgeb:123457 --crypt aes-128:cb2ff088a34d
 }
 
 recover_sw10() {
-  start_switch $sw10_name $net_name 172.243.0.241
+  start_switch $sw10_name $net_name 100.100.0.241
   assert_expect 30 "docker logs -f $sw10_name" "Http.Start"
   assert_match 30 "docker exec $sw10_name openlan network --name a output ls" "state: authenticated"
 }
 
 recover_sw11() {
-  start_switch $sw11_name $net_name 172.243.0.242
+  start_switch $sw11_name $net_name 100.100.0.242
   assert_expect 30 "docker logs -f $sw11_name" "Http.Start"
   assert_match 30 "docker exec $sw11_name openlan network --name b output ls" "state: authenticated"
 }
@@ -203,6 +213,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

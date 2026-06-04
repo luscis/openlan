@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify snat scope matrix for openvpn, network a access, and network b access"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+vpn/access on sw1 network a,b | sw1: a=192.53.0.1 b=192.54.0.1 int=192.55.0.1 | int output uplink
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -11,8 +21,8 @@ show_topology() {
 #                 | int output uplink
 #       sw2: int=192.55.0.2, target VIP 10.253.0.12
 #                 SNAT scopes: disabled, openvpn, local, enable
-# - Docker mgmt network: 172.249.0.0/24
-#   sw1=172.249.0.241, sw2=172.249.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - sw1 virtual networks:
 #   network int: 192.55.0.1/24 (uplink to sw2)
 #   network a: 192.53.0.1/24 (with OpenVPN subnet 10.95.0.0/24)
@@ -47,12 +57,12 @@ export pass_ub="pw-ub-${RANDOM}-${RANDOM}"
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.249.0.0/24 --gateway=172.249.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.249.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -78,7 +88,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.249.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -88,7 +98,7 @@ setup_sw2() {
   assert_cmd docker exec $name openlan network --name int add --address 192.55.0.2/24
   assert_cmd docker exec $name openlan network --name int snat disable
   assert_cmd docker exec $name openlan router address add --device lo --address $target_subnet_ip/32
-  assert_cmd docker exec $name openlan network --name int output add --remote 172.249.0.241 --protocol udp --secret uplink@int:$pass_uplink --crypt xor:ea64d5b0c96c
+  assert_cmd docker exec $name openlan network --name int output add --remote 100.100.0.241 --protocol udp --secret uplink@int:$pass_uplink --crypt xor:ea64d5b0c96c
 }
 
 setup_access_a() {
@@ -98,7 +108,7 @@ protocol: tcp
 crypt:
   algorithm: xor
   secret: ea64d5b0c96c
-connection: 172.249.0.241
+connection: 100.100.0.241
 username: ua@a
 password: $pass_ua
 interface:
@@ -117,7 +127,7 @@ protocol: udp
 crypt:
   algorithm: xor
   secret: ea64d5b0c96c
-connection: 172.249.0.241
+connection: 100.100.0.241
 username: ub@b
 password: $pass_ub
 interface:
@@ -212,6 +222,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

@@ -1,17 +1,27 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify access level=network uses per-network pre-shared crypt"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 100.100.0.241 | network a crypt | network b global crypt | ac clients 192.61.0.11-17 ac clients 192.62.0.11-13
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
-#            sw1(center) 172.251.0.241
+#            sw1(center) 100.100.0.241
 #              ^                         ^
 #              | network a crypt          | network b global crypt
 #        ac clients 192.61.0.11-17   ac clients 192.62.0.11-13
 #              wrong/default/global secret combinations are rejected
-# - Docker mgmt network: 172.251.0.0/24
-#   sw1=172.251.0.241, all access clients join the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, all access clients join the same mgmt network.
 # - OpenLAN service networks:
 #   network a: sw1=192.61.0.1/24, clients use 192.61.0.11-17/24.
 #   network b: sw1=192.62.0.1/24, clients use 192.62.0.11-13/24.
@@ -47,12 +57,12 @@ export ac_network_new_after_update_name=tests-sw-pre-crypt.ac-network-new-after-
 export ac_b_global_after_update_name=tests-sw-pre-crypt.ac-b-global-after-update
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.251.0.0/24 --gateway=172.251.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.251.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<JSON
@@ -86,7 +96,7 @@ crypt:
   algorithm: aes-128
   secret: $network_secret
   level: network
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -105,7 +115,7 @@ crypt:
   algorithm: aes-128
   secret: $global_secret
   level: network
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -124,7 +134,7 @@ crypt:
   algorithm: aes-128
   secret: $network_secret
   level: global
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -142,7 +152,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: $global_secret
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -160,7 +170,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: $network_secret
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -178,7 +188,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: $global_secret
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t2@b
 password: 123457
 interface:
@@ -197,7 +207,7 @@ crypt:
   algorithm: aes-128
   secret: $network_secret
   level: network
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t2@b
 password: 123457
 interface:
@@ -218,7 +228,7 @@ crypt:
   algorithm: aes-128
   secret: $network_secret
   level: network
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -234,7 +244,7 @@ crypt:
   algorithm: aes-128
   secret: $network_secret_v2
   level: network
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t1@a
 password: 123456
 interface:
@@ -249,7 +259,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: $global_secret
-connection: 172.251.0.241
+connection: 100.100.0.241
 username: t2@b
 password: 123457
 interface:
@@ -283,6 +293,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

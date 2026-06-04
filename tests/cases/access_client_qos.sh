@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify network client qos rule add-list-save-remove flow"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 192.91.0.1 | OpenVPN tcp/1194, 10.91.0.0/24 | vpn1 10.91.0.10 | QoS rule add/update/remove on vpn1@example
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -11,8 +21,8 @@ show_topology() {
 #              vpn1 10.91.0.10
 #                 |
 #              QoS rule add/update/remove on vpn1@example
-# - Docker mgmt network: 172.250.0.0/24
-#   sw1=172.250.0.241, vpn1 client joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, vpn1 client joins the same mgmt network.
 # - OpenLAN service network "example": 192.91.0.0/24
 #   sw1 gateway=192.91.0.1.
 # - OpenVPN overlay:
@@ -30,12 +40,12 @@ export vpn1_name=tests-sw-client-qos.vpn1
 export vpn_user=vpn1@example
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.250.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -110,6 +120,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

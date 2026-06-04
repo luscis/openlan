@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "add/remove OpenVPN and validate cipher negotiation"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 192.41.0.1 | OpenVPN AES tcp/1194 | OpenVPN SM4 tcp/1194 | vpn1 vpn2
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #              | OpenVPN AES tcp/1194     | OpenVPN SM4 tcp/1194
 #            vpn1                      vpn2
 #              10.99.0.0/24 and 10.98.0.0/24 cipher paths
-# - Docker mgmt network: 172.252.0.0/24
-#   sw1=172.252.0.241, vpn containers join the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, vpn containers join the same mgmt network.
 # - OpenLAN service network "example": 192.41.0.0/24
 #   sw1 gateway=192.41.0.1.
 # - OpenVPN overlay:
@@ -33,12 +43,12 @@ export vpn2_name=tests-sw-openvpn.vpn2
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.252.0.0/24 --gateway=172.252.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.252.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -126,6 +136,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

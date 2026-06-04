@@ -5,6 +5,16 @@ source tools/auto.sh
 # - before reject-with tcp-reset, vpn client can access sw1 service.
 # - after reject-with tcp-reset, vpn client gets connection reset.
 
+show_description() {
+  echo "verify OpenVPN tcp reset handling during client reconnect"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 192.54.0.1:8082 | OpenVPN tcp/1194, 10.92.0.0/24 | vpn1 10.92.0.10 | INPUT tcp-reset rule toggles HTTP reachability
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -14,8 +24,8 @@ show_topology() {
 #                 | OpenVPN tcp/1194, 10.92.0.0/24
 #              vpn1 10.92.0.10
 #                 | INPUT tcp-reset rule toggles HTTP reachability
-# - Docker mgmt network: 172.248.0.0/24
-#   sw1=172.248.0.241, vpn1 client joins the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, vpn1 client joins the same mgmt network.
 # - OpenLAN service network "example": 192.54.0.0/24
 #   sw1 overlay IP=192.54.0.1/24.
 # - OpenVPN overlay:
@@ -37,12 +47,12 @@ export sw1_overlay_ip=192.54.0.1
 export rst_port=8082
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.248.0.0/24 --gateway=172.248.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.248.0.241
+  local address=100.100.0.241
   local crypt_secret="ea64d5b0c96c"
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
@@ -102,6 +112,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

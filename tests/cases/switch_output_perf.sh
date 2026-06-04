@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "compare tcp and udp output latency and bandwidth performance samples"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 center 192.53.0.1 | UDP output | TCP output | sw2 192.53.0.2 sw3 192.53.0.3 | mixed output auth, ping RTT, and bandwidth samples
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -28,9 +38,9 @@ export net_name="tests-net-output-perf-mixed"
 export sw1_name="tests-sw-output-mix1"
 export sw2_name="tests-sw-output-mix2"
 export sw3_name="tests-sw-output-mix3"
-export sw1_ip="172.253.0.241"
-export sw2_ip="172.253.0.242"
-export sw3_ip="172.253.0.243"
+export sw1_ip="100.100.0.241"
+export sw2_ip="100.100.0.242"
+export sw3_ip="100.100.0.243"
 export sw1_svc="192.53.0.1"
 export sw2_svc="192.53.0.2"
 export sw3_svc="192.53.0.3"
@@ -95,7 +105,7 @@ test_bandwidth_iperf() {
 
 setup_net() {
   cleanup_lab "$net_name" "$sw1_name" "$sw2_name" "$sw3_name"
-  assert_cmd docker network create "$net_name" --driver=bridge --subnet=172.253.0.0/24 --gateway=172.253.0.1
+  assert_cmd docker network create "$net_name" --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1
 }
 
 setup_sw1() {
@@ -160,6 +170,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

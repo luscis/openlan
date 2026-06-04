@@ -8,7 +8,7 @@ Please ensure you already installed the following softwares:
 ## 📥 Download config's source package
 
 ```bash
-wget https://github.com/luscis/openlan/releases/download/v25.4.1/config.tar.gz
+wget https://github.com/luscis/openlan/releases/download/v26.5.1/config.tar.gz
 ```
 
 ## 📂 Unarchive it to your rootfs
@@ -25,7 +25,7 @@ tar -xvf config.tar.gz -C /opt
 [root@example network]# cat ./example.yaml
 name: example
 bridge:
-  address: 172.32.100.40/24
+  address: 192.11.0.1/24
 [root@example network]#
 ```
 
@@ -35,7 +35,7 @@ You can find the latest version on [docker hub](https://hub.docker.com/r/luscis/
 
 ```bash
 [root@example network]# cd /opt/openlan
-[root@example openlan]# sed -i -e 's/:latest.x86_64/:v25.4.1.x86_64/' docker-compose.yml
+[root@example openlan]# sed -i -e 's/:latest.amd64/:v26.5.1.amd64/' docker-compose.yml
 [root@example openlan]#
 ```
 
@@ -48,7 +48,6 @@ You can find the latest version on [docker hub](https://hub.docker.com/r/luscis/
       Name                    Command               State   Ports
 -----------------------------------------------------------------
 openlan_ipsec_1    /var/openlan/script/ipsec.sh     Up
-openlan_proxy_1    /usr/bin/openlan-proxy -co ...   Up
 openlan_switch_1   /var/openlan/script/switch ...   Up
 ```
 
@@ -67,7 +66,7 @@ version: 2.3
 services:
   ipsec:
     restart: always
-    image: luscis/openlan:v25.4.1.x86_64.deb
+    image: luscis/openlan:v26.5.1.amd64.deb
     privileged: true
     network_mode: host
     entrypoint: [/var/openlan/script/ipsec.sh]
@@ -76,7 +75,7 @@ services:
       - /opt/openlan/run/pluto:/run/pluto
   switch:
     restart: always
-    image: luscis/openlan:v25.4.1.x86_64.deb
+    image: luscis/openlan:v26.5.1.amd64.deb
     privileged: true
     network_mode: host
     entrypoint: [/var/openlan/script/switch.sh, start]
@@ -84,14 +83,6 @@ services:
       - /opt/openlan/etc/openlan:/etc/openlan
       - /opt/openlan/etc/ipsecd.d:/etc/ipsec.d
       - /opt/openlan/run/pluto:/run/pluto
-  proxy:
-    restart: always
-    image: luscis/openlan:v25.4.1.x86_64.deb
-    privileged: true
-    network_mode: host
-    entrypoint: [/usr/bin/openlan-proxy, -conf, /etc/openlan/proxy.yaml, -log:file, /dev/null]
-    volumes:
-      - /opt/openlan/etc/openlan:/etc/openlan
 ```
 
 ```bash

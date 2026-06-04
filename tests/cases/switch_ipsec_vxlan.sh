@@ -1,15 +1,25 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "build two switches and verify ipsec vxlan output connectivity"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 100.100.0.241 <==== IPSec ====> sw2 100.100.0.242 | svc 192.56.0.1 <---- VxLAN output - svc 192.56.0.2
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
-#       sw1 172.248.0.241  <==== IPSec ====>  sw2 172.248.0.242
+#       sw1 100.100.0.241  <==== IPSec ====>  sw2 100.100.0.242
 #       svc 192.56.0.1    <---- VxLAN output - svc 192.56.0.2
 #       plain VxLAN phase, then IPSec-protected phase
-# - Docker mgmt network: 172.248.0.0/24
-#   sw1=172.248.0.241, sw2=172.248.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.56.0.0/24
 #   sw1=192.56.0.1, sw2=192.56.0.2.
 # - IPSec tunnel:
@@ -32,12 +42,12 @@ export ipsec_secret=ea64d5b0c96c
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.248.0.0/24 --gateway=172.248.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.248.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -59,7 +69,7 @@ EOF
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.248.0.242
+  local address=100.100.0.242
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -80,8 +90,8 @@ EOF
 }
 
 setup_output() {
-  assert_cmd docker exec $sw1_name openlan network --name example output add --remote 172.248.0.242 --protocol vxlan --segment 1056
-  assert_cmd docker exec $sw2_name openlan network --name example output add --remote 172.248.0.241 --protocol vxlan --segment 1056
+  assert_cmd docker exec $sw1_name openlan network --name example output add --remote 100.100.0.242 --protocol vxlan --segment 1056
+  assert_cmd docker exec $sw2_name openlan network --name example output add --remote 100.100.0.241 --protocol vxlan --segment 1056
 }
 
 test_vxlan_output_ping_without_ipsec() {
@@ -93,17 +103,17 @@ test_vxlan_output_ping_without_ipsec() {
 }
 
 test_vxlan_output_ping_with_ipsec() {
-  assert_cmd docker exec $sw1_name openlan ipsec tunnel add --remote 172.248.0.242 --protocol vxlan --secret $ipsec_secret --localid sw1.ipsec.test --remoteid sw2.ipsec.test
-  assert_cmd docker exec $sw2_name openlan ipsec tunnel add --remote 172.248.0.241 --protocol vxlan --secret $ipsec_secret --localid sw2.ipsec.test --remoteid sw1.ipsec.test
-  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.248.0.242" "erouted"
-  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.248.0.241" "erouted"
+  assert_cmd docker exec $sw1_name openlan ipsec tunnel add --remote 100.100.0.242 --protocol vxlan --secret $ipsec_secret --localid sw1.ipsec.test --remoteid sw2.ipsec.test
+  assert_cmd docker exec $sw2_name openlan ipsec tunnel add --remote 100.100.0.241 --protocol vxlan --secret $ipsec_secret --localid sw2.ipsec.test --remoteid sw1.ipsec.test
+  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 100.100.0.242" "erouted"
+  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 100.100.0.241" "erouted"
   assert_match 20 "docker exec $sw2_name ping -c 3 192.56.0.1" "bytes from"
 
   assert_cmd docker exec $sw1_name openlan reload --save
   assert_cmd docker exec $sw2_name openlan reload --save
 
-  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 172.248.0.242" "erouted"
-  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 172.248.0.241" "erouted"
+  assert_match 20 "docker exec $sw1_name openlan ipsec tunnel ls | grep 100.100.0.242" "erouted"
+  assert_match 20 "docker exec $sw2_name openlan ipsec tunnel ls | grep 100.100.0.241" "erouted"
   assert_match 20 "docker exec $sw2_name ping -c 3 192.56.0.1" "bytes from"
 }
 
@@ -144,6 +154,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

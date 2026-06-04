@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "openvpn client reaches sw2 vip through sw1 snat"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+vpn1 10.96.0.10 | v OpenVPN tcp/1194 | sw1 192.52.0.1 -- output + SNAT --> sw2 192.52.0.2 | VIP 10.252.0.12
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #             v OpenVPN tcp/1194
 #       sw1 192.52.0.1  -- output + SNAT -->  sw2 192.52.0.2
 #                                             VIP 10.252.0.12
-# - Docker mgmt network: 172.250.0.0/24
-#   sw1=172.250.0.241, sw2=172.250.0.242.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, sw2=100.100.0.242.
 # - OpenLAN service network "example": 192.52.0.0/24
 #   sw1=192.52.0.1, sw2=192.52.0.2.
 # - sw2 VIP:
@@ -34,12 +44,12 @@ export vpn1_name=tests-sw-openvpn-snat-vip.vpn1
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.250.0.0/24 --gateway=172.250.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.250.0.241
+  local address=100.100.0.241
   local crypt_secret="ea64d5b0c96c"
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
@@ -54,7 +64,7 @@ setup_sw1() {
 
 setup_sw2() {
   local name="$sw2_name"
-  local address=172.250.0.242
+  local address=100.100.0.242
   local crypt_secret="ea64d5b0c96c"
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
@@ -68,7 +78,7 @@ setup_sw2() {
   assert_cmd docker exec $name openlan user add --name uplink@example --password 123456
 
   # sw2 connects to sw1 to build forwarding path.
-  assert_cmd docker exec $name openlan network --name example output add --remote 172.250.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
+  assert_cmd docker exec $name openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:$crypt_secret
 }
 
 setup_openvpn() {
@@ -112,6 +122,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

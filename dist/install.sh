@@ -125,12 +125,12 @@ function requires() {
     if [ "$sys"x == "redhat"x ]; then
         run_cmd yum update -y
         run_cmd yum install -y epel-release
-        run_cmd yum install -y openssl net-tools iptables iputils iperf3 tcpdump
+        run_cmd yum install -y openssl net-tools iptables ebtables iputils iperf3 tcpdump
         run_cmd yum install -y openvpn dnsmasq bridge-utils ipset procps wget socat
         run_cmd yum install -y dnsutils haproxy
     elif [ "$sys"x == "debian"x ]; then
         run_cmd apt-get update -y
-        run_cmd apt-get install -y net-tools iptables iproute2 tcpdump ca-certificates iperf3 socat
+        run_cmd apt-get install -y net-tools iptables ebtables iproute2 tcpdump ca-certificates iperf3 socat
         run_cmd apt-get install -y openvpn dnsmasq bridge-utils ipset procps wget iputils-ping frr
         run_cmd apt-get install -y dnsutils haproxy
     fi

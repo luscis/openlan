@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify ztrust enable/disable with guest and token-derived knock controls"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+vpn1 10.93.0.10 | v OpenVPN tcp/1194 | sw1 192.59.0.1:8081 | ZTrust guest + knock gates service access
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #             v OpenVPN tcp/1194
 #       sw1 192.59.0.1:8081
 #             ZTrust guest + knock gates service access
-# - Docker mgmt network: 172.245.0.0/24
-#   sw1=172.245.0.241.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241.
 # - OpenLAN service network "example": 192.59.0.0/24
 #   sw1=192.59.0.1.
 # - OpenVPN overlay on sw1:
@@ -31,12 +41,12 @@ export vpn1_name=tests-sw-ztrust.vpn1
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.245.0.0/24 --gateway=172.245.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.245.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   start_switch $name $net_name $address
@@ -120,6 +130,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

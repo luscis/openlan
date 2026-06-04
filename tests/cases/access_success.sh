@@ -1,17 +1,27 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "two access clients authenticate and can communicate"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1(center) 100.100.0.241 / 192.11.0.1 | tcp access | tcp access | ac1 192.11.0.11 ac2 192.11.0.12
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
 # - Diagram:
-#            sw1(center) 172.255.0.241 / 192.11.0.1
+#            sw1(center) 100.100.0.241 / 192.11.0.1
 #                 ^                    ^
 #                 | tcp access          | tcp access
 #         ac1 192.11.0.11       ac2 192.11.0.12
 #                 both access clients join example network
-# - Docker mgmt network: 172.255.0.0/24
-#   sw1=172.255.0.241, ac1/ac2 join the same mgmt network.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241, ac1/ac2 join the same mgmt network.
 # - OpenLAN service network "example": 192.11.0.0/24
 #   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
 # Validation:
@@ -31,12 +41,12 @@ export crypt_secret_v2=ea64d5b0c96d
 
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.255.0.0/24 --gateway=172.255.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.255.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -71,7 +81,7 @@ protocol: tcp
 crypt:
   algorithm: aes-128
   secret: $secret
-connection: 172.255.0.241
+connection: 100.100.0.241
 username: t1@example
 password: 123456
 interface:
@@ -91,7 +101,7 @@ protocol: udp
 crypt:
   algorithm: aes-128
   secret: $secret
-connection: 172.255.0.241
+connection: 100.100.0.241
 username: t2@example
 password: 123457
 interface:
@@ -146,6 +156,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;

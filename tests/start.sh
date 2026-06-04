@@ -14,43 +14,16 @@ REPORT_ENABLED=false
 
 scenario_description() {
   local file=$1
-  case "$file" in
-    access_success.sh) echo "two access clients authenticate and can communicate" ;;
-    access_fail.sh) echo "reject client authentication with wrong password" ;;
-    access_admin_multi_login.sh) echo "admin user can login concurrently from multiple access clients" ;;
-    access_same_user_mutex.sh) echo "same user multiple access logins are mutually exclusive" ;;
-    access_pre_network_crypt.sh) echo "verify access level=network uses per-network pre-shared crypt" ;;
-    access_openvpn.sh) echo "add/remove OpenVPN and validate cipher negotiation" ;;
-    access_openvpn_redirect.sh) echo "redirect openvpn source route to sw2 and switch vip reachability" ;;
-    access_openvpn_client_ping.sh) echo "two OpenVPN clients with static addresses can ping each other" ;;
-    access_openvpn_tcp_reset.sh) echo "verify OpenVPN tcp reset handling during client reconnect" ;;
-    access_openvpn_snat_vip.sh) echo "openvpn client reaches sw2 vip through sw1 snat" ;;
-    access_client_qos.sh) echo "verify network client qos rule add-list-save-remove flow" ;;
-    access_snat_scope_matrix.sh) echo "verify snat scope matrix for openvpn, network a access, and network b access" ;;
-    proxy_http.sh) echo "verify ceci http proxy forwarding to http target" ;;
-    proxy_name.sh) echo "verify ceci name proxy forwarding to upstream dns" ;;
-    proxy_name_backends.sh) echo "verify ceci name proxy routes domains to matched backends" ;;
-    proxy_tcp.sh) echo "verify ceci tcp proxy forwarding to tcp target" ;;
-    service_tcp.sh) echo "verify ceci service tcp forwarding and restart" ;;
-    service_http.sh) echo "verify ceci service http forwarding and restart" ;;
-    switch_acl.sh) echo "verify acl add-list-save-reload-remove with vip tcp/80 and icmp" ;;
-    switch_acl_default_action.sh) echo "verify acl default action switch between drop and accept" ;;
-    switch_bgp.sh) echo "verify bgp peer establishment and prefix filter persistence" ;;
-    switch_dhcp.sh) echo "verify dhcp enable/disable with pool/gateway/dns, lease allocation, and reload persistence" ;;
-    switch_dnat.sh) echo "verify dnat add-list-remove and nat table rule updates" ;;
-    switch_findhop.sh) echo "verify findhop route binding, remove guard, and reload state" ;;
-    switch_namespace.sh) echo "verify network namespace vrf binding and overlay reachability" ;;
-    switch_namespace_snat.sh) echo "verify namespace snat source rewriting and non-snat isolation" ;;
-    switch_namespace_openvpn.sh) echo "verify namespace openvpn snat and non-snat network isolation" ;;
-    switch_ztrust.sh) echo "verify ztrust enable/disable with guest and token-derived knock controls" ;;
-    switch_tcp.sh) echo "build two switches and verify tcp output connectivity" ;;
-    switch_udp.sh) echo "build two switches and verify udp output connectivity" ;;
-    switch_ipsec_vxlan.sh) echo "build two switches and verify ipsec vxlan output connectivity" ;;
-    switch_ipsec_gre.sh) echo "build two switches and verify ipsec gre output connectivity" ;;
-    switch_ratelimit.sh) echo "verify ratelimit add-update-remove and tc state" ;;
-    switch_route3.sh) echo "validate forwarding and route reachability via sw2" ;;
-    *) echo "custom scenario" ;;
-  esac
+  local path="$file"
+  local desc
+  if [[ ! -f "$path" ]]; then
+    path="cases/$file"
+  fi
+  desc=$(bash "$path" --description 2>/dev/null)
+  if [[ -z "$desc" ]]; then
+    desc="custom scenario"
+  fi
+  printf "%s\n" "$desc"
 }
 
 scenario_topology_detail() {
@@ -68,66 +41,13 @@ EOF
 }
 
 scenario_topology_summary() {
-  local detail="$1"
+  local file=$1
+  local path="$file"
   local summary
-  summary=$(printf "%s\n" "$detail" | awk '
-    function trim(s) {
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
-      return s
-    }
-    function useful(s) {
-      return s != "" && s !~ /^[|^v<>\-+[:space:]]+$/
-    }
-    BEGIN {
-      in_diagram = 0
-      diagram = ""
-      fallback = ""
-    }
-    /^# -[[:space:]]*/ {
-      line = $0
-      sub(/^# -[[:space:]]*/, "", line)
-      line = trim(line)
-      if (line == "Diagram:") {
-        in_diagram = 1
-        next
-      }
-      if (fallback == "") {
-        fallback = line
-      }
-      in_diagram = 0
-    }
-    /^#/ {
-      if (!in_diagram) {
-        next
-      }
-      line = $0
-      sub(/^#[[:space:]]*/, "", line)
-      line = trim(line)
-      if (!useful(line)) {
-        next
-      }
-      if (diagram == "") {
-        diagram = line
-      } else {
-        diagram = diagram "; " line
-      }
-      if (length(diagram) >= 90) {
-        print diagram
-        found = 1
-        exit
-      }
-    }
-    END {
-      if (found) {
-        exit
-      }
-      if (diagram != "") {
-        print diagram
-      } else if (fallback != "") {
-        print fallback
-      }
-    }
-  ')
+  if [[ ! -f "$path" ]]; then
+    path="cases/$file"
+  fi
+  summary=$(bash "$path" --summary 2>/dev/null)
   if [[ -z "$summary" ]]; then
     summary="custom topology"
   fi
@@ -144,7 +64,7 @@ print_scenario_header() {
   local topo_detail
   topo_detail=$(scenario_topology_detail "$file")
   local topo
-  topo=$(scenario_topology_summary "$topo_detail")
+  topo=$(scenario_topology_summary "$file")
 
   printf "${C_CYAN}[%s][RUN]${C_RESET} %-17s : %s\n" \
     "$(now_text)" "$name" "$desc"
@@ -196,7 +116,7 @@ run_batch() {
         print_scenario_header "$file"
         start_ms=$(now_ms)
         topo_detail=$(scenario_topology_detail "$file")
-        topo=$(scenario_topology_summary "$topo_detail")
+        topo=$(scenario_topology_summary "$file")
         if [[ "$REPORT_ENABLED" == "true" ]]; then
           case_log=$(report_case_log_file "$index" "$name")
           echo "[$(now_text)] case log: $case_log"

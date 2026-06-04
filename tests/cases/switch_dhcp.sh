@@ -1,6 +1,16 @@
 #!/bin/bash
 source tools/auto.sh
 
+show_description() {
+  echo "verify dhcp enable/disable with pool/gateway/dns, lease allocation, and reload persistence"
+}
+
+show_topology_summary() {
+  cat <<'EOF'
+sw1 DHCP server 192.67.0.1 | physical output | tcp access tunnel | veth-dhcp <-> ns client ac1 tap bridge
+EOF
+}
+
 show_topology() {
   cat <<'EOF'
 # Topology:
@@ -10,8 +20,8 @@ show_topology() {
 #              | physical output          | tcp access tunnel
 #       veth-dhcp <-> ns client      ac1 tap bridge
 #       dhclient lease path          dhclient lease path
-# - Docker mgmt network: 172.245.0.0/24
-#   sw1=172.245.0.241.
+# - Docker mgmt network: 100.100.0.0/24
+#   sw1=100.100.0.241.
 # - OpenLAN service network "example": 192.67.0.0/24
 #   sw1=192.67.0.1, DHCP range 192.67.0.100-192.67.0.120.
 # - In-container DHCP client namespace:
@@ -47,12 +57,12 @@ export dhcp_conf=/var/openlan/dhcp/example.conf
 export dhcp_lease=/var/openlan/dhcp/example.leases
 
 setup_net() {
-  docker network create $net_name --driver=bridge --subnet=172.245.0.0/24 --gateway=172.245.0.1 >/dev/null
+  docker network create $net_name --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1 >/dev/null
 }
 
 setup_sw1() {
   local name="$sw1_name"
-  local address=172.245.0.241
+  local address=100.100.0.241
 
   mkdir -p /opt/openlan/$name/etc/openlan/switch
   cat > /opt/openlan/$name/etc/openlan/switch/switch.json <<EOF
@@ -112,7 +122,7 @@ setup_access_client() {
   mkdir -p /opt/openlan/$ac1_name/etc/openlan
   cat > /opt/openlan/$ac1_name/etc/openlan/access.yaml <<EOF
 protocol: tcp
-connection: 172.245.0.241
+connection: 100.100.0.241
 username: $access_user
 password: $access_pass
 crypt:
@@ -175,6 +185,12 @@ setup() {
 }
 
 case "$1" in
+  --description)
+    show_description
+    ;;
+  --summary)
+    show_topology_summary
+    ;;
   --topology)
     show_topology
     ;;
