@@ -49,8 +49,7 @@ func NewLDAPService(cfg LDAPConfig) (*LDAPService, error) {
 func (l *LDAPService) Login(userName, password string) (bool, error) {
 	cfg := l.Cfg
 	if err := l.Conn.Bind(cfg.BindUser, cfg.BindPass); err != nil {
-		Error("LDAPService.Login bind %v: %s", err)
-		return false, nil
+		return false, err
 	}
 
 	request := ldap.NewSearchRequest(
