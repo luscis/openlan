@@ -51,6 +51,13 @@ If you need a flexible VPN solution for secure enterprise access, traffic proxyi
    10.16.1.11/24          10.16.1.12/24           10.16.1.13/24
 ```
 
+OpenLAN can use a central switch as the enterprise access hub. Branch devices
+or edge gateways authenticate to the center over public networks and join the
+same virtual LAN with assigned addresses. This keeps branch-to-center and
+branch-to-branch traffic on a managed overlay, while the central switch can
+apply user authentication, shared crypt settings, ACLs, SNAT, DNAT, DHCP, and
+rate-limit policies from one control point.
+
 ### 🌍 Multi-Region Interconnection
 
 ```text
@@ -74,6 +81,13 @@ OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
 192.168.1.11/24            192.168.1.12/24             192.168.1.13/24
 ```
 
+OpenLAN can connect switches across cities, clouds, and temporary networks such
+as hotel or home Wi-Fi. Each region can keep its local OpenLAN switch while
+outputs build authenticated TCP/UDP tunnels between regions. Static routes or
+FindHop routes then make remote subnets and VIPs reachable through the proper
+nexthop, so applications can move across sites without exposing every backend
+directly to the Internet.
+
 ### 🔐 Zero-Trust Access Control
 
 ```text
@@ -93,12 +107,51 @@ OpenLAN -- Hotel Wifi --> Central Switch(NanJing) <--- Other Wifi --- OpenLAN
             172.16.100.0/24                 10.16.1.0/24
 ```
 
+OpenLAN Zero Trust turns a virtual network into a default-deny access plane for
+new traffic while keeping established flows intact. Remote users can connect
+through OpenVPN, but protected services stay unreachable until the user is
+registered as a ZTrust guest and creates a temporary knock rule for a specific
+protocol and socket, such as `tcp/192.59.0.1:8081`. This makes it useful for
+contractor access, emergency operations, and service-by-service approvals where
+network reachability, identity, and time-limited permission must be controlled
+together.
+
+### 🔀 HTTP Route Forwarding
+
+```text
+        Client request              Client request              Client request
+        Host: group.test            Host: single.test           Host: unknown.test
+              |                           |                           |
+              +---------------------------+---------------------------+
+                                          |
+                                          v
+                                  Ceci HTTP Service
+                              listen: 192.168.1.10:13083
+                                          |
+                       +------------------+-----------------+
+                       /                  |                  \
+                      / group route       | single route      \ global backend
+                     /                    |                    \
+        sw2 group backends        sw2 single backend      sw3 fallback backend
+         192.56.0.2:18084          192.56.0.2:18086         192.56.0.3:18088
+         192.56.0.2:18085
+         192.56.0.2:18087
+```
+
+OpenLAN can publish one local HTTP service endpoint and route requests to
+different backends by the HTTP `Host` header. A hostname such as `single.test`
+can map to one backend, while `group.test` can map to multiple backends with
+round-robin balancing. Requests without a matched hostname can fall back to a
+global backend. The backends may live behind other OpenLAN switches, so the
+service endpoint stays stable while applications are distributed across sites.
+
 ## 📚 Documentation
 
 - 📦 [Software Installation](docs/install.md)
 - 🏢 [Branch Access](docs/central.md)
 - 🌍 [Multi-Region Interconnection](docs/multiarea.md)
 - 🔐 [Zero Trust Network](docs/ztrust.md)
+- 🔀 [Ceci Proxy Examples](docs/proxy.md)
 - 🐳 [Docker Compose](docs/docker.md)
 
 ## 🧪 Scenario Tests

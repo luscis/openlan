@@ -51,6 +51,8 @@ OpenLAN 是一套多租户网络解决方案，可在广域网链路上传输局
 10.16.1.11/24        10.16.1.12/24       10.16.1.13/24
 ```
 
+OpenLAN 可以将 Central Switch 作为企业统一接入中心。分支设备或边缘网关通过公网认证接入中心，并以分配的地址加入同一个虚拟局域网。分支到中心、分支到分支的流量都运行在可管理的 overlay 之上，同时中心节点可以统一承载用户认证、共享加密、ACL、SNAT、DNAT、DHCP 和限速等策略。
+
 ### 🌍 多区域互联
 
 ```text
@@ -74,6 +76,8 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
 192.168.1.11/24       192.168.1.12/24                192.168.1.13/24
 ```
 
+OpenLAN 可以连接不同城市、云环境以及酒店/家庭 Wi-Fi 等临时网络。每个区域保留本地 OpenLAN Switch，再通过 output 建立经过认证的 TCP/UDP 隧道。静态路由或 FindHop 路由可以让远端网段和 VIP 通过正确的 nexthop 可达，从而让应用跨站点迁移或访问时，不必把每个后端服务直接暴露到互联网。
+
 ### 🔐 零信任接入控制
 
 ```text
@@ -93,12 +97,39 @@ OpenLAN -- 酒店 Wifi --> Central Switch(南京) <--- 其他 Wifi --- OpenLAN
              172.16.100.0/24               10.16.1.0/24
 ```
 
+OpenLAN Zero Trust 可以将虚拟网络切换为对新建流量默认拒绝的访问平面，同时保持已建立连接不受影响。远程用户可以通过 OpenVPN 接入，但受保护服务在用户被注册为 ZTrust Guest，并为指定协议和 socket 创建临时 Knock 规则前不可访问，例如 `tcp/192.59.0.1:8081`。这适用于外包访问、应急运维，以及需要按服务审批并同时控制网络可达性、身份和时效的场景。
+
+### 🔀 HTTP 路由转发
+
+```text
+        Client request              Client request              Client request
+        Host: group.test            Host: single.test           Host: unknown.test
+              |                           |                           |
+              +---------------------------+---------------------------+
+                                          |
+                                          v
+                                  Ceci HTTP Service
+                              listen: 192.168.1.10:13083
+                                          |
+                       +------------------+-----------------+
+                       /                  |                  \
+                      / group route       | single route      \ global backend
+                     /                    |                    \
+        sw2 group backends        sw2 single backend      sw3 fallback backend
+         192.56.0.2:18084          192.56.0.2:18086         192.56.0.3:18088
+         192.56.0.2:18085
+         192.56.0.2:18087
+```
+
+OpenLAN 可以发布一个本地 HTTP Service 入口，并根据 HTTP `Host` 头将请求路由到不同后端。`single.test` 这样的主机名可以映射到单个后端，`group.test` 可以映射到多个后端并按 round-robin 方式负载均衡。没有匹配主机名的请求可以回落到全局后端。后端服务可以位于其他 OpenLAN Switch 后面，因此应用分布在多个站点时，也能保持稳定统一的服务入口。
+
 ## 📚 文档指南
 
 - 📦 [软件安装](docs/install.md)
 - 🏢 [分支接入](docs/central.md)
 - 🌍 [多区域互联](docs/multiarea.md)
 - 🔐 [零信任网络](docs/ztrust.md)
+- 🔀 [Ceci Proxy 示例](docs/proxy.md)
 - 🐳 [Docker Compose](docs/docker.md)
 
 ## 🧪 场景测试
