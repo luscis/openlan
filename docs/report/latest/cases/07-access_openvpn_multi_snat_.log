@@ -1,0 +1,199 @@
+[26-06-22 06:06:21] START access_openvpn_multi_snat
+scenario: cases/access_openvpn_multi_snat.sh
+header  : verify sw1 network a openvpn client reaches sw2 network a and b addresses through snat
+topology: vpn1@sw1/a 10.84.0.10 | sw1 a 192.84.0.1 -- TCP output + SNAT --> sw2 a 192.84.0.2 + sw2 b 192.85.0.2
+topology: # Topology:
+topology: # - Diagram:
+topology: #       vpn1@a 10.84.0.10
+topology: #              |
+topology: #       sw1 network a 192.84.0.1
+topology: #              |
+topology: #              | TCP output + OpenVPN SNAT
+topology: #              v
+topology: #       sw2 network a 192.84.0.2
+topology: #       sw2 network b 192.85.0.2
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242, vpn1 joins the same mgmt network.
+topology: # - OpenLAN service networks:
+topology: #   network a: sw1=192.84.0.1/24, sw2=192.84.0.2/24.
+topology: #   network b: sw2=192.85.0.2/24.
+topology: # - OpenVPN overlay:
+topology: #   sw1 network a tcp/1194, subnet 10.84.0.0/24, vpn1@a fixed address 10.84.0.10.
+topology: # - Routing:
+topology: #   sw1/a routes sw2/a and sw2/b subnets via sw2/a; sw2 has no OpenVPN return route.
+topology: # Validation:
+topology: #   Without SNAT, the OpenVPN client cannot reach sw2 network a or b because
+topology: #   sw2 has no return route for the OpenVPN subnet. After enabling OpenVPN SNAT
+topology: #   on sw1/a, the client can reach both sw2 network a and b addresses.
+
+Started switch pause container: tests-sw-openvpn-multi-snat.sw2-pause
+Started switch frr container: tests-sw-openvpn-multi-snat.sw2-frr
+Started switch ipsec container: tests-sw-openvpn-multi-snat.sw2-ipsec
+Started switch container: tests-sw-openvpn-multi-snat.sw2
+[26-06-22 06:06:22][ASSERT#0001][expect] at cases/access_openvpn_multi_snat.sh:94 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-openvpn-multi-snat.sw2" expect="Http.Start"
+2026/06/22 06:06:23 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:06:23 INFO|root|Wait: ...
+2026/06/22 06:06:23 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:06:23 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:06:23][ASSERT#0001][OK] cost=1.027s
+[26-06-22 06:06:23][ASSERT#0002][cmd] at cases/access_openvpn_multi_snat.sh:96 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-multi-snat.sw2 openlan network --name a add --address 192.84.0.2/24"
+[26-06-22 06:06:23][ASSERT#0002][OK] cost=0.251s
+[26-06-22 06:06:23][ASSERT#0003][cmd] at cases/access_openvpn_multi_snat.sh:97 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-multi-snat.sw2 openlan network --name b add --address 192.85.0.2/24"
+[26-06-22 06:06:24][ASSERT#0003][OK] cost=0.240s
+[26-06-22 06:06:24][ASSERT#0004][cmd] at cases/access_openvpn_multi_snat.sh:98 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-multi-snat.sw2 openlan network --name a snat disable"
+[26-06-22 06:06:24][ASSERT#0004][OK] cost=0.090s
+[26-06-22 06:06:24][ASSERT#0005][cmd] at cases/access_openvpn_multi_snat.sh:99 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-multi-snat.sw2 openlan network --name b snat disable"
+[26-06-22 06:06:24][ASSERT#0005][OK] cost=0.079s
+[26-06-22 06:06:24][ASSERT#0006][cmd] at cases/access_openvpn_multi_snat.sh:100 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-multi-snat.sw2 openlan user add --name link@a --password pw-a-19467-6056"
+# total 1
+username                 password                 role   lease          
+link@a                   pw-a-19467-6056          guest  2027-06-22T06  
+[26-06-22 06:06:24][ASSERT#0006][OK] cost=0.070s
+Started switch pause container: tests-sw-openvpn-multi-snat.sw1-pause
+Started switch frr container: tests-sw-openvpn-multi-snat.sw1-frr
+Started switch ipsec container: tests-sw-openvpn-multi-snat.sw1-ipsec
+Started switch container: tests-sw-openvpn-multi-snat.sw1
+[26-06-22 06:06:25][ASSERT#0007][expect] at cases/access_openvpn_multi_snat.sh:79 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-multi-snat.sw1" expect="Http.Start"
+2026/06/22 06:06:25 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:06:25 INFO|root|Wait: ...
+2026/06/22 06:06:25 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:06:25 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:06:26][ASSERT#0007][OK] cost=1.027s
+[26-06-22 06:06:26][ASSERT#0008][cmd] at cases/access_openvpn_multi_snat.sh:81 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a add --address 192.84.0.1/24"
+[26-06-22 06:06:26][ASSERT#0008][OK] cost=0.258s
+[26-06-22 06:06:26][ASSERT#0009][cmd] at cases/access_openvpn_multi_snat.sh:82 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a snat disable"
+[26-06-22 06:06:26][ASSERT#0009][OK] cost=0.074s
+[26-06-22 06:06:26][ASSERT#0010][cmd] at cases/access_openvpn_multi_snat.sh:83 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a route add --prefix 192.85.0.0/24 --nexthop 192.84.0.2"
+[26-06-22 06:06:26][ASSERT#0010][OK] cost=0.068s
+[26-06-22 06:06:26][ASSERT#0011][cmd] at cases/access_openvpn_multi_snat.sh:84 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan user add --name vpn1@a --password pw-a-19467-6056"
+# total 1
+username                 password                 role   lease          
+vpn1@a                   pw-a-19467-6056          guest  2027-06-22T06  
+[26-06-22 06:06:26][ASSERT#0011][OK] cost=0.071s
+[26-06-22 06:06:26][ASSERT#0012][cmd] at cases/access_openvpn_multi_snat.sh:85 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a output add --remote 100.100.0.242 --protocol tcp --secret link@a:pw-a-19467-6056 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:06:26][ASSERT#0012][OK] cost=0.061s
+[26-06-22 06:06:26][ASSERT#0013][cmd] at cases/access_openvpn_multi_snat.sh:106 fn=setup_openvpn cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a openvpn add --listen :1194 --protocol tcp --subnet 10.84.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:06:26][ASSERT#0013][OK] cost=0.077s
+[26-06-22 06:06:26][ASSERT#0014][cmd] at cases/access_openvpn_multi_snat.sh:107 fn=setup_openvpn cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a client add --user vpn1 --address 10.84.0.10"
+[26-06-22 06:06:26][ASSERT#0014][OK] cost=0.059s
+[26-06-22 06:06:26][ASSERT#0015][cmd] at cases/access_openvpn_multi_snat.sh:108 fn=setup_openvpn cmd="docker exec tests-sw-openvpn-multi-snat.sw1 test -f /var/openlan/openvpn/a/tcp1194client.ovpn"
+[26-06-22 06:06:26][ASSERT#0015][OK] cost=0.058s
+[26-06-22 06:06:26][ASSERT#0016][match] at cases/access_openvpn_multi_snat.sh:109 fn=setup_openvpn retry=10 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 cat /var/openlan/openvpn/a/tcp1194server.conf" expect="push "route 192.84.0.0 255.255.255.0""
+dh /var/openlan/openvpn/dh.pem
+server 10.84.0.0 255.255.255.0
+push "route 10.84.0.0 255.255.255.0"
+push "route 192.84.0.0 255.255.255.0"
+push "route 192.85.0.0 255.255.255.0"
+push "dhcp-option DNS 8.8.8.8"
+ifconfig-pool-persist tcp1194ipp
+[26-06-22 06:06:26][ASSERT#0016][OK] cost=0.058s
+[26-06-22 06:06:26][ASSERT#0017][match] at cases/access_openvpn_multi_snat.sh:110 fn=setup_openvpn retry=10 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 cat /var/openlan/openvpn/a/tcp1194server.conf" expect="push "route 192.85.0.0 255.255.255.0""
+server 10.84.0.0 255.255.255.0
+push "route 10.84.0.0 255.255.255.0"
+push "route 192.84.0.0 255.255.255.0"
+push "route 192.85.0.0 255.255.255.0"
+push "dhcp-option DNS 8.8.8.8"
+ifconfig-pool-persist tcp1194ipp
+tls-auth /var/openlan/openvpn/ta.key 0
+[26-06-22 06:06:27][ASSERT#0017][OK] cost=0.062s
+Started OpenVPN client container: tests-sw-openvpn-multi-snat.vpn1
+[26-06-22 06:06:27][ASSERT#0018][expect] at cases/access_openvpn_multi_snat.sh:120 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-openvpn-multi-snat.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:06:27 net_route_v4_add: 10.84.0.0/24 via 10.84.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:06:27 net_route_v4_add: 192.84.0.0/24 via 10.84.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:06:27 net_route_v4_add: 192.85.0.0/24 via 10.84.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:06:27 Initialization Sequence Completed
+[26-06-22 06:06:28][ASSERT#0018][OK] cost=1.033s
+[26-06-22 06:06:28][ASSERT#0019][match] at cases/access_openvpn_multi_snat.sh:124 fn=test_openvpn_multi_snat retry=20 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a output ls" expect="state: authenticated"
+  remote: 100.100.0.242
+  rxBytes: 52
+  secret: link@a:pw-a-19467-6056
+  state: authenticated
+
+[26-06-22 06:06:29][ASSERT#0019][OK] cost=1.139s
+[26-06-22 06:06:29][ASSERT#0020][match] at cases/access_openvpn_multi_snat.sh:125 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.1" expect="bytes from"
+PING 192.84.0.1 (192.84.0.1) 56(84) bytes of data.
+64 bytes from 192.84.0.1: icmp_seq=1 ttl=64 time=0.422 ms
+64 bytes from 192.84.0.1: icmp_seq=2 ttl=64 time=0.726 ms
+64 bytes from 192.84.0.1: icmp_seq=3 ttl=64 time=0.740 ms
+
+--- 192.84.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2045ms
+[26-06-22 06:06:31][ASSERT#0020][OK] cost=2.132s
+[26-06-22 06:06:31][ASSERT#0021][unmatch] at cases/access_openvpn_multi_snat.sh:126 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.2" unexpected="bytes from"
+Last output:
+PING 192.84.0.2 (192.84.0.2) 56(84) bytes of data.
+
+--- 192.84.0.2 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2077ms
+
+[26-06-22 06:06:44][ASSERT#0021][OK] cost=13.171s
+[26-06-22 06:06:44][ASSERT#0022][unmatch] at cases/access_openvpn_multi_snat.sh:127 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.85.0.2" unexpected="bytes from"
+Last output:
+PING 192.85.0.2 (192.85.0.2) 56(84) bytes of data.
+
+--- 192.85.0.2 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2032ms
+
+[26-06-22 06:06:57][ASSERT#0022][OK] cost=13.118s
+[26-06-22 06:06:57][ASSERT#0023][cmd] at cases/access_openvpn_multi_snat.sh:129 fn=test_openvpn_multi_snat cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a snat enable --scope openvpn"
+[26-06-22 06:06:58][ASSERT#0023][OK] cost=0.071s
+[26-06-22 06:06:58][ASSERT#0024][match] at cases/access_openvpn_multi_snat.sh:130 fn=test_openvpn_multi_snat retry=10 cmd="docker exec tests-sw-openvpn-multi-snat.sw1 iptables -t nat -S TT_a_SNAT" expect="10.84.0.0/24"
+-N TT_a_SNAT
+-A TT_a_SNAT -s 10.84.0.0/24 -m set --match-set TT_a_r dst -m comment --comment "From VPN" -j MASQUERADE
+[26-06-22 06:06:58][ASSERT#0024][OK] cost=0.069s
+[26-06-22 06:06:58][ASSERT#0025][match] at cases/access_openvpn_multi_snat.sh:131 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.1" expect="bytes from"
+PING 192.84.0.1 (192.84.0.1) 56(84) bytes of data.
+64 bytes from 192.84.0.1: icmp_seq=1 ttl=64 time=0.308 ms
+64 bytes from 192.84.0.1: icmp_seq=2 ttl=64 time=0.941 ms
+64 bytes from 192.84.0.1: icmp_seq=3 ttl=64 time=1.15 ms
+
+--- 192.84.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2036ms
+[26-06-22 06:07:00][ASSERT#0025][OK] cost=2.124s
+[26-06-22 06:07:00][ASSERT#0026][unmatch] at cases/access_openvpn_multi_snat.sh:132 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.2" unexpected="bytes from"
+Last output:
+PING 192.84.0.2 (192.84.0.2) 56(84) bytes of data.
+
+--- 192.84.0.2 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2051ms
+
+[26-06-22 06:07:13][ASSERT#0026][OK] cost=13.135s
+[26-06-22 06:07:13][ASSERT#0027][match] at cases/access_openvpn_multi_snat.sh:133 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.85.0.2" expect="bytes from"
+PING 192.85.0.2 (192.85.0.2) 56(84) bytes of data.
+64 bytes from 192.85.0.2: icmp_seq=1 ttl=63 time=0.958 ms
+64 bytes from 192.85.0.2: icmp_seq=2 ttl=63 time=2.42 ms
+64 bytes from 192.85.0.2: icmp_seq=3 ttl=63 time=2.26 ms
+
+--- 192.85.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:07:15][ASSERT#0027][OK] cost=2.096s
+[26-06-22 06:07:15][ASSERT#0028][cmd] at cases/access_openvpn_multi_snat.sh:135 fn=test_openvpn_multi_snat cmd="docker exec tests-sw-openvpn-multi-snat.sw1 openlan network --name a route add --prefix 192.84.0.0/24"
+[26-06-22 06:07:15][ASSERT#0028][OK] cost=0.069s
+[26-06-22 06:07:15][ASSERT#0029][match] at cases/access_openvpn_multi_snat.sh:136 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.1" expect="bytes from"
+PING 192.84.0.1 (192.84.0.1) 56(84) bytes of data.
+64 bytes from 192.84.0.1: icmp_seq=1 ttl=64 time=0.252 ms
+64 bytes from 192.84.0.1: icmp_seq=2 ttl=64 time=1.92 ms
+64 bytes from 192.84.0.1: icmp_seq=3 ttl=64 time=0.867 ms
+
+--- 192.84.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2057ms
+[26-06-22 06:07:17][ASSERT#0029][OK] cost=2.145s
+[26-06-22 06:07:17][ASSERT#0030][match] at cases/access_openvpn_multi_snat.sh:137 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.84.0.2" expect="bytes from"
+PING 192.84.0.2 (192.84.0.2) 56(84) bytes of data.
+64 bytes from 192.84.0.2: icmp_seq=1 ttl=63 time=0.905 ms
+64 bytes from 192.84.0.2: icmp_seq=2 ttl=63 time=0.837 ms
+64 bytes from 192.84.0.2: icmp_seq=3 ttl=63 time=2.17 ms
+
+--- 192.84.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2043ms
+[26-06-22 06:07:19][ASSERT#0030][OK] cost=2.130s
+[26-06-22 06:07:19][ASSERT#0031][match] at cases/access_openvpn_multi_snat.sh:138 fn=test_openvpn_multi_snat retry=1 cmd="docker exec tests-sw-openvpn-multi-snat.vpn1 ping -c 3 192.85.0.2" expect="bytes from"
+PING 192.85.0.2 (192.85.0.2) 56(84) bytes of data.
+64 bytes from 192.85.0.2: icmp_seq=1 ttl=63 time=0.728 ms
+64 bytes from 192.85.0.2: icmp_seq=2 ttl=63 time=2.50 ms
+64 bytes from 192.85.0.2: icmp_seq=3 ttl=63 time=2.29 ms
+
+--- 192.85.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2048ms
+[26-06-22 06:07:21][ASSERT#0031][OK] cost=2.146s
+[26-06-22 06:07:22] END access_openvpn_multi_snat status=PASS cost=60.997s

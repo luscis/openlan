@@ -1,0 +1,221 @@
+[26-06-22 06:40:22] START switch_output_perf
+scenario: cases/switch_output_perf.sh
+header  : compare tcp and udp output latency and bandwidth performance samples
+topology: sw1 center 192.53.0.1 | UDP output | TCP output | sw2 192.53.0.2 sw3 192.53.0.3 | mixed output auth, ping RTT, and bandwidth samples
+topology: # Topology:
+topology: # - Diagram:
+topology: #                         sw1 center 192.53.0.1
+topology: #                           ^                 ^
+topology: #                           | UDP output       | TCP output
+topology: #                    sw2 192.53.0.2     sw3 192.53.0.3
+topology: #                         mixed output auth, ping RTT, and bandwidth samples
+topology: # - One center switch sw1 accepts mixed output dial-ins.
+topology: # - sw2 -> sw1 over UDP output.
+topology: # - sw3 -> sw1 over TCP output.
+topology: # Validation:
+topology: # - Both outputs reach authenticated state on the same sw1.
+topology: # - UDP/TCP paths both pass connectivity checks.
+topology: # - Performance sample shows 0% loss and RTT summary.
+topology: # - Bandwidth sample is collected with iperf/iperf3 for UDP and TCP.
+
+[26-06-22 06:40:22][ASSERT#0001][cmd] at cases/switch_output_perf.sh:108 fn=setup_net cmd="docker network create tests-net-output-perf-mixed --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1"
+b71a6037c1b59df1d38fffd65095c9db6291f3b03c9f918de44898c20b84feae
+[26-06-22 06:40:23][ASSERT#0001][OK] cost=0.062s
+Started switch pause container: tests-sw-output-mix1-pause
+Started switch frr container: tests-sw-output-mix1-frr
+Started switch ipsec container: tests-sw-output-mix1-ipsec
+Started switch container: tests-sw-output-mix1
+[26-06-22 06:40:23][ASSERT#0002][expect] at cases/switch_output_perf.sh:79 fn=setup_sw retry=30 cmd="docker logs -f tests-sw-output-mix1" expect="Http.Start"
+2026/06/22 06:40:24 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:40:24 INFO|root|Wait: ...
+2026/06/22 06:40:24 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:40:24 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:40:24][ASSERT#0002][OK] cost=1.030s
+[26-06-22 06:40:24][ASSERT#0003][cmd] at cases/switch_output_perf.sh:113 fn=setup_sw1 cmd="docker exec tests-sw-output-mix1 openlan network --name example add --address 192.53.0.1/24"
+[26-06-22 06:40:25][ASSERT#0003][OK] cost=0.252s
+[26-06-22 06:40:25][ASSERT#0004][cmd] at cases/switch_output_perf.sh:114 fn=setup_sw1 cmd="docker exec tests-sw-output-mix1 openlan user add --name t1@example --password 123456 --role admin"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   admin  2027-06-22T06  
+[26-06-22 06:40:25][ASSERT#0004][OK] cost=0.072s
+Started switch pause container: tests-sw-output-mix2-pause
+Started switch frr container: tests-sw-output-mix2-frr
+Started switch ipsec container: tests-sw-output-mix2-ipsec
+Started switch container: tests-sw-output-mix2
+[26-06-22 06:40:25][ASSERT#0005][expect] at cases/switch_output_perf.sh:79 fn=setup_sw retry=30 cmd="docker logs -f tests-sw-output-mix2" expect="Http.Start"
+2026/06/22 06:40:26 INFO|root|Wait: ...
+2026/06/22 06:40:26 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:40:26 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:40:26 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:40:26][ASSERT#0005][OK] cost=1.031s
+[26-06-22 06:40:26][ASSERT#0006][cmd] at cases/switch_output_perf.sh:119 fn=setup_sw2 cmd="docker exec tests-sw-output-mix2 openlan network --name example add --address 192.53.0.2/24"
+[26-06-22 06:40:27][ASSERT#0006][OK] cost=0.244s
+Started switch pause container: tests-sw-output-mix3-pause
+Started switch frr container: tests-sw-output-mix3-frr
+Started switch ipsec container: tests-sw-output-mix3-ipsec
+Started switch container: tests-sw-output-mix3
+[26-06-22 06:40:27][ASSERT#0007][expect] at cases/switch_output_perf.sh:79 fn=setup_sw retry=30 cmd="docker logs -f tests-sw-output-mix3" expect="Http.Start"
+2026/06/22 06:40:28 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:40:28 INFO|root|Wait: ...
+2026/06/22 06:40:28 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:40:28 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:40:29][ASSERT#0007][OK] cost=1.032s
+[26-06-22 06:40:29][ASSERT#0008][cmd] at cases/switch_output_perf.sh:124 fn=setup_sw3 cmd="docker exec tests-sw-output-mix3 openlan network --name example add --address 192.53.0.3/24"
+[26-06-22 06:40:29][ASSERT#0008][OK] cost=0.251s
+[26-06-22 06:40:29][ASSERT#0009][cmd] at cases/switch_output_perf.sh:128 fn=setup_outputs cmd="docker exec tests-sw-output-mix2 openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:40:29][ASSERT#0009][OK] cost=0.073s
+[26-06-22 06:40:29][ASSERT#0010][cmd] at cases/switch_output_perf.sh:129 fn=setup_outputs cmd="docker exec tests-sw-output-mix3 openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:40:29][ASSERT#0010][OK] cost=0.052s
+[26-06-22 06:40:29][ASSERT#0011][match] at cases/switch_output_perf.sh:130 fn=setup_outputs retry=15 cmd="docker exec tests-sw-output-mix2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: udp
+  remote: 100.100.0.241
+  secret: t1:123456
+  state: authenticated
+
+[26-06-22 06:40:31][ASSERT#0011][OK] cost=2.200s
+[26-06-22 06:40:31][ASSERT#0012][match] at cases/switch_output_perf.sh:131 fn=setup_outputs retry=15 cmd="docker exec tests-sw-output-mix3 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 100.100.0.241
+  secret: t1:123456
+  state: authenticated
+
+[26-06-22 06:40:31][ASSERT#0012][OK] cost=0.068s
+[26-06-22 06:40:31][ASSERT#0013][match] at cases/switch_output_perf.sh:135 fn=test_connectivity_and_latency retry=20 cmd="docker exec tests-sw-output-mix2 ping -c 3 192.53.0.1" expect="bytes from"
+PING 192.53.0.1 (192.53.0.1) 56(84) bytes of data.
+64 bytes from 192.53.0.1: icmp_seq=1 ttl=64 time=2062 ms
+64 bytes from 192.53.0.1: icmp_seq=2 ttl=64 time=1027 ms
+64 bytes from 192.53.0.1: icmp_seq=3 ttl=64 time=3.38 ms
+
+--- 192.53.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2059ms
+[26-06-22 06:40:33][ASSERT#0013][OK] cost=2.121s
+[26-06-22 06:40:33][ASSERT#0014][match] at cases/switch_output_perf.sh:136 fn=test_connectivity_and_latency retry=20 cmd="docker exec tests-sw-output-mix3 ping -c 3 192.53.0.1" expect="bytes from"
+PING 192.53.0.1 (192.53.0.1) 56(84) bytes of data.
+64 bytes from 192.53.0.1: icmp_seq=1 ttl=64 time=0.935 ms
+64 bytes from 192.53.0.1: icmp_seq=2 ttl=64 time=1.03 ms
+64 bytes from 192.53.0.1: icmp_seq=3 ttl=64 time=1.42 ms
+
+--- 192.53.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2001ms
+[26-06-22 06:40:35][ASSERT#0014][OK] cost=2.073s
+[26-06-22 06:40:35][ASSERT#0015][match] at cases/switch_output_perf.sh:137 fn=test_connectivity_and_latency retry=30 cmd="docker exec tests-sw-output-mix2 ping -q -c 20 -i 0.05 -s 1200 192.53.0.1" expect="0% packet loss"
+PING 192.53.0.1 (192.53.0.1) 1200(1228) bytes of data.
+
+--- 192.53.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 961ms
+rtt min/avg/max/mdev = 0.453/1.182/1.703/0.269 ms
+[26-06-22 06:40:36][ASSERT#0015][OK] cost=1.032s
+[26-06-22 06:40:36][ASSERT#0016][match] at cases/switch_output_perf.sh:138 fn=test_connectivity_and_latency retry=5 cmd="docker exec tests-sw-output-mix2 ping -q -c 20 -i 0.05 -s 1200 192.53.0.1" expect="rtt min/avg/max"
+
+--- 192.53.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 960ms
+rtt min/avg/max/mdev = 0.502/1.133/1.871/0.307 ms
+[26-06-22 06:40:37][ASSERT#0016][OK] cost=1.032s
+[26-06-22 06:40:37][ASSERT#0017][match] at cases/switch_output_perf.sh:139 fn=test_connectivity_and_latency retry=30 cmd="docker exec tests-sw-output-mix3 ping -q -c 20 -i 0.05 -s 1200 192.53.0.1" expect="0% packet loss"
+PING 192.53.0.1 (192.53.0.1) 1200(1228) bytes of data.
+
+--- 192.53.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 963ms
+rtt min/avg/max/mdev = 0.454/1.018/1.284/0.247 ms
+[26-06-22 06:40:39][ASSERT#0017][OK] cost=1.031s
+[26-06-22 06:40:39][ASSERT#0018][match] at cases/switch_output_perf.sh:140 fn=test_connectivity_and_latency retry=5 cmd="docker exec tests-sw-output-mix3 ping -q -c 20 -i 0.05 -s 1200 192.53.0.1" expect="rtt min/avg/max"
+
+--- 192.53.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 962ms
+rtt min/avg/max/mdev = 0.519/1.166/1.578/0.225 ms
+[26-06-22 06:40:40][ASSERT#0018][OK] cost=1.039s
+[26-06-22 06:40:40][ASSERT#0019][cmd] at cases/switch_output_perf.sh:101 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 iperf3 -s -D -p 5201"
+[26-06-22 06:40:40][ASSERT#0019][OK] cost=0.060s
+[26-06-22 06:40:40][ASSERT#0020][match] at cases/switch_output_perf.sh:102 fn=test_bandwidth_iperf retry=20 cmd="docker exec tests-sw-output-mix2 iperf3 -u -c 192.53.0.1 -p 5201 -b 500M -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-5.00   sec   298 MBytes   500 Mbits/sec  0.000 ms  0/215787 (0%)  sender
+[  5]   0.00-5.04   sec   295 MBytes   492 Mbits/sec  0.025 ms  1802/215787 (0.84%)  receiver
+
+iperf Done.
+[26-06-22 06:40:45][ASSERT#0020][OK] cost=5.240s
+[26-06-22 06:40:45][ASSERT#0021][cmd] at cases/switch_output_perf.sh:103 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 pkill -f perf3"
+[26-06-22 06:40:45][ASSERT#0021][OK] cost=0.056s
+[26-06-22 06:40:45][ASSERT#0022][cmd] at cases/switch_output_perf.sh:101 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 iperf3 -s -D -p 5201"
+[26-06-22 06:40:45][ASSERT#0022][OK] cost=0.060s
+[26-06-22 06:40:45][ASSERT#0023][match] at cases/switch_output_perf.sh:102 fn=test_bandwidth_iperf retry=20 cmd="docker exec tests-sw-output-mix2 iperf3 -c 192.53.0.1 -p 5201 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec   180 MBytes   302 Mbits/sec  276             sender
+[  5]   0.00-5.07   sec   172 MBytes   284 Mbits/sec                  receiver
+
+iperf Done.
+[26-06-22 06:40:50][ASSERT#0023][OK] cost=5.293s
+[26-06-22 06:40:50][ASSERT#0024][cmd] at cases/switch_output_perf.sh:103 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 pkill -f perf3"
+[26-06-22 06:40:50][ASSERT#0024][OK] cost=0.061s
+[26-06-22 06:40:50][ASSERT#0025][cmd] at cases/switch_output_perf.sh:101 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 iperf3 -s -D -p 5202"
+[26-06-22 06:40:50][ASSERT#0025][OK] cost=0.055s
+[26-06-22 06:40:50][ASSERT#0026][match] at cases/switch_output_perf.sh:102 fn=test_bandwidth_iperf retry=20 cmd="docker exec tests-sw-output-mix3 iperf3 -u -c 192.53.0.1 -p 5202 -b 500M -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-5.00   sec   298 MBytes   500 Mbits/sec  0.000 ms  0/215783 (0%)  sender
+[  5]   0.00-5.04   sec   298 MBytes   496 Mbits/sec  0.023 ms  32/215783 (0.015%)  receiver
+
+iperf Done.
+[26-06-22 06:40:56][ASSERT#0026][OK] cost=5.231s
+[26-06-22 06:40:56][ASSERT#0027][cmd] at cases/switch_output_perf.sh:103 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 pkill -f perf3"
+[26-06-22 06:40:56][ASSERT#0027][OK] cost=0.061s
+[26-06-22 06:40:56][ASSERT#0028][cmd] at cases/switch_output_perf.sh:101 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 iperf3 -s -D -p 5202"
+[26-06-22 06:40:56][ASSERT#0028][OK] cost=0.060s
+[26-06-22 06:40:56][ASSERT#0029][match] at cases/switch_output_perf.sh:102 fn=test_bandwidth_iperf retry=20 cmd="docker exec tests-sw-output-mix3 iperf3 -c 192.53.0.1 -p 5202 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec   344 MBytes   577 Mbits/sec   49             sender
+[  5]   0.00-5.05   sec   336 MBytes   558 Mbits/sec                  receiver
+
+iperf Done.
+[26-06-22 06:41:01][ASSERT#0029][OK] cost=5.268s
+[26-06-22 06:41:01][ASSERT#0030][cmd] at cases/switch_output_perf.sh:103 fn=test_bandwidth_iperf cmd="docker exec tests-sw-output-mix1 pkill -f perf3"
+[26-06-22 06:41:01][ASSERT#0030][OK] cost=0.061s
+[26-06-22 06:41:01][ASSERT#0031][cmd] at cases/switch_output_perf.sh:151 fn=test_reload_persistence cmd="docker exec tests-sw-output-mix1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:544 ...
+  PID   544   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:41:02][ASSERT#0031][OK] cost=1.073s
+[26-06-22 06:41:02][ASSERT#0032][cmd] at cases/switch_output_perf.sh:152 fn=test_reload_persistence cmd="docker exec tests-sw-output-mix2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:575 ...
+  PID   575   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:41:03][ASSERT#0032][OK] cost=1.070s
+[26-06-22 06:41:03][ASSERT#0033][cmd] at cases/switch_output_perf.sh:153 fn=test_reload_persistence cmd="docker exec tests-sw-output-mix3 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:549 ...
+  PID   549   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:41:04][ASSERT#0033][OK] cost=1.065s
+[26-06-22 06:41:04][ASSERT#0034][cmd] at cases/switch_output_perf.sh:154 fn=test_reload_persistence cmd="docker exec tests-sw-output-mix2 ip neigh flush dev hi-example"
+[26-06-22 06:41:04][ASSERT#0034][OK] cost=0.060s
+[26-06-22 06:41:04][ASSERT#0035][cmd] at cases/switch_output_perf.sh:155 fn=test_reload_persistence cmd="docker exec tests-sw-output-mix3 ip neigh flush dev hi-example"
+[26-06-22 06:41:05][ASSERT#0035][OK] cost=0.059s
+[26-06-22 06:41:05][ASSERT#0036][match] at cases/switch_output_perf.sh:156 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-output-mix2 ping -c 3 192.53.0.1" expect="bytes from"
+PING 192.53.0.1 (192.53.0.1) 56(84) bytes of data.
+64 bytes from 192.53.0.1: icmp_seq=1 ttl=64 time=1.01 ms
+64 bytes from 192.53.0.1: icmp_seq=2 ttl=64 time=1.43 ms
+64 bytes from 192.53.0.1: icmp_seq=3 ttl=64 time=1.19 ms
+
+--- 192.53.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:41:15][ASSERT#0036][OK] cost=10.337s
+[26-06-22 06:41:15][ASSERT#0037][match] at cases/switch_output_perf.sh:157 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-output-mix3 ping -c 3 192.53.0.1" expect="bytes from"
+PING 192.53.0.1 (192.53.0.1) 56(84) bytes of data.
+64 bytes from 192.53.0.1: icmp_seq=1 ttl=64 time=0.794 ms
+64 bytes from 192.53.0.1: icmp_seq=2 ttl=64 time=1.11 ms
+64 bytes from 192.53.0.1: icmp_seq=3 ttl=64 time=0.926 ms
+
+--- 192.53.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2029ms
+[26-06-22 06:41:17][ASSERT#0037][OK] cost=2.091s
+[26-06-22 06:41:18] END switch_output_perf status=PASS cost=55.540s

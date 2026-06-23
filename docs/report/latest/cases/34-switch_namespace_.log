@@ -1,0 +1,159 @@
+[26-06-22 06:37:48] START switch_namespace
+scenario: cases/switch_namespace.sh
+header  : verify network namespace vrf binding and overlay reachability
+topology: sw1 192.63.0.1 [vrf-example] <-- UDP output -- sw2 192.63.0.2 [vrf-example] | both service L3 devices are enslaved to the same VRF name
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 192.63.0.1 [vrf-example]  <-- UDP output --  sw2 192.63.0.2 [vrf-example]
+topology: #              both service L3 devices are enslaved to the same VRF name
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - OpenLAN service network "example": 192.63.0.0/24
+topology: #   sw1=192.63.0.1, sw2=192.63.0.2.
+topology: # - Both service network L3 devices are enslaved to VRF "vrf-example".
+topology: # - Forwarding link:
+topology: #   sw2 -> sw1 over UDP output.
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw-namespace1-pause
+Started switch frr container: tests-sw-namespace1-frr
+Started switch ipsec container: tests-sw-namespace1-ipsec
+Started switch container: tests-sw-namespace1
+[26-06-22 06:37:49][ASSERT#0001][expect] at cases/switch_namespace.sh:67 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-namespace1" expect="Http.Start"
+2026/06/22 06:37:50 INFO|root|Wait: ...
+2026/06/22 06:37:50 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:37:50 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:37:50 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:37:50][ASSERT#0001][OK] cost=1.022s
+[26-06-22 06:37:50][ASSERT#0002][cmd] at cases/switch_namespace.sh:69 fn=setup_sw1 cmd="docker exec tests-sw-namespace1 openlan network --name example add --address 192.63.0.1/24 --namespace vrf-example"
+[26-06-22 06:37:51][ASSERT#0002][OK] cost=0.270s
+[26-06-22 06:37:51][ASSERT#0003][match] at cases/switch_namespace.sh:70 fn=setup_sw1 retry=1 cmd="docker exec tests-sw-namespace1 openlan network --name example" expect="namespace: vrf-example"
+    address: 192.63.0.1/24
+    name: br-example
+  name: example
+  namespace: vrf-example
+  snat: enable
+  subnet:
+    netmask: 255.255.255.0
+[26-06-22 06:37:51][ASSERT#0003][OK] cost=0.072s
+[26-06-22 06:37:51][ASSERT#0004][cmd] at cases/switch_namespace.sh:71 fn=setup_sw1 cmd="docker exec tests-sw-namespace1 ip link show vrf-example"
+9: vrf-example: <NOARP,MASTER,UP,LOWER_UP> mtu 65575 qdisc noqueue state UP mode DEFAULT group default 
+    link/ether b6:7b:01:1c:69:7a brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:37:51][ASSERT#0004][OK] cost=0.061s
+[26-06-22 06:37:51][ASSERT#0005][match] at cases/switch_namespace.sh:72 fn=setup_sw1 retry=5 cmd="docker exec tests-sw-namespace1 ip link show hi-example" expect="master vrf-example"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-example state UP mode DEFAULT group default 
+    link/ether 7e:3f:37:ac:cf:c8 brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:37:51][ASSERT#0005][OK] cost=0.062s
+[26-06-22 06:37:51][ASSERT#0006][cmd] at cases/switch_namespace.sh:73 fn=setup_sw1 cmd="docker exec tests-sw-namespace1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:37:51][ASSERT#0006][OK] cost=0.065s
+Started switch pause container: tests-sw-namespace2-pause
+Started switch frr container: tests-sw-namespace2-frr
+Started switch ipsec container: tests-sw-namespace2-ipsec
+Started switch container: tests-sw-namespace2
+[26-06-22 06:37:52][ASSERT#0007][expect] at cases/switch_namespace.sh:82 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-namespace2" expect="Http.Start"
+2026/06/22 06:37:52 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:37:52 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:37:52 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:37:52 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:37:53][ASSERT#0007][OK] cost=1.032s
+[26-06-22 06:37:53][ASSERT#0008][cmd] at cases/switch_namespace.sh:84 fn=setup_sw2 cmd="docker exec tests-sw-namespace2 openlan network --name example add --address 192.63.0.2/24 --namespace vrf-example"
+[26-06-22 06:37:53][ASSERT#0008][OK] cost=0.271s
+[26-06-22 06:37:53][ASSERT#0009][match] at cases/switch_namespace.sh:85 fn=setup_sw2 retry=1 cmd="docker exec tests-sw-namespace2 openlan network --name example" expect="namespace: vrf-example"
+    address: 192.63.0.2/24
+    name: br-example
+  name: example
+  namespace: vrf-example
+  snat: enable
+  subnet:
+    netmask: 255.255.255.0
+[26-06-22 06:37:53][ASSERT#0009][OK] cost=0.071s
+[26-06-22 06:37:53][ASSERT#0010][cmd] at cases/switch_namespace.sh:86 fn=setup_sw2 cmd="docker exec tests-sw-namespace2 ip link show vrf-example"
+9: vrf-example: <NOARP,MASTER,UP,LOWER_UP> mtu 65575 qdisc noqueue state UP mode DEFAULT group default 
+    link/ether d2:e9:e0:31:f0:1f brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:37:53][ASSERT#0010][OK] cost=0.062s
+[26-06-22 06:37:53][ASSERT#0011][match] at cases/switch_namespace.sh:87 fn=setup_sw2 retry=5 cmd="docker exec tests-sw-namespace2 ip link show hi-example" expect="master vrf-example"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-example state UP mode DEFAULT group default 
+    link/ether de:73:5a:1a:e9:de brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:37:53][ASSERT#0011][OK] cost=0.061s
+[26-06-22 06:37:53][ASSERT#0012][cmd] at cases/switch_namespace.sh:88 fn=setup_sw2 cmd="docker exec tests-sw-namespace2 openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:37:53][ASSERT#0012][OK] cost=0.068s
+[26-06-22 06:37:53][ASSERT#0013][match] at cases/switch_namespace.sh:92 fn=test_vrf_ping retry=15 cmd="docker exec tests-sw-namespace2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: udp
+  remote: 100.100.0.241
+  secret: t1:123456
+  state: authenticated
+
+[26-06-22 06:37:56][ASSERT#0013][OK] cost=2.201s
+[26-06-22 06:37:56][ASSERT#0014][match] at cases/switch_namespace.sh:93 fn=test_vrf_ping retry=20 cmd="docker exec tests-sw-namespace2 ip vrf exec vrf-example ping -c 3 192.63.0.1" expect="bytes from"
+PING 192.63.0.1 (192.63.0.1) 56(84) bytes of data.
+64 bytes from 192.63.0.1: icmp_seq=1 ttl=64 time=2041 ms
+64 bytes from 192.63.0.1: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.63.0.1: icmp_seq=3 ttl=64 time=2.26 ms
+
+--- 192.63.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2039ms
+[26-06-22 06:37:58][ASSERT#0014][OK] cost=2.104s
+[26-06-22 06:37:58][ASSERT#0015][cmd] at cases/switch_namespace.sh:97 fn=test_reload_persistence cmd="docker exec tests-sw-namespace1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:475 ...
+  PID   475   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:37:59][ASSERT#0015][OK] cost=1.060s
+[26-06-22 06:37:59][ASSERT#0016][cmd] at cases/switch_namespace.sh:98 fn=test_reload_persistence cmd="docker exec tests-sw-namespace2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:521 ...
+  PID   521   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:38:00][ASSERT#0016][OK] cost=1.069s
+[26-06-22 06:38:00][ASSERT#0017][match] at cases/switch_namespace.sh:100 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-namespace1 openlan network --name example" expect="namespace: vrf-example"
+    address: 192.63.0.1/24
+    name: br-example
+  name: example
+  namespace: vrf-example
+  snat: enable
+  subnet:
+    netmask: 255.255.255.0
+[26-06-22 06:38:00][ASSERT#0017][OK] cost=0.068s
+[26-06-22 06:38:00][ASSERT#0018][match] at cases/switch_namespace.sh:101 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-namespace2 openlan network --name example" expect="namespace: vrf-example"
+    address: 192.63.0.2/24
+    name: br-example
+  name: example
+  namespace: vrf-example
+  outputs:
+  - crypt: aes-128:ea64d5b0c96c
+    link: udp:100.100.0.241:t1
+[26-06-22 06:38:00][ASSERT#0018][OK] cost=0.064s
+[26-06-22 06:38:00][ASSERT#0019][match] at cases/switch_namespace.sh:102 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-namespace1 ip link show hi-example" expect="master vrf-example"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-example state UP mode DEFAULT group default 
+    link/ether 7e:3f:37:ac:cf:c8 brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:38:00][ASSERT#0019][OK] cost=0.058s
+[26-06-22 06:38:00][ASSERT#0020][match] at cases/switch_namespace.sh:103 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-namespace2 ip link show hi-example" expect="master vrf-example"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master vrf-example state UP mode DEFAULT group default 
+    link/ether de:73:5a:1a:e9:de brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:38:00][ASSERT#0020][OK] cost=0.067s
+[26-06-22 06:38:00][ASSERT#0021][match] at cases/switch_namespace.sh:92 fn=test_vrf_ping retry=15 cmd="docker exec tests-sw-namespace2 openlan network --name example output ls" expect="state: authenticated"
+  remote: 100.100.0.241
+  rxBytes: 430
+  secret: t1:123456
+  state: authenticated
+  txBytes: 752
+
+[26-06-22 06:38:05][ASSERT#0021][OK] cost=5.406s
+[26-06-22 06:38:05][ASSERT#0022][match] at cases/switch_namespace.sh:93 fn=test_vrf_ping retry=20 cmd="docker exec tests-sw-namespace2 ip vrf exec vrf-example ping -c 3 192.63.0.1" expect="bytes from"
+PING 192.63.0.1 (192.63.0.1) 56(84) bytes of data.
+64 bytes from 192.63.0.1: icmp_seq=1 ttl=64 time=2070 ms
+64 bytes from 192.63.0.1: icmp_seq=2 ttl=64 time=1028 ms
+64 bytes from 192.63.0.1: icmp_seq=3 ttl=64 time=3.56 ms
+
+--- 192.63.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2067ms
+[26-06-22 06:38:08][ASSERT#0022][OK] cost=2.140s
+[26-06-22 06:38:08] END switch_namespace status=PASS cost=19.689s

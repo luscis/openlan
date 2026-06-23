@@ -1,0 +1,257 @@
+[26-06-22 06:10:56] START access_snat_scope_matrix
+scenario: cases/access_snat_scope_matrix.sh
+header  : verify snat scope matrix for openvpn, network a access, and network b access
+topology: vpn/access on sw1 network a,b | sw1: a=192.53.0.1 b=192.54.0.1 int=192.55.0.1 | int output uplink
+topology: # Topology:
+topology: # - Diagram:
+topology: #       vpn/access on sw1 network a,b
+topology: #                 |
+topology: #       sw1: a=192.53.0.1 b=192.54.0.1 int=192.55.0.1
+topology: #                 | int output uplink
+topology: #       sw2: int=192.55.0.2, target VIP 10.253.0.12
+topology: #                 SNAT scopes: disabled, openvpn, local, enable
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - sw1 virtual networks:
+topology: #   network int: 192.55.0.1/24 (uplink to sw2)
+topology: #   network a: 192.53.0.1/24 (with OpenVPN subnet 10.95.0.0/24)
+topology: #   network b: 192.54.0.1/24
+topology: # - sw2 virtual network:
+topology: #   network int: 192.55.0.2/24, loopback subnet target 10.253.0.12/32.
+topology: # Validation:
+topology: #   default: all networks snat disabled, including int.
+topology: #   scope openvpn: a.openvpn yes, a.access no, b.openvpn no, b.access no.
+topology: #   scope local:   a.openvpn yes, a.access yes, b.openvpn no, b.access no.
+topology: #   scope enable:  a.openvpn yes, a.access yes, b.openvpn yes, b.access yes.
+
+Started switch pause container: tests-sw-snat-scope.sw1-pause
+Started switch frr container: tests-sw-snat-scope.sw1-frr
+Started switch ipsec container: tests-sw-snat-scope.sw1-ipsec
+Started switch container: tests-sw-snat-scope.sw1
+[26-06-22 06:10:56][ASSERT#0001][expect] at cases/access_snat_scope_matrix.sh:69 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-snat-scope.sw1" expect="Http.Start"
+2026/06/22 06:10:57 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:10:57 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:10:57 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:10:57 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:10:57][ASSERT#0001][OK] cost=1.034s
+[26-06-22 06:10:57][ASSERT#0002][cmd] at cases/access_snat_scope_matrix.sh:71 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan crypt update --algorithm xor --secret ea64d5b0c96c"
+[26-06-22 06:10:58][ASSERT#0002][OK] cost=0.075s
+[26-06-22 06:10:58][ASSERT#0003][cmd] at cases/access_snat_scope_matrix.sh:72 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name int add --address 192.55.0.1/24"
+[26-06-22 06:10:58][ASSERT#0003][OK] cost=0.268s
+[26-06-22 06:10:58][ASSERT#0004][cmd] at cases/access_snat_scope_matrix.sh:73 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a add --address 192.53.0.1/24"
+[26-06-22 06:10:58][ASSERT#0004][OK] cost=0.258s
+[26-06-22 06:10:58][ASSERT#0005][cmd] at cases/access_snat_scope_matrix.sh:74 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name b add --address 192.54.0.1/24"
+[26-06-22 06:10:58][ASSERT#0005][OK] cost=0.246s
+[26-06-22 06:10:58][ASSERT#0006][cmd] at cases/access_snat_scope_matrix.sh:75 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name int snat disable"
+[26-06-22 06:10:58][ASSERT#0006][OK] cost=0.072s
+[26-06-22 06:10:58][ASSERT#0007][cmd] at cases/access_snat_scope_matrix.sh:76 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat disable"
+[26-06-22 06:10:59][ASSERT#0007][OK] cost=0.085s
+[26-06-22 06:10:59][ASSERT#0008][cmd] at cases/access_snat_scope_matrix.sh:77 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name b snat disable"
+[26-06-22 06:10:59][ASSERT#0008][OK] cost=0.086s
+[26-06-22 06:10:59][ASSERT#0009][cmd] at cases/access_snat_scope_matrix.sh:79 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan user add --name uplink@int --password pw-uplink-27252-23911"
+# total 1
+username                 password                 role   lease          
+uplink@int               pw-uplink-27252-23911    guest  2027-06-22T06  
+[26-06-22 06:10:59][ASSERT#0009][OK] cost=0.069s
+[26-06-22 06:10:59][ASSERT#0010][cmd] at cases/access_snat_scope_matrix.sh:80 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan user add --name vpn1@a --password pw-vpn1-23156-19156"
+# total 1
+username                 password                 role   lease          
+vpn1@a                   pw-vpn1-23156-19156      guest  2027-06-22T06  
+[26-06-22 06:10:59][ASSERT#0010][OK] cost=0.059s
+[26-06-22 06:10:59][ASSERT#0011][cmd] at cases/access_snat_scope_matrix.sh:81 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan user add --name vpn2@b --password pw-vpn2-29776-20542"
+# total 1
+username                 password                 role   lease          
+vpn2@b                   pw-vpn2-29776-20542      guest  2027-06-22T06  
+[26-06-22 06:10:59][ASSERT#0011][OK] cost=0.064s
+[26-06-22 06:10:59][ASSERT#0012][cmd] at cases/access_snat_scope_matrix.sh:82 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan user add --name ua@a --password pw-ua-32320-8093"
+# total 1
+username                 password                 role   lease          
+ua@a                     pw-ua-32320-8093         guest  2027-06-22T06  
+[26-06-22 06:10:59][ASSERT#0012][OK] cost=0.062s
+[26-06-22 06:10:59][ASSERT#0013][cmd] at cases/access_snat_scope_matrix.sh:83 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan user add --name ub@b --password pw-ub-25162-30694"
+# total 1
+username                 password                 role   lease          
+ub@b                     pw-ub-25162-30694        guest  2027-06-22T06  
+[26-06-22 06:10:59][ASSERT#0013][OK] cost=0.060s
+[26-06-22 06:10:59][ASSERT#0014][cmd] at cases/access_snat_scope_matrix.sh:85 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a route add --prefix 10.253.0.12/32 --nexthop 192.55.0.2"
+[26-06-22 06:10:59][ASSERT#0014][OK] cost=0.077s
+[26-06-22 06:10:59][ASSERT#0015][cmd] at cases/access_snat_scope_matrix.sh:86 fn=setup_sw1 cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name b route add --prefix 10.253.0.12/32 --nexthop 192.55.0.2"
+[26-06-22 06:10:59][ASSERT#0015][OK] cost=0.070s
+Started switch pause container: tests-sw-snat-scope.sw2-pause
+Started switch frr container: tests-sw-snat-scope.sw2-frr
+Started switch ipsec container: tests-sw-snat-scope.sw2-ipsec
+Started switch container: tests-sw-snat-scope.sw2
+[26-06-22 06:11:00][ASSERT#0016][expect] at cases/access_snat_scope_matrix.sh:95 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-snat-scope.sw2" expect="Http.Start"
+2026/06/22 06:11:01 INFO|root|Wait: ...
+2026/06/22 06:11:01 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:11:01 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:11:01 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:11:01][ASSERT#0016][OK] cost=1.030s
+[26-06-22 06:11:01][ASSERT#0017][cmd] at cases/access_snat_scope_matrix.sh:97 fn=setup_sw2 cmd="docker exec tests-sw-snat-scope.sw2 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96c"
+[26-06-22 06:11:01][ASSERT#0017][OK] cost=0.064s
+[26-06-22 06:11:01][ASSERT#0018][cmd] at cases/access_snat_scope_matrix.sh:98 fn=setup_sw2 cmd="docker exec tests-sw-snat-scope.sw2 openlan network --name int add --address 192.55.0.2/24"
+[26-06-22 06:11:01][ASSERT#0018][OK] cost=0.246s
+[26-06-22 06:11:01][ASSERT#0019][cmd] at cases/access_snat_scope_matrix.sh:99 fn=setup_sw2 cmd="docker exec tests-sw-snat-scope.sw2 openlan network --name int snat disable"
+[26-06-22 06:11:01][ASSERT#0019][OK] cost=0.077s
+[26-06-22 06:11:01][ASSERT#0020][cmd] at cases/access_snat_scope_matrix.sh:100 fn=setup_sw2 cmd="docker exec tests-sw-snat-scope.sw2 openlan router address add --device lo --address 10.253.0.12/32"
+[26-06-22 06:11:01][ASSERT#0020][OK] cost=0.060s
+[26-06-22 06:11:01][ASSERT#0021][cmd] at cases/access_snat_scope_matrix.sh:101 fn=setup_sw2 cmd="docker exec tests-sw-snat-scope.sw2 openlan network --name int output add --remote 100.100.0.241 --protocol udp --secret uplink@int:pw-uplink-27252-23911 --crypt xor:ea64d5b0c96c"
+[26-06-22 06:11:01][ASSERT#0021][OK] cost=0.073s
+Started access container: tests-sw-snat-scope.aca
+[26-06-22 06:11:02][ASSERT#0022][expect] at cases/access_snat_scope_matrix.sh:120 fn=setup_access_a retry=30 cmd="docker logs -f tests-sw-snat-scope.aca" expect="Worker.OnSuccess"
+2026/06/22 06:11:02 INFO|root|SocketClientImpl.update: 100.100.0.2:56976 100.100.0.241:10002
+2026/06/22 06:11:02 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:11:02 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:11:02 INFO|100.100.0.241:10002|a|Worker.OnSuccess
+2026/06/22 06:11:02 INFO|100.100.0.241:10002|a|Access.AddAddr: 192.53.0.11/24 via 
+2026/06/22 06:11:02 WARN|100.100.0.241:10002|a|Access.AddRoute: 10.253.0.12/32 missing gateway
+2026/06/22 06:11:02 INFO|tcp:100.100.0.241:10002|a|SocketWorker.onLogin: success
+[26-06-22 06:11:03][ASSERT#0022][OK] cost=1.032s
+Started access container: tests-sw-snat-scope.acb
+[26-06-22 06:11:03][ASSERT#0023][expect] at cases/access_snat_scope_matrix.sh:139 fn=setup_access_b retry=30 cmd="docker logs -f tests-sw-snat-scope.acb" expect="Worker.OnSuccess"
+2026/06/22 06:11:03 INFO|root|SocketClientImpl.update: 100.100.0.3:33544 100.100.0.241:10002
+2026/06/22 06:11:03 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:11:03 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:11:03 INFO|100.100.0.241:10002|b|Worker.OnSuccess
+2026/06/22 06:11:03 INFO|100.100.0.241:10002|b|Access.AddAddr: 192.54.0.11/24 via 
+2026/06/22 06:11:03 WARN|100.100.0.241:10002|b|Access.AddRoute: 10.253.0.12/32 missing gateway
+2026/06/22 06:11:03 INFO|udp:100.100.0.241:10002|b|SocketWorker.onLogin: success
+[26-06-22 06:11:04][ASSERT#0023][OK] cost=1.032s
+[26-06-22 06:11:04][ASSERT#0024][cmd] at cases/access_snat_scope_matrix.sh:145 fn=setup_openvpn_clients cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a openvpn add --listen :1194 --protocol tcp --subnet 10.95.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:11:04][ASSERT#0024][OK] cost=0.085s
+[26-06-22 06:11:04][ASSERT#0025][cmd] at cases/access_snat_scope_matrix.sh:146 fn=setup_openvpn_clients cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a client add --user vpn1 --address 10.95.0.10"
+[26-06-22 06:11:04][ASSERT#0025][OK] cost=0.056s
+[26-06-22 06:11:04][ASSERT#0026][cmd] at cases/access_snat_scope_matrix.sh:147 fn=setup_openvpn_clients cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name b openvpn add --listen :1195 --protocol tcp --subnet 10.94.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:11:04][ASSERT#0026][OK] cost=0.087s
+[26-06-22 06:11:04][ASSERT#0027][cmd] at cases/access_snat_scope_matrix.sh:148 fn=setup_openvpn_clients cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name b client add --user vpn2 --address 10.94.0.10"
+[26-06-22 06:11:04][ASSERT#0027][OK] cost=0.063s
+Started OpenVPN client container: tests-sw-snat-scope.vpn1
+[26-06-22 06:11:05][ASSERT#0028][expect] at cases/access_snat_scope_matrix.sh:157 fn=setup_openvpn_clients retry=40 cmd="docker logs -f tests-sw-snat-scope.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:11:05 net_route_v4_add: 10.95.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:05 net_route_v4_add: 192.53.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:05 net_route_v4_add: 10.253.0.12/32 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:05 Initialization Sequence Completed
+[26-06-22 06:11:06][ASSERT#0028][OK] cost=1.034s
+Started OpenVPN client container: tests-sw-snat-scope.vpn2
+[26-06-22 06:11:06][ASSERT#0029][expect] at cases/access_snat_scope_matrix.sh:166 fn=setup_openvpn_clients retry=40 cmd="docker logs -f tests-sw-snat-scope.vpn2" expect="Initialization Sequence Completed"
+2026-06-22 06:11:06 net_route_v4_add: 10.94.0.0/24 via 10.94.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:06 net_route_v4_add: 192.54.0.0/24 via 10.94.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:06 net_route_v4_add: 10.253.0.12/32 via 10.94.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:11:06 Initialization Sequence Completed
+[26-06-22 06:11:07][ASSERT#0029][OK] cost=1.036s
+[26-06-22 06:11:07][ASSERT#0030][cmd] at cases/access_snat_scope_matrix.sh:182 fn=test_scope_openvpn_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat disable"
+[26-06-22 06:11:07][ASSERT#0030][OK] cost=0.059s
+[26-06-22 06:11:07][ASSERT#0031][cmd] at cases/access_snat_scope_matrix.sh:183 fn=test_scope_openvpn_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat enable --scope openvpn"
+[26-06-22 06:11:07][ASSERT#0031][OK] cost=0.072s
+[26-06-22 06:11:07][ASSERT#0032][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.vpn1 ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=1.10 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.56 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=2.93 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+[26-06-22 06:11:09][ASSERT#0032][OK] cost=2.095s
+[26-06-22 06:11:09][ASSERT#0033][unmatch] at cases/access_snat_scope_matrix.sh:178 fn=expect_ping_fail retry=3 cmd="docker exec tests-sw-snat-scope.aca ping -c 3 10.253.0.12" unexpected="bytes from"
+Last output:
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2061ms
+
+[26-06-22 06:11:49][ASSERT#0033][OK] cost=39.384s
+[26-06-22 06:11:49][ASSERT#0034][unmatch] at cases/access_snat_scope_matrix.sh:178 fn=expect_ping_fail retry=3 cmd="docker exec tests-sw-snat-scope.vpn2 ping -c 3 10.253.0.12" unexpected="bytes from"
+Last output:
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2038ms
+
+[26-06-22 06:12:28][ASSERT#0034][OK] cost=39.417s
+[26-06-22 06:12:28][ASSERT#0035][unmatch] at cases/access_snat_scope_matrix.sh:178 fn=expect_ping_fail retry=3 cmd="docker exec tests-sw-snat-scope.acb ping -c 3 10.253.0.12" unexpected="bytes from"
+Last output:
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2059ms
+
+[26-06-22 06:13:07][ASSERT#0035][OK] cost=39.345s
+[26-06-22 06:13:07][ASSERT#0036][cmd] at cases/access_snat_scope_matrix.sh:191 fn=test_scope_local_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat disable"
+[26-06-22 06:13:07][ASSERT#0036][OK] cost=0.086s
+[26-06-22 06:13:07][ASSERT#0037][cmd] at cases/access_snat_scope_matrix.sh:192 fn=test_scope_local_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat enable --scope local"
+[26-06-22 06:13:08][ASSERT#0037][OK] cost=0.080s
+[26-06-22 06:13:08][ASSERT#0038][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.vpn1 ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=0.650 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.66 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=2.67 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2005ms
+[26-06-22 06:13:10][ASSERT#0038][OK] cost=2.103s
+[26-06-22 06:13:10][ASSERT#0039][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.aca ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=0.819 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.05 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=2.74 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2046ms
+[26-06-22 06:13:12][ASSERT#0039][OK] cost=2.107s
+[26-06-22 06:13:12][ASSERT#0040][unmatch] at cases/access_snat_scope_matrix.sh:178 fn=expect_ping_fail retry=3 cmd="docker exec tests-sw-snat-scope.vpn2 ping -c 3 10.253.0.12" unexpected="bytes from"
+Last output:
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2033ms
+
+[26-06-22 06:13:51][ASSERT#0040][OK] cost=39.369s
+[26-06-22 06:13:51][ASSERT#0041][unmatch] at cases/access_snat_scope_matrix.sh:178 fn=expect_ping_fail retry=3 cmd="docker exec tests-sw-snat-scope.acb ping -c 3 10.253.0.12" unexpected="bytes from"
+Last output:
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2057ms
+
+[26-06-22 06:14:31][ASSERT#0041][OK] cost=39.354s
+[26-06-22 06:14:31][ASSERT#0042][cmd] at cases/access_snat_scope_matrix.sh:200 fn=test_scope_enable_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat disable"
+[26-06-22 06:14:31][ASSERT#0042][OK] cost=0.089s
+[26-06-22 06:14:31][ASSERT#0043][cmd] at cases/access_snat_scope_matrix.sh:201 fn=test_scope_enable_on_a cmd="docker exec tests-sw-snat-scope.sw1 openlan network --name a snat enable --scope enable"
+[26-06-22 06:14:31][ASSERT#0043][OK] cost=0.072s
+[26-06-22 06:14:31][ASSERT#0044][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.vpn1 ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=0.637 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.25 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=1.07 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2008ms
+[26-06-22 06:14:33][ASSERT#0044][OK] cost=2.098s
+[26-06-22 06:14:33][ASSERT#0045][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.aca ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=0.879 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.04 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=2.05 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2052ms
+[26-06-22 06:14:35][ASSERT#0045][OK] cost=2.112s
+[26-06-22 06:14:35][ASSERT#0046][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.vpn2 ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=1.03 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.87 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=2.57 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+[26-06-22 06:14:37][ASSERT#0046][OK] cost=2.099s
+[26-06-22 06:14:37][ASSERT#0047][match] at cases/access_snat_scope_matrix.sh:172 fn=expect_ping_success retry=5 cmd="docker exec tests-sw-snat-scope.acb ping -c 3 10.253.0.12" expect="bytes from"
+PING 10.253.0.12 (10.253.0.12) 56(84) bytes of data.
+64 bytes from 10.253.0.12: icmp_seq=1 ttl=63 time=0.861 ms
+64 bytes from 10.253.0.12: icmp_seq=2 ttl=63 time=2.49 ms
+64 bytes from 10.253.0.12: icmp_seq=3 ttl=63 time=1.75 ms
+
+--- 10.253.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2044ms
+[26-06-22 06:14:39][ASSERT#0047][OK] cost=2.112s
+[26-06-22 06:14:40] END access_snat_scope_matrix status=PASS cost=224.468s

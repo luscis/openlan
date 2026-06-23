@@ -1,0 +1,244 @@
+[26-06-22 06:25:26] START switch_dhcp
+scenario: cases/switch_dhcp.sh
+header  : verify dhcp enable/disable with pool/gateway/dns, lease allocation, and reload persistence
+topology: sw1 DHCP server 192.67.0.1 | physical output | tcp access tunnel | veth-dhcp <-> ns client ac1 tap bridge
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1 DHCP server 192.67.0.1
+topology: #              ^                         ^
+topology: #              | physical output          | tcp access tunnel
+topology: #       veth-dhcp <-> ns client      ac1 tap bridge
+topology: #       dhclient lease path          dhclient lease path
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241.
+topology: # - OpenLAN service network "example": 192.67.0.0/24
+topology: #   sw1=192.67.0.1, DHCP range 192.67.0.100-192.67.0.120.
+topology: # - In-container DHCP client namespace:
+topology: #   veth-dhcp is added as a physical output, while dnsmasq listens on hi-example.
+topology: # - Access point DHCP client:
+topology: #   tests-sw-dhcp.ac1 joins the mgmt network, bridges its tunnel to br-access-dhcp,
+topology: #   then uses dhclient on that bridge after access login succeeds.
+topology: # Validation:
+topology: #   DHCP config starts dnsmasq on the OpenLAN bridge, both a namespace client and an
+topology: #   access point bridge receive leases, and reload preserves DHCP service/configuration.
+
+Started switch pause container: tests-sw-dhcp-pause
+Started switch frr container: tests-sw-dhcp-frr
+Started switch ipsec container: tests-sw-dhcp-ipsec
+Started switch container: tests-sw-dhcp
+[26-06-22 06:25:27][ASSERT#0001][expect] at cases/switch_dhcp.sh:78 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-dhcp" expect="Http.Start"
+2026/06/22 06:25:28 INFO|root|Wait: ...
+2026/06/22 06:25:28 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:25:28 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:25:28 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:25:28][ASSERT#0001][OK] cost=1.031s
+[26-06-22 06:25:28][ASSERT#0002][cmd] at cases/switch_dhcp.sh:80 fn=setup_sw1 cmd="docker exec tests-sw-dhcp sh -c cat > /tmp/example-dhcp.yaml <<EOF
+name: example
+bridge:
+  address: 192.67.0.1/24
+EOF"
+[26-06-22 06:25:28][ASSERT#0002][OK] cost=0.053s
+[26-06-22 06:25:28][ASSERT#0003][cmd] at cases/switch_dhcp.sh:85 fn=setup_sw1 cmd="docker exec tests-sw-dhcp openlan network add --file /tmp/example-dhcp.yaml"
+[26-06-22 06:25:29][ASSERT#0003][OK] cost=0.252s
+[26-06-22 06:25:29][ASSERT#0004][cmd] at cases/switch_dhcp.sh:86 fn=setup_sw1 cmd="docker exec tests-sw-dhcp openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:25:29][ASSERT#0004][OK] cost=0.064s
+[26-06-22 06:25:29][ASSERT#0005][cmd] at cases/switch_dhcp.sh:87 fn=setup_sw1 cmd="docker exec tests-sw-dhcp openlan network --name example dhcp disable"
+[26-06-22 06:25:29][ASSERT#0005][OK] cost=0.062s
+[26-06-22 06:25:29][ASSERT#0006][unmatch] at cases/switch_dhcp.sh:88 fn=setup_sw1 retry=10 cmd="docker exec tests-sw-dhcp test -f /var/openlan/dhcp/example.conf && cat /var/openlan/dhcp/example.conf" unexpected="dhcp-range="
+Last output:
+[26-06-22 06:25:39][ASSERT#0006][OK] cost=10.597s
+[26-06-22 06:25:39][ASSERT#0007][match] at cases/switch_dhcp.sh:89 fn=setup_sw1 retry=10 cmd="docker exec tests-sw-dhcp openlan network --name example" expect="dhcp: disable"
+  bridge:
+    address: 192.67.0.1/24
+    name: br-example
+  dhcp: disable
+  name: example
+  snat: enable
+  subnet:
+[26-06-22 06:25:39][ASSERT#0007][OK] cost=0.074s
+[26-06-22 06:25:39][ASSERT#0008][cmd] at cases/switch_dhcp.sh:90 fn=setup_sw1 cmd="docker exec tests-sw-dhcp openlan network --name example dhcp enable --start 192.67.0.100 --end 192.67.0.120 --gateway 192.67.0.1 --dns 114.114.114.114,8.8.8.8"
+[26-06-22 06:25:39][ASSERT#0008][OK] cost=0.076s
+[26-06-22 06:25:40][ASSERT#0009][match] at cases/switch_dhcp.sh:91 fn=setup_sw1 retry=10 cmd="docker exec tests-sw-dhcp openlan network --name example" expect="dhcp: enable"
+  bridge:
+    address: 192.67.0.1/24
+    name: br-example
+  dhcp: enable
+  dhcpConfig:
+    dns:
+    - 114.114.114.114
+[26-06-22 06:25:40][ASSERT#0009][OK] cost=0.073s
+[26-06-22 06:25:40][ASSERT#0010][match] at cases/switch_dhcp.sh:95 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="interface=hi-example"
+strict-order
+except-interface=lo
+bind-interfaces
+interface=hi-example
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+[26-06-22 06:25:40][ASSERT#0010][OK] cost=0.059s
+[26-06-22 06:25:40][ASSERT#0011][match] at cases/switch_dhcp.sh:96 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="dhcp-range=192.67.0.100,192.67.0.120,12h"
+except-interface=lo
+bind-interfaces
+interface=hi-example
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+dhcp-option=6,114.114.114.114,8.8.8.8
+[26-06-22 06:25:40][ASSERT#0011][OK] cost=0.056s
+[26-06-22 06:25:40][ASSERT#0012][match] at cases/switch_dhcp.sh:97 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="dhcp-leasefile=/var/openlan/dhcp/example.leases"
+bind-interfaces
+interface=hi-example
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+dhcp-option=6,114.114.114.114,8.8.8.8
+
+[26-06-22 06:25:40][ASSERT#0012][OK] cost=0.061s
+[26-06-22 06:25:40][ASSERT#0013][match] at cases/switch_dhcp.sh:98 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="dhcp-option=3,192.67.0.1"
+interface=hi-example
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+dhcp-option=6,114.114.114.114,8.8.8.8
+
+[26-06-22 06:25:40][ASSERT#0013][OK] cost=0.064s
+[26-06-22 06:25:40][ASSERT#0014][match] at cases/switch_dhcp.sh:99 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="dhcp-option=6,114.114.114.114,8.8.8.8"
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+dhcp-option=6,114.114.114.114,8.8.8.8
+
+[26-06-22 06:25:40][ASSERT#0014][OK] cost=0.054s
+[26-06-22 06:25:40][ASSERT#0015][match] at cases/switch_dhcp.sh:100 fn=test_dhcp_service retry=20 cmd="docker exec tests-sw-dhcp pgrep -f 'dnsmasq.*example.conf'" expect="[0-9]"
+537
+[26-06-22 06:25:40][ASSERT#0015][OK] cost=0.066s
+[26-06-22 06:25:40][ASSERT#0016][cmd] at cases/switch_dhcp.sh:104 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp ip netns add dhcp-client"
+[26-06-22 06:25:40][ASSERT#0016][OK] cost=0.059s
+[26-06-22 06:25:40][ASSERT#0017][cmd] at cases/switch_dhcp.sh:105 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp ip link add veth-dhcp type veth peer name veth-client"
+[26-06-22 06:25:40][ASSERT#0017][OK] cost=0.062s
+[26-06-22 06:25:40][ASSERT#0018][cmd] at cases/switch_dhcp.sh:106 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp openlan network --name example output add --remote veth-dhcp --protocol "
+[26-06-22 06:25:40][ASSERT#0018][OK] cost=0.061s
+[26-06-22 06:25:40][ASSERT#0019][match] at cases/switch_dhcp.sh:107 fn=setup_dhcp_client_ns retry=10 cmd="docker exec tests-sw-dhcp openlan network --name example output ls" expect="device: veth-dhcp"
+- aliveTime: 0
+  device: veth-dhcp
+  network: example
+  protocol: ""
+  remote: veth-dhcp
+[26-06-22 06:25:40][ASSERT#0019][OK] cost=0.065s
+[26-06-22 06:25:40][ASSERT#0020][match] at cases/switch_dhcp.sh:108 fn=setup_dhcp_client_ns retry=10 cmd="docker exec tests-sw-dhcp ip link show veth-dhcp" expect="master br-example"
+10: veth-dhcp@veth-client: <NO-CARRIER,BROADCAST,MULTICAST,UP,M-DOWN> mtu 1500 qdisc noqueue master br-example state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether da:33:dd:40:cc:96 brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:25:40][ASSERT#0020][OK] cost=0.057s
+[26-06-22 06:25:40][ASSERT#0021][cmd] at cases/switch_dhcp.sh:109 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp ip link set veth-client netns dhcp-client"
+[26-06-22 06:25:40][ASSERT#0021][OK] cost=0.063s
+[26-06-22 06:25:40][ASSERT#0022][cmd] at cases/switch_dhcp.sh:110 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp ip netns exec dhcp-client ip link set lo up"
+[26-06-22 06:25:40][ASSERT#0022][OK] cost=0.062s
+[26-06-22 06:25:40][ASSERT#0023][cmd] at cases/switch_dhcp.sh:111 fn=setup_dhcp_client_ns cmd="docker exec tests-sw-dhcp ip netns exec dhcp-client ip link set veth-client up"
+[26-06-22 06:25:41][ASSERT#0023][OK] cost=0.061s
+[26-06-22 06:25:41][ASSERT#0024][cmd] at cases/switch_dhcp.sh:115 fn=test_dhcp_lease cmd="docker exec tests-sw-dhcp sh -c command -v dhclient >/dev/null"
+[26-06-22 06:25:41][ASSERT#0024][OK] cost=0.052s
+[26-06-22 06:25:41][ASSERT#0025][cmd] at cases/switch_dhcp.sh:116 fn=test_dhcp_lease cmd="docker exec tests-sw-dhcp ip netns exec dhcp-client dhclient -4 -1 veth-client"
+mv: cannot move '/etc/resolv.conf.dhclient-new.681' to '/etc/resolv.conf': Device or resource busy
+[26-06-22 06:25:51][ASSERT#0025][OK] cost=9.971s
+[26-06-22 06:25:51][ASSERT#0026][fuzzy] at cases/switch_dhcp.sh:117 fn=test_dhcp_lease retry=10 cmd="docker exec tests-sw-dhcp ip netns exec dhcp-client ip -4 addr show dev veth-client" pattern="192\.67\.0\.(10[0-9]|11[0-9]|120)/24"
+9: veth-client@if10: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 192.67.0.104/24 brd 192.67.0.255 scope global dynamic veth-client
+       valid_lft 43200sec preferred_lft 43200sec
+[26-06-22 06:25:51][ASSERT#0026][OK] cost=0.059s
+[26-06-22 06:25:51][ASSERT#0027][match] at cases/switch_dhcp.sh:118 fn=test_dhcp_lease retry=10 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.leases" expect="192.67.0."
+1782152751 86:47:71:ea:c2:c9 192.67.0.104 c26d1fbededf *
+[26-06-22 06:25:51][ASSERT#0027][OK] cost=0.059s
+Started access container: tests-sw-dhcp.ac1
+[26-06-22 06:25:51][ASSERT#0028][expect] at cases/switch_dhcp.sh:133 fn=setup_access_client retry=30 cmd="docker logs -f tests-sw-dhcp.ac1" expect="Worker.OnSuccess"
+2026/06/22 06:25:51 INFO|root|SocketClientImpl.update: 100.100.0.2:52924 100.100.0.241:10002
+2026/06/22 06:25:51 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:25:51 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:25:51 INFO|tcp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.67.0.1 address:169.254.0.0 netmask:255.255.255.0 routes:[]
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|TapWorker.setEther: srcIp 169.254.0.0
+[26-06-22 06:25:52][ASSERT#0028][OK] cost=1.036s
+[26-06-22 06:25:52][ASSERT#0029][cmd] at cases/switch_dhcp.sh:134 fn=setup_access_client cmd="docker exec tests-sw-dhcp.ac1 sh -c command -v dhclient >/dev/null"
+[26-06-22 06:25:52][ASSERT#0029][OK] cost=0.050s
+[26-06-22 06:25:52][ASSERT#0030][expect] at cases/switch_dhcp.sh:135 fn=setup_access_client retry=30 cmd="docker logs -f tests-sw-dhcp.ac1" expect="Access.OnTap"
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|TapWorker.Initialize: addr 
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|TapWorker.close
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|TapWorker.open: >>> tap0 <<<
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|Access.OnTap
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|MixAccess.Start linux
+2026/06/22 06:25:51 INFO|100.100.0.241:10002|example|TapWorker.Start
+2026/06/22 06:25:51 INFO|tcp:100.100.0.241:10002|example|SocketWorker.Start
+[26-06-22 06:25:53][ASSERT#0030][OK] cost=1.034s
+[26-06-22 06:25:53][ASSERT#0031][cmd] at cases/switch_dhcp.sh:151 fn=test_access_dhcp_lease cmd="docker exec tests-sw-dhcp.ac1 dhclient -4 -1 tap0"
+mv: cannot move '/etc/resolv.conf.dhclient-new.43' to '/etc/resolv.conf': Device or resource busy
+[26-06-22 06:26:01][ASSERT#0031][OK] cost=7.556s
+[26-06-22 06:26:01][ASSERT#0032][fuzzy] at cases/switch_dhcp.sh:152 fn=test_access_dhcp_lease retry=10 cmd="docker exec tests-sw-dhcp.ac1 ip -4 addr show dev tap0" pattern="192\.67\.0\.(10[0-9]|11[0-9]|120)/24"
+6: tap0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UNKNOWN group default qlen 1000
+    inet 169.254.0.0/24 brd 169.254.0.255 scope global tap0
+       valid_lft forever preferred_lft forever
+    inet 192.67.0.119/24 brd 192.67.0.255 scope global dynamic tap0
+       valid_lft 43200sec preferred_lft 43200sec
+[26-06-22 06:26:01][ASSERT#0032][OK] cost=0.057s
+[26-06-22 06:26:01][ASSERT#0033][match] at cases/switch_dhcp.sh:153 fn=test_access_dhcp_lease retry=10 cmd="docker exec tests-sw-dhcp.ac1 ping -c 3 192.67.0.104" expect="bytes from 192.67.0.104"
+PING 192.67.0.104 (192.67.0.104) 56(84) bytes of data.
+64 bytes from 192.67.0.104: icmp_seq=1 ttl=64 time=0.756 ms
+64 bytes from 192.67.0.104: icmp_seq=2 ttl=64 time=1.24 ms
+64 bytes from 192.67.0.104: icmp_seq=3 ttl=64 time=1.19 ms
+
+--- 192.67.0.104 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2025ms
+[26-06-22 06:26:03][ASSERT#0033][OK] cost=2.088s
+[26-06-22 06:26:03][ASSERT#0034][match] at cases/switch_dhcp.sh:154 fn=test_access_dhcp_lease retry=10 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.leases" expect="192.67.0."
+1782152761 ce:b8:d3:63:c8:48 192.67.0.119 7457713a5a69 *
+1782152751 86:47:71:ea:c2:c9 192.67.0.104 c26d1fbededf *
+[26-06-22 06:26:03][ASSERT#0034][OK] cost=0.060s
+[26-06-22 06:26:03][ASSERT#0035][cmd] at cases/switch_dhcp.sh:158 fn=test_reload_persistence cmd="docker exec tests-sw-dhcp openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:757 ...
+  PID   757   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:26:04][ASSERT#0035][OK] cost=1.066s
+[26-06-22 06:26:04][ASSERT#0036][match] at cases/switch_dhcp.sh:159 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-dhcp cat /var/openlan/dhcp/example.conf" expect="dhcp-range=192.67.0.100,192.67.0.120,12h"
+except-interface=lo
+bind-interfaces
+interface=hi-example
+dhcp-range=192.67.0.100,192.67.0.120,12h
+dhcp-leasefile=/var/openlan/dhcp/example.leases
+dhcp-option=3,192.67.0.1
+dhcp-option=6,114.114.114.114,8.8.8.8
+[26-06-22 06:26:04][ASSERT#0036][OK] cost=0.061s
+[26-06-22 06:26:04][ASSERT#0037][match] at cases/switch_dhcp.sh:160 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-dhcp pgrep -f 'dnsmasq.*example.conf'" expect="[0-9]"
+891
+[26-06-22 06:26:04][ASSERT#0037][OK] cost=0.056s
+[26-06-22 06:26:04][ASSERT#0038][match] at cases/switch_dhcp.sh:161 fn=test_reload_persistence retry=10 cmd="docker exec tests-sw-dhcp openlan network --name example" expect="dhcp: enable"
+  bridge:
+    address: 192.67.0.1/24
+    name: br-example
+  dhcp: enable
+  dhcpConfig:
+    dns:
+    - 114.114.114.114
+[26-06-22 06:26:04][ASSERT#0038][OK] cost=0.069s
+[26-06-22 06:26:04][ASSERT#0039][cmd] at cases/switch_dhcp.sh:165 fn=test_dhcp_disable cmd="docker exec tests-sw-dhcp openlan network --name example dhcp disable"
+[26-06-22 06:26:04][ASSERT#0039][OK] cost=0.169s
+[26-06-22 06:26:04][ASSERT#0040][unmatch] at cases/switch_dhcp.sh:166 fn=test_dhcp_disable retry=10 cmd="docker exec tests-sw-dhcp pgrep -f 'dnsmasq.*example.conf'" unexpected="[0-9]"
+Last output:
+[26-06-22 06:26:15][ASSERT#0040][OK] cost=10.613s
+[26-06-22 06:26:15][ASSERT#0041][unmatch] at cases/switch_dhcp.sh:167 fn=test_dhcp_disable retry=10 cmd="docker exec tests-sw-dhcp test -f /var/openlan/dhcp/example.conf && cat /var/openlan/dhcp/example.conf" unexpected="dhcp-range="
+Last output:
+[26-06-22 06:26:26][ASSERT#0041][OK] cost=10.607s
+[26-06-22 06:26:26][ASSERT#0042][match] at cases/switch_dhcp.sh:168 fn=test_dhcp_disable retry=10 cmd="docker exec tests-sw-dhcp openlan network --name example" expect="dhcp: disable"
+  bridge:
+    address: 192.67.0.1/24
+    name: br-example
+  dhcp: disable
+  dhcpConfig:
+    dns:
+    - 114.114.114.114
+[26-06-22 06:26:26][ASSERT#0042][OK] cost=0.063s
+[26-06-22 06:26:26] END switch_dhcp status=PASS cost=59.970s

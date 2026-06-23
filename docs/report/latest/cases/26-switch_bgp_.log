@@ -1,0 +1,118 @@
+[26-06-22 06:25:09] START switch_bgp
+scenario: cases/switch_bgp.sh
+header  : verify bgp peer establishment and prefix filter persistence
+topology: sw1 100.100.0.241 / AS65101 <---- BGP ----> sw2 100.100.0.242 / AS65102 | svc 192.54.0.1 svc 192.54.0.2
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 100.100.0.241 / AS65101  <---- BGP ---->  sw2 100.100.0.242 / AS65102
+topology: #       svc 192.54.0.1                              svc 192.54.0.2
+topology: #       peers use Docker mgmt addresses; filters validate prefix flow
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - OpenLAN service network "example": 192.54.0.0/24
+topology: #   sw1=192.54.0.1, sw2=192.54.0.2.
+topology: # - BGP design:
+topology: #   sw1 local-as 65101, router-id 100.100.0.241.
+topology: #   sw2 local-as 65102, router-id 100.100.0.242.
+topology: #   peers use mgmt addresses as neighbors.
+topology: # Validation:
+topology: #   BGP reaches established state, prefix filters are present, and
+topology: #   config persists after reload.
+
+Started switch pause container: tests-sw-bgp1-pause
+Started switch frr container: tests-sw-bgp1-frr
+Started switch ipsec container: tests-sw-bgp1-ipsec
+Started switch container: tests-sw-bgp1
+[26-06-22 06:25:10][ASSERT#0001][expect] at cases/switch_bgp.sh:53 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-bgp1" expect="Http.Start"
+2026/06/22 06:25:11 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:25:11 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:25:11 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:25:11 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:25:11][ASSERT#0001][OK] cost=1.032s
+[26-06-22 06:25:11][ASSERT#0002][cmd] at cases/switch_bgp.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-bgp1 openlan network --name a add --address 192.54.0.1/24"
+[26-06-22 06:25:11][ASSERT#0002][OK] cost=0.253s
+[26-06-22 06:25:11][ASSERT#0003][cmd] at cases/switch_bgp.sh:56 fn=setup_sw1 cmd="docker exec tests-sw-bgp1 openlan bgp enable --router-id 100.100.0.241 --local-as 65101"
+[26-06-22 06:25:12][ASSERT#0003][OK] cost=0.538s
+[26-06-22 06:25:12][ASSERT#0004][cmd] at cases/switch_bgp.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-bgp1 openlan bgp neighbor add --address 100.100.0.242 --remote-as 65102"
+[26-06-22 06:25:12][ASSERT#0004][OK] cost=0.539s
+Started switch pause container: tests-sw-bgp2-pause
+Started switch frr container: tests-sw-bgp2-frr
+Started switch ipsec container: tests-sw-bgp2-ipsec
+Started switch container: tests-sw-bgp2
+[26-06-22 06:25:13][ASSERT#0005][expect] at cases/switch_bgp.sh:66 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-bgp2" expect="Http.Start"
+2026/06/22 06:25:14 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:25:14 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:25:14 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:25:14 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:25:14][ASSERT#0005][OK] cost=1.032s
+[26-06-22 06:25:14][ASSERT#0006][cmd] at cases/switch_bgp.sh:68 fn=setup_sw2 cmd="docker exec tests-sw-bgp2 openlan network --name b add --address 192.55.0.1/24"
+[26-06-22 06:25:14][ASSERT#0006][OK] cost=0.259s
+[26-06-22 06:25:14][ASSERT#0007][cmd] at cases/switch_bgp.sh:69 fn=setup_sw2 cmd="docker exec tests-sw-bgp2 openlan bgp enable --router-id 100.100.0.242 --local-as 65102"
+[26-06-22 06:25:15][ASSERT#0007][OK] cost=0.555s
+[26-06-22 06:25:15][ASSERT#0008][cmd] at cases/switch_bgp.sh:70 fn=setup_sw2 cmd="docker exec tests-sw-bgp2 openlan bgp neighbor add --address 100.100.0.241 --remote-as 65101"
+[26-06-22 06:25:15][ASSERT#0008][OK] cost=0.560s
+[26-06-22 06:25:15][ASSERT#0009][cmd] at cases/switch_bgp.sh:74 fn=setup_prefix_filters cmd="docker exec tests-sw-bgp1 openlan bgp advertis add --neighbor 100.100.0.242 --prefix 192.54.0.0/24"
+[26-06-22 06:25:16][ASSERT#0009][OK] cost=0.533s
+[26-06-22 06:25:16][ASSERT#0010][cmd] at cases/switch_bgp.sh:75 fn=setup_prefix_filters cmd="docker exec tests-sw-bgp1 openlan bgp receives add --neighbor 100.100.0.242 --prefix 192.55.0.0/24"
+[26-06-22 06:25:16][ASSERT#0010][OK] cost=0.560s
+[26-06-22 06:25:16][ASSERT#0011][cmd] at cases/switch_bgp.sh:77 fn=setup_prefix_filters cmd="docker exec tests-sw-bgp2 openlan bgp advertis add --neighbor 100.100.0.241 --prefix 192.55.0.0/24"
+[26-06-22 06:25:17][ASSERT#0011][OK] cost=0.528s
+[26-06-22 06:25:17][ASSERT#0012][cmd] at cases/switch_bgp.sh:78 fn=setup_prefix_filters cmd="docker exec tests-sw-bgp2 openlan bgp receives add --neighbor 100.100.0.241 --prefix 192.54.0.0/24"
+[26-06-22 06:25:18][ASSERT#0012][OK] cost=0.567s
+[26-06-22 06:25:18][ASSERT#0013][match] at cases/switch_bgp.sh:82 fn=test_bgp_once retry=10 cmd="docker exec tests-sw-bgp1 openlan bgp ls" expect="state: established"
+  receives:
+  - 192.55.0.0/24
+  remoteas: 65102
+  state: established
+routerid: 100.100.0.241
+
+[26-06-22 06:25:18][ASSERT#0013][OK] cost=0.159s
+[26-06-22 06:25:18][ASSERT#0014][match] at cases/switch_bgp.sh:83 fn=test_bgp_once retry=60 cmd="docker exec tests-sw-bgp1 ip route show" expect="192.55.0.0/24"
+default via 100.100.0.1 dev eth0 
+100.100.0.0/24 dev eth0 proto kernel scope link src 100.100.0.241 
+192.54.0.0/24 dev hi-a proto kernel scope link src 192.54.0.1 
+192.55.0.0/24 nhid 8 via 100.100.0.242 dev eth0 proto bgp metric 20 
+[26-06-22 06:25:22][ASSERT#0014][OK] cost=4.312s
+[26-06-22 06:25:22][ASSERT#0015][match] at cases/switch_bgp.sh:84 fn=test_bgp_once retry=60 cmd="docker exec tests-sw-bgp2 ip route show" expect="192.54.0.0/24"
+default via 100.100.0.1 dev eth0 
+100.100.0.0/24 dev eth0 proto kernel scope link src 100.100.0.242 
+192.54.0.0/24 nhid 8 via 100.100.0.241 dev eth0 proto bgp metric 20 
+192.55.0.0/24 dev hi-b proto kernel scope link src 192.55.0.1 
+[26-06-22 06:25:23][ASSERT#0015][OK] cost=1.130s
+[26-06-22 06:25:23][ASSERT#0016][cmd] at cases/switch_bgp.sh:90 fn=test_bgp cmd="docker exec tests-sw-bgp1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:534 ...
+  PID   534   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:25:24][ASSERT#0016][OK] cost=1.071s
+[26-06-22 06:25:24][ASSERT#0017][cmd] at cases/switch_bgp.sh:91 fn=test_bgp cmd="docker exec tests-sw-bgp2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:502 ...
+  PID   502   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:25:25][ASSERT#0017][OK] cost=1.083s
+[26-06-22 06:25:25][ASSERT#0018][match] at cases/switch_bgp.sh:82 fn=test_bgp_once retry=10 cmd="docker exec tests-sw-bgp1 openlan bgp ls" expect="state: established"
+  receives:
+  - 192.55.0.0/24
+  remoteas: 65102
+  state: established
+routerid: 100.100.0.241
+
+[26-06-22 06:25:26][ASSERT#0018][OK] cost=0.169s
+[26-06-22 06:25:26][ASSERT#0019][match] at cases/switch_bgp.sh:83 fn=test_bgp_once retry=60 cmd="docker exec tests-sw-bgp1 ip route show" expect="192.55.0.0/24"
+default via 100.100.0.1 dev eth0 
+100.100.0.0/24 dev eth0 proto kernel scope link src 100.100.0.241 
+192.54.0.0/24 dev hi-a proto kernel scope link src 192.54.0.1 
+192.55.0.0/24 nhid 8 via 100.100.0.242 dev eth0 proto bgp metric 20 
+[26-06-22 06:25:26][ASSERT#0019][OK] cost=0.061s
+[26-06-22 06:25:26][ASSERT#0020][match] at cases/switch_bgp.sh:84 fn=test_bgp_once retry=60 cmd="docker exec tests-sw-bgp2 ip route show" expect="192.54.0.0/24"
+default via 100.100.0.1 dev eth0 
+100.100.0.0/24 dev eth0 proto kernel scope link src 100.100.0.242 
+192.54.0.0/24 nhid 8 via 100.100.0.241 dev eth0 proto bgp metric 20 
+192.55.0.0/24 dev hi-b proto kernel scope link src 192.55.0.1 
+[26-06-22 06:25:26][ASSERT#0020][OK] cost=0.060s
+[26-06-22 06:25:26] END switch_bgp status=PASS cost=17.323s

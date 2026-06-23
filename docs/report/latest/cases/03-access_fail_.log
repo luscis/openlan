@@ -1,16 +1,16 @@
-[26-06-02 09:13:04] START access_fail
+[26-06-22 06:03:30] START access_fail
 scenario: cases/access_fail.sh
 header  : reject client authentication with wrong password
-topology: sw1(center) 172.253.0.241 / 192.31.0.1; | tcp access with bad credentials; acbad asks for 192.31.0.11
+topology: sw1(center) 100.100.0.241 / 192.31.0.1 | tcp access with bad credentials | acbad asks for 192.31.0.11
 topology: # Topology:
 topology: # - Diagram:
-topology: #            sw1(center) 172.253.0.241 / 192.31.0.1
+topology: #            sw1(center) 100.100.0.241 / 192.31.0.1
 topology: #                 ^
 topology: #                 | tcp access with bad credentials
 topology: #              acbad asks for 192.31.0.11
 topology: #                 x authentication rejected
-topology: # - Docker mgmt network: 172.253.0.0/24
-topology: #   sw1=172.253.0.241, bad access client joins the same mgmt network.
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, bad access client joins the same mgmt network.
 topology: # - OpenLAN service network "example": 192.31.0.0/24
 topology: #   sw1 gateway=192.31.0.1, client config asks for 192.31.0.11.
 topology: # Validation:
@@ -20,20 +20,20 @@ Started switch pause container: tests-sw-authfail-pause
 Started switch frr container: tests-sw-authfail-frr
 Started switch ipsec container: tests-sw-authfail-ipsec
 Started switch container: tests-sw-authfail
-[26-06-02 09:13:05][ASSERT#0001][expect] at cases/access_fail.sh:51 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-authfail" expect="Http.Start"
-2026/06/02 09:13:06 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/06/02 09:13:06 INFO|root|Wait: ...
-2026/06/02 09:13:06 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/06/02 09:13:06 INFO|root|Http.Start 0.0.0.0:10000
-[26-06-02 09:13:06][ASSERT#0001][OK] cost=1.033s
-[26-06-02 09:13:06][ASSERT#0002][cmd] at cases/access_fail.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-authfail openlan network --name example add --address 192.31.0.1/24"
-[26-06-02 09:13:06][ASSERT#0002][OK] cost=0.253s
-[26-06-02 09:13:06][ASSERT#0003][cmd] at cases/access_fail.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-authfail openlan user add --name t1@example --password 123456"
+[26-06-22 06:03:31][ASSERT#0001][expect] at cases/access_fail.sh:61 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-authfail" expect="Http.Start"
+2026/06/22 06:03:32 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:03:32 INFO|root|Wait: ...
+2026/06/22 06:03:32 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:03:32 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:03:32][ASSERT#0001][OK] cost=1.035s
+[26-06-22 06:03:32][ASSERT#0002][cmd] at cases/access_fail.sh:63 fn=setup_sw1 cmd="docker exec tests-sw-authfail openlan network --name example add --address 192.31.0.1/24"
+[26-06-22 06:03:32][ASSERT#0002][OK] cost=0.263s
+[26-06-22 06:03:32][ASSERT#0003][cmd] at cases/access_fail.sh:64 fn=setup_sw1 cmd="docker exec tests-sw-authfail openlan user add --name t1@example --password 123456"
 # total 1
 username                 password                 role   lease          
-t1@example               123456                   guest  2027-06-02T09  
-[26-06-02 09:13:06][ASSERT#0003][OK] cost=0.062s
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:03:32][ASSERT#0003][OK] cost=0.064s
 Started access container: tests-sw-authfail.acbad
-[26-06-02 09:13:06][ASSERT#0004][unexpect] at cases/access_fail.sh:74 fn=setup_ac_badpass retry=15 cmd="docker logs -f tests-sw-authfail.acbad" unexpected="Worker.OnSuccess"
-[26-06-02 09:13:22][ASSERT#0004][OK] cost=15.346s
-[26-06-02 09:13:22] END access_fail status=PASS cost=18.383s
+[26-06-22 06:03:33][ASSERT#0004][unexpect] at cases/access_fail.sh:84 fn=setup_ac_badpass retry=15 cmd="docker logs -f tests-sw-authfail.acbad" unexpected="Worker.OnSuccess"
+[26-06-22 06:03:48][ASSERT#0004][OK] cost=15.330s
+[26-06-22 06:03:48] END access_fail status=PASS cost=18.381s

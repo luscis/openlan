@@ -1,0 +1,111 @@
+[26-06-22 06:07:55] START access_openvpn_redirect
+scenario: cases/access_openvpn_redirect.sh
+header  : redirect openvpn source route to sw2 and switch vip reachability
+topology: vpn1 10.97.0.10 | v OpenVPN tcp/1194 | sw1 192.53.0.1 -- output/route --> sw2 192.53.0.2 | VIP 10.253.0.11 VIP 10.253.0.12
+topology: # Topology:
+topology: # - Diagram:
+topology: #       vpn1 10.97.0.10
+topology: #             |
+topology: #             v OpenVPN tcp/1194
+topology: #       sw1 192.53.0.1  -- output/route -->  sw2 192.53.0.2
+topology: #       VIP 10.253.0.11                   VIP 10.253.0.12
+topology: #             redirect moves vpn1 traffic from sw1 VIP to sw2 VIP
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242, vpn1 joins the same mgmt network.
+topology: # - OpenLAN service network "example": 192.53.0.0/24
+topology: #   sw1=192.53.0.1, sw2=192.53.0.2.
+topology: # - VIP services:
+topology: #   sw1 VIP=10.253.0.11:8081, sw2 VIP=10.253.0.12:8081.
+topology: # - Forwarding design:
+topology: #   sw2 has output to sw1;
+topology: #   sw2 adds return route for 10.97.0.0/24 via 192.53.0.1;
+topology: #   sw1 hosts OpenVPN tcp/1194 with subnet 10.97.0.0/24, vpn1 fixed IP 10.97.0.10.
+topology: # Validation:
+topology: #   before redirect, vpn1 reaches sw1 VIP and cannot reach sw2 VIP;
+topology: #   after redirecting source 10.97.0.10 to nexthop 192.53.0.2, vpn1 reaches sw2 VIP and cannot reach sw1 VIP.
+
+Started switch pause container: tests-sw-openvpn-redirect.sw1-pause
+Started switch frr container: tests-sw-openvpn-redirect.sw1-frr
+Started switch ipsec container: tests-sw-openvpn-redirect.sw1-ipsec
+Started switch container: tests-sw-openvpn-redirect.sw1
+[26-06-22 06:07:56][ASSERT#0001][expect] at cases/access_openvpn_redirect.sh:63 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-redirect.sw1" expect="Http.Start"
+2026/06/22 06:07:57 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:07:57 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:07:57 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:07:57 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:07:57][ASSERT#0001][OK] cost=1.030s
+[26-06-22 06:07:57][ASSERT#0002][cmd] at cases/access_openvpn_redirect.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96c"
+[26-06-22 06:07:57][ASSERT#0002][OK] cost=0.076s
+[26-06-22 06:07:57][ASSERT#0003][cmd] at cases/access_openvpn_redirect.sh:66 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan network --name example add --address 192.53.0.1/24"
+[26-06-22 06:07:57][ASSERT#0003][OK] cost=0.256s
+[26-06-22 06:07:57][ASSERT#0004][cmd] at cases/access_openvpn_redirect.sh:67 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan router address add --device lo --address 10.253.0.11/32"
+[26-06-22 06:07:57][ASSERT#0004][OK] cost=0.063s
+[26-06-22 06:07:57][ASSERT#0005][cmd] at cases/access_openvpn_redirect.sh:68 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan user add --name uplink@example --password 123456"
+# total 1
+username                 password                 role   lease          
+uplink@example           123456                   guest  2027-06-22T06  
+[26-06-22 06:07:57][ASSERT#0005][OK] cost=0.072s
+[26-06-22 06:07:57][ASSERT#0006][cmd] at cases/access_openvpn_redirect.sh:69 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:07:57][ASSERT#0006][OK] cost=0.061s
+Started switch pause container: tests-sw-openvpn-redirect.sw2-pause
+Started switch frr container: tests-sw-openvpn-redirect.sw2-frr
+Started switch ipsec container: tests-sw-openvpn-redirect.sw2-ipsec
+Started switch container: tests-sw-openvpn-redirect.sw2
+[26-06-22 06:07:58][ASSERT#0007][expect] at cases/access_openvpn_redirect.sh:79 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-openvpn-redirect.sw2" expect="Http.Start"
+2026/06/22 06:07:59 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:07:59 INFO|root|Wait: ...
+2026/06/22 06:07:59 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:07:59 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:07:59][ASSERT#0007][OK] cost=1.029s
+[26-06-22 06:07:59][ASSERT#0008][cmd] at cases/access_openvpn_redirect.sh:81 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96c"
+[26-06-22 06:07:59][ASSERT#0008][OK] cost=0.064s
+[26-06-22 06:07:59][ASSERT#0009][cmd] at cases/access_openvpn_redirect.sh:82 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan network --name example add --address 192.53.0.2/24"
+[26-06-22 06:07:59][ASSERT#0009][OK] cost=0.267s
+[26-06-22 06:07:59][ASSERT#0010][cmd] at cases/access_openvpn_redirect.sh:83 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan router address add --device lo --address 10.253.0.12/32"
+[26-06-22 06:07:59][ASSERT#0010][OK] cost=0.069s
+[26-06-22 06:08:00][ASSERT#0011][cmd] at cases/access_openvpn_redirect.sh:84 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan user add --name uplink@example --password 123456"
+# total 1
+username                 password                 role   lease          
+uplink@example           123456                   guest  2027-06-22T06  
+[26-06-22 06:08:00][ASSERT#0011][OK] cost=0.061s
+[26-06-22 06:08:00][ASSERT#0012][cmd] at cases/access_openvpn_redirect.sh:87 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret uplink@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:08:00][ASSERT#0012][OK] cost=0.077s
+[26-06-22 06:08:00][ASSERT#0013][cmd] at cases/access_openvpn_redirect.sh:90 fn=setup_sw2 cmd="docker exec tests-sw-openvpn-redirect.sw2 openlan network --name example route add --prefix 10.97.0.0/24 --nexthop 192.53.0.1"
+[26-06-22 06:08:00][ASSERT#0013][OK] cost=0.058s
+[26-06-22 06:08:00][ASSERT#0014][cmd] at cases/access_openvpn_redirect.sh:94 fn=setup_vip_http cmd="docker exec tests-sw-openvpn-redirect.sw1 sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 7\r\n\r\nsw1-vip" | socat - TCP-LISTEN:8081,bind=10.253.0.11,reuseaddr; done' >/tmp/sw1-vip.log 2>&1 &"
+[26-06-22 06:08:00][ASSERT#0014][OK] cost=0.049s
+[26-06-22 06:08:00][ASSERT#0015][cmd] at cases/access_openvpn_redirect.sh:95 fn=setup_vip_http cmd="docker exec tests-sw-openvpn-redirect.sw2 sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 7\r\n\r\nsw2-vip" | socat - TCP-LISTEN:8081,bind=10.253.0.12,reuseaddr; done' >/tmp/sw2-vip.log 2>&1 &"
+[26-06-22 06:08:00][ASSERT#0015][OK] cost=0.043s
+[26-06-22 06:08:00][ASSERT#0016][cmd] at cases/access_openvpn_redirect.sh:101 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan network --name example route add --prefix 10.253.0.12/32"
+[26-06-22 06:08:00][ASSERT#0016][OK] cost=0.074s
+[26-06-22 06:08:00][ASSERT#0017][cmd] at cases/access_openvpn_redirect.sh:102 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan network --name example route add --prefix 10.253.0.11/32"
+[26-06-22 06:08:00][ASSERT#0017][OK] cost=0.073s
+[26-06-22 06:08:00][ASSERT#0018][cmd] at cases/access_openvpn_redirect.sh:103 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.97.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:08:00][ASSERT#0018][OK] cost=0.115s
+[26-06-22 06:08:00][ASSERT#0019][cmd] at cases/access_openvpn_redirect.sh:104 fn=setup_openvpn_client cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan network --name example client add --user vpn1 --address 10.97.0.10"
+[26-06-22 06:08:00][ASSERT#0019][OK] cost=0.068s
+Started OpenVPN client container: tests-sw-openvpn-redirect.vpn1
+[26-06-22 06:08:00][ASSERT#0020][expect] at cases/access_openvpn_redirect.sh:114 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-openvpn-redirect.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:08:01 net_route_v4_add: 192.53.0.0/24 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:08:01 net_route_v4_add: 10.253.0.12/32 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:08:01 net_route_v4_add: 10.253.0.11/32 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:08:01 Initialization Sequence Completed
+[26-06-22 06:08:02][ASSERT#0020][OK] cost=1.036s
+[26-06-22 06:08:02][ASSERT#0021][match] at cases/access_openvpn_redirect.sh:119 fn=test_redirect retry=10 cmd="docker exec tests-sw-openvpn-redirect.vpn1 wget -qO- -T 3 -t 1 http://10.253.0.11:8081" expect="sw1-vip"
+sw1-vip
+[26-06-22 06:08:02][ASSERT#0021][OK] cost=0.083s
+[26-06-22 06:08:02][ASSERT#0022][unmatch] at cases/access_openvpn_redirect.sh:120 fn=test_redirect retry=3 cmd="docker exec tests-sw-openvpn-redirect.vpn1 wget -qO- -T 3 -t 1 http://10.253.0.12:8081" unexpected="sw2-vip"
+Last output:
+[26-06-22 06:08:14][ASSERT#0022][OK] cost=12.270s
+[26-06-22 06:08:14][ASSERT#0023][cmd] at cases/access_openvpn_redirect.sh:122 fn=test_redirect cmd="docker exec tests-sw-openvpn-redirect.sw1 openlan router redirect add --source 10.97.0.0/24 --nexthop 192.53.0.2 --table 100"
+[26-06-22 06:08:14][ASSERT#0023][OK] cost=0.061s
+[26-06-22 06:08:14][ASSERT#0024][match] at cases/access_openvpn_redirect.sh:125 fn=test_redirect retry=10 cmd="docker exec tests-sw-openvpn-redirect.vpn1 wget -qO- -T 3 -t 1 http://10.253.0.12:8081" expect="sw2-vip"
+sw2-vip
+[26-06-22 06:08:14][ASSERT#0024][OK] cost=0.078s
+[26-06-22 06:08:14][ASSERT#0025][match] at cases/access_openvpn_redirect.sh:126 fn=test_redirect retry=10 cmd="docker exec tests-sw-openvpn-redirect.vpn1 wget -qO- -T 3 -t 1 http://10.253.0.11:8081" expect="sw1-vip"
+sw1-vip
+[26-06-22 06:08:14][ASSERT#0025][OK] cost=0.078s
+[26-06-22 06:08:15] END access_openvpn_redirect status=PASS cost=19.914s

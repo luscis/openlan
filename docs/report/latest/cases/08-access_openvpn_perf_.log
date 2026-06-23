@@ -1,0 +1,173 @@
+[26-06-22 06:07:22] START access_openvpn_perf
+scenario: cases/access_openvpn_perf.sh
+header  : sample OpenVPN tcp/udp latency and bandwidth performance
+topology: sw1(center) 192.55.0.1 | OpenVPN tcp/1194 + udp/1195 | vpn1 10.95.0.0/24 | ping RTT and iperf3 TCP/UDP samples
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1(center) 192.55.0.1
+topology: #                 ^
+topology: #                 | OpenVPN tcp/1194 + udp/1195
+topology: #              vpn1 10.95.0.0/24
+topology: #                 | ping RTT and iperf3 TCP/UDP samples
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, vpn1 joins the same mgmt network.
+topology: # - OpenLAN service network "example": 192.55.0.0/24
+topology: #   sw1 gateway=192.55.0.1.
+topology: # - OpenVPN overlay on sw1:
+topology: #   tcp/1194 and udp/1195, subnet 10.95.0.0/24.
+topology: # Validation:
+topology: # - vpn1 reaches sw1 service IP through OpenVPN.
+topology: # - RTT sample shows 0% loss and summary line.
+topology: # - Bandwidth sample is collected with iperf3 for both TCP and UDP.
+
+[26-06-22 06:07:22][ASSERT#0001][cmd] at cases/access_openvpn_perf.sh:46 fn=setup_net cmd="docker network create tests-net-openvpn-perf --driver=bridge --subnet=100.100.0.0/24 --gateway=100.100.0.1"
+2fab583f6ba7576c1f8fd64dec172e76cb2f2e185018b92d1fe511f121cba29d
+[26-06-22 06:07:22][ASSERT#0001][OK] cost=0.063s
+Started switch pause container: tests-sw-openvpn-perf.sw1-pause
+Started switch frr container: tests-sw-openvpn-perf.sw1-frr
+Started switch ipsec container: tests-sw-openvpn-perf.sw1-ipsec
+Started switch container: tests-sw-openvpn-perf.sw1
+[26-06-22 06:07:23][ASSERT#0002][expect] at cases/access_openvpn_perf.sh:52 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-perf.sw1" expect="Http.Start"
+2026/06/22 06:07:24 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:07:24 INFO|root|Wait: ...
+2026/06/22 06:07:24 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:07:24 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:07:24][ASSERT#0002][OK] cost=1.034s
+[26-06-22 06:07:24][ASSERT#0003][cmd] at cases/access_openvpn_perf.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-perf.sw1 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96c"
+[26-06-22 06:07:24][ASSERT#0003][OK] cost=0.065s
+[26-06-22 06:07:24][ASSERT#0004][cmd] at cases/access_openvpn_perf.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-perf.sw1 openlan network --name example add --address 192.55.0.1/24"
+[26-06-22 06:07:24][ASSERT#0004][OK] cost=0.267s
+[26-06-22 06:07:24][ASSERT#0005][cmd] at cases/access_openvpn_perf.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-perf.sw1 openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:07:24][ASSERT#0005][OK] cost=0.052s
+[26-06-22 06:07:25][ASSERT#0006][cmd] at cases/access_openvpn_perf.sh:61 fn=setup_openvpn cmd="docker exec tests-sw-openvpn-perf.sw1 openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.95.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:07:25][ASSERT#0006][OK] cost=0.111s
+[26-06-22 06:07:25][ASSERT#0007][cmd] at cases/access_openvpn_perf.sh:63 fn=setup_openvpn cmd="docker cp tests-sw-openvpn-perf.sw1:/var/openlan/openvpn/example/tcp1194client.ovpn /opt/openlan/tests-sw-openvpn-perf.vpn1/ovpn/client.ovpn"
+[26-06-22 06:07:25][ASSERT#0007][OK] cost=0.022s
+Started OpenVPN client container: tests-sw-openvpn-perf.vpn1
+[26-06-22 06:07:25][ASSERT#0008][expect] at cases/access_openvpn_perf.sh:70 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-openvpn-perf.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:07:25 net_addr_v4_add: 10.95.0.2/24 dev tun0
+2026-06-22 06:07:25 net_route_v4_add: 10.95.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:07:25 net_route_v4_add: 192.55.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:07:25 Initialization Sequence Completed
+[26-06-22 06:07:26][ASSERT#0008][OK] cost=1.033s
+[26-06-22 06:07:26][ASSERT#0009][match] at cases/access_openvpn_perf.sh:74 fn=test_openvpn_latency retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -c 3 192.55.0.1" expect="bytes from"
+PING 192.55.0.1 (192.55.0.1) 56(84) bytes of data.
+64 bytes from 192.55.0.1: icmp_seq=1 ttl=64 time=0.290 ms
+64 bytes from 192.55.0.1: icmp_seq=2 ttl=64 time=1.14 ms
+64 bytes from 192.55.0.1: icmp_seq=3 ttl=64 time=0.645 ms
+
+--- 192.55.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2032ms
+[26-06-22 06:07:28][ASSERT#0009][OK] cost=2.125s
+[26-06-22 06:07:28][ASSERT#0010][match] at cases/access_openvpn_perf.sh:75 fn=test_openvpn_latency retry=30 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -q -c 20 -i 0.05 -s 1200 192.55.0.1" expect="0% packet loss"
+PING 192.55.0.1 (192.55.0.1) 1200(1228) bytes of data.
+
+--- 192.55.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 979ms
+rtt min/avg/max/mdev = 0.259/0.669/1.078/0.190 ms
+[26-06-22 06:07:29][ASSERT#0010][OK] cost=1.074s
+[26-06-22 06:07:29][ASSERT#0011][match] at cases/access_openvpn_perf.sh:76 fn=test_openvpn_latency retry=5 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -q -c 20 -i 0.05 -s 1200 192.55.0.1" expect="rtt min/avg/max"
+
+--- 192.55.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 979ms
+rtt min/avg/max/mdev = 0.464/0.741/1.242/0.139 ms
+[26-06-22 06:07:30][ASSERT#0011][OK] cost=1.066s
+[26-06-22 06:07:30][ASSERT#0012][cmd] at cases/access_openvpn_perf.sh:88 fn=test_openvpn_bandwidth cmd="docker exec tests-sw-openvpn-perf.sw1 iperf3 -s -D -p 5203"
+[26-06-22 06:07:30][ASSERT#0012][OK] cost=0.058s
+[26-06-22 06:07:30][ASSERT#0013][match] at cases/access_openvpn_perf.sh:89 fn=test_openvpn_bandwidth retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 iperf3 -c 192.55.0.1 -p 5203 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec   760 MBytes  1.28 Gbits/sec  121             sender
+[  5]   0.00-5.05   sec   752 MBytes  1.25 Gbits/sec                  receiver
+
+iperf Done.
+[26-06-22 06:07:36][ASSERT#0013][OK] cost=5.507s
+[26-06-22 06:07:36][ASSERT#0014][cmd] at cases/access_openvpn_perf.sh:90 fn=test_openvpn_bandwidth cmd="docker exec tests-sw-openvpn-perf.sw1 pkill -f iperf3"
+[26-06-22 06:07:36][ASSERT#0014][OK] cost=0.065s
+[26-06-22 06:07:36][ASSERT#0015][cmd] at cases/access_openvpn_perf.sh:94 fn=test_reload_persistence cmd="docker exec tests-sw-openvpn-perf.sw1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:49 ....
+  PID   49   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:525 ...
+  PID   525   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:07:37][ASSERT#0015][OK] cost=1.069s
+[26-06-22 06:07:37][ASSERT#0016][match] at cases/access_openvpn_perf.sh:95 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -c 3 192.55.0.1" expect="bytes from"
+PING 192.55.0.1 (192.55.0.1) 56(84) bytes of data.
+64 bytes from 192.55.0.1: icmp_seq=1 ttl=64 time=0.503 ms
+64 bytes from 192.55.0.1: icmp_seq=2 ttl=64 time=0.692 ms
+64 bytes from 192.55.0.1: icmp_seq=3 ttl=64 time=0.772 ms
+
+--- 192.55.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2060ms
+[26-06-22 06:07:39][ASSERT#0016][OK] cost=2.144s
+[26-06-22 06:07:39][ASSERT#0017][cmd] at cases/access_openvpn_perf.sh:105 fn=test_openvpn_protocol_perf cmd="docker exec tests-sw-openvpn-perf.sw1 openlan network --name example openvpn remove"
+[26-06-22 06:07:39][ASSERT#0017][OK] cost=0.143s
+[26-06-22 06:07:39][ASSERT#0018][cmd] at cases/access_openvpn_perf.sh:61 fn=setup_openvpn cmd="docker exec tests-sw-openvpn-perf.sw1 openlan network --name example openvpn add --listen :1195 --protocol udp --subnet 10.95.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:07:40][ASSERT#0018][OK] cost=0.119s
+[26-06-22 06:07:40][ASSERT#0019][cmd] at cases/access_openvpn_perf.sh:63 fn=setup_openvpn cmd="docker cp tests-sw-openvpn-perf.sw1:/var/openlan/openvpn/example/udp1195client.ovpn /opt/openlan/tests-sw-openvpn-perf.vpn1/ovpn/client.ovpn"
+[26-06-22 06:07:40][ASSERT#0019][OK] cost=0.021s
+Started OpenVPN client container: tests-sw-openvpn-perf.vpn1
+[26-06-22 06:07:40][ASSERT#0020][expect] at cases/access_openvpn_perf.sh:70 fn=setup_openvpn retry=40 cmd="docker logs -f tests-sw-openvpn-perf.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:07:40 net_addr_v4_add: 10.95.0.2/24 dev tun0
+2026-06-22 06:07:40 net_route_v4_add: 10.95.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:07:40 net_route_v4_add: 192.55.0.0/24 via 10.95.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:07:40 Initialization Sequence Completed
+[26-06-22 06:07:41][ASSERT#0020][OK] cost=1.033s
+[26-06-22 06:07:41][ASSERT#0021][match] at cases/access_openvpn_perf.sh:74 fn=test_openvpn_latency retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -c 3 192.55.0.1" expect="bytes from"
+PING 192.55.0.1 (192.55.0.1) 56(84) bytes of data.
+64 bytes from 192.55.0.1: icmp_seq=1 ttl=64 time=0.311 ms
+64 bytes from 192.55.0.1: icmp_seq=2 ttl=64 time=1.14 ms
+64 bytes from 192.55.0.1: icmp_seq=3 ttl=64 time=0.834 ms
+
+--- 192.55.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2004ms
+[26-06-22 06:07:43][ASSERT#0021][OK] cost=2.094s
+[26-06-22 06:07:43][ASSERT#0022][match] at cases/access_openvpn_perf.sh:75 fn=test_openvpn_latency retry=30 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -q -c 20 -i 0.05 -s 1200 192.55.0.1" expect="0% packet loss"
+PING 192.55.0.1 (192.55.0.1) 1200(1228) bytes of data.
+
+--- 192.55.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 973ms
+rtt min/avg/max/mdev = 0.273/0.718/1.155/0.174 ms
+[26-06-22 06:07:44][ASSERT#0022][OK] cost=1.055s
+[26-06-22 06:07:44][ASSERT#0023][match] at cases/access_openvpn_perf.sh:76 fn=test_openvpn_latency retry=5 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -q -c 20 -i 0.05 -s 1200 192.55.0.1" expect="rtt min/avg/max"
+
+--- 192.55.0.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 973ms
+rtt min/avg/max/mdev = 0.178/0.657/0.764/0.156 ms
+[26-06-22 06:07:45][ASSERT#0023][OK] cost=1.067s
+[26-06-22 06:07:45][ASSERT#0024][cmd] at cases/access_openvpn_perf.sh:88 fn=test_openvpn_bandwidth cmd="docker exec tests-sw-openvpn-perf.sw1 iperf3 -s -D -p 5203"
+[26-06-22 06:07:45][ASSERT#0024][OK] cost=0.060s
+[26-06-22 06:07:45][ASSERT#0025][match] at cases/access_openvpn_perf.sh:89 fn=test_openvpn_bandwidth retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 iperf3 -c 192.55.0.1 -p 5203 -t 5" expect="receiver"
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec   934 MBytes  1.57 Gbits/sec  1508             sender
+[  5]   0.00-5.04   sec   926 MBytes  1.54 Gbits/sec                  receiver
+
+iperf Done.
+[26-06-22 06:07:51][ASSERT#0025][OK] cost=5.252s
+[26-06-22 06:07:51][ASSERT#0026][cmd] at cases/access_openvpn_perf.sh:90 fn=test_openvpn_bandwidth cmd="docker exec tests-sw-openvpn-perf.sw1 pkill -f iperf3"
+[26-06-22 06:07:51][ASSERT#0026][OK] cost=0.058s
+[26-06-22 06:07:51][ASSERT#0027][cmd] at cases/access_openvpn_perf.sh:94 fn=test_reload_persistence cmd="docker exec tests-sw-openvpn-perf.sw1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:525 ....
+  PID   525   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:792 ...
+  PID   792   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:07:52][ASSERT#0027][OK] cost=1.073s
+[26-06-22 06:07:52][ASSERT#0028][match] at cases/access_openvpn_perf.sh:95 fn=test_reload_persistence retry=20 cmd="docker exec tests-sw-openvpn-perf.vpn1 ping -c 3 192.55.0.1" expect="bytes from"
+PING 192.55.0.1 (192.55.0.1) 56(84) bytes of data.
+64 bytes from 192.55.0.1: icmp_seq=1 ttl=64 time=0.231 ms
+64 bytes from 192.55.0.1: icmp_seq=2 ttl=64 time=0.735 ms
+64 bytes from 192.55.0.1: icmp_seq=3 ttl=64 time=1.09 ms
+
+--- 192.55.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2070ms
+[26-06-22 06:07:54][ASSERT#0028][OK] cost=2.163s
+[26-06-22 06:07:54][ASSERT#0029][cmd] at cases/access_openvpn_perf.sh:105 fn=test_openvpn_protocol_perf cmd="docker exec tests-sw-openvpn-perf.sw1 openlan network --name example openvpn remove"
+[26-06-22 06:07:54][ASSERT#0029][OK] cost=0.152s
+[26-06-22 06:07:55] END access_openvpn_perf status=PASS cost=32.583s

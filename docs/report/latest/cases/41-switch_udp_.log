@@ -1,0 +1,126 @@
+[26-06-22 06:45:21] START switch_udp
+scenario: cases/switch_udp.sh
+header  : build two switches and verify udp output connectivity
+topology: sw1 192.51.0.1 <----- UDP output ----- sw2 192.51.0.2 | center switch accepts branch output over Docker mgmt network
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 192.51.0.1  <----- UDP output -----  sw2 192.51.0.2
+topology: #       center switch accepts branch output over Docker mgmt network
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - OpenLAN service network "example": 192.51.0.0/24
+topology: #   sw1=192.51.0.1, sw2=192.51.0.2.
+topology: # - Forwarding link:
+topology: #   sw2 -> sw1 over UDP output.
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw-udp1-pause
+Started switch frr container: tests-sw-udp1-frr
+Started switch ipsec container: tests-sw-udp1-ipsec
+Started switch container: tests-sw-udp1
+[26-06-22 06:45:22][ASSERT#0001][expect] at cases/switch_udp.sh:59 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-udp1" expect="Http.Start"
+2026/06/22 06:45:23 INFO|root|Wait: ...
+2026/06/22 06:45:23 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:45:23 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:45:23 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:45:23][ASSERT#0001][OK] cost=1.035s
+[26-06-22 06:45:23][ASSERT#0002][cmd] at cases/switch_udp.sh:61 fn=setup_sw1 cmd="docker exec tests-sw-udp1 openlan network --name example add --address 192.51.0.1/24"
+[26-06-22 06:45:24][ASSERT#0002][OK] cost=0.256s
+[26-06-22 06:45:24][ASSERT#0003][match] at cases/switch_udp.sh:62 fn=setup_sw1 retry=1 cmd="docker exec tests-sw-udp1 openlan network ls" expect="name: example"
+    bridge:
+      address: 192.51.0.1/24
+      name: br-example
+    name: example
+    snat: enable
+    subnet:
+      netmask: 255.255.255.0
+  name: example
+  openvpnStatus: disabled
+- config:
+    name: ipsec
+[26-06-22 06:45:24][ASSERT#0003][OK] cost=0.069s
+[26-06-22 06:45:24][ASSERT#0004][cmd] at cases/switch_udp.sh:63 fn=setup_sw1 cmd="docker exec tests-sw-udp1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:45:24][ASSERT#0004][OK] cost=0.066s
+Started switch pause container: tests-sw-udp2-pause
+Started switch frr container: tests-sw-udp2-frr
+Started switch ipsec container: tests-sw-udp2-ipsec
+Started switch container: tests-sw-udp2
+[26-06-22 06:45:25][ASSERT#0005][expect] at cases/switch_udp.sh:81 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-udp2" expect="Http.Start"
+2026/06/22 06:45:25 INFO|root|Wait: ...
+2026/06/22 06:45:25 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:45:25 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:45:25 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:45:26][ASSERT#0005][OK] cost=1.032s
+[26-06-22 06:45:26][ASSERT#0006][cmd] at cases/switch_udp.sh:83 fn=setup_sw2 cmd="docker exec tests-sw-udp2 openlan network --name example add --address 192.51.0.2/24"
+[26-06-22 06:45:26][ASSERT#0006][OK] cost=0.248s
+[26-06-22 06:45:26][ASSERT#0007][cmd] at cases/switch_udp.sh:85 fn=setup_sw2 cmd="docker exec tests-sw-udp2 openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:45:26][ASSERT#0007][OK] cost=0.072s
+[26-06-22 06:45:26][ASSERT#0008][match] at cases/switch_udp.sh:89 fn=test_ping retry=15 cmd="docker exec tests-sw-udp2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: udp
+  remote: 100.100.0.241
+  secret: t1:123456
+  state: authenticated
+
+[26-06-22 06:45:28][ASSERT#0008][OK] cost=2.213s
+[26-06-22 06:45:28][ASSERT#0009][match] at cases/switch_udp.sh:90 fn=test_ping retry=20 cmd="docker exec tests-sw-udp2 ping -c 3 192.51.0.1" expect="bytes from"
+PING 192.51.0.1 (192.51.0.1) 56(84) bytes of data.
+64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=2087 ms
+64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=2.46 ms
+
+--- 192.51.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2085ms
+[26-06-22 06:45:30][ASSERT#0009][OK] cost=2.161s
+[26-06-22 06:45:30][ASSERT#0010][cmd] at cases/switch_udp.sh:92 fn=test_ping cmd="docker exec tests-sw-udp1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:452 ...
+  PID   452   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:45:31][ASSERT#0010][OK] cost=1.066s
+[26-06-22 06:45:31][ASSERT#0011][cmd] at cases/switch_udp.sh:93 fn=test_ping cmd="docker exec tests-sw-udp2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:492 ...
+  PID   492   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:45:32][ASSERT#0011][OK] cost=1.082s
+[26-06-22 06:45:32][ASSERT#0012][cmd] at cases/switch_udp.sh:95 fn=test_ping cmd="docker exec tests-sw-udp2 ip neigh flush dev hi-example"
+[26-06-22 06:45:33][ASSERT#0012][OK] cost=0.053s
+[26-06-22 06:45:33][ASSERT#0013][match] at cases/switch_udp.sh:96 fn=test_ping retry=15 cmd="docker exec tests-sw-udp2 openlan network --name example output ls" expect="state: authenticated"
+  remote: 100.100.0.241
+  rxBytes: 586
+  secret: t1:123456
+  state: authenticated
+  txBytes: 409
+
+[26-06-22 06:45:38][ASSERT#0013][OK] cost=5.418s
+[26-06-22 06:45:38][ASSERT#0014][match] at cases/switch_udp.sh:97 fn=test_ping retry=20 cmd="docker exec tests-sw-udp2 ping -c 3 192.51.0.1" expect="bytes from"
+PING 192.51.0.1 (192.51.0.1) 56(84) bytes of data.
+64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=1.02 ms
+64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=1.73 ms
+64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=1.46 ms
+
+--- 192.51.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:45:44][ASSERT#0014][OK] cost=6.235s
+[26-06-22 06:45:44][ASSERT#0015][cmd] at cases/switch_udp.sh:101 fn=test_ping cmd="docker exec tests-sw-udp2 openlan network --name example output rm --device udp:100.100.0.241:t1"
+[26-06-22 06:45:44][ASSERT#0015][OK] cost=0.071s
+[26-06-22 06:45:44][ASSERT#0016][unmatch] at cases/switch_udp.sh:102 fn=test_ping retry=15 cmd="docker exec tests-sw-udp2 ping -c 3 192.51.0.1" unexpected="bytes from"
+Last output:
+PING 192.51.0.1 (192.51.0.1) 56(84) bytes of data.
+From 192.51.0.2 icmp_seq=1 Destination Host Unreachable
+From 192.51.0.2 icmp_seq=2 Destination Host Unreachable
+From 192.51.0.2 icmp_seq=3 Destination Host Unreachable
+
+--- 192.51.0.1 ping statistics ---
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2075ms
+pipe 3
+[26-06-22 06:47:31][ASSERT#0016][OK] cost=107.165s
+[26-06-22 06:47:32] END switch_udp status=PASS cost=130.602s

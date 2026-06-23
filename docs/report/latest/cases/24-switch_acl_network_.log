@@ -1,0 +1,66 @@
+[26-06-22 06:22:02] START switch_acl_network
+scenario: cases/switch_acl_network.sh
+header  : verify acl ebtables hook is bridge ingress only
+topology: sw1 192.63.0.1 | +-- ACL hook checks on br-example
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 192.63.0.1
+topology: #              |
+topology: #              +-- ACL hook checks on br-example
+topology: # - Docker mgmt network: 100.100.2.0/24
+topology: #   sw1=100.100.2.241.
+topology: # - OpenLAN service network "example": 192.63.0.0/24
+topology: # Validation:
+topology: #   ACL ebtables hook is installed only on bridge ingress FORWARD traffic.
+
+Started switch pause container: tests-sw-acl-ingress1-pause
+Started switch frr container: tests-sw-acl-ingress1-frr
+Started switch ipsec container: tests-sw-acl-ingress1-ipsec
+Started switch container: tests-sw-acl-ingress1
+[26-06-22 06:22:02][ASSERT#0001][expect] at cases/switch_acl_network.sh:46 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-acl-ingress1" expect="Http.Start"
+2026/06/22 06:22:03 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:22:03 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:22:03 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:22:03 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:22:03][ASSERT#0001][OK] cost=1.029s
+[26-06-22 06:22:03][ASSERT#0002][cmd] at cases/switch_acl_network.sh:48 fn=setup_sw1 cmd="docker exec tests-sw-acl-ingress1 openlan crypt update --algorithm aes-128 --secret cb2ff088a34d"
+[26-06-22 06:22:04][ASSERT#0002][OK] cost=0.056s
+[26-06-22 06:22:04][ASSERT#0003][cmd] at cases/switch_acl_network.sh:49 fn=setup_sw1 cmd="docker exec tests-sw-acl-ingress1 openlan network --name example add --address 192.63.0.1/24"
+[26-06-22 06:22:04][ASSERT#0003][OK] cost=0.267s
+[26-06-22 06:22:04][ASSERT#0004][cmd] at cases/switch_acl_network.sh:50 fn=setup_sw1 cmd="docker exec tests-sw-acl-ingress1 openlan acl --name example rule add --srcip 192.63.0.2 --dstip 192.63.0.1 --protocol icmp"
+[26-06-22 06:22:04][ASSERT#0004][OK] cost=0.094s
+[26-06-22 06:22:04][ASSERT#0005][match] at cases/switch_acl_network.sh:54 fn=test_acl_ingress_hook retry=10 cmd="docker exec tests-sw-acl-ingress1 ebtables -t filter -L FORWARD" expect="logical-in br-example.*AT_example"
+Bridge table: filter
+
+Bridge chain: FORWARD, entries: 1, policy: ACCEPT
+--logical-in br-example -j AT_example
+[26-06-22 06:22:04][ASSERT#0005][OK] cost=0.068s
+[26-06-22 06:22:04][ASSERT#0006][unmatch] at cases/switch_acl_network.sh:55 fn=test_acl_ingress_hook retry=3 cmd="docker exec tests-sw-acl-ingress1 ebtables -t filter -L FORWARD" unexpected="logical-out br-example.*AT_example"
+Last output:
+Bridge table: filter
+
+Bridge chain: FORWARD, entries: 1, policy: ACCEPT
+--logical-in br-example -j AT_example
+[26-06-22 06:22:07][ASSERT#0006][OK] cost=3.186s
+[26-06-22 06:22:07][ASSERT#0007][match] at cases/switch_acl_network.sh:56 fn=test_acl_ingress_hook retry=10 cmd="docker exec tests-sw-acl-ingress1 ebtables -t filter -L INPUT" expect="logical-in br-example.*AT_example"
+Bridge table: filter
+
+Bridge chain: INPUT, entries: 1, policy: ACCEPT
+--logical-in br-example -j AT_example
+[26-06-22 06:22:07][ASSERT#0007][OK] cost=0.063s
+[26-06-22 06:22:07][ASSERT#0008][match] at cases/switch_acl_network.sh:57 fn=test_acl_ingress_hook retry=10 cmd="docker exec tests-sw-acl-ingress1 iptables -t raw -S TT_pre-example" expect="hi-example.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:07][ASSERT#0008][OK] cost=0.057s
+[26-06-22 06:22:07][ASSERT#0009][unmatch] at cases/switch_acl_network.sh:58 fn=test_acl_ingress_hook retry=3 cmd="docker exec tests-sw-acl-ingress1 iptables -t raw -S TT_pre-example" unexpected="br-example.*AT_example"
+Last output:
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:10][ASSERT#0009][OK] cost=3.183s
+[26-06-22 06:22:11][ASSERT#0010][match] at cases/switch_acl_network.sh:59 fn=test_acl_ingress_hook retry=10 cmd="docker exec tests-sw-acl-ingress1 ebtables -t filter -L AT_example" expect="192.63.0.2.*192.63.0.1.*icmp.*DROP"
+Bridge table: filter
+
+Bridge chain: AT_example, entries: 1, policy: ACCEPT
+-p IPv4 --ip-src 192.63.0.2 --ip-dst 192.63.0.1 --ip-proto icmp -j DROP
+[26-06-22 06:22:11][ASSERT#0010][OK] cost=0.083s
+[26-06-22 06:22:11] END switch_acl_network status=PASS cost=9.536s

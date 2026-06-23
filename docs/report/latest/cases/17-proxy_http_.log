@@ -1,0 +1,161 @@
+[26-06-22 06:16:35] START proxy_http
+scenario: cases/proxy_http.sh
+header  : verify ceci http proxy forwarding to http target
+topology: sw1 proxy client 192.52.0.1 | wget via local Ceci HTTP proxy | sw1 openceci(http) -- output --> sw2 192.52.0.2:18081
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 proxy client 192.52.0.1
+topology: #              | wget via local Ceci HTTP proxy
+topology: #              v
+topology: #       sw1 openceci(http) -- output --> sw2 192.52.0.2:18081
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241 (ceci http proxy), sw2=100.100.0.242 (http target/client).
+topology: # - OpenLAN service network "example": 192.52.0.0/24
+topology: #   sw1=192.52.0.1, sw2=192.52.0.2, with sw2 output to sw1.
+topology: # Validation:
+topology: #   sw1 wget -> sw1 ceci(http proxy) -> sw2(192.52.0.2) local http server.
+
+Started switch pause container: tests-sw-proxy-http1-pause
+Started switch frr container: tests-sw-proxy-http1-frr
+Started switch ipsec container: tests-sw-proxy-http1-ipsec
+Started switch container: tests-sw-proxy-http1
+[26-06-22 06:16:36][ASSERT#0001][expect] at cases/proxy_http.sh:62 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-proxy-http1" expect="Http.Start"
+2026/06/22 06:16:36 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:16:36 INFO|root|Wait: ...
+2026/06/22 06:16:36 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:16:36 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:16:37][ASSERT#0001][OK] cost=1.032s
+[26-06-22 06:16:37][ASSERT#0002][cmd] at cases/proxy_http.sh:64 fn=setup_sw1 cmd="docker exec tests-sw-proxy-http1 openlan network --name example add --address 192.52.0.1/24"
+[26-06-22 06:16:37][ASSERT#0002][OK] cost=0.257s
+[26-06-22 06:16:37][ASSERT#0003][cmd] at cases/proxy_http.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-proxy-http1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:16:37][ASSERT#0003][OK] cost=0.072s
+[26-06-22 06:16:37][ASSERT#0004][cmd] at cases/proxy_http.sh:66 fn=setup_sw1 cmd="docker exec tests-sw-proxy-http1 openlan ceci proxy add --mode http --listen 127.0.0.1:11082"
+[26-06-22 06:16:37][ASSERT#0004][OK] cost=0.071s
+[26-06-22 06:16:37][ASSERT#0005][match] at cases/proxy_http.sh:67 fn=setup_sw1 retry=5 cmd="docker exec tests-sw-proxy-http1 openlan ceci ls" expect="mode: http"
+  specifies:
+    proxy:
+    - listen: 127.0.0.1:11082
+      mode: http
+      target:
+      - ""
+name: ceci
+[26-06-22 06:16:37][ASSERT#0005][OK] cost=0.075s
+[26-06-22 06:16:37][ASSERT#0006][match] at cases/proxy_http.sh:68 fn=setup_sw1 retry=5 cmd="docker exec tests-sw-proxy-http1 openlan ceci ls" expect="listen: 127.0.0.1:11082"
+  snat: disable
+  specifies:
+    proxy:
+    - listen: 127.0.0.1:11082
+      mode: http
+      target:
+      - ""
+[26-06-22 06:16:37][ASSERT#0006][OK] cost=0.079s
+Started switch pause container: tests-sw-proxy-http2-pause
+Started switch frr container: tests-sw-proxy-http2-frr
+Started switch ipsec container: tests-sw-proxy-http2-ipsec
+Started switch container: tests-sw-proxy-http2
+[26-06-22 06:16:38][ASSERT#0007][expect] at cases/proxy_http.sh:87 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-proxy-http2" expect="Http.Start"
+2026/06/22 06:16:39 INFO|root|Wait: ...
+2026/06/22 06:16:39 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:16:39 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:16:39 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:16:39][ASSERT#0007][OK] cost=1.032s
+[26-06-22 06:16:39][ASSERT#0008][cmd] at cases/proxy_http.sh:89 fn=setup_sw2 cmd="docker exec tests-sw-proxy-http2 openlan network --name example add --address 192.52.0.2/24"
+[26-06-22 06:16:39][ASSERT#0008][OK] cost=0.261s
+[26-06-22 06:16:39][ASSERT#0009][cmd] at cases/proxy_http.sh:90 fn=setup_sw2 cmd="docker exec tests-sw-proxy-http2 openlan network --name example output add --remote 100.100.0.241 --protocol tcp --secret t1@example:123456 --crypt aes-128:ea64d5b0c96c"
+[26-06-22 06:16:39][ASSERT#0009][OK] cost=0.064s
+[26-06-22 06:16:39][ASSERT#0010][match] at cases/proxy_http.sh:91 fn=setup_sw2 retry=20 cmd="docker exec tests-sw-proxy-http2 openlan network --name example output ls" expect="state: authenticated"
+  protocol: tcp
+  remote: 100.100.0.241
+  secret: t1@example:123456
+  state: authenticated
+
+[26-06-22 06:16:42][ASSERT#0010][OK] cost=2.193s
+[26-06-22 06:16:42][ASSERT#0011][cmd] at cases/proxy_http.sh:95 fn=setup_target_http cmd="docker exec tests-sw-proxy-http2 sh -c mkdir -p /tmp/proxy-http && echo 'proxy-http-ok' > /tmp/proxy-http/index.html"
+[26-06-22 06:16:42][ASSERT#0011][OK] cost=0.063s
+[26-06-22 06:16:42][ASSERT#0012][cmd] at cases/proxy_http.sh:96 fn=setup_target_http cmd="docker exec tests-sw-proxy-http2 sh -c nohup python3 -m http.server 18081 --bind 0.0.0.0 --directory /tmp/proxy-http >/tmp/proxy-http.log 2>&1 &"
+[26-06-22 06:16:42][ASSERT#0012][OK] cost=0.058s
+[26-06-22 06:16:42][ASSERT#0013][match] at cases/proxy_http.sh:97 fn=setup_target_http retry=10 cmd="docker exec tests-sw-proxy-http2 wget -q -O- http://192.52.0.2:18081/" expect="proxy-http-ok"
+proxy-http-ok
+[26-06-22 06:16:42][ASSERT#0013][OK] cost=0.061s
+[26-06-22 06:16:42][ASSERT#0014][match] at cases/proxy_http.sh:101 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 ping -c 3 192.52.0.2" expect="bytes from"
+PING 192.52.0.2 (192.52.0.2) 56(84) bytes of data.
+64 bytes from 192.52.0.2: icmp_seq=1 ttl=64 time=2030 ms
+64 bytes from 192.52.0.2: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.52.0.2: icmp_seq=3 ttl=64 time=2.52 ms
+
+--- 192.52.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2028ms
+[26-06-22 06:16:44][ASSERT#0014][OK] cost=2.095s
+[26-06-22 06:16:44][ASSERT#0015][match] at cases/proxy_http.sh:102 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 wget -q -O- -e use_proxy=yes -e http_proxy=http://127.0.0.1:11082 http://192.52.0.2:18081/" expect="proxy-http-ok"
+proxy-http-ok
+[26-06-22 06:16:44][ASSERT#0015][OK] cost=0.061s
+[26-06-22 06:16:44][ASSERT#0016][fuzzy] at cases/proxy_http.sh:103 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 cat /var/openlan/ceci/127.0.0.1:11082.log" pattern="HttpProxy.ServeHTTP .* 192.52.0.2:18081"
+2026/06/22 06:16:37 INFO|root|HttpProxy.Initialize /var/openlan/ceci/127.0.0.1:11082.yaml
+2026/06/22 06:16:37 INFO|127.0.0.1:11082|HttpProxy.start http://127.0.0.1:11082
+2026/06/22 06:16:37 INFO|root|Wait: ...
+2026/06/22 06:16:44 INFO|127.0.0.1:11082|HttpProxy.ServeHTTP 127.0.0.1:39298 -> GET 192.52.0.2:18081
+[26-06-22 06:16:44][ASSERT#0016][OK] cost=0.063s
+[26-06-22 06:16:44][ASSERT#0017][cmd] at cases/proxy_http.sh:107 fn=restart_http_proxy cmd="docker exec tests-sw-proxy-http1 pkill -f /usr/bin/openceci"
+[26-06-22 06:16:44][ASSERT#0017][OK] cost=0.058s
+[26-06-22 06:16:44][ASSERT#0018][cmd] at cases/proxy_http.sh:108 fn=restart_http_proxy cmd="docker exec tests-sw-proxy-http1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:45 ....
+  PID   45   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:504 ...
+  PID   504   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:16:45][ASSERT#0018][OK] cost=1.073s
+[26-06-22 06:16:45][ASSERT#0019][match] at cases/proxy_http.sh:109 fn=restart_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 openlan ceci ls" expect="listen: 127.0.0.1:11082"
+  snat: disable
+  specifies:
+    proxy:
+    - listen: 127.0.0.1:11082
+      mode: http
+      target:
+      - ""
+[26-06-22 06:16:45][ASSERT#0019][OK] cost=0.073s
+[26-06-22 06:16:45][ASSERT#0020][match] at cases/proxy_http.sh:110 fn=restart_http_proxy retry=30 cmd="docker exec tests-sw-proxy-http1 ping -c 3 192.52.0.2" expect="bytes from"
+PING 192.52.0.2 (192.52.0.2) 56(84) bytes of data.
+64 bytes from 192.52.0.2: icmp_seq=1 ttl=64 time=0.732 ms
+64 bytes from 192.52.0.2: icmp_seq=2 ttl=64 time=1.11 ms
+64 bytes from 192.52.0.2: icmp_seq=3 ttl=64 time=1.56 ms
+
+--- 192.52.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2036ms
+[26-06-22 06:17:00][ASSERT#0020][OK] cost=15.251s
+[26-06-22 06:17:00][ASSERT#0021][match] at cases/proxy_http.sh:111 fn=restart_http_proxy retry=30 cmd="docker exec tests-sw-proxy-http2 openlan network --name example output ls" expect="state: authenticated"
+  remote: 100.100.0.241
+  rxBytes: 1326
+  secret: t1@example:123456
+  state: authenticated
+  txBytes: 2104
+
+[26-06-22 06:17:01][ASSERT#0021][OK] cost=0.067s
+[26-06-22 06:17:01][ASSERT#0022][match] at cases/proxy_http.sh:101 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 ping -c 3 192.52.0.2" expect="bytes from"
+PING 192.52.0.2 (192.52.0.2) 56(84) bytes of data.
+64 bytes from 192.52.0.2: icmp_seq=1 ttl=64 time=0.510 ms
+64 bytes from 192.52.0.2: icmp_seq=2 ttl=64 time=1.04 ms
+64 bytes from 192.52.0.2: icmp_seq=3 ttl=64 time=1.12 ms
+
+--- 192.52.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2027ms
+[26-06-22 06:17:03][ASSERT#0022][OK] cost=2.094s
+[26-06-22 06:17:03][ASSERT#0023][match] at cases/proxy_http.sh:102 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 wget -q -O- -e use_proxy=yes -e http_proxy=http://127.0.0.1:11082 http://192.52.0.2:18081/" expect="proxy-http-ok"
+proxy-http-ok
+[26-06-22 06:17:03][ASSERT#0023][OK] cost=0.072s
+[26-06-22 06:17:03][ASSERT#0024][fuzzy] at cases/proxy_http.sh:103 fn=test_http_proxy retry=20 cmd="docker exec tests-sw-proxy-http1 cat /var/openlan/ceci/127.0.0.1:11082.log" pattern="HttpProxy.ServeHTTP .* 192.52.0.2:18081"
+2026/06/22 06:16:37 INFO|root|HttpProxy.Initialize /var/openlan/ceci/127.0.0.1:11082.yaml
+2026/06/22 06:16:37 INFO|127.0.0.1:11082|HttpProxy.start http://127.0.0.1:11082
+2026/06/22 06:16:37 INFO|root|Wait: ...
+2026/06/22 06:16:44 INFO|127.0.0.1:11082|HttpProxy.ServeHTTP 127.0.0.1:39298 -> GET 192.52.0.2:18081
+2026/06/22 06:16:44 WARN|root|Wait: ... Signal 15 received ...
+2026/06/22 06:16:44 WARN|127.0.0.1:11082|HttpProxy.start http: Server closed
+2026/06/22 06:16:44 INFO|root|HttpProxy.Initialize /var/openlan/ceci/127.0.0.1:11082.yaml
+2026/06/22 06:16:44 INFO|127.0.0.1:11082|HttpProxy.start http://127.0.0.1:11082
+2026/06/22 06:16:44 INFO|root|Wait: ...
+2026/06/22 06:17:03 INFO|127.0.0.1:11082|HttpProxy.ServeHTTP 127.0.0.1:54344 -> GET 192.52.0.2:18081
+[26-06-22 06:17:03][ASSERT#0024][OK] cost=0.064s
+[26-06-22 06:17:03] END proxy_http status=PASS cost=28.656s

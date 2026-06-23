@@ -1,0 +1,69 @@
+[26-06-22 06:04:41] START access_openvpn_client_ping
+scenario: cases/access_openvpn_client_ping.sh
+header  : two OpenVPN clients with static addresses can ping each other
+topology: sw1(center) 192.42.0.1 | OpenVPN tcp/1194 | OpenVPN tcp/1194 | vpn1 10.97.0.10 <----------> vpn2 10.97.0.11
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1(center) 192.42.0.1
+topology: #              ^                         ^
+topology: #              | OpenVPN tcp/1194         | OpenVPN tcp/1194
+topology: #       vpn1 10.97.0.10 <----------> vpn2 10.97.0.11
+topology: #              client-to-client ping over OpenVPN overlay
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: # - OpenLAN service network "example": 192.42.0.0/24
+topology: # - OpenVPN overlay: tcp/1194, subnet 10.97.0.0/24
+topology: # - Static OpenVPN client addresses:
+topology: #   vpn1@example -> 10.97.0.10
+topology: #   vpn2@example -> 10.97.0.11
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw-openvpn-ping-pause
+Started switch frr container: tests-sw-openvpn-ping-frr
+Started switch ipsec container: tests-sw-openvpn-ping-ipsec
+Started switch container: tests-sw-openvpn-ping
+[26-06-22 06:04:42][ASSERT#0001][expect] at cases/access_openvpn_client_ping.sh:54 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-ping" expect="Http.Start"
+2026/06/22 06:04:43 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:04:43 INFO|root|Wait: ...
+2026/06/22 06:04:43 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:04:43 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:04:43][ASSERT#0001][OK] cost=1.029s
+[26-06-22 06:04:43][ASSERT#0002][cmd] at cases/access_openvpn_client_ping.sh:56 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-ping openlan network --name example add --address 192.42.0.1/24"
+[26-06-22 06:04:43][ASSERT#0002][OK] cost=0.263s
+[26-06-22 06:04:43][ASSERT#0003][cmd] at cases/access_openvpn_client_ping.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-ping openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:04:43][ASSERT#0003][OK] cost=0.066s
+[26-06-22 06:04:43][ASSERT#0004][cmd] at cases/access_openvpn_client_ping.sh:58 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-ping openlan user add --name vpn2@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn2@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:04:44][ASSERT#0004][OK] cost=0.076s
+[26-06-22 06:04:44][ASSERT#0005][cmd] at cases/access_openvpn_client_ping.sh:81 fn=setup_openvpn_and_check_ping cmd="docker exec tests-sw-openvpn-ping openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.97.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:04:44][ASSERT#0005][OK] cost=0.123s
+[26-06-22 06:04:44][ASSERT#0006][cmd] at cases/access_openvpn_client_ping.sh:83 fn=setup_openvpn_and_check_ping cmd="docker exec tests-sw-openvpn-ping openlan network --name example client add --user vpn1 --address 10.97.0.10"
+[26-06-22 06:04:44][ASSERT#0006][OK] cost=0.071s
+[26-06-22 06:04:44][ASSERT#0007][cmd] at cases/access_openvpn_client_ping.sh:84 fn=setup_openvpn_and_check_ping cmd="docker exec tests-sw-openvpn-ping openlan network --name example client add --user vpn2 --address 10.97.0.11"
+[26-06-22 06:04:44][ASSERT#0007][OK] cost=0.065s
+[26-06-22 06:04:44][ASSERT#0008][cmd] at cases/access_openvpn_client_ping.sh:86 fn=setup_openvpn_and_check_ping cmd="docker exec tests-sw-openvpn-ping test -f /var/openlan/openvpn/example/ccd/vpn1@example"
+[26-06-22 06:04:44][ASSERT#0008][OK] cost=0.052s
+[26-06-22 06:04:44][ASSERT#0009][cmd] at cases/access_openvpn_client_ping.sh:87 fn=setup_openvpn_and_check_ping cmd="docker exec tests-sw-openvpn-ping test -f /var/openlan/openvpn/example/ccd/vpn2@example"
+[26-06-22 06:04:44][ASSERT#0009][OK] cost=0.055s
+Started OpenVPN client container: tests-sw-openvpn-ping.vpn1
+[26-06-22 06:04:44][ASSERT#0010][expect] at cases/access_openvpn_client_ping.sh:75 fn=start_vpn_client retry=40 cmd="docker logs -f tests-sw-openvpn-ping.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:04:44 net_addr_v4_add: 10.97.0.10/24 dev tun0
+2026-06-22 06:04:44 net_route_v4_add: 10.97.0.0/24 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:04:44 net_route_v4_add: 192.42.0.0/24 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:04:44 Initialization Sequence Completed
+[26-06-22 06:04:45][ASSERT#0010][OK] cost=1.034s
+Started OpenVPN client container: tests-sw-openvpn-ping.vpn2
+[26-06-22 06:04:46][ASSERT#0011][expect] at cases/access_openvpn_client_ping.sh:75 fn=start_vpn_client retry=40 cmd="docker logs -f tests-sw-openvpn-ping.vpn2" expect="Initialization Sequence Completed"
+2026-06-22 06:04:46 net_addr_v4_add: 10.97.0.11/24 dev tun0
+2026-06-22 06:04:46 net_route_v4_add: 10.97.0.0/24 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:04:46 net_route_v4_add: 192.42.0.0/24 via 10.97.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:04:46 Initialization Sequence Completed
+[26-06-22 06:04:47][ASSERT#0011][OK] cost=1.039s
+cases/access_openvpn_client_ping.sh: line 92: assert_check: command not found
+cases/access_openvpn_client_ping.sh: line 93: assert_check: command not found
+[26-06-22 06:04:47] END access_openvpn_client_ping status=PASS cost=6.014s

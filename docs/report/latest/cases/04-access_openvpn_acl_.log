@@ -1,0 +1,114 @@
+[26-06-22 06:03:48] START access_openvpn_acl
+scenario: cases/access_openvpn_acl.sh
+header  : verify OpenVPN ACL uses iptables while bridge ACL uses ebtables
+topology: sw1(center) 192.64.0.1 | OpenVPN tcp/1194, 10.88.0.0/24 | vpn1 10.88.0.10 | ACL drop rule is enforced by original iptables tun hook
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1(center) 192.64.0.1
+topology: #                 ^
+topology: #                 | OpenVPN tcp/1194, 10.88.0.0/24
+topology: #              vpn1 10.88.0.10
+topology: #                 |
+topology: #              ACL drop rule is enforced by original iptables tun hook
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, vpn1 client joins the same mgmt network.
+topology: # - OpenLAN service network "example": 192.64.0.0/24
+topology: #   sw1 gateway=192.64.0.1.
+topology: # - OpenVPN overlay:
+topology: #   tcp/1194, subnet 10.88.0.0/24, vpn1 static address 10.88.0.10.
+topology: # Validation:
+topology: #   OpenVPN client is blocked by the original iptables ACL path on tun1194,
+topology: #   while bridge traffic uses ebtables and ebtables ACL never hooks tun1194.
+
+Started switch pause container: tests-sw-openvpn-acl.sw1-pause
+Started switch frr container: tests-sw-openvpn-acl.sw1-frr
+Started switch ipsec container: tests-sw-openvpn-acl.sw1-ipsec
+Started switch container: tests-sw-openvpn-acl.sw1
+[26-06-22 06:03:49][ASSERT#0001][expect] at cases/access_openvpn_acl.sh:55 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-openvpn-acl.sw1" expect="Http.Start"
+2026/06/22 06:03:50 INFO|root|Wait: ...
+2026/06/22 06:03:50 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:03:50 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:03:50 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:03:50][ASSERT#0001][OK] cost=1.028s
+[26-06-22 06:03:50][ASSERT#0002][cmd] at cases/access_openvpn_acl.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-acl.sw1 openlan network --name example add --address 192.64.0.1/24"
+[26-06-22 06:03:51][ASSERT#0002][OK] cost=0.246s
+[26-06-22 06:03:51][ASSERT#0003][cmd] at cases/access_openvpn_acl.sh:58 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-acl.sw1 openlan user add --name vpn1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+vpn1@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:03:51][ASSERT#0003][OK] cost=0.057s
+[26-06-22 06:03:51][ASSERT#0004][cmd] at cases/access_openvpn_acl.sh:59 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-acl.sw1 openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.88.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:03:51][ASSERT#0004][OK] cost=0.134s
+[26-06-22 06:03:51][ASSERT#0005][cmd] at cases/access_openvpn_acl.sh:60 fn=setup_sw1 cmd="docker exec tests-sw-openvpn-acl.sw1 openlan network --name example client add --user vpn1 --address 10.88.0.10"
+[26-06-22 06:03:51][ASSERT#0005][OK] cost=0.061s
+Started OpenVPN client container: tests-sw-openvpn-acl.vpn1
+[26-06-22 06:03:51][ASSERT#0006][expect] at cases/access_openvpn_acl.sh:72 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-openvpn-acl.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:03:51 net_addr_v4_add: 10.88.0.10/24 dev tun0
+2026-06-22 06:03:51 net_route_v4_add: 10.88.0.0/24 via 10.88.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:03:51 net_route_v4_add: 192.64.0.0/24 via 10.88.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:03:51 Initialization Sequence Completed
+[26-06-22 06:03:52][ASSERT#0006][OK] cost=1.032s
+[26-06-22 06:03:52][ASSERT#0007][match] at cases/access_openvpn_acl.sh:73 fn=setup_openvpn_client retry=10 cmd="docker exec tests-sw-openvpn-acl.vpn1 ping -c 3 192.64.0.1" expect="bytes from"
+PING 192.64.0.1 (192.64.0.1) 56(84) bytes of data.
+64 bytes from 192.64.0.1: icmp_seq=1 ttl=64 time=0.309 ms
+64 bytes from 192.64.0.1: icmp_seq=2 ttl=64 time=1.23 ms
+64 bytes from 192.64.0.1: icmp_seq=3 ttl=64 time=0.399 ms
+
+--- 192.64.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:03:54][ASSERT#0007][OK] cost=2.086s
+[26-06-22 06:03:54][ASSERT#0008][cmd] at cases/access_openvpn_acl.sh:77 fn=test_openvpn_acl_scope cmd="docker exec tests-sw-openvpn-acl.sw1 openlan acl --name example rule add --srcip 10.88.0.10 --dstip 192.64.0.1 --protocol icmp"
+[26-06-22 06:03:54][ASSERT#0008][OK] cost=0.062s
+[26-06-22 06:03:54][ASSERT#0009][match] at cases/access_openvpn_acl.sh:79 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 openlan acl --name example rule list" expect="10.88.0.10"
+# total 1
+srcip           dstip           protocol dport sport action  
+10.88.0.10      192.64.0.1      icmp     0     0     drop    
+[26-06-22 06:03:54][ASSERT#0009][OK] cost=0.069s
+[26-06-22 06:03:54][ASSERT#0010][match] at cases/access_openvpn_acl.sh:80 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 iptables -t raw -S TT_pre-example" expect="tun1194.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+-A TT_pre-example -i tun1194 -j AT_example
+[26-06-22 06:03:55][ASSERT#0010][OK] cost=0.058s
+[26-06-22 06:03:55][ASSERT#0011][unmatch] at cases/access_openvpn_acl.sh:81 fn=test_openvpn_acl_scope retry=3 cmd="docker exec tests-sw-openvpn-acl.sw1 iptables -t raw -S TT_pre-example" unexpected="br-example.*AT_example"
+Last output:
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+-A TT_pre-example -i tun1194 -j AT_example
+[26-06-22 06:03:58][ASSERT#0011][OK] cost=3.190s
+[26-06-22 06:03:58][ASSERT#0012][match] at cases/access_openvpn_acl.sh:82 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 iptables -t raw -S TT_pre-example" expect="hi-example.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+-A TT_pre-example -i tun1194 -j AT_example
+[26-06-22 06:03:58][ASSERT#0012][OK] cost=0.067s
+[26-06-22 06:03:58][ASSERT#0013][match] at cases/access_openvpn_acl.sh:83 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 iptables -t raw -S AT_example" expect="10.88.0.10.*192.64.0.1.*icmp.*DROP"
+-N AT_example
+-A AT_example -s 10.88.0.10/32 -d 192.64.0.1/32 -p icmp -j DROP
+[26-06-22 06:03:58][ASSERT#0013][OK] cost=0.071s
+[26-06-22 06:03:58][ASSERT#0014][match] at cases/access_openvpn_acl.sh:84 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 ebtables -t filter -L AT_example" expect="10.88.0.10.*192.64.0.1.*icmp.*DROP"
+Bridge table: filter
+
+Bridge chain: AT_example, entries: 1, policy: ACCEPT
+-p IPv4 --ip-src 10.88.0.10 --ip-dst 192.64.0.1 --ip-proto icmp -j DROP
+[26-06-22 06:03:58][ASSERT#0014][OK] cost=0.079s
+[26-06-22 06:03:58][ASSERT#0015][match] at cases/access_openvpn_acl.sh:85 fn=test_openvpn_acl_scope retry=10 cmd="docker exec tests-sw-openvpn-acl.sw1 ebtables -t filter -L FORWARD" expect="logical-in br-example.*AT_example"
+Bridge table: filter
+
+Bridge chain: FORWARD, entries: 1, policy: ACCEPT
+--logical-in br-example -j AT_example
+[26-06-22 06:03:58][ASSERT#0015][OK] cost=0.066s
+[26-06-22 06:03:58][ASSERT#0016][unmatch] at cases/access_openvpn_acl.sh:86 fn=test_openvpn_acl_scope retry=3 cmd="docker exec tests-sw-openvpn-acl.sw1 ebtables -t filter -L FORWARD" unexpected="logical-in tun1194.*AT_example"
+Last output:
+Bridge table: filter
+
+Bridge chain: FORWARD, entries: 1, policy: ACCEPT
+--logical-in br-example -j AT_example
+[26-06-22 06:04:01][ASSERT#0016][OK] cost=3.190s
+[26-06-22 06:04:01][ASSERT#0017][unmatch] at cases/access_openvpn_acl.sh:88 fn=test_openvpn_acl_scope retry=3 cmd="docker exec tests-sw-openvpn-acl.vpn1 ping -c 3 192.64.0.1" unexpected="bytes from"
+Last output:
+PING 192.64.0.1 (192.64.0.1) 56(84) bytes of data.
+
+--- 192.64.0.1 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2040ms
+
+[26-06-22 06:04:41][ASSERT#0017][OK] cost=39.378s
+[26-06-22 06:04:41] END access_openvpn_acl status=PASS cost=52.660s

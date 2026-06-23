@@ -1,0 +1,291 @@
+[26-06-22 06:22:11] START switch_acl
+scenario: cases/switch_acl.sh
+header  : verify acl add-list-save-reload-remove with vip tcp/80 and icmp
+topology: sw1 192.61.0.1 -- UDP output --> sw2 192.61.0.2 | +------ ACL checks ----------> VIP 10.254.0.12:80/ICMP
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 192.61.0.1  -- UDP output -->  sw2 192.61.0.2
+topology: #              |                              |
+topology: #              +------ ACL checks ----------> VIP 10.254.0.12:80/ICMP
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - OpenLAN service network "example": 192.61.0.0/24
+topology: #   sw1=192.61.0.1, sw2=192.61.0.2.
+topology: # - sw2 VIP:
+topology: #   lo=10.254.0.12/32, tcp/80 service.
+topology: # Validation:
+topology: #   persistence across reload, and sw1 -> sw2 VIP tcp/80 and ICMP behavior.
+
+Started switch pause container: tests-sw-acl1-pause
+Started switch frr container: tests-sw-acl1-frr
+Started switch ipsec container: tests-sw-acl1-ipsec
+Started switch container: tests-sw-acl1
+[26-06-22 06:22:12][ASSERT#0001][expect] at cases/switch_acl.sh:52 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-acl1" expect="Http.Start"
+2026/06/22 06:22:13 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:22:13 INFO|root|Wait: ...
+2026/06/22 06:22:13 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:22:13 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:22:13][ASSERT#0001][OK] cost=1.027s
+[26-06-22 06:22:13][ASSERT#0002][cmd] at cases/switch_acl.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-acl1 openlan crypt update --algorithm aes-128 --secret cb2ff088a34d"
+[26-06-22 06:22:13][ASSERT#0002][OK] cost=0.070s
+[26-06-22 06:22:13][ASSERT#0003][cmd] at cases/switch_acl.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-acl1 openlan network --name example add --address 192.61.0.1/24"
+[26-06-22 06:22:13][ASSERT#0003][OK] cost=0.267s
+[26-06-22 06:22:13][ASSERT#0004][cmd] at cases/switch_acl.sh:56 fn=setup_sw1 cmd="docker exec tests-sw-acl1 openlan network --name example route add --prefix 10.254.0.12/32 --nexthop 192.61.0.2"
+[26-06-22 06:22:14][ASSERT#0004][OK] cost=0.068s
+[26-06-22 06:22:14][ASSERT#0005][cmd] at cases/switch_acl.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-acl1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:22:14][ASSERT#0005][OK] cost=0.064s
+[26-06-22 06:22:14][ASSERT#0006][cmd] at cases/switch_acl.sh:58 fn=setup_sw1 cmd="docker exec tests-sw-acl1 ip link show hi-example"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default 
+    link/ether be:c5:93:66:c1:94 brd ff:ff:ff:ff:ff:ff
+[26-06-22 06:22:14][ASSERT#0006][OK] cost=0.053s
+Started switch pause container: tests-sw-acl2-pause
+Started switch frr container: tests-sw-acl2-frr
+Started switch ipsec container: tests-sw-acl2-ipsec
+Started switch container: tests-sw-acl2
+[26-06-22 06:22:14][ASSERT#0007][expect] at cases/switch_acl.sh:68 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-acl2" expect="Http.Start"
+2026/06/22 06:22:15 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:22:15 INFO|root|Wait: ...
+2026/06/22 06:22:15 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:22:15 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:22:16][ASSERT#0007][OK] cost=1.029s
+[26-06-22 06:22:16][ASSERT#0008][cmd] at cases/switch_acl.sh:70 fn=setup_sw2 cmd="docker exec tests-sw-acl2 openlan crypt update --algorithm aes-128 --secret cb2ff088a34d"
+[26-06-22 06:22:16][ASSERT#0008][OK] cost=0.064s
+[26-06-22 06:22:16][ASSERT#0009][cmd] at cases/switch_acl.sh:71 fn=setup_sw2 cmd="docker exec tests-sw-acl2 openlan network --name example add --address 192.61.0.2/24"
+[26-06-22 06:22:16][ASSERT#0009][OK] cost=0.245s
+[26-06-22 06:22:16][ASSERT#0010][cmd] at cases/switch_acl.sh:72 fn=setup_sw2 cmd="docker exec tests-sw-acl2 openlan router address add --device lo --address 10.254.0.12/32"
+[26-06-22 06:22:16][ASSERT#0010][OK] cost=0.066s
+[26-06-22 06:22:16][ASSERT#0011][cmd] at cases/switch_acl.sh:73 fn=setup_sw2 cmd="docker exec tests-sw-acl2 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:22:16][ASSERT#0011][OK] cost=0.064s
+[26-06-22 06:22:16][ASSERT#0012][cmd] at cases/switch_acl.sh:74 fn=setup_sw2 cmd="docker exec tests-sw-acl2 openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1@example:123456 --crypt aes-128:cb2ff088a34d"
+[26-06-22 06:22:16][ASSERT#0012][OK] cost=0.072s
+[26-06-22 06:22:16][ASSERT#0013][cmd] at cases/switch_acl.sh:78 fn=setup_vip_http cmd="docker exec tests-sw-acl2 sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nacl-vip-80" | socat - TCP-LISTEN:80,bind=10.254.0.12,reuseaddr; done' >/tmp/acl-vip-80.log 2>&1 &"
+[26-06-22 06:22:16][ASSERT#0013][OK] cost=0.049s
+[26-06-22 06:22:16][ASSERT#0014][match] at cases/switch_acl.sh:82 fn=test_vip_reachable_before_acl retry=15 cmd="docker exec tests-sw-acl1 openlan network --name example access ls" expect="100.100.0.242"
+# total 1
+uuid             alive    device   alias            user     remote                 network  state 
+lc7x0zSds75ix    0m1s     tap0     fa6985524cda     t1       100.100.0.242:42217    example   authenticated
+[26-06-22 06:22:17][ASSERT#0014][OK] cost=1.122s
+[26-06-22 06:22:17][ASSERT#0015][match] at cases/switch_acl.sh:83 fn=test_vip_reachable_before_acl retry=5 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" expect="bytes from"
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+64 bytes from 10.254.0.12: icmp_seq=1 ttl=64 time=1.37 ms
+64 bytes from 10.254.0.12: icmp_seq=2 ttl=64 time=1.25 ms
+64 bytes from 10.254.0.12: icmp_seq=3 ttl=64 time=1.21 ms
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:22:23][ASSERT#0015][OK] cost=6.237s
+[26-06-22 06:22:23][ASSERT#0016][match] at cases/switch_acl.sh:84 fn=test_vip_reachable_before_acl retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" expect="acl-vip-80"
+acl-vip-80
+[26-06-22 06:22:24][ASSERT#0016][OK] cost=0.065s
+[26-06-22 06:22:24][ASSERT#0017][match] at cases/switch_acl.sh:88 fn=test_acl_add retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" expect="acl-vip-80"
+acl-vip-80
+[26-06-22 06:22:24][ASSERT#0017][OK] cost=0.068s
+[26-06-22 06:22:24][ASSERT#0018][cmd] at cases/switch_acl.sh:89 fn=test_acl_add cmd="docker exec tests-sw-acl2 openlan acl --name example rule add --srcip 192.61.0.1 --dstip 10.254.0.12 --protocol tcp --dport 80"
+[26-06-22 06:22:24][ASSERT#0018][OK] cost=0.083s
+[26-06-22 06:22:24][ASSERT#0019][match] at cases/switch_acl.sh:91 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" expect="192.61.0.1"
+# total 1
+srcip           dstip           protocol dport sport action  
+192.61.0.1      10.254.0.12     tcp      80    0     drop    
+[26-06-22 06:22:24][ASSERT#0019][OK] cost=0.072s
+[26-06-22 06:22:24][ASSERT#0020][match] at cases/switch_acl.sh:92 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" expect="10.254.0.12"
+# total 1
+srcip           dstip           protocol dport sport action  
+192.61.0.1      10.254.0.12     tcp      80    0     drop    
+[26-06-22 06:22:24][ASSERT#0020][OK] cost=0.073s
+[26-06-22 06:22:24][ASSERT#0021][match] at cases/switch_acl.sh:93 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" expect="hi-example.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:24][ASSERT#0021][OK] cost=0.067s
+[26-06-22 06:22:24][ASSERT#0022][unmatch] at cases/switch_acl.sh:94 fn=test_acl_add retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" unexpected="br-example.*AT_example"
+Last output:
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:27][ASSERT#0022][OK] cost=3.169s
+[26-06-22 06:22:27][ASSERT#0023][match] at cases/switch_acl.sh:95 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" expect="192.61.0.1.*10.254.0.12.*tcp.*--dport 80.*DROP"
+-N AT_example
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p tcp -m tcp --dport 80 -j DROP
+[26-06-22 06:22:27][ASSERT#0023][OK] cost=0.064s
+[26-06-22 06:22:27][ASSERT#0024][unmatch] at cases/switch_acl.sh:96 fn=test_acl_add retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" unexpected="acl-vip-80"
+Last output:
+[26-06-22 06:22:48][ASSERT#0024][OK] cost=20.352s
+[26-06-22 06:22:48][ASSERT#0025][match] at cases/switch_acl.sh:98 fn=test_acl_add retry=5 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" expect="bytes from"
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+64 bytes from 10.254.0.12: icmp_seq=1 ttl=64 time=0.929 ms
+64 bytes from 10.254.0.12: icmp_seq=2 ttl=64 time=1.17 ms
+64 bytes from 10.254.0.12: icmp_seq=3 ttl=64 time=1.34 ms
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:22:50][ASSERT#0025][OK] cost=2.068s
+[26-06-22 06:22:50][ASSERT#0026][cmd] at cases/switch_acl.sh:99 fn=test_acl_add cmd="docker exec tests-sw-acl2 openlan acl --name example rule add --srcip 192.61.0.1 --dstip 10.254.0.12 --protocol icmp"
+[26-06-22 06:22:50][ASSERT#0026][OK] cost=0.109s
+[26-06-22 06:22:50][ASSERT#0027][match] at cases/switch_acl.sh:101 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" expect="192.61.0.1"
+# total 2
+srcip           dstip           protocol dport sport action  
+192.61.0.1      10.254.0.12     icmp     0     0     drop    
+192.61.0.1      10.254.0.12     tcp      80    0     drop    
+[26-06-22 06:22:50][ASSERT#0027][OK] cost=0.070s
+[26-06-22 06:22:50][ASSERT#0028][match] at cases/switch_acl.sh:102 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" expect="10.254.0.12"
+# total 2
+srcip           dstip           protocol dport sport action  
+192.61.0.1      10.254.0.12     tcp      80    0     drop    
+192.61.0.1      10.254.0.12     icmp     0     0     drop    
+[26-06-22 06:22:50][ASSERT#0028][OK] cost=0.068s
+[26-06-22 06:22:50][ASSERT#0029][match] at cases/switch_acl.sh:103 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" expect="hi-example.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:50][ASSERT#0029][OK] cost=0.057s
+[26-06-22 06:22:50][ASSERT#0030][unmatch] at cases/switch_acl.sh:104 fn=test_acl_add retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" unexpected="br-example.*AT_example"
+Last output:
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:22:53][ASSERT#0030][OK] cost=3.199s
+[26-06-22 06:22:53][ASSERT#0031][match] at cases/switch_acl.sh:105 fn=test_acl_add retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" expect="192.61.0.1.*10.254.0.12.*icmp.*DROP"
+-N AT_example
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p icmp -j DROP
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p tcp -m tcp --dport 80 -j DROP
+[26-06-22 06:22:53][ASSERT#0031][OK] cost=0.064s
+[26-06-22 06:22:53][ASSERT#0032][unmatch] at cases/switch_acl.sh:106 fn=test_acl_add retry=3 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" unexpected="bytes from"
+Last output:
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2062ms
+
+[26-06-22 06:23:33][ASSERT#0032][OK] cost=39.357s
+[26-06-22 06:23:33][ASSERT#0033][cmd] at cases/switch_acl.sh:110 fn=test_acl_save_reload cmd="docker exec tests-sw-acl2 openlan acl --name example rule save"
+[26-06-22 06:23:33][ASSERT#0033][OK] cost=0.058s
+[26-06-22 06:23:33][ASSERT#0034][cmd] at cases/switch_acl.sh:111 fn=test_acl_save_reload cmd="docker exec tests-sw-acl1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:698 ...
+  PID   698   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:23:34][ASSERT#0034][OK] cost=1.068s
+[26-06-22 06:23:34][ASSERT#0035][cmd] at cases/switch_acl.sh:112 fn=test_acl_save_reload cmd="docker exec tests-sw-acl2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:762 ...
+  PID   762   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:23:35][ASSERT#0035][OK] cost=1.074s
+[26-06-22 06:23:35][ASSERT#0036][match] at cases/switch_acl.sh:114 fn=test_acl_save_reload retry=15 cmd="docker exec tests-sw-acl1 openlan network --name example access ls" expect="100.100.0.242"
+# total 1
+uuid             alive    device   alias            user     remote                 network  state 
+lc7x0zSds75ix    0m1s     tap0     fa6985524cda     t1       100.100.0.242:42549    example   authenticated
+[26-06-22 06:23:39][ASSERT#0036][OK] cost=4.344s
+[26-06-22 06:23:39][ASSERT#0037][match] at cases/switch_acl.sh:115 fn=test_acl_save_reload retry=10 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" expect="192.61.0.1"
+# total 2
+srcip           dstip           protocol dport sport action  
+192.61.0.1      10.254.0.12     tcp      80    0     drop    
+192.61.0.1      10.254.0.12     icmp     0     0     drop    
+[26-06-22 06:23:39][ASSERT#0037][OK] cost=0.072s
+[26-06-22 06:23:39][ASSERT#0038][match] at cases/switch_acl.sh:116 fn=test_acl_save_reload retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" expect="hi-example.*AT_example"
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:23:39][ASSERT#0038][OK] cost=0.063s
+[26-06-22 06:23:39][ASSERT#0039][unmatch] at cases/switch_acl.sh:117 fn=test_acl_save_reload retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S TT_pre-example" unexpected="br-example.*AT_example"
+Last output:
+-N TT_pre-example
+-A TT_pre-example -i hi-example -j AT_example
+[26-06-22 06:23:43][ASSERT#0039][OK] cost=3.182s
+[26-06-22 06:23:43][ASSERT#0040][match] at cases/switch_acl.sh:118 fn=test_acl_save_reload retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" expect="192.61.0.1.*10.254.0.12.*tcp.*--dport 80.*DROP"
+-N AT_example
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p tcp -m tcp --dport 80 -j DROP
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p icmp -j DROP
+[26-06-22 06:23:43][ASSERT#0040][OK] cost=0.077s
+[26-06-22 06:23:43][ASSERT#0041][match] at cases/switch_acl.sh:119 fn=test_acl_save_reload retry=10 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" expect="192.61.0.1.*10.254.0.12.*icmp.*DROP"
+-N AT_example
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p tcp -m tcp --dport 80 -j DROP
+-A AT_example -s 192.61.0.1/32 -d 10.254.0.12/32 -p icmp -j DROP
+[26-06-22 06:23:43][ASSERT#0041][OK] cost=0.067s
+[26-06-22 06:23:43][ASSERT#0042][unmatch] at cases/switch_acl.sh:120 fn=test_acl_save_reload retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" unexpected="acl-vip-80"
+Last output:
+[26-06-22 06:24:03][ASSERT#0042][OK] cost=20.336s
+[26-06-22 06:24:03][ASSERT#0043][unmatch] at cases/switch_acl.sh:121 fn=test_acl_save_reload retry=3 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" unexpected="bytes from"
+Last output:
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2062ms
+
+[26-06-22 06:24:42][ASSERT#0043][OK] cost=39.336s
+[26-06-22 06:24:42][ASSERT#0044][cmd] at cases/switch_acl.sh:125 fn=test_acl_flush cmd="docker exec tests-sw-acl2 openlan acl --name example rule flush"
+[26-06-22 06:24:42][ASSERT#0044][OK] cost=0.104s
+[26-06-22 06:24:42][ASSERT#0045][unmatch] at cases/switch_acl.sh:127 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" unexpected="192.61.0.1"
+Last output:
+# total 0
+srcip           dstip           protocol dport sport action  
+[26-06-22 06:24:46][ASSERT#0045][OK] cost=3.220s
+[26-06-22 06:24:46][ASSERT#0046][unmatch] at cases/switch_acl.sh:128 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" unexpected="dport 80"
+Last output:
+-N AT_example
+[26-06-22 06:24:49][ASSERT#0046][OK] cost=3.190s
+[26-06-22 06:24:49][ASSERT#0047][unmatch] at cases/switch_acl.sh:129 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" unexpected="icmp"
+Last output:
+-N AT_example
+[26-06-22 06:24:52][ASSERT#0047][OK] cost=3.189s
+[26-06-22 06:24:52][ASSERT#0048][match] at cases/switch_acl.sh:130 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" expect="bytes from"
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+64 bytes from 10.254.0.12: icmp_seq=1 ttl=64 time=0.902 ms
+64 bytes from 10.254.0.12: icmp_seq=2 ttl=64 time=1.28 ms
+64 bytes from 10.254.0.12: icmp_seq=3 ttl=64 time=1.21 ms
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2015ms
+[26-06-22 06:24:54][ASSERT#0048][OK] cost=2.084s
+[26-06-22 06:24:54][ASSERT#0049][match] at cases/switch_acl.sh:131 fn=test_acl_flush retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" expect="acl-vip-80"
+acl-vip-80
+[26-06-22 06:24:54][ASSERT#0049][OK] cost=0.060s
+[26-06-22 06:24:54][ASSERT#0050][cmd] at cases/switch_acl.sh:133 fn=test_acl_flush cmd="docker exec tests-sw-acl2 openlan acl --name example rule save"
+[26-06-22 06:24:54][ASSERT#0050][OK] cost=0.066s
+[26-06-22 06:24:54][ASSERT#0051][cmd] at cases/switch_acl.sh:134 fn=test_acl_flush cmd="docker exec tests-sw-acl1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:698 ....
+  PID   698   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:1100 ...
+  PID   1100   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:24:55][ASSERT#0051][OK] cost=1.064s
+[26-06-22 06:24:55][ASSERT#0052][cmd] at cases/switch_acl.sh:135 fn=test_acl_flush cmd="docker exec tests-sw-acl2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:762 ....
+  PID   762   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:1208 ...
+  PID   1208   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:24:56][ASSERT#0052][OK] cost=1.073s
+[26-06-22 06:24:56][ASSERT#0053][unmatch] at cases/switch_acl.sh:137 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 openlan acl --name example rule list" unexpected="192.61.0.1"
+Last output:
+# total 0
+srcip           dstip           protocol dport sport action  
+[26-06-22 06:25:00][ASSERT#0053][OK] cost=3.212s
+[26-06-22 06:25:00][ASSERT#0054][unmatch] at cases/switch_acl.sh:138 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" unexpected="dport 80"
+Last output:
+-N AT_example
+[26-06-22 06:25:03][ASSERT#0054][OK] cost=3.191s
+[26-06-22 06:25:03][ASSERT#0055][unmatch] at cases/switch_acl.sh:139 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl2 iptables -t raw -S AT_example" unexpected="icmp"
+Last output:
+-N AT_example
+[26-06-22 06:25:06][ASSERT#0055][OK] cost=3.198s
+[26-06-22 06:25:06][ASSERT#0056][match] at cases/switch_acl.sh:140 fn=test_acl_flush retry=3 cmd="docker exec tests-sw-acl1 ping -c 3 10.254.0.12" expect="bytes from"
+PING 10.254.0.12 (10.254.0.12) 56(84) bytes of data.
+64 bytes from 10.254.0.12: icmp_seq=1 ttl=64 time=0.717 ms
+64 bytes from 10.254.0.12: icmp_seq=2 ttl=64 time=1.30 ms
+64 bytes from 10.254.0.12: icmp_seq=3 ttl=64 time=1.31 ms
+
+--- 10.254.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2026ms
+[26-06-22 06:25:08][ASSERT#0056][OK] cost=2.099s
+[26-06-22 06:25:08][ASSERT#0057][match] at cases/switch_acl.sh:141 fn=test_acl_flush retry=5 cmd="docker exec tests-sw-acl1 wget -qO- -T 3 -t 1 http://10.254.0.12:80" expect="acl-vip-80"
+acl-vip-80
+[26-06-22 06:25:08][ASSERT#0057][OK] cost=0.070s
+[26-06-22 06:25:09] END switch_acl status=PASS cost=177.674s

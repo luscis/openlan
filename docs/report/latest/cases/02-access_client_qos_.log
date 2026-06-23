@@ -1,7 +1,7 @@
-[26-06-02 09:12:19] START access_client_qos
+[26-06-22 06:02:45] START access_client_qos
 scenario: cases/access_client_qos.sh
 header  : verify network client qos rule add-list-save-remove flow
-topology: sw1(center) 192.91.0.1; | OpenVPN tcp/1194, 10.91.0.0/24; vpn1 10.91.0.10; QoS rule add/update/remove on vpn1@example
+topology: sw1(center) 192.91.0.1 | OpenVPN tcp/1194, 10.91.0.0/24 | vpn1 10.91.0.10 | QoS rule add/update/remove on vpn1@example
 topology: # Topology:
 topology: # - Diagram:
 topology: #            sw1(center) 192.91.0.1
@@ -10,8 +10,8 @@ topology: #                 | OpenVPN tcp/1194, 10.91.0.0/24
 topology: #              vpn1 10.91.0.10
 topology: #                 |
 topology: #              QoS rule add/update/remove on vpn1@example
-topology: # - Docker mgmt network: 172.250.0.0/24
-topology: #   sw1=172.250.0.241, vpn1 client joins the same mgmt network.
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, vpn1 client joins the same mgmt network.
 topology: # - OpenLAN service network "example": 192.91.0.0/24
 topology: #   sw1 gateway=192.91.0.1.
 topology: # - OpenVPN overlay:
@@ -23,57 +23,57 @@ Started switch pause container: tests-sw-client-qos-pause
 Started switch frr container: tests-sw-client-qos-frr
 Started switch ipsec container: tests-sw-client-qos-ipsec
 Started switch container: tests-sw-client-qos
-[26-06-02 09:12:20][ASSERT#0001][expect] at cases/access_client_qos.sh:52 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-client-qos" expect="Http.Start"
-2026/06/02 09:12:21 INFO|root|Wait: ...
-2026/06/02 09:12:21 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/06/02 09:12:21 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/06/02 09:12:21 INFO|root|Http.Start 0.0.0.0:10000
-[26-06-02 09:12:21][ASSERT#0001][OK] cost=1.033s
-[26-06-02 09:12:21][ASSERT#0002][cmd] at cases/access_client_qos.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example add --address 192.91.0.1/24"
-[26-06-02 09:12:21][ASSERT#0002][OK] cost=0.243s
-[26-06-02 09:12:21][ASSERT#0003][cmd] at cases/access_client_qos.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan user add --name vpn1@example --password 123456"
+[26-06-22 06:02:46][ASSERT#0001][expect] at cases/access_client_qos.sh:62 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-client-qos" expect="Http.Start"
+2026/06/22 06:02:47 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:02:47 INFO|root|Wait: ...
+2026/06/22 06:02:47 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:02:47 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:02:47][ASSERT#0001][OK] cost=1.032s
+[26-06-22 06:02:47][ASSERT#0002][cmd] at cases/access_client_qos.sh:64 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example add --address 192.91.0.1/24"
+[26-06-22 06:02:47][ASSERT#0002][OK] cost=0.260s
+[26-06-22 06:02:47][ASSERT#0003][cmd] at cases/access_client_qos.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan user add --name vpn1@example --password 123456"
 # total 1
 username                 password                 role   lease          
-vpn1@example             123456                   guest  2027-06-02T09  
-[26-06-02 09:12:21][ASSERT#0003][OK] cost=0.058s
-[26-06-02 09:12:21][ASSERT#0004][cmd] at cases/access_client_qos.sh:56 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.91.0.0/24 --dns 8.8.8.8"
-[26-06-02 09:12:21][ASSERT#0004][OK] cost=0.117s
-[26-06-02 09:12:21][ASSERT#0005][cmd] at cases/access_client_qos.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example client add --user vpn1 --address 10.91.0.10"
-[26-06-02 09:12:21][ASSERT#0005][OK] cost=0.066s
+vpn1@example             123456                   guest  2027-06-22T06  
+[26-06-22 06:02:47][ASSERT#0003][OK] cost=0.065s
+[26-06-22 06:02:47][ASSERT#0004][cmd] at cases/access_client_qos.sh:66 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.91.0.0/24 --dns 8.8.8.8"
+[26-06-22 06:02:47][ASSERT#0004][OK] cost=0.126s
+[26-06-22 06:02:47][ASSERT#0005][cmd] at cases/access_client_qos.sh:67 fn=setup_sw1 cmd="docker exec tests-sw-client-qos openlan network --name example client add --user vpn1 --address 10.91.0.10"
+[26-06-22 06:02:48][ASSERT#0005][OK] cost=0.072s
 Started OpenVPN client container: tests-sw-client-qos.vpn1
-[26-06-02 09:12:22][ASSERT#0006][expect] at cases/access_client_qos.sh:69 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-client-qos.vpn1" expect="Initialization Sequence Completed"
-2026-06-02 09:12:22 net_addr_v4_add: 10.91.0.10/24 dev tun0
-2026-06-02 09:12:22 net_route_v4_add: 10.91.0.0/24 via 10.91.0.1 dev [NULL] table 0 metric 300
-2026-06-02 09:12:22 net_route_v4_add: 192.91.0.0/24 via 10.91.0.1 dev [NULL] table 0 metric 300
-2026-06-02 09:12:22 Initialization Sequence Completed
-[26-06-02 09:12:23][ASSERT#0006][OK] cost=1.030s
-[26-06-02 09:12:23][ASSERT#0007][match] at cases/access_client_qos.sh:70 fn=setup_openvpn_client retry=10 cmd="docker exec tests-sw-client-qos.vpn1 ping -c 3 192.91.0.1" expect="bytes from"
+[26-06-22 06:02:48][ASSERT#0006][expect] at cases/access_client_qos.sh:79 fn=setup_openvpn_client retry=40 cmd="docker logs -f tests-sw-client-qos.vpn1" expect="Initialization Sequence Completed"
+2026-06-22 06:02:48 net_addr_v4_add: 10.91.0.10/24 dev tun0
+2026-06-22 06:02:48 net_route_v4_add: 10.91.0.0/24 via 10.91.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:02:48 net_route_v4_add: 192.91.0.0/24 via 10.91.0.1 dev [NULL] table 0 metric 300
+2026-06-22 06:02:48 Initialization Sequence Completed
+[26-06-22 06:02:49][ASSERT#0006][OK] cost=1.033s
+[26-06-22 06:02:49][ASSERT#0007][match] at cases/access_client_qos.sh:80 fn=setup_openvpn_client retry=10 cmd="docker exec tests-sw-client-qos.vpn1 ping -c 3 192.91.0.1" expect="bytes from"
 PING 192.91.0.1 (192.91.0.1) 56(84) bytes of data.
-64 bytes from 192.91.0.1: icmp_seq=1 ttl=64 time=0.282 ms
-64 bytes from 192.91.0.1: icmp_seq=2 ttl=64 time=1.07 ms
-64 bytes from 192.91.0.1: icmp_seq=3 ttl=64 time=0.884 ms
+64 bytes from 192.91.0.1: icmp_seq=1 ttl=64 time=0.325 ms
+64 bytes from 192.91.0.1: icmp_seq=2 ttl=64 time=1.04 ms
+64 bytes from 192.91.0.1: icmp_seq=3 ttl=64 time=0.833 ms
 
 --- 192.91.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2065ms
-[26-06-02 09:12:25][ASSERT#0007][OK] cost=2.148s
-[26-06-02 09:12:25][ASSERT#0008][cmd] at cases/access_client_qos.sh:78 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule add --client vpn1@example --inspeed 1.5"
-[26-06-02 09:12:25][ASSERT#0008][OK] cost=0.084s
-[26-06-02 09:12:25][ASSERT#0009][match] at cases/access_client_qos.sh:79 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="vpn1@example"
+3 packets transmitted, 3 received, 0% packet loss, time 2050ms
+[26-06-22 06:02:51][ASSERT#0007][OK] cost=2.141s
+[26-06-22 06:02:51][ASSERT#0008][cmd] at cases/access_client_qos.sh:88 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule add --client vpn1@example --inspeed 1.5"
+[26-06-22 06:02:51][ASSERT#0008][OK] cost=0.085s
+[26-06-22 06:02:51][ASSERT#0009][match] at cases/access_client_qos.sh:89 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="vpn1@example"
 # total 1
 Name                         Device     Ip              InSpeed 
 vpn1@example                 -          10.91.0.10      1.50    
-[26-06-02 09:12:25][ASSERT#0009][OK] cost=0.066s
-[26-06-02 09:12:25][ASSERT#0010][match] at cases/access_client_qos.sh:80 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="1.50"
+[26-06-22 06:02:51][ASSERT#0009][OK] cost=0.070s
+[26-06-22 06:02:51][ASSERT#0010][match] at cases/access_client_qos.sh:90 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="1.50"
 # total 1
 Name                         Device     Ip              InSpeed 
 vpn1@example                 -          10.91.0.10      1.50    
-[26-06-02 09:12:25][ASSERT#0010][OK] cost=0.077s
-[26-06-02 09:12:25][ASSERT#0011][match] at cases/access_client_qos.sh:81 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos_example-in"
+[26-06-22 06:02:51][ASSERT#0010][OK] cost=0.076s
+[26-06-22 06:02:51][ASSERT#0011][match] at cases/access_client_qos.sh:91 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos_example-in"
 -P FORWARD ACCEPT
 -P OUTPUT ACCEPT
 -P POSTROUTING ACCEPT
 -N Qos_example-in
--N Qos_example-in-pPcbg6r
+-N Qos_example-in-byZISPo
 -N TT_for
 -N TT_for-example
 -N TT_for-router
@@ -81,9 +81,9 @@ vpn1@example                 -          10.91.0.10      1.50
 -A FORWARD -j TT_for
 -A OUTPUT -j TT_out
 -A POSTROUTING -j TT_post
--A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-pPcbg6r
--A Qos_example-in-pPcbg6r -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
--A Qos_example-in-pPcbg6r -m comment --comment "Qos Default Drop" -j DROP
+-A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-byZISPo
+-A Qos_example-in-byZISPo -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
+-A Qos_example-in-byZISPo -m comment --comment "Qos Default Drop" -j DROP
 -A TT_for -j TT_for-example
 -A TT_for -j TT_for-router
 -A TT_in -j TT_in-example
@@ -92,8 +92,8 @@ vpn1@example                 -          10.91.0.10      1.50
 -A TT_out -j TT_out-example
 -A TT_out -j TT_out-router
 -A TT_post -j TT_post-example
-[26-06-02 09:12:25][ASSERT#0011][OK] cost=0.057s
-[26-06-02 09:12:25][ASSERT#0012][match] at cases/access_client_qos.sh:82 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="\-j Qos_example-in$"
+[26-06-22 06:02:51][ASSERT#0011][OK] cost=0.061s
+[26-06-22 06:02:51][ASSERT#0012][match] at cases/access_client_qos.sh:92 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="\-j Qos_example-in$"
 -A TT_for -j TT_for-router
 -A TT_in -j TT_in-example
 -A TT_in -j TT_in-router
@@ -101,50 +101,50 @@ vpn1@example                 -          10.91.0.10      1.50
 -A TT_out -j TT_out-example
 -A TT_out -j TT_out-router
 -A TT_post -j TT_post-example
-[26-06-02 09:12:25][ASSERT#0012][OK] cost=0.063s
-[26-06-02 09:12:25][ASSERT#0013][match] at cases/access_client_qos.sh:83 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos Limit In vpn1@example"
+[26-06-22 06:02:51][ASSERT#0012][OK] cost=0.058s
+[26-06-22 06:02:51][ASSERT#0013][match] at cases/access_client_qos.sh:93 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos Limit In vpn1@example"
 -A OUTPUT -j TT_out
 -A POSTROUTING -j TT_post
--A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-pPcbg6r
--A Qos_example-in-pPcbg6r -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
--A Qos_example-in-pPcbg6r -m comment --comment "Qos Default Drop" -j DROP
+-A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-byZISPo
+-A Qos_example-in-byZISPo -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
+-A Qos_example-in-byZISPo -m comment --comment "Qos Default Drop" -j DROP
 -A TT_for -j TT_for-example
 -A TT_for -j TT_for-router
-[26-06-02 09:12:25][ASSERT#0013][OK] cost=0.067s
-[26-06-02 09:12:25][ASSERT#0014][match] at cases/access_client_qos.sh:84 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="10.91.0.10"
+[26-06-22 06:02:51][ASSERT#0013][OK] cost=0.056s
+[26-06-22 06:02:51][ASSERT#0014][match] at cases/access_client_qos.sh:94 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="10.91.0.10"
 -A FORWARD -j TT_for
 -A OUTPUT -j TT_out
 -A POSTROUTING -j TT_post
--A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-pPcbg6r
--A Qos_example-in-pPcbg6r -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
--A Qos_example-in-pPcbg6r -m comment --comment "Qos Default Drop" -j DROP
+-A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-byZISPo
+-A Qos_example-in-byZISPo -m limit --limit 144/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
+-A Qos_example-in-byZISPo -m comment --comment "Qos Default Drop" -j DROP
 -A TT_for -j TT_for-example
-[26-06-02 09:12:25][ASSERT#0014][OK] cost=0.064s
-[26-06-02 09:12:25][ASSERT#0015][cmd] at cases/access_client_qos.sh:86 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule add --client vpn1@example --inspeed 2"
-[26-06-02 09:12:25][ASSERT#0015][OK] cost=0.133s
-[26-06-02 09:12:25][ASSERT#0016][match] at cases/access_client_qos.sh:87 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="2.00"
+[26-06-22 06:02:52][ASSERT#0014][OK] cost=0.057s
+[26-06-22 06:02:52][ASSERT#0015][cmd] at cases/access_client_qos.sh:96 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule add --client vpn1@example --inspeed 2"
+[26-06-22 06:02:52][ASSERT#0015][OK] cost=0.142s
+[26-06-22 06:02:52][ASSERT#0016][match] at cases/access_client_qos.sh:97 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" expect="2.00"
 # total 1
 Name                         Device     Ip              InSpeed 
 vpn1@example                 tun1194    10.91.0.10      2.00    
-[26-06-02 09:12:26][ASSERT#0016][OK] cost=0.063s
-[26-06-02 09:12:26][ASSERT#0017][unmatch] at cases/access_client_qos.sh:88 fn=test_client_qos retry=5 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" unexpected="1.50"
+[26-06-22 06:02:52][ASSERT#0016][OK] cost=0.065s
+[26-06-22 06:02:52][ASSERT#0017][unmatch] at cases/access_client_qos.sh:98 fn=test_client_qos retry=5 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" unexpected="1.50"
 Last output:
 # total 1
 Name                         Device     Ip              InSpeed 
 vpn1@example                 tun1194    10.91.0.10      2.00    
-[26-06-02 09:12:31][ASSERT#0017][OK] cost=5.345s
-[26-06-02 09:12:31][ASSERT#0018][match] at cases/access_client_qos.sh:89 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos Limit In vpn1@example"
+[26-06-22 06:02:57][ASSERT#0017][OK] cost=5.345s
+[26-06-22 06:02:57][ASSERT#0018][match] at cases/access_client_qos.sh:99 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" expect="Qos Limit In vpn1@example"
 -A OUTPUT -j TT_out
 -A POSTROUTING -j TT_post
--A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-pPcbg6r
--A Qos_example-in-pPcbg6r -m limit --limit 192/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
--A Qos_example-in-pPcbg6r -m comment --comment "Qos Default Drop" -j DROP
+-A Qos_example-in -s 10.91.0.10/32 -m comment --comment "Qos Jump" -j Qos_example-in-byZISPo
+-A Qos_example-in-byZISPo -m limit --limit 192/sec --limit-burst 100 -m comment --comment "Qos Limit In vpn1@example" -j ACCEPT
+-A Qos_example-in-byZISPo -m comment --comment "Qos Default Drop" -j DROP
 -A TT_for -j TT_for-example
 -A TT_for -j TT_for-router
-[26-06-02 09:12:31][ASSERT#0018][OK] cost=0.066s
-[26-06-02 09:12:31][ASSERT#0019][cmd] at cases/access_client_qos.sh:91 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule save"
-[26-06-02 09:12:31][ASSERT#0019][OK] cost=0.063s
-[26-06-02 09:12:31][ASSERT#0020][match] at cases/access_client_qos.sh:92 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos cat /etc/openlan/switch/qos/example.json" expect="vpn1@example"
+[26-06-22 06:02:57][ASSERT#0018][OK] cost=0.066s
+[26-06-22 06:02:57][ASSERT#0019][cmd] at cases/access_client_qos.sh:101 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule save"
+[26-06-22 06:02:57][ASSERT#0019][OK] cost=0.058s
+[26-06-22 06:02:57][ASSERT#0020][match] at cases/access_client_qos.sh:102 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos cat /etc/openlan/switch/qos/example.json" expect="vpn1@example"
 {
   "name": "example",
   "qos": {
@@ -152,8 +152,8 @@ vpn1@example                 tun1194    10.91.0.10      2.00
       "inSpeed": 2
     }
   }
-[26-06-02 09:12:31][ASSERT#0020][OK] cost=0.054s
-[26-06-02 09:12:31][ASSERT#0021][match] at cases/access_client_qos.sh:93 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos cat /etc/openlan/switch/qos/example.json" expect=""inSpeed": 2"
+[26-06-22 06:02:57][ASSERT#0020][OK] cost=0.060s
+[26-06-22 06:02:57][ASSERT#0021][match] at cases/access_client_qos.sh:103 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos cat /etc/openlan/switch/qos/example.json" expect=""inSpeed": 2"
   "name": "example",
   "qos": {
     "vpn1@example": {
@@ -161,15 +161,15 @@ vpn1@example                 tun1194    10.91.0.10      2.00
     }
   }
 }
-[26-06-02 09:12:31][ASSERT#0021][OK] cost=0.062s
-[26-06-02 09:12:31][ASSERT#0022][cmd] at cases/access_client_qos.sh:95 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule rm --client vpn1@example"
-[26-06-02 09:12:31][ASSERT#0022][OK] cost=0.117s
-[26-06-02 09:12:31][ASSERT#0023][unmatch] at cases/access_client_qos.sh:96 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" unexpected="vpn1@example"
+[26-06-22 06:02:57][ASSERT#0021][OK] cost=0.054s
+[26-06-22 06:02:57][ASSERT#0022][cmd] at cases/access_client_qos.sh:105 fn=test_client_qos cmd="docker exec tests-sw-client-qos openlan network --name example qos rule rm --client vpn1@example"
+[26-06-22 06:02:57][ASSERT#0022][OK] cost=0.118s
+[26-06-22 06:02:58][ASSERT#0023][unmatch] at cases/access_client_qos.sh:106 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos openlan network --name example qos rule ls" unexpected="vpn1@example"
 Last output:
 # total 0
 Name                         Device     Ip              InSpeed 
-[26-06-02 09:12:42][ASSERT#0023][OK] cost=10.706s
-[26-06-02 09:12:42][ASSERT#0024][unmatch] at cases/access_client_qos.sh:97 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" unexpected="Qos Limit In vpn1@example"
+[26-06-22 06:03:08][ASSERT#0023][OK] cost=10.717s
+[26-06-22 06:03:08][ASSERT#0024][unmatch] at cases/access_client_qos.sh:107 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" unexpected="Qos Limit In vpn1@example"
 Last output:
 -N TT_pre-router
 -N ZT_example
@@ -191,8 +191,8 @@ Last output:
 -A TT_pre -j TT_pre-router
 -A ZT_example -m conntrack --ctstate RELATED,ESTABLISHED -m comment --comment "Forwarding Accpted" -j ACCEPT
 -A ZT_example -m comment --comment "ZTrust Deny All" -j DROP
-[26-06-02 09:12:53][ASSERT#0024][OK] cost=10.592s
-[26-06-02 09:12:53][ASSERT#0025][unmatch] at cases/access_client_qos.sh:98 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" unexpected="10.91.0.10"
+[26-06-22 06:03:19][ASSERT#0024][OK] cost=10.604s
+[26-06-22 06:03:19][ASSERT#0025][unmatch] at cases/access_client_qos.sh:108 fn=test_client_qos retry=10 cmd="docker exec tests-sw-client-qos iptables -t mangle -S" unexpected="10.91.0.10"
 Last output:
 -N TT_pre-router
 -N ZT_example
@@ -214,5 +214,5 @@ Last output:
 -A TT_pre -j TT_pre-router
 -A ZT_example -m conntrack --ctstate RELATED,ESTABLISHED -m comment --comment "Forwarding Accpted" -j ACCEPT
 -A ZT_example -m comment --comment "ZTrust Deny All" -j DROP
-[26-06-02 09:13:03][ASSERT#0025][OK] cost=10.600s
-[26-06-02 09:13:04] END access_client_qos status=PASS cost=44.856s
+[26-06-22 06:03:29][ASSERT#0025][OK] cost=10.605s
+[26-06-22 06:03:30] END access_client_qos status=PASS cost=44.886s

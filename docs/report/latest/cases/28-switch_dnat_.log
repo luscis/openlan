@@ -1,0 +1,160 @@
+[26-06-22 06:26:26] START switch_dnat
+scenario: cases/switch_dnat.sh
+header  : verify dnat add-list-remove and nat table rule updates
+topology: sw1 192.58.0.1 -- UDP output --> sw2 192.58.0.2 | +----------- DNAT example:80 -> 127.0.0.1:8080
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 192.58.0.1  -- UDP output -->  sw2 192.58.0.2
+topology: #              |                              |
+topology: #              +----------- DNAT example:80 -> 127.0.0.1:8080
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, sw2=100.100.0.242.
+topology: # - OpenLAN service network "example": 192.58.0.0/24
+topology: #   sw1=192.58.0.1, sw2=192.58.0.2.
+topology: # Validation:
+topology: #   start local 127.0.0.1:8080 service on sw2, map example:80 to 8080 by dnat,
+topology: #   verify unreachable before dnat and reachable after dnat from sw1.
+
+Started switch pause container: tests-sw-dnat1-pause
+Started switch frr container: tests-sw-dnat1-frr
+Started switch ipsec container: tests-sw-dnat1-ipsec
+Started switch container: tests-sw-dnat1
+[26-06-22 06:26:27][ASSERT#0001][expect] at cases/switch_dnat.sh:49 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-dnat1" expect="Http.Start"
+2026/06/22 06:26:28 INFO|root|Wait: ...
+2026/06/22 06:26:28 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:26:28 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:26:28 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:26:28][ASSERT#0001][OK] cost=1.020s
+[26-06-22 06:26:28][ASSERT#0002][cmd] at cases/switch_dnat.sh:51 fn=setup_sw1 cmd="docker exec tests-sw-dnat1 openlan crypt update --algorithm aes-128 --secret cb2ff088a34d"
+[26-06-22 06:26:28][ASSERT#0002][OK] cost=0.059s
+[26-06-22 06:26:28][ASSERT#0003][cmd] at cases/switch_dnat.sh:52 fn=setup_sw1 cmd="docker exec tests-sw-dnat1 openlan network --name example add --address 192.58.0.1/24"
+[26-06-22 06:26:29][ASSERT#0003][OK] cost=0.253s
+[26-06-22 06:26:29][ASSERT#0004][cmd] at cases/switch_dnat.sh:53 fn=setup_sw1 cmd="docker exec tests-sw-dnat1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:26:29][ASSERT#0004][OK] cost=0.065s
+Started switch pause container: tests-sw-dnat2-pause
+Started switch frr container: tests-sw-dnat2-frr
+Started switch ipsec container: tests-sw-dnat2-ipsec
+Started switch container: tests-sw-dnat2
+[26-06-22 06:26:30][ASSERT#0005][expect] at cases/switch_dnat.sh:62 fn=setup_sw2 retry=30 cmd="docker logs -f tests-sw-dnat2" expect="Http.Start"
+2026/06/22 06:26:30 INFO|root|Wait: ...
+2026/06/22 06:26:30 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:26:30 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:26:30 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:26:31][ASSERT#0005][OK] cost=1.032s
+[26-06-22 06:26:31][ASSERT#0006][cmd] at cases/switch_dnat.sh:64 fn=setup_sw2 cmd="docker exec tests-sw-dnat2 openlan crypt update --algorithm aes-128 --secret cb2ff088a34d"
+[26-06-22 06:26:31][ASSERT#0006][OK] cost=0.070s
+[26-06-22 06:26:31][ASSERT#0007][cmd] at cases/switch_dnat.sh:65 fn=setup_sw2 cmd="docker exec tests-sw-dnat2 openlan network --name example add --address 192.58.0.2/24"
+[26-06-22 06:26:31][ASSERT#0007][OK] cost=0.262s
+[26-06-22 06:26:31][ASSERT#0008][cmd] at cases/switch_dnat.sh:66 fn=setup_sw2 cmd="docker exec tests-sw-dnat2 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:26:31][ASSERT#0008][OK] cost=0.059s
+[26-06-22 06:26:31][ASSERT#0009][cmd] at cases/switch_dnat.sh:67 fn=setup_sw2 cmd="docker exec tests-sw-dnat2 openlan network --name example output add --remote 100.100.0.241 --protocol udp --secret t1:123456 --crypt aes-128:cb2ff088a34d"
+[26-06-22 06:26:31][ASSERT#0009][OK] cost=0.067s
+[26-06-22 06:26:31][ASSERT#0010][cmd] at cases/switch_dnat.sh:71 fn=setup_http cmd="docker exec tests-sw-dnat2 sh -c nohup sh -c 'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 9\r\n\r\nport-8080" | socat - TCP-LISTEN:8080,bind=127.0.0.1,reuseaddr; done' >/tmp/dnat-8080.log 2>&1 &"
+[26-06-22 06:26:31][ASSERT#0010][OK] cost=0.047s
+[26-06-22 06:26:31][ASSERT#0011][cmd] at cases/switch_dnat.sh:75 fn=test_dnat_add_and_reachability cmd="docker exec tests-sw-dnat2 sysctl -w net.ipv4.conf.all.route_localnet=1"
+net.ipv4.conf.all.route_localnet = 1
+[26-06-22 06:26:31][ASSERT#0011][OK] cost=0.050s
+[26-06-22 06:26:31][ASSERT#0012][match] at cases/switch_dnat.sh:76 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat1 openlan network --name example access ls" expect="100.100.0.242"
+# total 1
+uuid             alive    device   alias            user     remote                 network  state 
+zYGSELQavYwjo    0m0s     tap0     e3e4690c21bd     t1       100.100.0.242:52277    example   authenticated
+[26-06-22 06:26:31][ASSERT#0012][OK] cost=0.059s
+[26-06-22 06:26:31][ASSERT#0013][match] at cases/switch_dnat.sh:77 fn=test_dnat_add_and_reachability retry=5 cmd="docker exec tests-sw-dnat1 ping -c 3 192.58.0.2" expect="bytes from"
+PING 192.58.0.2 (192.58.0.2) 56(84) bytes of data.
+64 bytes from 192.58.0.2: icmp_seq=1 ttl=64 time=1.00 ms
+64 bytes from 192.58.0.2: icmp_seq=2 ttl=64 time=1.24 ms
+64 bytes from 192.58.0.2: icmp_seq=3 ttl=64 time=1.55 ms
+
+--- 192.58.0.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+[26-06-22 06:26:37][ASSERT#0013][OK] cost=6.195s
+[26-06-22 06:26:37][ASSERT#0014][unmatch] at cases/switch_dnat.sh:80 fn=test_dnat_add_and_reachability retry=5 cmd="docker exec tests-sw-dnat1 wget -qO- -T 3 -t 1 http://192.58.0.2:80" unexpected="port-8080"
+Last output:
+[26-06-22 06:26:43][ASSERT#0014][OK] cost=5.325s
+[26-06-22 06:26:43][ASSERT#0015][cmd] at cases/switch_dnat.sh:83 fn=test_dnat_add_and_reachability cmd="docker exec tests-sw-dnat2 openlan network --name example dnat add --protocol tcp --dest 192.58.0.2 --dport 80 --todest 127.0.0.1 --todport 8080"
+[26-06-22 06:26:43][ASSERT#0015][OK] cost=0.065s
+[26-06-22 06:26:43][ASSERT#0016][match] at cases/switch_dnat.sh:84 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat2 openlan network --name example dnat ls" expect="todport: 8080"
+  dport: 80
+  protocol: tcp
+  todestination: 127.0.0.1
+  todport: 8080
+
+[26-06-22 06:26:43][ASSERT#0016][OK] cost=0.080s
+[26-06-22 06:26:43][ASSERT#0017][match] at cases/switch_dnat.sh:85 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat2 iptables -t nat -S TT_example_DNAT " expect="DNAT tcp:192.58.0.2:80"
+-N TT_example_DNAT
+-A TT_example_DNAT -d 192.58.0.2/32 -p tcp -m tcp --dport 80 -m comment --comment "DNAT tcp:192.58.0.2:80" -j DNAT --to-destination 127.0.0.1:8080
+[26-06-22 06:26:43][ASSERT#0017][OK] cost=0.069s
+[26-06-22 06:26:43][ASSERT#0018][match] at cases/switch_dnat.sh:87 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat1 wget -qO- -T 3 -t 1 http://192.58.0.2:80" expect="port-8080"
+port-8080
+[26-06-22 06:26:43][ASSERT#0018][OK] cost=0.075s
+[26-06-22 06:26:43][ASSERT#0019][cmd] at cases/switch_dnat.sh:89 fn=test_dnat_add_and_reachability cmd="docker exec tests-sw-dnat1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:527 ...
+  PID   527   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:26:44][ASSERT#0019][OK] cost=1.079s
+[26-06-22 06:26:44][ASSERT#0020][cmd] at cases/switch_dnat.sh:90 fn=test_dnat_add_and_reachability cmd="docker exec tests-sw-dnat2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:46 ....
+  PID   46   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:539 ...
+  PID   539   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:26:45][ASSERT#0020][OK] cost=1.072s
+[26-06-22 06:26:45][ASSERT#0021][match] at cases/switch_dnat.sh:91 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat2 openlan network --name example dnat ls" expect="todport: 8080"
+  dport: 80
+  protocol: tcp
+  todestination: 127.0.0.1
+  todport: 8080
+
+[26-06-22 06:26:46][ASSERT#0021][OK] cost=1.142s
+[26-06-22 06:26:46][ASSERT#0022][match] at cases/switch_dnat.sh:92 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat2 iptables -t nat -S TT_example_DNAT " expect="DNAT tcp:192.58.0.2:80"
+-N TT_example_DNAT
+-A TT_example_DNAT -d 192.58.0.2/32 -p tcp -m tcp --dport 80 -m comment --comment "DNAT tcp:192.58.0.2:80" -j DNAT --to-destination 127.0.0.1:8080
+[26-06-22 06:26:46][ASSERT#0022][OK] cost=0.055s
+[26-06-22 06:26:46][ASSERT#0023][match] at cases/switch_dnat.sh:93 fn=test_dnat_add_and_reachability retry=15 cmd="docker exec tests-sw-dnat1 wget -qO- -T 3 -t 1 http://192.58.0.2:80" expect="port-8080"
+port-8080
+[26-06-22 06:26:55][ASSERT#0023][OK] cost=8.198s
+[26-06-22 06:26:55][ASSERT#0024][cmd] at cases/switch_dnat.sh:97 fn=test_dnat_remove cmd="docker exec tests-sw-dnat2 openlan network --name example dnat rm --protocol tcp --dest 192.58.0.2 --dport 80"
+[26-06-22 06:26:55][ASSERT#0024][OK] cost=0.075s
+[26-06-22 06:26:55][ASSERT#0025][unmatch] at cases/switch_dnat.sh:99 fn=test_dnat_remove retry=3 cmd="docker exec tests-sw-dnat2 openlan network --name example dnat ls" unexpected="dport: 80"
+Last output:
+null
+
+[26-06-22 06:26:58][ASSERT#0025][OK] cost=3.216s
+[26-06-22 06:26:58][ASSERT#0026][unmatch] at cases/switch_dnat.sh:100 fn=test_dnat_remove retry=5 cmd="docker exec tests-sw-dnat1 wget -qO- -T 3 -t 1 http://192.58.0.2:80" unexpected="port-8080"
+Last output:
+[26-06-22 06:27:03][ASSERT#0026][OK] cost=5.312s
+[26-06-22 06:27:03][ASSERT#0027][cmd] at cases/switch_dnat.sh:102 fn=test_dnat_remove cmd="docker exec tests-sw-dnat1 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:527 ....
+  PID   527   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:764 ...
+  PID   764   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:27:04][ASSERT#0027][OK] cost=1.068s
+[26-06-22 06:27:04][ASSERT#0028][cmd] at cases/switch_dnat.sh:103 fn=test_dnat_remove cmd="docker exec tests-sw-dnat2 openlan reload --save"
+Save configuraion ...  success
+# reloading pid:539 ....
+  PID   539   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+# max wait 60s...
+# during 1s, new pid:802 ...
+  PID   802   CMD: /usr/bin/openlan-switch -conf:dir /etc/openlan/switch -log:level 20
+[26-06-22 06:27:05][ASSERT#0028][OK] cost=1.069s
+[26-06-22 06:27:05][ASSERT#0029][unmatch] at cases/switch_dnat.sh:104 fn=test_dnat_remove retry=3 cmd="docker exec tests-sw-dnat2 openlan network --name example dnat ls" unexpected="dport: 80"
+Last output:
+null
+
+[26-06-22 06:27:09][ASSERT#0029][OK] cost=3.222s
+[26-06-22 06:27:09][ASSERT#0030][unmatch] at cases/switch_dnat.sh:105 fn=test_dnat_remove retry=5 cmd="docker exec tests-sw-dnat1 wget -qO- -T 3 -t 1 http://192.58.0.2:80" unexpected="port-8080"
+Last output:
+[26-06-22 06:27:18][ASSERT#0030][OK] cost=9.389s
+[26-06-22 06:27:19] END switch_dnat status=PASS cost=52.208s

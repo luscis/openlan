@@ -1,0 +1,193 @@
+[26-06-22 06:14:40] START access_success
+scenario: cases/access_success.sh
+header  : two access clients authenticate and can communicate
+topology: sw1(center) 100.100.0.241 / 192.11.0.1 | tcp access | tcp access | ac1 192.11.0.11 ac2 192.11.0.12
+topology: # Topology:
+topology: # - Diagram:
+topology: #            sw1(center) 100.100.0.241 / 192.11.0.1
+topology: #                 ^                    ^
+topology: #                 | tcp access          | tcp access
+topology: #         ac1 192.11.0.11       ac2 192.11.0.12
+topology: #                 both access clients join example network
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, ac1/ac2 join the same mgmt network.
+topology: # - OpenLAN service network "example": 192.11.0.0/24
+topology: #   sw1 gateway=192.11.0.1, ac1=192.11.0.11, ac2=192.11.0.12.
+topology: # Validation:
+topology: #   (see scenario assertions in this case)
+
+Started switch pause container: tests-sw1-pause
+Started switch frr container: tests-sw1-frr
+Started switch ipsec container: tests-sw1-ipsec
+Started switch container: tests-sw1
+[26-06-22 06:14:41][ASSERT#0001][expect] at cases/access_success.sh:64 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw1" expect="Http.Start"
+2026/06/22 06:14:42 INFO|root|Http.LoadToken: file:/etc/openlan/switch/token does not exist
+2026/06/22 06:14:42 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:14:42 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:14:42 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:14:42][ASSERT#0001][OK] cost=1.030s
+[26-06-22 06:14:42][ASSERT#0002][cmd] at cases/access_success.sh:67 fn=setup_sw1 cmd="docker exec tests-sw1 openlan network --name example add --address 192.11.0.1/24"
+[26-06-22 06:14:42][ASSERT#0002][OK] cost=0.252s
+[26-06-22 06:14:42][ASSERT#0003][cmd] at cases/access_success.sh:69 fn=setup_sw1 cmd="docker exec tests-sw1 openlan user add --name t1@example --password 123456"
+# total 1
+username                 password                 role   lease          
+t1@example               123456                   guest  2027-06-22T06  
+[26-06-22 06:14:42][ASSERT#0003][OK] cost=0.060s
+[26-06-22 06:14:42][ASSERT#0004][cmd] at cases/access_success.sh:70 fn=setup_sw1 cmd="docker exec tests-sw1 openlan user add --name t2@example --password 123457"
+# total 1
+username                 password                 role   lease          
+t2@example               123457                   guest  2027-06-22T06  
+[26-06-22 06:14:42][ASSERT#0004][OK] cost=0.063s
+Started access container: tests-sw1.ac1
+Started access container: tests-sw1.ac2
+[26-06-22 06:14:43][ASSERT#0005][expect] at cases/access_success.sh:114 fn=test_ping retry=30 cmd="docker logs -f tests-sw1.ac1" expect="Worker.OnSuccess"
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.update: 100.100.0.2:49956 100.100.0.241:10002
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.11/24 via 
+2026/06/22 06:14:43 INFO|tcp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.11 netmask:255.255.255.0 routes:[]
+[26-06-22 06:14:44][ASSERT#0005][OK] cost=1.034s
+[26-06-22 06:14:44][ASSERT#0006][expect] at cases/access_success.sh:115 fn=test_ping retry=30 cmd="docker logs -f tests-sw1.ac2" expect="Worker.OnSuccess"
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.update: 100.100.0.3:60271 100.100.0.241:10002
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:14:43 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.12/24 via 
+2026/06/22 06:14:43 INFO|udp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:14:43 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.12 netmask:255.255.255.0 routes:[]
+[26-06-22 06:14:45][ASSERT#0006][OK] cost=1.032s
+[26-06-22 06:14:45][ASSERT#0007][match] at cases/access_success.sh:117 fn=test_ping retry=5 cmd="docker exec tests-sw1.ac1 ping -c 3 192.11.0.1" expect="bytes from"
+PING 192.11.0.1 (192.11.0.1) 56(84) bytes of data.
+64 bytes from 192.11.0.1: icmp_seq=1 ttl=64 time=2074 ms
+64 bytes from 192.11.0.1: icmp_seq=2 ttl=64 time=1026 ms
+64 bytes from 192.11.0.1: icmp_seq=3 ttl=64 time=1.99 ms
+
+--- 192.11.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2072ms
+[26-06-22 06:14:47][ASSERT#0007][OK] cost=2.143s
+[26-06-22 06:14:47][ASSERT#0008][match] at cases/access_success.sh:118 fn=test_ping retry=5 cmd="docker exec tests-sw1.ac2 ping -c 3 192.11.0.12" expect="bytes from"
+PING 192.11.0.12 (192.11.0.12) 56(84) bytes of data.
+64 bytes from 192.11.0.12: icmp_seq=1 ttl=64 time=0.038 ms
+64 bytes from 192.11.0.12: icmp_seq=2 ttl=64 time=0.063 ms
+64 bytes from 192.11.0.12: icmp_seq=3 ttl=64 time=0.086 ms
+
+--- 192.11.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2035ms
+[26-06-22 06:14:49][ASSERT#0008][OK] cost=2.104s
+[26-06-22 06:14:49][ASSERT#0009][cmd] at cases/access_success.sh:122 fn=test_crypt_update cmd="docker exec tests-sw1 openlan crypt update --algorithm aes-128 --secret ea64d5b0c96d"
+[26-06-22 06:14:49][ASSERT#0009][OK] cost=0.072s
+[26-06-22 06:14:49][ASSERT#0010][match] at cases/access_success.sh:123 fn=test_crypt_update retry=1 cmd="docker exec tests-sw1 openlan crypt ls" expect="secret: ea64d5b0c96d"
+algorithm: aes-128
+secret: ea64d5b0c96d
+
+[26-06-22 06:14:49][ASSERT#0010][OK] cost=0.070s
+[26-06-22 06:14:49][ASSERT#0011][cmd] at cases/access_success.sh:125 fn=test_crypt_update cmd="docker stop tests-sw1.ac1"
+tests-sw1.ac1
+[26-06-22 06:14:50][ASSERT#0011][OK] cost=0.209s
+[26-06-22 06:14:50][ASSERT#0012][cmd] at cases/access_success.sh:126 fn=test_crypt_update cmd="docker stop tests-sw1.ac2"
+tests-sw1.ac2
+[26-06-22 06:14:50][ASSERT#0012][OK] cost=0.223s
+[26-06-22 06:14:50][ASSERT#0013][unmatch] at cases/access_success.sh:128 fn=test_crypt_update retry=30 cmd="docker ps" unexpected="tests-sw1.ac1"
+Last output:
+CONTAINER ID   IMAGE                              COMMAND                  CREATED          STATUS          PORTS     NAMES
+dcd24e080685   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   39 seconds ago   Up 39 seconds             tests-sw1
+da796fb2a5fe   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   39 seconds ago   Up 39 seconds             tests-sw1-ipsec
+fd6bcf2c2da4   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   40 seconds ago   Up 39 seconds             tests-sw1-frr
+eb66ecb946f8   luscis/openlan:v26.5.2.amd64.deb   "/bin/bash -c 'trap …"   40 seconds ago   Up 39 seconds             tests-sw1-pause
+6c8425a23ef1   debian:bullseye                    "bash"                   3 weeks ago      Up 3 weeks                opencec
+cf3408a315d6   debian:bullseye                    "bash"                   7 weeks ago      Up 4 weeks                openbui
+[26-06-22 06:15:21][ASSERT#0013][OK] cost=31.239s
+[26-06-22 06:15:21][ASSERT#0014][unmatch] at cases/access_success.sh:129 fn=test_crypt_update retry=30 cmd="docker ps" unexpected="tests-sw1.ac2"
+Last output:
+CONTAINER ID   IMAGE                              COMMAND                  CREATED              STATUS              PORTS     NAMES
+dcd24e080685   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1
+da796fb2a5fe   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1-ipsec
+fd6bcf2c2da4   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1-frr
+eb66ecb946f8   luscis/openlan:v26.5.2.amd64.deb   "/bin/bash -c 'trap …"   About a minute ago   Up About a minute             tests-sw1-pause
+6c8425a23ef1   debian:bullseye                    "bash"                   3 weeks ago          Up 3 weeks                    opencec
+cf3408a315d6   debian:bullseye                    "bash"                   7 weeks ago          Up 4 weeks                    openbui
+[26-06-22 06:15:52][ASSERT#0014][OK] cost=31.241s
+Started access container: tests-sw1.ac1
+[26-06-22 06:15:53][ASSERT#0015][expect] at cases/access_success.sh:132 fn=test_crypt_update retry=30 cmd="docker logs -f tests-sw1.ac1" expect="SocketClientImpl.Try"
+2026/06/22 06:15:53 INFO|tcp:100.100.0.241:10002|TcpClient.Connect: tcp://100.100.0.241:10002
+2026/06/22 06:15:53 INFO|root|Wait: ...
+2026/06/22 06:15:53 INFO|root|SocketClientImpl.update: 100.100.0.2:33734 100.100.0.241:10002
+2026/06/22 06:15:53 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:15:53 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:15:53 ERROR|root|SocketClientImpl.Try EOF
+2026/06/22 06:15:53 ERROR|tcp:100.100.0.241:10002|example|SocketWorker.Read: EOF
+2026/06/22 06:15:53 INFO|root|SocketClientImpl.update:  
+2026/06/22 06:15:53 INFO|tcp:100.100.0.241:10002|example|SocketWorker.dispatch: reconn from read
+[26-06-22 06:15:54][ASSERT#0015][OK] cost=1.031s
+[26-06-22 06:15:54][ASSERT#0016][cmd] at cases/access_success.sh:134 fn=test_crypt_update cmd="docker stop tests-sw1.ac1"
+tests-sw1.ac1
+[26-06-22 06:15:54][ASSERT#0016][OK] cost=0.208s
+[26-06-22 06:15:54][ASSERT#0017][unmatch] at cases/access_success.sh:135 fn=test_crypt_update retry=30 cmd="docker ps" unexpected="tests-sw1.ac1"
+Last output:
+CONTAINER ID   IMAGE                              COMMAND                  CREATED              STATUS              PORTS     NAMES
+dcd24e080685   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1
+da796fb2a5fe   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1-ipsec
+fd6bcf2c2da4   luscis/openlan:v26.5.2.amd64.deb   "/var/openlan/script…"   About a minute ago   Up About a minute             tests-sw1-frr
+eb66ecb946f8   luscis/openlan:v26.5.2.amd64.deb   "/bin/bash -c 'trap …"   About a minute ago   Up About a minute             tests-sw1-pause
+6c8425a23ef1   debian:bullseye                    "bash"                   3 weeks ago          Up 3 weeks                    opencec
+cf3408a315d6   debian:bullseye                    "bash"                   7 weeks ago          Up 4 weeks                    openbui
+[26-06-22 06:16:25][ASSERT#0017][OK] cost=31.234s
+Started access container: tests-sw1.ac1
+[26-06-22 06:16:25][ASSERT#0018][expect] at cases/access_success.sh:138 fn=test_crypt_update retry=30 cmd="docker logs -f tests-sw1.ac1" expect="Worker.OnSuccess"
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.update: 100.100.0.2:44060 100.100.0.241:10002
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.11/24 via 
+2026/06/22 06:16:25 INFO|tcp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.11 netmask:255.255.255.0 routes:[]
+[26-06-22 06:16:26][ASSERT#0018][OK] cost=1.029s
+Started access container: tests-sw1.ac2
+[26-06-22 06:16:27][ASSERT#0019][expect] at cases/access_success.sh:141 fn=test_crypt_update retry=30 cmd="docker logs -f tests-sw1.ac2" expect="Worker.OnSuccess"
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.update: 100.100.0.3:50018 100.100.0.241:10002
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.12/24 via 
+2026/06/22 06:16:27 INFO|udp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.12 netmask:255.255.255.0 routes:[]
+[26-06-22 06:16:28][ASSERT#0019][OK] cost=1.034s
+[26-06-22 06:16:28][ASSERT#0020][expect] at cases/access_success.sh:114 fn=test_ping retry=30 cmd="docker logs -f tests-sw1.ac1" expect="Worker.OnSuccess"
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.update: 100.100.0.2:44060 100.100.0.241:10002
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:16:25 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.11/24 via 
+2026/06/22 06:16:25 INFO|tcp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:16:25 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.11 netmask:255.255.255.0 routes:[]
+[26-06-22 06:16:29][ASSERT#0020][OK] cost=1.033s
+[26-06-22 06:16:29][ASSERT#0021][expect] at cases/access_success.sh:115 fn=test_ping retry=30 cmd="docker logs -f tests-sw1.ac2" expect="Worker.OnSuccess"
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.update: 100.100.0.3:50018 100.100.0.241:10002
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:16:27 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.11.0.12/24 via 
+2026/06/22 06:16:27 INFO|udp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:16:27 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.11.0.1 address:192.11.0.12 netmask:255.255.255.0 routes:[]
+[26-06-22 06:16:30][ASSERT#0021][OK] cost=1.036s
+[26-06-22 06:16:30][ASSERT#0022][match] at cases/access_success.sh:117 fn=test_ping retry=5 cmd="docker exec tests-sw1.ac1 ping -c 3 192.11.0.1" expect="bytes from"
+PING 192.11.0.1 (192.11.0.1) 56(84) bytes of data.
+64 bytes from 192.11.0.1: icmp_seq=1 ttl=64 time=0.813 ms
+64 bytes from 192.11.0.1: icmp_seq=2 ttl=64 time=1.02 ms
+64 bytes from 192.11.0.1: icmp_seq=3 ttl=64 time=1.13 ms
+
+--- 192.11.0.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2063ms
+[26-06-22 06:16:32][ASSERT#0022][OK] cost=2.129s
+[26-06-22 06:16:32][ASSERT#0023][match] at cases/access_success.sh:118 fn=test_ping retry=5 cmd="docker exec tests-sw1.ac2 ping -c 3 192.11.0.12" expect="bytes from"
+PING 192.11.0.12 (192.11.0.12) 56(84) bytes of data.
+64 bytes from 192.11.0.12: icmp_seq=1 ttl=64 time=0.063 ms
+64 bytes from 192.11.0.12: icmp_seq=2 ttl=64 time=0.061 ms
+64 bytes from 192.11.0.12: icmp_seq=3 ttl=64 time=0.089 ms
+
+--- 192.11.0.12 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2056ms
+[26-06-22 06:16:34][ASSERT#0023][OK] cost=2.127s
+[26-06-22 06:16:35] END access_success status=PASS cost=114.478s

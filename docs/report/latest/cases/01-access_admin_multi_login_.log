@@ -1,16 +1,16 @@
-[26-06-02 09:12:05] START access_admin_multi_login
+[26-06-22 06:02:31] START access_admin_multi_login
 scenario: cases/access_admin_multi_login.sh
 header  : admin user can login concurrently from multiple access clients
-topology: sw1(center) 172.251.0.241 / example; | tcp access          | tcp access; ac1(admin)            ac2(admin)
+topology: sw1(center) 100.100.0.241 / example | tcp access | tcp access | ac1(admin) ac2(admin)
 topology: # Topology:
 topology: # - Diagram:
-topology: #            sw1(center) 172.251.0.241 / example
+topology: #            sw1(center) 100.100.0.241 / example
 topology: #                 ^                    ^
 topology: #                 | tcp access          | tcp access
 topology: #            ac1(admin)            ac2(admin)
 topology: #              same admin user, concurrent login allowed
-topology: # - Docker mgmt network: 172.251.0.0/24
-topology: #   sw1=172.251.0.241, ac1/ac2 join the same mgmt network.
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241, ac1/ac2 join the same mgmt network.
 topology: # - OpenLAN service network "example": 192.51.0.0/24
 topology: #   same admin user logs in from ac1 and ac2.
 topology: # Validation:
@@ -20,66 +20,66 @@ Started switch pause container: tests-sw-admin-multi-pause
 Started switch frr container: tests-sw-admin-multi-frr
 Started switch ipsec container: tests-sw-admin-multi-ipsec
 Started switch container: tests-sw-admin-multi
-[26-06-02 09:12:06][ASSERT#0001][expect] at cases/access_admin_multi_login.sh:52 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-admin-multi" expect="Http.Start"
-2026/06/02 09:12:07 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
-2026/06/02 09:12:07 INFO|root|Wait: ...
-2026/06/02 09:12:07 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
-2026/06/02 09:12:07 INFO|root|Http.Start 0.0.0.0:10000
-[26-06-02 09:12:07][ASSERT#0001][OK] cost=1.032s
-[26-06-02 09:12:07][ASSERT#0002][cmd] at cases/access_admin_multi_login.sh:54 fn=setup_sw1 cmd="docker exec tests-sw-admin-multi openlan network --name example add --address 192.51.0.1/24"
-[26-06-02 09:12:07][ASSERT#0002][OK] cost=0.245s
-[26-06-02 09:12:07][ASSERT#0003][cmd] at cases/access_admin_multi_login.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-admin-multi openlan user add --name admin1@example --password 123456 --role admin"
+[26-06-22 06:02:32][ASSERT#0001][expect] at cases/access_admin_multi_login.sh:62 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-admin-multi" expect="Http.Start"
+2026/06/22 06:02:33 INFO|root|Wait: ...
+2026/06/22 06:02:33 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:02:33 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:02:33 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:02:33][ASSERT#0001][OK] cost=1.035s
+[26-06-22 06:02:33][ASSERT#0002][cmd] at cases/access_admin_multi_login.sh:64 fn=setup_sw1 cmd="docker exec tests-sw-admin-multi openlan network --name example add --address 192.51.0.1/24"
+[26-06-22 06:02:33][ASSERT#0002][OK] cost=0.246s
+[26-06-22 06:02:33][ASSERT#0003][cmd] at cases/access_admin_multi_login.sh:65 fn=setup_sw1 cmd="docker exec tests-sw-admin-multi openlan user add --name admin1@example --password 123456 --role admin"
 # total 1
 username                 password                 role   lease          
-admin1@example           123456                   admin  2027-06-02T09  
-[26-06-02 09:12:07][ASSERT#0003][OK] cost=0.055s
+admin1@example           123456                   admin  2027-06-22T06  
+[26-06-22 06:02:33][ASSERT#0003][OK] cost=0.059s
 Started access container: tests-sw-admin-multi.ac1
-[26-06-02 09:12:07][ASSERT#0004][expect] at cases/access_admin_multi_login.sh:98 fn=test_admin_multi_login retry=30 cmd="docker logs -f tests-sw-admin-multi.ac1" expect="Worker.OnSuccess"
-2026/06/02 09:12:07 INFO|root|SocketClientImpl.update: 172.251.0.2:60482 172.251.0.241:10002
-2026/06/02 09:12:07 INFO|root|SocketClientImpl.Try: to connected
-2026/06/02 09:12:07 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/06/02 09:12:08 INFO|172.251.0.241:10002|example|Worker.OnSuccess
-2026/06/02 09:12:08 INFO|172.251.0.241:10002|example|Access.AddAddr: 192.51.0.11/24 via 
-2026/06/02 09:12:08 INFO|tcp:172.251.0.241:10002|example|SocketWorker.onLogin: success
-2026/06/02 09:12:08 INFO|172.251.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.51.0.1 address:192.51.0.11 netmask:255.255.255.0 routes:[]
-[26-06-02 09:12:09][ASSERT#0004][OK] cost=1.033s
-[26-06-02 09:12:09][ASSERT#0005][match] at cases/access_admin_multi_login.sh:99 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi openlan network --name example access ls" expect="total 1"
+[26-06-22 06:02:34][ASSERT#0004][expect] at cases/access_admin_multi_login.sh:108 fn=test_admin_multi_login retry=30 cmd="docker logs -f tests-sw-admin-multi.ac1" expect="Worker.OnSuccess"
+2026/06/22 06:02:34 INFO|root|SocketClientImpl.update: 100.100.0.2:58456 100.100.0.241:10002
+2026/06/22 06:02:34 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:02:34 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:02:34 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:02:34 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.51.0.11/24 via 
+2026/06/22 06:02:34 INFO|tcp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:02:34 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.51.0.1 address:192.51.0.11 netmask:255.255.255.0 routes:[]
+[26-06-22 06:02:35][ASSERT#0004][OK] cost=1.028s
+[26-06-22 06:02:35][ASSERT#0005][match] at cases/access_admin_multi_login.sh:109 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi openlan network --name example access ls" expect="total 1"
 # total 1
 uuid             alive    device   alias            user     remote                 network  state 
-xVijLIw6Ti7HE    0m2s     tap0     2137e9b6b857     admin1   172.251.0.2:60482      example   authenticated
-[26-06-02 09:12:09][ASSERT#0005][OK] cost=0.083s
+lIWAZwjOdZBlQ    0m1s     tap0     13f9911e57af     admin1   100.100.0.2:58456      example   authenticated
+[26-06-22 06:02:35][ASSERT#0005][OK] cost=0.078s
 Started access container: tests-sw-admin-multi.ac2
-[26-06-02 09:12:09][ASSERT#0006][expect] at cases/access_admin_multi_login.sh:102 fn=test_admin_multi_login retry=30 cmd="docker logs -f tests-sw-admin-multi.ac2" expect="Worker.OnSuccess"
-2026/06/02 09:12:09 INFO|root|SocketClientImpl.Try: to connected
-2026/06/02 09:12:09 INFO|root|Wait: ...
-2026/06/02 09:12:09 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
-2026/06/02 09:12:09 INFO|172.251.0.241:10002|example|Worker.OnSuccess
-2026/06/02 09:12:09 INFO|172.251.0.241:10002|example|Access.AddAddr: 192.51.0.12/24 via 
-2026/06/02 09:12:09 INFO|udp:172.251.0.241:10002|example|SocketWorker.onLogin: success
-2026/06/02 09:12:09 INFO|172.251.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.51.0.1 address:192.51.0.12 netmask:255.255.255.0 routes:[]
-[26-06-02 09:12:10][ASSERT#0006][OK] cost=1.033s
-[26-06-02 09:12:10][ASSERT#0007][match] at cases/access_admin_multi_login.sh:103 fn=test_admin_multi_login retry=30 cmd="docker exec tests-sw-admin-multi.ac2 ping -c 3 192.51.0.1" expect="bytes from"
+[26-06-22 06:02:35][ASSERT#0006][expect] at cases/access_admin_multi_login.sh:112 fn=test_admin_multi_login retry=30 cmd="docker logs -f tests-sw-admin-multi.ac2" expect="Worker.OnSuccess"
+2026/06/22 06:02:35 INFO|root|SocketClientImpl.update: 100.100.0.3:43596 100.100.0.241:10002
+2026/06/22 06:02:35 INFO|root|SocketClientImpl.Try: to connected
+2026/06/22 06:02:35 INFO|root|SocketClientImpl.negotiate: send request magic=ffff network=
+2026/06/22 06:02:35 INFO|100.100.0.241:10002|example|Worker.OnSuccess
+2026/06/22 06:02:35 INFO|100.100.0.241:10002|example|Access.AddAddr: 192.51.0.12/24 via 
+2026/06/22 06:02:35 INFO|udp:100.100.0.241:10002|example|SocketWorker.onLogin: success
+2026/06/22 06:02:35 INFO|100.100.0.241:10002|example|Worker.OnIpAddr: name:example gateway:192.51.0.1 address:192.51.0.12 netmask:255.255.255.0 routes:[]
+[26-06-22 06:02:36][ASSERT#0006][OK] cost=1.033s
+[26-06-22 06:02:36][ASSERT#0007][match] at cases/access_admin_multi_login.sh:113 fn=test_admin_multi_login retry=30 cmd="docker exec tests-sw-admin-multi.ac2 ping -c 3 192.51.0.1" expect="bytes from"
 PING 192.51.0.1 (192.51.0.1) 56(84) bytes of data.
-64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=1.02 ms
-64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=1.52 ms
-64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=1.24 ms
+64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=1.09 ms
+64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=1.27 ms
+64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=1.36 ms
 
 --- 192.51.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2003ms
-[26-06-02 09:12:16][ASSERT#0007][OK] cost=6.217s
-[26-06-02 09:12:16][ASSERT#0008][match] at cases/access_admin_multi_login.sh:106 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi openlan network --name example access ls" expect="total 2"
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+[26-06-22 06:02:42][ASSERT#0007][OK] cost=6.213s
+[26-06-22 06:02:42][ASSERT#0008][match] at cases/access_admin_multi_login.sh:116 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi openlan network --name example access ls" expect="total 2"
 # total 2
 uuid             alive    device   alias            user     remote                 network  state 
-xVijLIw6Ti7HE    0m9s     tap0     2137e9b6b857     admin1   172.251.0.2:60482      example   authenticated
-ghQGdc9EnZCE7    0m7s     tap1     9cbcf276e845     admin1   172.251.0.3:55529      example   authenticated
-[26-06-02 09:12:16][ASSERT#0008][OK] cost=0.071s
-[26-06-02 09:12:16][ASSERT#0009][match] at cases/access_admin_multi_login.sh:107 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi.ac1 ping -c 3 192.51.0.1" expect="bytes from"
+lIWAZwjOdZBlQ    0m8s     tap0     13f9911e57af     admin1   100.100.0.2:58456      example   authenticated
+t88lClPjCrMaU    0m7s     tap1     979ad2aa89f6     admin1   100.100.0.3:43596      example   authenticated
+[26-06-22 06:02:42][ASSERT#0008][OK] cost=0.067s
+[26-06-22 06:02:42][ASSERT#0009][match] at cases/access_admin_multi_login.sh:117 fn=test_admin_multi_login retry=10 cmd="docker exec tests-sw-admin-multi.ac1 ping -c 3 192.51.0.1" expect="bytes from"
 PING 192.51.0.1 (192.51.0.1) 56(84) bytes of data.
-64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=0.848 ms
-64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=1.18 ms
-64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=1.13 ms
+64 bytes from 192.51.0.1: icmp_seq=1 ttl=64 time=1.09 ms
+64 bytes from 192.51.0.1: icmp_seq=2 ttl=64 time=0.971 ms
+64 bytes from 192.51.0.1: icmp_seq=3 ttl=64 time=0.967 ms
 
 --- 192.51.0.1 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2014ms
-[26-06-02 09:12:18][ASSERT#0009][OK] cost=2.072s
-[26-06-02 09:12:19] END access_admin_multi_login status=PASS cost=14.309s
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+[26-06-22 06:02:44][ASSERT#0009][OK] cost=2.062s
+[26-06-22 06:02:45] END access_admin_multi_login status=PASS cost=13.916s

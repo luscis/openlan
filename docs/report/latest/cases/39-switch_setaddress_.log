@@ -1,0 +1,107 @@
+[26-06-22 06:42:25] START switch_setaddress
+scenario: cases/switch_setaddress.sh
+header  : verify openvpn pushed route follows bridge address update
+topology: sw1 changes example bridge address from 192.72.0.1/24 to 192.73.0.1/24 and openvpn restart pushes the new route range
+topology: # Topology:
+topology: # - Diagram:
+topology: #       sw1 example bridge 192.72.0.1/24 -> 192.73.0.1/24
+topology: #       openvpn restart refreshes pushed route 192.72.0.0/24 -> 192.73.0.0/24
+topology: # - Docker mgmt network: 100.100.0.0/24
+topology: #   sw1=100.100.0.241.
+topology: # - OpenLAN service network "example": 192.72.0.0/24
+topology: #   initial bridge address 192.72.0.1/24, updated bridge address 192.73.0.1/24.
+topology: # Validation:
+topology: #   After `network address add` changes the bridge address and OpenVPN restarts,
+topology: #   the generated OpenVPN server config pushes the new bridge route range.
+
+Started switch pause container: tests-sw-setaddress-pause
+Started switch frr container: tests-sw-setaddress-frr
+Started switch ipsec container: tests-sw-setaddress-ipsec
+Started switch container: tests-sw-setaddress
+[26-06-22 06:42:25][ASSERT#0001][expect] at cases/switch_setaddress.sh:53 fn=setup_sw1 retry=30 cmd="docker logs -f tests-sw-setaddress" expect="Http.Start"
+2026/06/22 06:42:26 INFO|root|Wait: ...
+2026/06/22 06:42:26 INFO|root|TcpServer.Listen: tcp://0.0.0.0:10002
+2026/06/22 06:42:26 INFO|root|UdpServer.Listen: udp://0.0.0.0:10002
+2026/06/22 06:42:26 INFO|root|Http.Start 0.0.0.0:10000
+[26-06-22 06:42:26][ASSERT#0001][OK] cost=1.026s
+[26-06-22 06:42:26][ASSERT#0002][cmd] at cases/switch_setaddress.sh:55 fn=setup_sw1 cmd="docker exec tests-sw-setaddress openlan network --name example add --address 192.72.0.1/24"
+[26-06-22 06:42:27][ASSERT#0002][OK] cost=0.253s
+[26-06-22 06:42:27][ASSERT#0003][cmd] at cases/switch_setaddress.sh:56 fn=setup_sw1 cmd="docker exec tests-sw-setaddress openlan network --name example openvpn add --listen :1194 --protocol tcp --subnet 10.72.0.0/24"
+[26-06-22 06:42:27][ASSERT#0003][OK] cost=0.117s
+[26-06-22 06:42:27][ASSERT#0004][cmd] at cases/switch_setaddress.sh:57 fn=setup_sw1 cmd="docker exec tests-sw-setaddress openlan network --name example snat enable"
+[26-06-22 06:42:27][ASSERT#0004][OK] cost=0.101s
+[26-06-22 06:42:27][ASSERT#0005][match] at cases/switch_setaddress.sh:61 fn=test_setaddress_openvpn_route retry=10 cmd="docker exec tests-sw-setaddress cat /var/openlan/openvpn/example/tcp1194server.conf" expect="push "route 192.72.0.0 255.255.255.0""
+dh /var/openlan/openvpn/dh.pem
+server 10.72.0.0 255.255.255.0
+push "route 10.72.0.0 255.255.255.0"
+push "route 192.72.0.0 255.255.255.0"
+ifconfig-pool-persist tcp1194ipp
+tls-auth /var/openlan/openvpn/ta.key 0
+management /var/openlan/openvpn/example/tcp1194server.sock unix
+[26-06-22 06:42:27][ASSERT#0005][OK] cost=0.067s
+[26-06-22 06:42:27][ASSERT#0006][match] at cases/switch_setaddress.sh:62 fn=test_setaddress_openvpn_route retry=10 cmd="docker exec tests-sw-setaddress iptables -t nat -S TT_example_SNAT" expect="192.72.0.0/24"
+-N TT_example_SNAT
+-A TT_example_SNAT -s 10.72.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "From VPN" -j MASQUERADE
+-A TT_example_SNAT -s 192.72.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "To Masq" -j MASQUERADE
+[26-06-22 06:42:27][ASSERT#0006][OK] cost=0.062s
+[26-06-22 06:42:27][ASSERT#0007][cmd] at cases/switch_setaddress.sh:63 fn=test_setaddress_openvpn_route cmd="docker exec tests-sw-setaddress openlan network --name example address add --address 192.73.0.1/24"
+[26-06-22 06:42:27][ASSERT#0007][OK] cost=0.098s
+[26-06-22 06:42:27][ASSERT#0008][match] at cases/switch_setaddress.sh:64 fn=test_setaddress_openvpn_route retry=10 cmd="docker exec tests-sw-setaddress ip addr show dev hi-example" expect="inet 192.73.0.1/24"
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether ce:17:b2:79:3a:84 brd ff:ff:ff:ff:ff:ff
+    inet 192.73.0.1/24 brd 192.73.0.255 scope global hi-example
+       valid_lft forever preferred_lft forever
+[26-06-22 06:42:27][ASSERT#0008][OK] cost=0.063s
+[26-06-22 06:42:27][ASSERT#0009][unmatch] at cases/switch_setaddress.sh:65 fn=test_setaddress_openvpn_route retry=3 cmd="docker exec tests-sw-setaddress ip addr show dev hi-example" unexpected="inet 192.72.0.1/24"
+Last output:
+8: hi-example@bi-example: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether ce:17:b2:79:3a:84 brd ff:ff:ff:ff:ff:ff
+    inet 192.73.0.1/24 brd 192.73.0.255 scope global hi-example
+       valid_lft forever preferred_lft forever
+[26-06-22 06:42:30][ASSERT#0009][OK] cost=3.205s
+[26-06-22 06:42:31][ASSERT#0010][match] at cases/switch_setaddress.sh:66 fn=test_setaddress_openvpn_route retry=10 cmd="docker exec tests-sw-setaddress iptables -t nat -S TT_example_SNAT" expect="192.73.0.0/24"
+-N TT_example_SNAT
+-A TT_example_SNAT -s 10.72.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "From VPN" -j MASQUERADE
+-A TT_example_SNAT -s 192.73.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "To Masq" -j MASQUERADE
+[26-06-22 06:42:31][ASSERT#0010][OK] cost=0.063s
+[26-06-22 06:42:31][ASSERT#0011][unmatch] at cases/switch_setaddress.sh:67 fn=test_setaddress_openvpn_route retry=3 cmd="docker exec tests-sw-setaddress iptables -t nat -S TT_example_SNAT" unexpected="192.72.0.0/24"
+Last output:
+-N TT_example_SNAT
+-A TT_example_SNAT -s 10.72.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "From VPN" -j MASQUERADE
+-A TT_example_SNAT -s 192.73.0.0/24 -m set --match-set TT_example_r dst -m comment --comment "To Masq" -j MASQUERADE
+[26-06-22 06:42:34][ASSERT#0011][OK] cost=3.180s
+[26-06-22 06:42:34][ASSERT#0012][cmd] at cases/switch_setaddress.sh:68 fn=test_setaddress_openvpn_route cmd="docker exec tests-sw-setaddress openlan network --name example openvpn restart"
+[26-06-22 06:42:34][ASSERT#0012][OK] cost=0.087s
+[26-06-22 06:42:34][ASSERT#0013][match] at cases/switch_setaddress.sh:69 fn=test_setaddress_openvpn_route retry=10 cmd="docker exec tests-sw-setaddress cat /var/openlan/openvpn/example/tcp1194server.conf" expect="push "route 192.73.0.0 255.255.255.0""
+dh /var/openlan/openvpn/dh.pem
+server 10.72.0.0 255.255.255.0
+push "route 10.72.0.0 255.255.255.0"
+push "route 192.73.0.0 255.255.255.0"
+ifconfig-pool-persist tcp1194ipp
+tls-auth /var/openlan/openvpn/ta.key 0
+management /var/openlan/openvpn/example/tcp1194server.sock unix
+[26-06-22 06:42:34][ASSERT#0013][OK] cost=0.070s
+[26-06-22 06:42:34][ASSERT#0014][unmatch] at cases/switch_setaddress.sh:70 fn=test_setaddress_openvpn_route retry=3 cmd="docker exec tests-sw-setaddress cat /var/openlan/openvpn/example/tcp1194server.conf" unexpected="push "route 192.72.0.0 255.255.255.0""
+Last output:
+persist-tun
+ca /var/openlan/cert/ca.crt
+cert /var/openlan/cert/crt
+key /var/openlan/cert/key
+dh /var/openlan/openvpn/dh.pem
+server 10.72.0.0 255.255.255.0
+push "route 10.72.0.0 255.255.255.0"
+push "route 192.73.0.0 255.255.255.0"
+ifconfig-pool-persist tcp1194ipp
+tls-auth /var/openlan/openvpn/ta.key 0
+management /var/openlan/openvpn/example/tcp1194server.sock unix
+status tcp1194server.client 2
+client-connect "/var/openlan/openvpn/example/client-up.sh"
+client-disconnect "/var/openlan/openvpn/example/client-down.sh"
+verify-client-cert none
+script-security 3
+auth-user-pass-verify "/usr/bin/openlan -l https://127.0.0.1:10000 user check --network example" via-env
+username-as-common-name
+client-config-dir /var/openlan/openvpn/example/ccd
+verb 3
+[26-06-22 06:42:37][ASSERT#0014][OK] cost=3.185s
+[26-06-22 06:42:38] END switch_setaddress status=PASS cost=13.033s
