@@ -94,12 +94,8 @@ func NewNameProxy(cfg *config.NameProxy) *NameProxy {
 	return n
 }
 
-func (n *NameProxy) findKey(r *dns.Msg) string {
-	if len(r.Question) != 1 {
-		return ""
-	}
-	q := r.Question[0]
-	return fmt.Sprintf("%s|%d|%d", q.Name, q.Qtype, q.Qclass)
+func (n *NameProxy) findKey(question dns.Question) string {
+	return fmt.Sprintf("%s|%d|%d", question.Name, question.Qtype, question.Qclass)
 }
 
 func (n *NameProxy) findCache(key string) *dns.Msg {
@@ -223,7 +219,6 @@ func (n *NameProxy) Forward(name, addr, nexthop string) {
 		n.out.Warn("Access.Forward: %s %s: %s", addr, err, out)
 		return
 	}
-	n.out.Info("NameProxy.Forward: %s <- %s via %s ", nexthop, name, addr)
 }
 
 func (n *NameProxy) UpdateDNS(name, addr string) bool {
@@ -273,6 +268,8 @@ func (n *NameProxy) FindBackend(r *dns.Msg) *config.ForwardTo {
 }
 
 func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
+	defer libol.Catch("NameProxy.handleDNS")
+
 	if !n.allowDNS(conn) {
 		msg := new(dns.Msg)
 		msg.SetReply(r)
@@ -291,53 +288,71 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 	}
 	nameto := n.cfg.Nameto
 
-	libol.Go(func() {
-		via := n.FindBackend(r)
-		if via != nil && via.Nameto != "" { // Override nameto if backend is found.
-			nameto = via.Nameto
-		}
+	via := n.FindBackend(r)
+	if via != nil && via.Nameto != "" { // Override nameto if backend is found.
+		nameto = via.Nameto
+	}
 
-		config.SetListen(&nameto, 53)
-		if nameto == "0.0.0.0:53" || nameto == n.listen {
-			n.out.Error("NameProxy.handleDNS nil(%s)", nameto)
-			return
-		}
+	config.SetListen(&nameto, 53)
+	if nameto == "0.0.0.0:53" || nameto == n.listen {
+		n.out.Error("NameProxy.handleDNS nil(%s)", nameto)
+		return
+	}
 
-		key := n.findKey(r)
-		if cached := n.findCache(key); cached != nil {
-			cached.Id = r.Id
-			cached.Question = r.Question
-			if err := conn.WriteMsg(cached); err != nil {
-				n.out.Error("NameProxy.handleDNS write cache: %s", err)
-			}
-			n.logCache(conn, r)
-			return
-		}
+	if len(r.Question) == 0 {
+		n.out.Error("NameProxy.handleDNS nil questions")
+		return
+	}
 
-		n.out.Info("NameProxy.handleDNS %s <- %v via %s", nameto, r.Question, conn.RemoteAddr())
-		resp, _, err := client.Exchange(r, nameto)
-		if err != nil {
-			n.out.Error("NameProxy.handleDNS %s: %v", r, err)
-			return
+	question := r.Question[0]
+	key := n.findKey(question)
+	if cached := n.findCache(key); cached != nil {
+		cached.Id = r.Id
+		cached.Question = r.Question
+		if err := conn.WriteMsg(cached); err != nil {
+			n.out.Error("NameProxy.handleDNS write cache: %s", err)
 		}
-		n.updateCache(key, resp)
+		n.logCache(conn, r)
+		return
+	}
 
-		if via != nil && via.Server != "" {
-			for _, rr := range resp.Answer {
-				if aa, ok := rr.(*dns.A); ok {
-					name := aa.Hdr.Name
-					addr := aa.A.String()
-					if n.UpdateDNS(name, addr) {
-						n.Forward(name, addr, via.Server)
-					}
+	n.out.Info("NameProxy.handleDNS %s <- %v via %s", nameto, question.Name, conn.RemoteAddr())
+	resp, _, err := client.Exchange(r, nameto)
+	if err != nil {
+		n.out.Error("NameProxy.handleDNS %s: %v", r, err)
+		return
+	}
+	n.updateCache(key, resp)
+
+	addrs := []string{}
+	serverto := ""
+	if via != nil && via.Server != "" {
+		serverto = via.Server
+		for _, rr := range resp.Answer {
+			if aa, ok := rr.(*dns.A); ok {
+				name := aa.Hdr.Name
+				addr := aa.A.String()
+				if n.UpdateDNS(name, addr) {
+					addrs = append(addrs, addr)
+					n.Forward(name, addr, via.Server)
 				}
 			}
 		}
-
-		if err := conn.WriteMsg(resp); err != nil {
-			n.out.Error("NameProxy.handleDNS %s", err)
+	} else {
+		serverto = "default"
+		for _, rr := range resp.Answer {
+			if aa, ok := rr.(*dns.A); ok {
+				addrs = append(addrs, aa.A.String())
+			}
 		}
-	})
+	}
+	if len(addrs) > 0 {
+		n.out.Info("NameProxy.forward %s <- %v to %s", serverto, question.Name, strings.Join(addrs, " "))
+	}
+
+	if err := conn.WriteMsg(resp); err != nil {
+		n.out.Error("NameProxy.handleDNS %s", err)
+	}
 }
 
 func (n *NameProxy) Start() {

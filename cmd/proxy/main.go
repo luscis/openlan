@@ -13,6 +13,10 @@ func main() {
 	p := proxy.NewProxy(c)
 	libol.PreNotify()
 	p.Initialize()
+	if c.PProf != "" {
+		f := libol.PProf{Listen: c.PProf}
+		f.Start()
+	}
 	libol.Go(p.Start)
 	libol.SdNotify()
 	libol.Wait()

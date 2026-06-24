@@ -2,7 +2,8 @@ package libol
 
 import (
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
+	"strings"
 	"sync"
 )
 
@@ -45,13 +46,37 @@ type PProf struct {
 	Error  error
 }
 
+type pprofHandler struct{}
+
+func (pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/":
+		pprof.Index(w, r)
+		return
+	case "/cmdline":
+		pprof.Cmdline(w, r)
+		return
+	case "/profile":
+		pprof.Profile(w, r)
+		return
+	case "/symbol":
+		pprof.Symbol(w, r)
+		return
+	case "/trace":
+		pprof.Trace(w, r)
+		return
+	}
+	name := strings.TrimPrefix(r.URL.Path, "/")
+	pprof.Handler(name).ServeHTTP(w, r)
+}
+
 func (p *PProf) Start() {
 	if p.Listen == "" {
 		p.Listen = "localhost:6060"
 	}
 	Go(func() {
 		Info("PProf.Start %s", p.Listen)
-		if err := http.ListenAndServe(p.Listen, nil); err != nil {
+		if err := http.ListenAndServe(p.Listen, pprofHandler{}); err != nil {
 			Error("PProf.Start %s", err)
 			p.Error = err
 		}

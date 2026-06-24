@@ -26,12 +26,14 @@ func main() {
 	logLevel := libol.INFO
 	nodate := false
 	pidfile := ""
+	pprofListen := ""
 
 	flag.StringVar(&mode, "mode", "http", "Proxy mode for http, socks, tcp and name")
 	flag.StringVar(&conf, "conf", "ceci.yaml", "The configuration file")
 	flag.StringVar(&network, "network", "", "Auth network for http mode")
 	flag.StringVar(&statsFile, "stats:file", "", "Stats file")
 	flag.StringVar(&logFile, "log:file", "", "Log file")
+	flag.StringVar(&pprofListen, "prof", "", "Http listen for CPU prof")
 	flag.IntVar(&logLevel, "log:level", libol.INFO, "Log level")
 	flag.BoolVar(&nodate, "nodate", nodate, "Dont display message datetime")
 	flag.StringVar(&pidfile, "write-pid", pidfile, "Write pid to a file")
@@ -77,6 +79,11 @@ func main() {
 		c.Network = network
 		c.StatsFile = statsFile
 		x = proxy.NewHttpProxy(c, nil)
+	}
+
+	if pprofListen != "" {
+		f := libol.PProf{Listen: pprofListen}
+		f.Start()
 	}
 
 	libol.Go(x.Start)
