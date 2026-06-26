@@ -99,7 +99,7 @@ func (n *NameProxy) findKey(question dns.Question) string {
 }
 
 func (n *NameProxy) findCache(key string) *dns.Msg {
-	if !n.dnsCacheEnabled() {
+	if !n.cacheEnabled() {
 		return nil
 	}
 	if key == "" {
@@ -112,7 +112,7 @@ func (n *NameProxy) findCache(key string) *dns.Msg {
 		return nil
 	}
 
-	ttl := n.dnsCacheTimeout()
+	ttl := n.cacheTimeout()
 	if time.Since(entry.time) > ttl {
 		n.lock.Lock()
 		if latest, ok := n.dnsMsg[key]; ok && time.Since(latest.time) > ttl {
@@ -125,19 +125,19 @@ func (n *NameProxy) findCache(key string) *dns.Msg {
 	return entry.msg.Copy()
 }
 
-func (n *NameProxy) dnsCacheTimeout() time.Duration {
+func (n *NameProxy) cacheTimeout() time.Duration {
 	if n.cfg == nil || n.cfg.CacheTTL < 0 {
 		return DefaultCacheTimeout
 	}
 	return time.Duration(n.cfg.CacheTTL) * time.Second
 }
 
-func (n *NameProxy) dnsCacheEnabled() bool {
+func (n *NameProxy) cacheEnabled() bool {
 	return n.cfg != nil && n.cfg.CacheTTL != 0
 }
 
 func (n *NameProxy) updateCache(key string, msg *dns.Msg) {
-	if !n.dnsCacheEnabled() {
+	if !n.cacheEnabled() {
 		return
 	}
 	if key == "" || msg == nil {
@@ -151,7 +151,7 @@ func (n *NameProxy) updateCache(key string, msg *dns.Msg) {
 	n.lock.Unlock()
 }
 
-func (n *NameProxy) logCache(conn dns.ResponseWriter, r *dns.Msg) {
+func (n *NameProxy) cacheStats(conn dns.ResponseWriter, r *dns.Msg) {
 	addr := libol.GetIPAddr(conn.RemoteAddr().String())
 	now := time.Now()
 	needLog := false
@@ -286,18 +286,6 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 		WriteTimeout: 3 * time.Second,
 		Net:          "udp",
 	}
-	nameto := n.cfg.Nameto
-
-	via := n.FindBackend(r)
-	if via != nil && via.Nameto != "" { // Override nameto if backend is found.
-		nameto = via.Nameto
-	}
-
-	config.SetListen(&nameto, 53)
-	if nameto == "0.0.0.0:53" || nameto == n.listen {
-		n.out.Error("NameProxy.handleDNS nil(%s)", nameto)
-		return
-	}
 
 	if len(r.Question) == 0 {
 		n.out.Error("NameProxy.handleDNS nil questions")
@@ -312,7 +300,19 @@ func (n *NameProxy) handleDNS(conn dns.ResponseWriter, r *dns.Msg) {
 		if err := conn.WriteMsg(cached); err != nil {
 			n.out.Error("NameProxy.handleDNS write cache: %s", err)
 		}
-		n.logCache(conn, r)
+		n.cacheStats(conn, r)
+		return
+	}
+
+	nameto := n.cfg.Nameto
+	via := n.FindBackend(r)
+	if via != nil && via.Nameto != "" { // Override nameto if backend is found.
+		nameto = via.Nameto
+	}
+
+	config.SetListen(&nameto, 53)
+	if nameto == "0.0.0.0:53" || nameto == n.listen {
+		n.out.Error("NameProxy.handleDNS nil(%s)", nameto)
 		return
 	}
 

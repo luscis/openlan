@@ -1,10 +1,6 @@
 package config
 
-import (
-	"fmt"
-	"regexp"
-	"strings"
-)
+import "strings"
 
 func SplitSecret(value string) (string, string) {
 	if strings.Contains(value, ":") {
@@ -43,15 +39,36 @@ func (h ToForwards) isMatch(value string, rules []string) bool {
 		return true
 	}
 
+	value = strings.TrimSuffix(value, ".")
+	if host, ok := trimNumericPort(value); ok {
+		value = host
+	}
+
 	for _, rule := range rules {
-		pattern := fmt.Sprintf(`(^|\.)%s(:\d+)?$`, regexp.QuoteMeta(rule))
-		re := regexp.MustCompile(pattern)
-		if re.MatchString(value) {
+		rule = strings.TrimSuffix(rule, ".")
+		if value == rule || strings.HasSuffix(value, "."+rule) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func trimNumericPort(value string) (string, bool) {
+	index := strings.LastIndex(value, ":")
+	if index == -1 {
+		return value, false
+	}
+	port := value[index+1:]
+	if port == "" {
+		return value, false
+	}
+	for _, c := range port {
+		if c < '0' || c > '9' {
+			return value, false
+		}
+	}
+	return value[:index], true
 }
 
 func (h ToForwards) FindBackend(host string) *ForwardTo {
